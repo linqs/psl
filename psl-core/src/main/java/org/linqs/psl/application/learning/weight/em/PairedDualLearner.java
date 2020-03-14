@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.GroundRule;
@@ -43,26 +43,6 @@ import java.util.List;
 public class PairedDualLearner extends ExpectationMaximization {
     private static final Logger log = LoggerFactory.getLogger(PairedDualLearner.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "pairedduallearner";
-
-    /**
-     * Key for Integer property that indicates how many rounds of paired-dual
-     * learning to run before beginning to update the weights (parameter K in
-     * the ICML paper)
-     */
-    public static final String WARMUP_ROUNDS_KEY = CONFIG_PREFIX + ".warmuprounds";
-    public static final int WARMUP_ROUNDS_DEFAULT = 0;
-
-    /**
-     * Key for Integer property that indicates how many steps of ADMM to run
-     * for each inner objective before each gradient iteration (parameter N in the ICML paper)
-     */
-    public static final String ADMM_STEPS_KEY = CONFIG_PREFIX + ".admmsteps";
-    public static final int ADMM_STEPS_DEFAULT = 1;
-
     private final int warmupRounds;
     private final int admmIterations;
 
@@ -73,15 +53,8 @@ public class PairedDualLearner extends ExpectationMaximization {
     public PairedDualLearner(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        warmupRounds = Config.getInt(WARMUP_ROUNDS_KEY, WARMUP_ROUNDS_DEFAULT);
-        if (warmupRounds < 0) {
-            throw new IllegalArgumentException(WARMUP_ROUNDS_KEY + " must be a nonnegative integer.");
-        }
-
-        admmIterations = Config.getInt(ADMM_STEPS_KEY, ADMM_STEPS_DEFAULT);
-        if (admmIterations < 1) {
-            throw new IllegalArgumentException(ADMM_STEPS_KEY + " must be a positive integer.");
-        }
+        warmupRounds = Options.WLA_PDL_WARMUP_ROUNDS.getInt();
+        admmIterations = Options.WLA_PDL_ADMM_STEPS.getInt();
     }
 
     @Override

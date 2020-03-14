@@ -98,7 +98,7 @@ public class Options {
         "categoricalevaluator.categoryindexes",
         "1",
         "The indexes (zero-indexed) of arguments in the predicate that indicate a category."
-        + " The other arguments will be treaded as identifiers."
+        + " The other arguments will be treated as identifiers."
     );
 
     public static final Option EVAL_CAT_DEFAULT_PREDICATE = new Option(
@@ -128,7 +128,8 @@ public class Options {
     public static final Option EVAL_DISCRETE_THRESHOLD = new Option(
         "discreteevaluator.threshold",
         0.5,
-        "The truth threshold."
+        "The truth threshold.",
+        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option WLA_EM_ITERATIONS = new Option(
@@ -145,11 +146,31 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option WLA_HEM_ADAGRAD = new Option(
+        "hardem.adagrad",
+        false,
+        "Whether to use AdaGrad subgradient scaling, the adaptive subgradient algorithm of Duchi et al., 2010."
+    );
+
+    public static final Option WLA_LMLE_MAX_ROUNDS = new Option(
+        "lazymaxlikelihoodmpe.maxgrowrounds",
+        100,
+        "The maximum number of rounds of lazy growing.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_MPPLE_NUM_SAMPLES = new Option(
+        "maxpiecewisepseudolikelihood.numsamples",
+        100,
+        "The number of samples MPPLE will use to approximate expectations.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option WLA_MPLE_BOOL = new Option(
         "maxspeudolikelihood.bool",
         false,
         "If true, MaxPseudoLikelihood will treat RandomVariableAtoms as boolean valued."
-        + " This restricts the types of contraints supported."
+        + " This restricts the types of constraints supported."
     );
 
     public static final Option WLA_MPLE_MIN_WIDTH = new Option(
@@ -166,6 +187,20 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option WLA_PDL_ADMM_STEPS = new Option(
+        "pairedduallearner.admmsteps",
+        1,
+        "The number of ADMM steps to run for each inner objective before each gradient iteration (parameter N in the ICML paper).",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_PDL_WARMUP_ROUNDS = new Option(
+        "pairedduallearner.warmuprounds",
+        0,
+        "The number of rounds of paired-dual learning to run before beginning to update the weights (parameter K in the ICML paper).",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
         "rankingevaluator.representative",
         RankingEvaluator.RepresentativeMetric.AUROC.toString(),
@@ -175,7 +210,8 @@ public class Options {
     public static final Option EVAL_RANKING_THRESHOLD = new Option(
         "rankingevaluator.threshold",
         0.5,
-        "The truth threshold."
+        "The truth threshold.",
+        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option WLA_VP_AVERAGE_STEPS = new Option(
@@ -252,7 +288,7 @@ public class Options {
     public static final Option WLA_EVAL = new Option(
         "weightlearning.evaluator",
         ContinuousEvaluator.class.getName(),
-        "The evaluatior to use during weight learning."
+        "The evaluator to use during weight learning."
         + " Not all weight learning methods will use the evaluator for decision making,"
         + " but even those will typically output an evaluator score each iteration."
     );
@@ -273,7 +309,7 @@ public class Options {
     public static final Option WLA_REASONER = new Option(
         "weightlearning.reasoner",
         ADMMReasoner.class.getName(),
-        "The reasoner used for interence during weight learning."
+        "The reasoner used for inference during weight learning."
     );
 
     public static final Option WLA_TG = new Option(
@@ -292,7 +328,7 @@ public class Options {
     private Options() {}
 
     /**
-     * Reflexivley parse the options from this class.
+     * Reflexively parse the options from this class.
      * Keys are suffixed with "_KEY",
      * default values are suffixed with "_DEFAULT",
      * and descriptions are suffixed with "_DESCRIPTION".

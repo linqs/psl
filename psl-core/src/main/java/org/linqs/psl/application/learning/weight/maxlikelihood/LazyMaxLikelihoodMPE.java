@@ -19,7 +19,7 @@ package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.application.inference.LazyMPEInference;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
@@ -61,17 +61,6 @@ import java.util.Set;
 public class LazyMaxLikelihoodMPE extends VotedPerceptron {
     private static final Logger log = LoggerFactory.getLogger(LazyMaxLikelihoodMPE.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "lazymaxlikelihoodmpe";
-
-    /**
-     * Key for int property for the maximum number of rounds of lazy growing.
-     */
-    public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxgrowrounds";
-    public static final int MAX_ROUNDS_DEFAULT = 100;
-
     private int maxRounds;
 
     public LazyMaxLikelihoodMPE(Model model, Database rvDB, Database observedDB) {
@@ -81,7 +70,7 @@ public class LazyMaxLikelihoodMPE extends VotedPerceptron {
     public LazyMaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+        maxRounds = Options.WLA_LMLE_MAX_ROUNDS.getInt();
     }
 
     @Override

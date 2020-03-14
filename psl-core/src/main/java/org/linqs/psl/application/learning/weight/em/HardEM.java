@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.em;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -29,21 +29,6 @@ import java.util.List;
  * assignment of truth values to the latent variables during the E-step.
  */
 public class HardEM extends ExpectationMaximization  {
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "hardem";
-
-    /**
-     * Key for Boolean property that indicates whether to use AdaGrad subgradient
-     * scaling, the adaptive subgradient algorithm of
-     * John Duchi, Elad Hazan, Yoram Singer (JMLR 2010).
-     *
-     * If TRUE, will override other step scheduling options (but not scaling).
-     */
-    public static final String ADAGRAD_KEY = CONFIG_PREFIX + ".adagrad";
-    public static final boolean ADAGRAD_DEFAULT = false;
-
     public static final double MIN_SCALING_FACTOR = 1e-8;
 
     private final boolean useAdaGrad;
@@ -54,7 +39,7 @@ public class HardEM extends ExpectationMaximization  {
 
     public HardEM(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
-        useAdaGrad = Config.getBoolean(ADAGRAD_KEY, ADAGRAD_DEFAULT);
+        useAdaGrad = Options.WLA_HEM_ADAGRAD.getBoolean();
     }
 
     @Override
