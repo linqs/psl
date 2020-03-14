@@ -21,7 +21,6 @@ import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.config.Config;
 import org.linqs.psl.config.Options;
 
 public class InitialWeightRandomGridSearchTest extends WeightLearningTest {
@@ -34,8 +33,8 @@ public class InitialWeightRandomGridSearchTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
         // Narrow the search space for tests.
-        Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "1:10:100");
-        Config.setProperty(RandomGridSearch.MAX_LOCATIONS_KEY, 50);
+        Options.WLA_GS_POSSIBLE_WEIGHTS.set("1:10:100");
+        Options.WLA_RGS_MAX_LOCATIONS.set(50);
 
         // Turn down the number of iterations of both ADMM and VotedPerceptron.
         Options.WLA_VP_NUM_STEPS.set(3);

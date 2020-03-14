@@ -18,7 +18,7 @@
 package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -39,9 +39,9 @@ import java.util.PriorityQueue;
  * https://arxiv.org/pdf/1603.06560.pdf
  * Some of the math has been adjusted to compute a budget (as a percentage) rather than a number of resources.
  *
- * Total amount of budget used: BASE_BRACKET_SIZE_KEY * NUM_BRACKETS_KEY
+ * Total amount of budget used: WLA_HB_BRACKET_SIZE * WLA_HB_NUM_BRACKETS
  * VotedPerceptron methods typically use a total budget of 25.
- * Number of configurations evaluated: \sum_{i = 0}^{NUM_BRACKETS_KEY} (BASE_BRACKET_SIZE_KEY * SURVIVAL_KEY^i / (i + 1))
+ * Number of configurations evaluated: \sum_{i = 0}^{WLA_HB_NUM_BRACKETS} (WLA_HB_BRACKET_SIZE * WLA_HB_SURVIVAL^i / (i + 1))
  *
  * TODO(eriq): Think about inital weights.
  *
@@ -49,30 +49,6 @@ import java.util.PriorityQueue;
  */
 public class Hyperband extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(Hyperband.class);
-
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "hyperband";
-
-    /**
-     * The proportion of configs that survive each round in a brancket.
-     */
-    public static final String SURVIVAL_KEY = CONFIG_PREFIX + ".survival";
-    public static final int SURVIVAL_DEFAULT = 4;
-
-    /**
-     * The base number of weight configurations for each brackets.
-     */
-    public static final String BASE_BRACKET_SIZE_KEY = CONFIG_PREFIX + ".basebracketsize";
-    public static final int BASE_BRACKET_SIZE_DEFAULT = 10;
-
-    /**
-     * The number of brackets to consider.
-     * This is computed in vanilla Hyperband.
-     */
-    public static final String NUM_BRACKETS_KEY = CONFIG_PREFIX + ".numbrackets";
-    public static final int NUM_BRACKETS_DEFAULT = 4;
 
     public static final double MIN_BUDGET_PROPORTION = 0.001;
     public static final int MIN_BRACKET_SIZE = 1;
@@ -96,20 +72,9 @@ public class Hyperband extends WeightLearningApplication {
     public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        survival = Config.getInt(SURVIVAL_KEY, SURVIVAL_DEFAULT);
-        if (survival < 1) {
-            throw new IllegalArgumentException("Need at least one survival porportion.");
-        }
-
-        numBrackets = Config.getInt(NUM_BRACKETS_KEY, NUM_BRACKETS_DEFAULT);
-        if (numBrackets < 1) {
-            throw new IllegalArgumentException("Need at least one bracket.");
-        }
-
-        baseBracketSize = Config.getInt(BASE_BRACKET_SIZE_KEY, BASE_BRACKET_SIZE_DEFAULT);
-        if (baseBracketSize < 1) {
-            throw new IllegalArgumentException("Need at least one bracket size.");
-        }
+        survival = Options.WLA_HB_SURVIVAL.getInt();
+        numBrackets = Options.WLA_HB_NUM_BRACKETS.getInt();
+        baseBracketSize = Options.WLA_HB_BRACKET_SIZE.getInt();
     }
 
     @Override

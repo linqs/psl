@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
@@ -119,6 +120,47 @@ public class Options {
         "The representative metric (see Continuousevaluator.RepresentativeMetric)."
     );
 
+    public static final Option WLA_CRGS_BASE_WEIGHT = new Option(
+        "continuousrandomgridsearch.baseweight",
+        0.40,
+        "The base weight of a rule."
+        + " The exact use of this value depends on UNIFORM_BASE."
+        + " This will either be used as the mean of the Gaussian from which a weight will be sampled,"
+        + " or as the smallest weight that all rules will be started from.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_CRGS_MAX_LOCATIONS = new Option(
+        "continuousrandomgridsearch.maxlocations",
+        250,
+        "The max number of locations to search.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_CRGS_SCALE_ORDERS = new Option(
+        "continuousrandomgridsearch.scaleorders",
+        0,
+        "If greater than 0, then various different scaled versions of the weights will be tested."
+        + " For example, if set to 3 then 10x, 100x, and 1000x will also be tested."
+        + " These additional tests DO NOT count against MAX_LOCATIONS_KEY,"
+        + " i.e. MAX_LOCATIONS_KEY * (SCALE_ORDERS_KEY + 1) configurations will be tested.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_CRGS_UNIFORM_BASE = new Option(
+        "continuousrandomgridsearch.uniformbase",
+        true,
+        "If true, then use the same base weight as the Gaussian's mean when sampling the weight."
+        + " Otherwise, use different base weights depending on the inital satisfaction of each rule."
+    );
+
+    public static final Option WLA_CRGS_VARIANCE = new Option(
+        "continuousrandomgridsearch.variance",
+        0.20,
+        "The variance used when sampling the weights from a Gaussian.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option EVAL_DISCRETE_REPRESENTATIVE = new Option(
         "discreteevaluator.representative",
         DiscreteEvaluator.RepresentativeMetric.F1.toString(),
@@ -146,10 +188,57 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
+        "gridsearch.weights",
+        "0.001:0.01:0.1:1:10",
+        "A comma-separated list of possible weights. These weights should be in some sorted order."
+    );
+
+    public static final Option WLA_GRGS_EXPLORE_LOCATIONS = new Option(
+        "guidedrandomgridsearch.explorelocations",
+        10,
+        "The number of initial seed locations to explore based off of whichever ones score the best.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GRGS_SEED_LOCATIONS = new Option(
+        "guidedrandomgridsearch.seedlocations",
+        25,
+        "The number of locations to initially search.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option WLA_HEM_ADAGRAD = new Option(
         "hardem.adagrad",
         false,
         "Whether to use AdaGrad subgradient scaling, the adaptive subgradient algorithm of Duchi et al., 2010."
+    );
+
+    public static final Option WLA_HB_BRACKET_SIZE = new Option(
+        "hyperband.basebracketsize",
+        10,
+        "The base number of weight configurations for each brackets.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_HB_NUM_BRACKETS = new Option(
+        "hyperband.numbrackets",
+        4,
+        "The number of brackets to consider.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_HB_SURVIVAL = new Option(
+        "hyperband.survival",
+        4,
+        "The proportion of configs that survive each round in a brancket.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_IWHB_WLA = new Option(
+        "initialweighthyperband.internalwla",
+        MaxLikelihoodMPE.class.getName(),
+        "The internal weight learning application (WLA) to use (should be a VotedPerceptron)."
     );
 
     public static final Option WLA_LMLE_MAX_ROUNDS = new Option(
@@ -201,6 +290,13 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option WLA_RGS_MAX_LOCATIONS = new Option(
+        "randomgridsearch.maxlocations",
+        150,
+        "The max number of locations to search.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
         "rankingevaluator.representative",
         RankingEvaluator.RepresentativeMetric.AUROC.toString(),
@@ -212,6 +308,12 @@ public class Options {
         0.5,
         "The truth threshold.",
         Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_RS_SCALING_FACTORS = new Option(
+        "ranksearch.scalingfactors",
+        "1:2:10:100",
+        "A comma-separated list of scaling factors."
     );
 
     public static final Option WLA_VP_AVERAGE_STEPS = new Option(

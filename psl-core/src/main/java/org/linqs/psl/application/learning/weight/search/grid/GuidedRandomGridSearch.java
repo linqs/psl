@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -41,23 +41,6 @@ import java.util.Set;
 public class GuidedRandomGridSearch extends RandomGridSearch {
     private static final Logger log = LoggerFactory.getLogger(GuidedRandomGridSearch.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "guidedrandomgridsearch";
-
-    /**
-     * The number of locations to initially search.
-     */
-    public static final String SEED_LOCATIONS_KEY = CONFIG_PREFIX + ".seedlocations";
-    public static final int SEED_LOCATIONS_DEFAULT = 25;
-
-    /**
-     * The number of initial seed locations to explore based off of whichever ones score the best.
-     */
-    public static final String EXPLORE_LOCATIONS_KEY = CONFIG_PREFIX + ".explorelocations";
-    public static final int EXPLORE_LOCATIONS_DEFAULT = 10;
-
     private final int maxNumSeedLocations;
     private int numSeedLocations;
     private final int maxNumExploreLocations;
@@ -71,17 +54,11 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
     public GuidedRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        maxNumSeedLocations = Config.getInt(SEED_LOCATIONS_KEY, SEED_LOCATIONS_DEFAULT);
+        maxNumSeedLocations = Options.WLA_GRGS_SEED_LOCATIONS.getInt();
         numSeedLocations = maxNumSeedLocations;
-        if (numSeedLocations < 1) {
-            throw new IllegalArgumentException("Need at least one location to start the search.");
-        }
 
-        maxNumExploreLocations = Config.getInt(EXPLORE_LOCATIONS_KEY, EXPLORE_LOCATIONS_DEFAULT);
+        maxNumExploreLocations = Options.WLA_GRGS_EXPLORE_LOCATIONS.getInt();
         numExploreLocations = maxNumExploreLocations;
-        if (numExploreLocations < 1) {
-            throw new IllegalArgumentException("Need at least one explore location.");
-        }
 
         // Adjust the number of locations.
         numLocations = Math.min(

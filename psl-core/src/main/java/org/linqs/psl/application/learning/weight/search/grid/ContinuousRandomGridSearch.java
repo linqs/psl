@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.GroundRule;
@@ -95,17 +95,13 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public ContinuousRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        scaleOrder = Math.max(0, Config.getInt(SCALE_ORDERS_KEY, SCALE_ORDERS_DEFAULT));
+        scaleOrder = Options.WLA_CRGS_SCALE_ORDERS.getInt();
         currentScale = 0;
 
-        numLocations = Config.getInt(MAX_LOCATIONS_KEY, MAX_LOCATIONS_DEFAULT);
-        if (scaleOrder > 0) {
-            numLocations *= (scaleOrder + 1);
-        }
-
-        baseWeight = Config.getDouble(BASE_WEIGHT_KEY, BASE_WEIGHT_DEFAULT);
-        variance = Config.getDouble(VARIANCE_KEY, VARIANCE_DEFAULT);
-        uniformBase = Config.getBoolean(UNIFORM_BASE_KEY, UNIFORM_BASE_DEFAULT);
+        numLocations = Options.WLA_CRGS_MAX_LOCATIONS.getInt();
+        baseWeight = Options.WLA_CRGS_BASE_WEIGHT.getDouble();
+        variance = Options.WLA_CRGS_VARIANCE.getDouble();
+        uniformBase = Options.WLA_CRGS_UNIFORM_BASE.getBoolean();
 
         weightMeans = null;
     }
