@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
@@ -195,7 +196,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     public void setBudget(double budget) {
         if (reasoner instanceof ADMMReasoner) {
-            int maxIterations = Config.getInt(ADMMReasoner.MAX_ITER_KEY, ADMMReasoner.MAX_ITER_DEFAULT);
+            int maxIterations = Options.ADMM_MAX_ITER.getInt();
             int iterations = (int)Math.ceil(maxIterations * budget);
             ((ADMMReasoner)reasoner).setMaxIter((int)Math.max(MIN_ADMM_STEPS, iterations));
 

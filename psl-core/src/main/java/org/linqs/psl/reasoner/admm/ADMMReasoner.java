@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
@@ -41,72 +41,12 @@ public class ADMMReasoner implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
 
     /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "admmreasoner";
-
-    /**
-     * The maximum number of iterations of ADMM to perform in a round of inference.
-     */
-    public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
-    public static final int MAX_ITER_DEFAULT = 25000;
-
-    /**
-     * Compute some stats about the optimization and log them to TRACE once for each period.
-     * Note that gathering the information takes about an iteration's worth of time.
-     */
-    public static final String COMPUTE_PERIOD_KEY = CONFIG_PREFIX + ".computeperiod";
-    public static final int COMPUTE_PERIOD_DEFAULT = 50;
-
-    /**
-     * Step size.
-     * Higher values result in larger steps.
-     * Should be positive.
-     */
-    public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
-    public static final float STEP_SIZE_DEFAULT = 1.0f;
-
-    /**
-     * Absolute error component of stopping criteria.
-     * Should be positive.
-     */
-    public static final String EPSILON_ABS_KEY = CONFIG_PREFIX + ".epsilonabs";
-    public static final float EPSILON_ABS_DEFAULT = 1e-5f;
-
-    /**
-     * Relative error component of stopping criteria.
-     * Should be positive.
-     */
-    public static final String EPSILON_REL_KEY = CONFIG_PREFIX + ".epsilonrel";
-    public static final float EPSILON_REL_DEFAULT = 1e-3f;
-
-    /**
-     * Stop if the objective has not changed since the last logging period (see LOG_PERIOD_KEY).
-     */
-    public static final String OBJECTIVE_BREAK_KEY = CONFIG_PREFIX + ".objectivebreak";
-    public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
-
-    /**
      * Possible starting values for the consensus values.
      *  - ZERO - 0.
      *  - RANDOM - Uniform sample in [0, 1].
      *  - ATOM - The value of the RVA that backs this global variable.
      */
     public static enum InitialValue { ZERO, RANDOM, ATOM }
-
-    /**
-     * The starting value for consensus variables.
-     * Values should come from the InitialValue enum.
-     */
-    public static final String INITIAL_CONSENSUS_VALUE_KEY = CONFIG_PREFIX + ".initialconsensusvalue";
-    public static final String INITIAL_CONSENSUS_VALUE_DEFAULT = InitialValue.RANDOM.toString();
-
-    /**
-     * The starting value for local variables.
-     * Values should come from the InitialValue enum.
-     */
-    public static final String INITIAL_LOCAL_VALUE_KEY = CONFIG_PREFIX + ".initiallocalvalue";
-    public static final String INITIAL_LOCAL_VALUE_DEFAULT = InitialValue.RANDOM.toString();
 
     private static final float LOWER_BOUND = 0.0f;
     private static final float UPPER_BOUND = 1.0f;
@@ -143,20 +83,12 @@ public class ADMMReasoner implements Reasoner {
     private boolean objectiveBreak;
 
     public ADMMReasoner() {
-        maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
-        stepSize = Config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
-        computePeriod = Config.getInt(COMPUTE_PERIOD_KEY, COMPUTE_PERIOD_DEFAULT);
-        objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
-
-        epsilonAbs = Config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
-        if (epsilonAbs <= 0) {
-            throw new IllegalArgumentException("Property " + EPSILON_ABS_KEY + " must be positive.");
-        }
-
-        epsilonRel = Config.getFloat(EPSILON_REL_KEY, EPSILON_REL_DEFAULT);
-        if (epsilonRel <= 0) {
-            throw new IllegalArgumentException("Property " + EPSILON_REL_KEY + " must be positive.");
-        }
+        maxIter = Options.ADMM_MAX_ITER.getInt();
+        stepSize = Options.ADMM_STEP_SIZE.getFloat();
+        computePeriod = Options.ADMM_COMPUTE_PERIOD.getInt();
+        objectiveBreak = Options.ADMM_OBJECTIVE_BREAK.getBoolean();
+        epsilonAbs = Options.ADMM_EPSILON_ABS.getFloat();
+        epsilonRel = Options.ADMM_EPSILON_REL.getFloat();
     }
 
     public int getMaxIter() {
@@ -193,10 +125,8 @@ public class ADMMReasoner implements Reasoner {
 
     @Override
     public void optimize(TermStore baseTermStore) {
-        InitialValue initialConsensus = InitialValue.valueOf(
-                Config.getString(INITIAL_CONSENSUS_VALUE_KEY, INITIAL_CONSENSUS_VALUE_DEFAULT).toUpperCase());
-        InitialValue initialLocal = InitialValue.valueOf(
-                Config.getString(INITIAL_LOCAL_VALUE_KEY, INITIAL_LOCAL_VALUE_DEFAULT).toUpperCase());
+        InitialValue initialConsensus = InitialValue.valueOf(Options.ADMM_INITIAL_CONSENSUS_VALUE.getString().toUpperCase());
+        InitialValue initialLocal = InitialValue.valueOf(Options.ADMM_INITIAL_LOCAL_VALUE.getString().toUpperCase());
 
         optimize(baseTermStore, initialConsensus, initialLocal);
     }
