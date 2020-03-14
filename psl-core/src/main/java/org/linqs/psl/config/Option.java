@@ -26,8 +26,10 @@ import org.json.JSONObject;
  * If flags are set (such as FLAG_POSITIVE), they will be checked when a value is retrieved (via a get method).
  */
 public class Option {
-    public static final int FLAG_NON_NEGATIVE = (1 << 0);
-    public static final int FLAG_POSITIVE = (1 << 1);
+    public static final int FLAG_NON_NEGATIVE = (1 << 0);  // >= 0
+    public static final int FLAG_POSITIVE = (1 << 1);  // > 0
+    public static final int FLAG_LT_ONE = (1 << 2);  // < 1
+    public static final int FLAG_LTE_ONE = (1 << 3);  // <= 1
 
     private String name;
     private Object defaultValue;
@@ -135,6 +137,10 @@ public class Option {
         return value;
     }
 
+    public Object getNewObject() {
+        return Config.getNewObject(name, ((String)defaultValue));
+    }
+
     private void checkNumericFlags(double value, String displayValue) {
         if ((flags & FLAG_NON_NEGATIVE) != 0 && value < 0) {
             throw new IllegalArgumentException("Property " + name + " must be non-negative, found value: " + displayValue);
@@ -142,6 +148,14 @@ public class Option {
 
         if ((flags & FLAG_POSITIVE) != 0 && value <= 0) {
             throw new IllegalArgumentException("Property " + name + " must be positive, found value: " + displayValue);
+        }
+
+        if ((flags & FLAG_LT_ONE) != 0 && value >= 1) {
+            throw new IllegalArgumentException("Property " + name + " must be < 1, found value: " + displayValue);
+        }
+
+        if ((flags & FLAG_LTE_ONE) != 0 && value > 1) {
+            throw new IllegalArgumentException("Property " + name + " must be <= 1, found value: " + displayValue);
         }
     }
 
