@@ -1,7 +1,7 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -21,32 +21,6 @@ import java.util.List;
 
 public class GaussianProcessPrior extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(GaussianProcessPrior.class);
-
-    public static final String CONFIG_PREFIX = "gpp";
-
-    public static final String KERNEL_KEY = CONFIG_PREFIX + ".kernel";
-    public static final String KERNEL_DEFAULT = GaussianProcessKernel.KernelType.SQUARED_EXP.toString();
-
-    public static final String MAX_ITERATIONS_KEY = CONFIG_PREFIX + ".maxiterations";
-    public static final int MAX_ITERATIONS_DEFAULT = 25;
-
-    public static final String MAX_CONFIGS_KEY = CONFIG_PREFIX + ".maxconfigs";
-    public static final int MAX_CONFIGS_DEFAULT = 1000000;
-
-    public static final String EXPLORATION_KEY = CONFIG_PREFIX + ".explore";
-    public static final float EXPLORATION_DEFAULT = 2.0f;
-
-    public static final String RANDOM_CONFIGS_ONLY_KEY = CONFIG_PREFIX + ".randomConfigsOnly";
-    public static final boolean RANDOM_CONFIGS_ONLY_DEFAULT = true;
-
-    public static final String EARLY_STOPPING_KEY = CONFIG_PREFIX + ".earlyStopping";
-    public static final boolean EARLY_STOPPING_DEFAULT = true;
-
-    public static final String INITIAL_WEIGHT_VALUE_KEY = CONFIG_PREFIX + ".initialweightvalue";
-    public static final float INITIAL_WEIGHT_VALUE_DEFAULT = 0.0f;
-
-    public static final String INITIAL_WEIGHT_STD_KEY = CONFIG_PREFIX + ".initialweightstd";
-    public static final float INITIAL_WEIGHT_STD_DEFAULT = 1.0f;
 
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
@@ -72,20 +46,18 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        kernelType = GaussianProcessKernel.KernelType.valueOf(
-                Config.getString(KERNEL_KEY, KERNEL_DEFAULT).toUpperCase());
+        kernelType = GaussianProcessKernel.KernelType.valueOf(Options.WLA_GPP_KERNEL.getString().toUpperCase());
 
-        maxIterations = Config.getInt(MAX_ITERATIONS_KEY, MAX_ITERATIONS_DEFAULT);
-        maxConfigs = Config.getInt(MAX_CONFIGS_KEY, MAX_CONFIGS_DEFAULT);
-        exploration = Config.getFloat(EXPLORATION_KEY, EXPLORATION_DEFAULT);
-        randomConfigsOnly = Config.getBoolean(RANDOM_CONFIGS_ONLY_KEY, RANDOM_CONFIGS_ONLY_DEFAULT);
-        earlyStopping = Config.getBoolean(EARLY_STOPPING_KEY, EARLY_STOPPING_DEFAULT);
+        maxIterations = Options.WLA_GPP_MAX_ITERATIONS.getInt();
+        maxConfigs = Options.WLA_GPP_MAX_CONFIGS.getInt();
+        exploration = Options.WLA_GPP_EXPLORATION.getFloat();
+        randomConfigsOnly = Options.WLA_GPP_RANDOM_CONFIGS_ONLY.getBoolean();
+        earlyStopping = Options.WLA_GPP_EARLY_STOPPING.getBoolean();
 
-        initialWeightValue = Config.getFloat(INITIAL_WEIGHT_VALUE_KEY, INITIAL_WEIGHT_VALUE_DEFAULT);
-        initialStdValue = Config.getFloat(INITIAL_WEIGHT_STD_KEY, INITIAL_WEIGHT_STD_DEFAULT);
+        initialWeightValue = Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat();
+        initialStdValue = Options.WLA_GPP_INITIAL_WEIGHT_STD.getFloat();
 
-        space = GaussianProcessKernel.Space.valueOf(
-                Config.getString(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.SPACE_DEFAULT));
+        space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
         minConfigVal = 1.0f / MAX_RAND_INT_VAL;
     }

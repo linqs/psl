@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.application.learning.weight.bayesian.GaussianProcessKernel;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
@@ -186,6 +187,77 @@ public class Options {
         1e-3,
         "The minimum absolute change in weights such that EM is considered converged.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GPP_EARLY_STOPPING = new Option(
+        "gpp.earlyStopping",
+        true,
+        null
+    );
+
+    public static final Option WLA_GPP_EXPLORATION = new Option(
+        "gpp.explore",
+        2.0f,
+        null,
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GPP_INITIAL_WEIGHT_STD = new Option(
+        "gpp.initialweightstd",
+        1.0f,
+        null,
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GPP_INITIAL_WEIGHT_VALUE = new Option(
+        "gpp.initialweightvalue",
+        0.0f,
+        null,
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_GPP_KERNEL = new Option(
+        "gpp.kernel",
+        GaussianProcessKernel.KernelType.SQUARED_EXP.toString(),
+        null
+    );
+
+    public static final Option WLA_GPP_MAX_CONFIGS = new Option(
+        "gpp.maxconfigs",
+        1000000,
+        null,
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GPP_MAX_ITERATIONS = new Option(
+        "gpp.maxiterations",
+        25,
+        null,
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GPP_RANDOM_CONFIGS_ONLY = new Option(
+        "gpp.randomConfigsOnly",
+        true,
+        null
+    );
+
+    public static final Option WLA_GPP_KERNEL_REL_DEP = new Option(
+        "gppker.reldep",
+        1.0f,
+        "Smaller means longer dependence. Smaller better when number of rules large."
+    );
+
+    public static final Option WLA_GPP_KERNEL_SCALE = new Option(
+        "gppker.scale",
+        1.0f,
+        "The kernel scale for GaussianProcessKernel."
+    );
+
+    public static final Option WLA_GPP_KERNEL_SPACE = new Option(
+        "gppker.space",
+        GaussianProcessKernel.Space.SS.toString(),
+        "The search space for a GaussianProcessKernel."
     );
 
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
