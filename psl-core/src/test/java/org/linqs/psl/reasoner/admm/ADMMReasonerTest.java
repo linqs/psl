@@ -18,7 +18,8 @@
 package org.linqs.psl.reasoner.admm;
 
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 
@@ -38,10 +39,10 @@ public class ADMMReasonerTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = new ADMMInference(info.model, inferDB);
 
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 }

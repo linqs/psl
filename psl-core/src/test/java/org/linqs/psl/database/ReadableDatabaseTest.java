@@ -27,7 +27,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.mpe.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.database.QueryResultIterable;
@@ -209,11 +210,9 @@ public class ReadableDatabaseTest {
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 
-        MPEInference mpe = null;
-
-        mpe = new MPEInference(info.model, inferDB);
-        mpe.inference();
-        mpe.close();
+        InferenceApplication inference = new MPEInference(info.model, inferDB);
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 

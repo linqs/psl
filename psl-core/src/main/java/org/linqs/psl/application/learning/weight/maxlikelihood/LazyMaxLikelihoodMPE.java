@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.application.inference.LazyMPEInference;
+import org.linqs.psl.application.inference.mpe.LazyMPEInference;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;

@@ -19,7 +19,8 @@
 package org.linqs.psl.reasoner.bool;
 
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.mpe.MPEInference;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
@@ -63,10 +64,10 @@ public class BooleanMCSatTest {
     public void baseTest() {
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = new MPEInference(info.model, inferDB);
 
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 }

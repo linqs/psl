@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference;
+package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
@@ -43,7 +43,7 @@ import java.util.List;
  * if its truth value is above some threshold at the end of each inference round.
  * See LazyAtomManager for details on lazy atoms.
  */
-public class LazyMPEInference extends InferenceApplication {
+public class LazyMPEInference extends MPEInference {
     private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
 
     protected final int maxRounds;

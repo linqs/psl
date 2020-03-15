@@ -15,57 +15,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference;
+package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.sgd.SGDReasoner;
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
+import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class SGDStreamingInference extends InferenceApplication {
-    private static final Logger log = LoggerFactory.getLogger(SGDStreamingInference.class);
-
-    public SGDStreamingInference(Model model, Database db) {
+/**
+ * Use an ADMM reasoner to perform MPE inference.
+ */
+public class ADMMInference extends MPEInference {
+    public ADMMInference(Model model, Database db) {
         super(model, db);
     }
 
     @Override
-    protected Reasoner createReasoner() {
-        return new SGDReasoner();
-    }
-
-    @Override
-    protected TermStore createTermStore() {
-        return new SGDStreamingTermStore(model.getRules(), atomManager);
-    }
-
-    @Override
     protected GroundRuleStore createGroundRuleStore() {
-        return null;
+        return new MemoryGroundRuleStore();
+    }
+
+    @Override
+    protected Reasoner createReasoner() {
+        return new ADMMReasoner();
     }
 
     @Override
     protected TermGenerator createTermGenerator() {
-        return null;
+        return new ADMMTermGenerator();
     }
 
     @Override
-    public void close() {
-        termStore.close();
-        reasoner.close();
-
-        termStore = null;
-        reasoner = null;
-
-        model = null;
-        db = null;
+    protected TermStore createTermStore() {
+        return new ADMMTermStore();
     }
 }

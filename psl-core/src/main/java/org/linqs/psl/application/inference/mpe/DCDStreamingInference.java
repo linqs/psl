@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference;
+package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
@@ -27,12 +27,10 @@ import org.linqs.psl.reasoner.dcd.term.DCDStreamingTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class DCDStreamingInference extends InferenceApplication {
-    private static final Logger log = LoggerFactory.getLogger(DCDStreamingInference.class);
-
+/**
+ * Use streaming grounding and inference with a DCD reasoner.
+ */
+public class DCDStreamingInference extends MPEInference {
     public DCDStreamingInference(Model model, Database db) {
         super(model, db);
     }
@@ -67,5 +65,10 @@ public class DCDStreamingInference extends InferenceApplication {
 
         model = null;
         db = null;
+    }
+
+    @Override
+    protected void completeInitialize() {
+        // Do nothing. Specifically, do not ground.
     }
 }

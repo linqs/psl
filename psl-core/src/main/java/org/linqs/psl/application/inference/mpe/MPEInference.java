@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference;
+package org.linqs.psl.application.inference.mpe;
 
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -35,6 +35,9 @@ import org.slf4j.LoggerFactory;
  *
  * The set of RandomVariableAtoms is those persisted in the Database when inference() is called.
  * This set must contain all RandomVariableAtoms the Model might access.
+ *
+ * Note that this class is left non-abstract so that unusual combinations of components
+ * (reasoners, term stores, etc) can be used via the InferenceApplication config options.
  */
 public class MPEInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
