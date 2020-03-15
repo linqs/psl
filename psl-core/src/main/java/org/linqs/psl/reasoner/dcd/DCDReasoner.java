@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.dcd;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
@@ -37,47 +37,6 @@ import java.util.Iterator;
 public class DCDReasoner implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(DCDReasoner.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "dcd";
-
-    /**
-     * The maximum number of iterations of SGD to perform in a round of inference.
-     */
-    public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
-    public static final int MAX_ITER_DEFAULT = 200;
-
-    /**
-     * Stop if the objective has not changed since the last logging period (see LOG_PERIOD).
-     */
-    public static final String OBJECTIVE_BREAK_KEY = CONFIG_PREFIX + ".objectivebreak";
-    public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
-
-    /**
-     * The maximum number of iterations of SGD to perform in a round of inference.
-     */
-    public static final String OBJ_TOL_KEY = CONFIG_PREFIX + ".tolerance";
-    public static final float OBJ_TOL_DEFAULT = 0.000001f;
-
-    public static final String C_KEY = CONFIG_PREFIX + ".C";
-    public static final float C_DEFAULT = 10.0f;
-
-    public static final String TRUNCATE_EVERY_STEP_KEY = CONFIG_PREFIX + ".truncateeverystep";
-    public static final boolean TRUNCATE_EVERY_STEP_DEFAULT = false;
-
-    public static final String PRINT_OBJECTIVE_KEY = CONFIG_PREFIX + ".printobj";
-    public static final boolean PRINT_OBJECTIVE_DEFAULT = true;
-
-    /**
-     * Print the objective before any optimization.
-     * Note that this will require a pass through all the terms,
-     * and therefore may affect performance.
-     * Has no effect if printobj is false.
-     */
-    public static final String PRINT_INITIAL_OBJECTIVE_KEY = CONFIG_PREFIX + ".printinitialobj";
-    public static final boolean PRINT_INITIAL_OBJECTIVE_DEFAULT = false;
-
     private int maxIter;
 
     private float tolerance;
@@ -88,13 +47,13 @@ public class DCDReasoner implements Reasoner {
     private boolean truncateEveryStep;
 
     public DCDReasoner() {
-        maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
-        objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
-        printObj = Config.getBoolean(PRINT_OBJECTIVE_KEY, PRINT_OBJECTIVE_DEFAULT);
-        printInitialObj = Config.getBoolean(PRINT_INITIAL_OBJECTIVE_KEY, PRINT_INITIAL_OBJECTIVE_DEFAULT);
-        tolerance = Config.getFloat(OBJ_TOL_KEY, OBJ_TOL_DEFAULT);
-        c = Config.getFloat(C_KEY, C_DEFAULT);
-        truncateEveryStep = Config.getBoolean(TRUNCATE_EVERY_STEP_KEY, TRUNCATE_EVERY_STEP_DEFAULT);
+        maxIter = Options.DCD_MAX_ITER.getInt();
+        objectiveBreak = Options.DCD_OBJECTIVE_BREAK.getBoolean();
+        printObj = Options.DCD_PRINT_OBJECTIVE.getBoolean();
+        printInitialObj = Options.DCD_PRINT_INITIAL_OBJECTIVE.getBoolean();
+        tolerance = Options.DCD_TOLERANCE.getFloat();
+        c = Options.DCD_C.getFloat();
+        truncateEveryStep = Options.DCD_TRUNCATE_EVERY_STEP.getBoolean();
     }
 
     public int getMaxIter() {

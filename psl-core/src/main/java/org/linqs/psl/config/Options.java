@@ -162,6 +162,54 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option DCD_C = new Option(
+        "dcd.C",
+        10.0f,
+        null,
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option DCD_MAX_ITER = new Option(
+        "dcd.maxiterations",
+        200,
+        "The maximum number of iterations of DCD to perform in a round of inference.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option DCD_OBJECTIVE_BREAK = new Option(
+        "dcd.objectivebreak",
+        true,
+        "Stop if the objective has not changed since the last iteration."
+    );
+
+    public static final Option DCD_PRINT_INITIAL_OBJECTIVE = new Option(
+        "dcd.printinitialobj",
+        false,
+        "Print the objective before any optimization."
+        + " Note that this will require a pass through all the terms,"
+        + " and therefore may affect performance."
+        + " Has no effect if dcd.printobj is false."
+    );
+
+    public static final Option DCD_PRINT_OBJECTIVE = new Option(
+        "dcd.printobj",
+        true,
+        null
+    );
+
+    public static final Option DCD_TOLERANCE = new Option(
+        "dcd.tolerance",
+        1e-6f,
+        null,
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option DCD_TRUNCATE_EVERY_STEP = new Option(
+        "dcd.truncateeverystep",
+        false,
+        null
+    );
+
     public static final Option EVAL_DISCRETE_REPRESENTATIVE = new Option(
         "discreteevaluator.representative",
         DiscreteEvaluator.RepresentativeMetric.F1.toString(),
@@ -307,6 +355,12 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS = new Option(
+        "hyperplanetermgenerator.invertnegativeweights",
+        false,
+        "If true, then invert negative weight rules into their positive weight counterparts."
+    );
+
     public static final Option WLA_IWHB_WLA = new Option(
         "initialweighthyperband.internalwla",
         MaxLikelihoodMPE.class.getName(),
@@ -386,6 +440,48 @@ public class Options {
         "ranksearch.scalingfactors",
         "1:2:10:100",
         "A comma-separated list of scaling factors."
+    );
+
+    public static final Option SGD_LEARNING_RATE = new Option(
+        "sgd.learningrate",
+        1.0f,
+        null,
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option SGD_MAX_ITER = new Option(
+        "sgd.maxiterations",
+        200,
+        "The maximum number of iterations of SGD to perform in a round of inference.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option SGD_OBJECTIVE_BREAK = new Option(
+        "sgd.objectivebreak",
+        true,
+        "Stop if the objective has not changed since the last iteration."
+    );
+
+    public static final Option SGD_PRINT_INITIAL_OBJECTIVE = new Option(
+        "sgd.printinitialobj",
+        false,
+        "Print the objective before any optimization."
+        + " Note that this will require a pass through all the terms,"
+        + " and therefore may affect performance."
+        + " Has no effect if sgd.printobj is false."
+    );
+
+    public static final Option SGD_PRINT_OBJECTIVE = new Option(
+        "sgd.printobj",
+        true,
+        null
+    );
+
+    public static final Option SGD_TOLERANCE = new Option(
+        "sgd.tolerance",
+        1e-5f,
+        null,
+        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option WLA_VP_AVERAGE_STEPS = new Option(
