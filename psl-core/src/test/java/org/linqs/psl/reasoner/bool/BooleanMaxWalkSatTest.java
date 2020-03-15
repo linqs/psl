@@ -21,6 +21,7 @@ package org.linqs.psl.reasoner.bool;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -55,10 +56,10 @@ public class BooleanMaxWalkSatTest {
         Config.init();
         info = TestModel.getModel();
 
-        Config.setProperty(MPEInference.REASONER_KEY, BooleanMaxWalkSat.class.getName());
-        Config.setProperty(MPEInference.GROUND_RULE_STORE_KEY, AtomRegisterGroundRuleStore.class.getName());
-        Config.setProperty(MPEInference.TERM_STORE_KEY, ConstraintBlockerTermStore.class.getName());
-        Config.setProperty(MPEInference.TERM_GENERATOR_KEY, ConstraintBlockerTermGenerator.class.getName());
+        Options.INFERENCE_REASONER.set(BooleanMaxWalkSat.class.getName());
+        Options.INFERENCE_GRS.set(AtomRegisterGroundRuleStore.class.getName());
+        Options.INFERENCE_TG.set(ConstraintBlockerTermGenerator.class.getName());
+        Options.INFERENCE_TS.set(ConstraintBlockerTermStore.class.getName());
     }
 
     @After

@@ -18,7 +18,7 @@
 package org.linqs.psl.reasoner.dcd;
 
 import org.linqs.psl.TestModel;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
@@ -38,9 +38,9 @@ public class DCDReasonerTest {
      */
     @Test
     public void baseTest() {
-        Config.setProperty(InferenceApplication.REASONER_KEY, DCDReasoner.class.getName());
-        Config.setProperty(InferenceApplication.TERM_GENERATOR_KEY, DCDTermGenerator.class.getName());
-        Config.setProperty(InferenceApplication.TERM_STORE_KEY, DCDMemoryTermStore.class.getName());
+        Options.INFERENCE_REASONER.set(DCDReasoner.class.getName());
+        Options.INFERENCE_TG.set(DCDTermGenerator.class.getName());
+        Options.INFERENCE_TS.set(DCDMemoryTermStore.class.getName());
 
         TestModel.ModelInformation info = TestModel.getModel();
 

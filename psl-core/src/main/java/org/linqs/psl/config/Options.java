@@ -104,6 +104,20 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option BOOLEAN_MAXWALKSAT_MAX_FLIPS = new Option(
+        "booleanmaxwalksat.maxflips",
+        50000,
+        "The maximum number of flips to try during optimization.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option BOOLEAN_MAXWALKSAT_NOISE = new Option(
+        "booleanmaxwalksat.noise",
+        0.01,
+        "The probability of randomly perturbing an atom in a randomly chosen potential.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option BOOLEAN_MCSAT_NUM_BURNIN = new Option(
         "booleanmcsat.numburnin",
         500,
@@ -401,6 +415,30 @@ public class Options {
         "If true, then invert negative weight rules into their positive weight counterparts."
     );
 
+    public static final Option INFERENCE_GRS = new Option(
+        "inference.groundrulestore",
+        MemoryGroundRuleStore.class.getName(),
+        "The ground rule store to use for inference."
+    );
+
+    public static final Option INFERENCE_REASONER = new Option(
+        "inference.reasoner",
+        ADMMReasoner.class.getName(),
+        "The reasoner to use for inference."
+    );
+
+    public static final Option INFERENCE_TG = new Option(
+        "inference.termgenerator",
+        ADMMTermGenerator.class.getName(),
+        "The term generator to use for inference."
+    );
+
+    public static final Option INFERENCE_TS = new Option(
+        "inference.termstore",
+        ADMMTermStore.class.getName(),
+        "The term store to use for inference."
+    );
+
     public static final Option WLA_IWHB_WLA = new Option(
         "initialweighthyperband.internalwla",
         MaxLikelihoodMPE.class.getName(),
@@ -411,6 +449,13 @@ public class Options {
         "lazymaxlikelihoodmpe.maxgrowrounds",
         100,
         "The maximum number of rounds of lazy growing.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option LAZY_INFERENCE_MAX_ROUNDS = new Option(
+        "lazympeinference.maxrounds",
+        100,
+        "The maximum number of rounds of lazy inference.",
         Option.FLAG_POSITIVE
     );
 

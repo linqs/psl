@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
 import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -62,46 +62,12 @@ import java.util.Set;
 public class BooleanMaxWalkSat implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(BooleanMaxWalkSat.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "booleanmaxwalksat";
-
-    /**
-     * Key for positive integer property that is the maximum number of flips
-     * to try during optimization
-     */
-    public static final String MAX_FLIPS_KEY = CONFIG_PREFIX + ".maxflips";
-
-    /**
-     * Default value for MAX_FLIPS_KEY
-     */
-    public static final int MAX_FLIPS_DEFAULT = 50000;
-
-    /**
-     * Key for double property in [0,1] that is the probability of randomly
-     * perturbing an atom in a randomly chosen potential
-     */
-    public static final String NOISE_KEY = CONFIG_PREFIX + ".noise";
-
-    /**
-     * Default value for NOISE_KEY
-     */
-    public static final double NOISE_DEFAULT = 0.01;
-
     private final int maxFlips;
     private final double noise;
 
     public BooleanMaxWalkSat() {
-        maxFlips = Config.getInt(MAX_FLIPS_KEY, MAX_FLIPS_DEFAULT);
-        if (maxFlips <= 0 ) {
-            throw new IllegalArgumentException("Max flips must be positive.");
-        }
-
-        noise = Config.getDouble(NOISE_KEY, NOISE_DEFAULT);
-        if (noise < 0.0 || noise > 1.0) {
-            throw new IllegalArgumentException("Noise must be in [0,1].");
-        }
+        maxFlips = Options.BOOLEAN_MAXWALKSAT_MAX_FLIPS.getInt();
+        noise = Options.BOOLEAN_MAXWALKSAT_NOISE.getDouble();
     }
 
     @Override

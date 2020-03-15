@@ -18,7 +18,7 @@
 package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
@@ -40,37 +40,6 @@ import java.lang.reflect.InvocationTargetException;
 
 public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
-
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "inference";
-
-    /**
-     * The class to use for a reasoner.
-     */
-    public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-    public static final String REASONER_DEFAULT = ADMMReasoner.class.getName();
-
-    /**
-     * The class to use for ground rule storage.
-     */
-    public static final String GROUND_RULE_STORE_KEY = CONFIG_PREFIX + ".groundrulestore";
-    public static final String GROUND_RULE_STORE_DEFAULT = MemoryGroundRuleStore.class.getName();
-
-    /**
-     * The class to use for term storage.
-     * Should be compatible with REASONER_KEY.
-     */
-    public static final String TERM_STORE_KEY = CONFIG_PREFIX + ".termstore";
-    public static final String TERM_STORE_DEFAULT = ADMMTermStore.class.getName();
-
-    /**
-     * The class to use for term generator.
-     * Should be compatible with REASONER_KEY and TERM_STORE_KEY.
-     */
-    public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
-    public static final String TERM_GENERATOR_DEFAULT = ADMMTermGenerator.class.getName();
 
     protected Model model;
     protected Database db;
@@ -112,19 +81,19 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     protected GroundRuleStore createGroundRuleStore() {
-        return (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+        return (GroundRuleStore)Options.INFERENCE_GRS.getNewObject();
     }
 
     protected Reasoner createReasoner() {
-        return (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+        return (Reasoner)Options.INFERENCE_REASONER.getNewObject();
     }
 
     protected TermGenerator createTermGenerator() {
-        return (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+        return (TermGenerator)Options.INFERENCE_TG.getNewObject();
     }
 
     protected TermStore createTermStore() {
-        return (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+        return (TermStore)Options.INFERENCE_TS.getNewObject();
     }
 
     /**
