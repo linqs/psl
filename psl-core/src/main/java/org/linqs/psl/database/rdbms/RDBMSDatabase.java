@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
@@ -81,11 +81,6 @@ import java.util.Set;
 public class RDBMSDatabase extends Database {
     private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
 
-    public static final String CONFIG_PREFIX = "rdbmsdatabase";
-
-    public static final String FETCH_SIZE_KEY = CONFIG_PREFIX + ".fetchsize";
-    public static final int FETCH_SIZE_DEFAULT = 500;
-
     private static final float DEFAULT_UNOBSERVED_VALUE = 0.0f;
 
     private static final String THREAD_QUERY_ATOM_KEY = RDBMSDatabase.class.getName() + "::" + QueryAtom.class.getName();
@@ -102,7 +97,7 @@ public class RDBMSDatabase extends Database {
             Set<StandardPredicate> closed) {
         super(parent, write, read);
 
-        fetchSize = Config.getInt(FETCH_SIZE_KEY, FETCH_SIZE_DEFAULT);
+        fetchSize = Options.RDBMS_FETCH_SIZE.getInt();
 
         this.closedPredicates = new HashSet<Predicate>();
         if (closed != null) {

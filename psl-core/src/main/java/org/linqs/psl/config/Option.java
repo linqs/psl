@@ -119,6 +119,10 @@ public class Option {
         return Config.getString(name, ((String)defaultValue));
     }
 
+    public String getUnloggedString() {
+        return (String)Config.getUnloggedProperty(name);
+    }
+
     public int getInt() {
         int value = Config.getInt(name, ((Integer)defaultValue).intValue());
         checkNumericFlags(value, "" + value);

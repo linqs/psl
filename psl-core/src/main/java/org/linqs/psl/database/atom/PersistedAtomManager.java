@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database.atom;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -49,21 +49,6 @@ public class PersistedAtomManager extends AtomManager {
     private static final Logger log = LoggerFactory.getLogger(PersistedAtomManager.class);
 
     /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "persistedatommanager";
-
-    /**
-     * Whether or not to throw an exception on illegal access.
-     * Note that in most cases, this indicates incorrectly formed data.
-     * This should only be set to false when the user understands why these
-     * exceptions are thrown in the first place and the grounding implications of
-     * not having the atom initially in the database.
-     */
-    public static final String THROW_ACCESS_EXCEPTION_KEY = CONFIG_PREFIX + ".throwaccessexception";
-    public static final boolean THROW_ACCESS_EXCEPTION_DEFAULT = true;
-
-    /**
      * If false, ignore any atoms that would otherwise throw a PersistedAccessException.
      * Instead, just give a single warning and return the RVA as-is.
      */
@@ -83,7 +68,7 @@ public class PersistedAtomManager extends AtomManager {
     public PersistedAtomManager(Database db, boolean prebuiltCache) {
         super(db);
 
-        throwOnIllegalAccess = Config.getBoolean(THROW_ACCESS_EXCEPTION_KEY, THROW_ACCESS_EXCEPTION_DEFAULT);
+        throwOnIllegalAccess = Options.PAM_THROW_ACCESS_EXCEPTION.getBoolean();
         warnOnIllegalAccess = !throwOnIllegalAccess;
 
         if (prebuiltCache) {
@@ -185,7 +170,7 @@ public class PersistedAtomManager extends AtomManager {
                     " If you do not understand the implications of this warning," +
                     " check your configuration and set '%s' to true." +
                     " This warning will only be logged once.",
-                    offendingAtom, THROW_ACCESS_EXCEPTION_KEY));
+                    offendingAtom, Options.PAM_THROW_ACCESS_EXCEPTION.name()));
         }
     }
 

@@ -19,6 +19,7 @@ package org.linqs.psl.config;
 
 import org.linqs.psl.application.learning.weight.bayesian.GaussianProcessKernel;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.database.rdbms.QueryRewriter;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
@@ -445,6 +446,13 @@ public class Options {
         "The internal weight learning application (WLA) to use (should be a VotedPerceptron)."
     );
 
+    public static final Option LAM_ACTIVATION_THRESHOLD = new Option(
+        "lazyatommanager.activation",
+        0.01,
+        "The minimum value an atom must take for it to be activated.",
+        Option.FLAG_POSITIVE | Option.FLAG_LTE_ONE
+    );
+
     public static final Option WLA_LMLE_MAX_ROUNDS = new Option(
         "lazymaxlikelihoodmpe.maxgrowrounds",
         100,
@@ -521,6 +529,65 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option PAM_THROW_ACCESS_EXCEPTION = new Option(
+        "persistedatommanager.throwaccessexception",
+        true,
+        "Whether or not to throw an exception on illegal access."
+        + " Note that in most cases, this indicates incorrectly formed data."
+        + " This should only be set to false when the user understands why these"
+        + " exceptions are thrown in the first place and the grounding implications of"
+        + " not having the atom initially in the database."
+    );
+
+    public static final Option POSTGRES_HOST = new Option(
+        "postgres.host",
+        "localhost",
+        "The Postgres host to connect to (when not explicitly specified)."
+    );
+
+    public static final Option POSTGRES_PASSWORD = new Option(
+        "postgres.password",
+        "",
+        "The Postgres password to connect with (when not explicitly specified)."
+    );
+
+    public static final Option POSTGRES_PORT = new Option(
+        "postgres.port",
+        "5432",
+        "The Postgres port to connect to (when not explicitly specified)."
+    );
+
+    public static final Option POSTGRES_STATS_PERCENTAGE = new Option(
+        "postgres.statspercentage",
+        0.25,
+        "The percentage of possible effort to have Postgres spend on statistics collection.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option POSTGRES_USER = new Option(
+        "postgres.user",
+        "",
+        "The Postgres user to connect with (when not explicitly specified)."
+    );
+
+    public static final Option QR_ALLOWED_STEP_INCREASE = new Option(
+        "queryrewriter.allowedsteocostincrease",
+        1.5,
+        "How much we allow the query cost (number of rows) to increase at each step."
+    );
+
+    public static final Option QR_ALLOWED_TOTAL_INCREASE = new Option(
+        "queryrewriter.allowedtotalcostincrease",
+        2.0,
+        "How much we allow the query cost (number of rows) to for new plans."
+    );
+
+    public static final Option QR_COST_ESTIMATOR = new Option(
+        "queryrewriter.costestimator",
+        QueryRewriter.CostEstimator.HISTOGRAM.toString(),
+        "The method to use when estimating join size."
+    );
+
     public static final Option WLA_RGS_MAX_LOCATIONS = new Option(
         "randomgridsearch.maxlocations",
         150,
@@ -545,6 +612,13 @@ public class Options {
         "ranksearch.scalingfactors",
         "1:2:10:100",
         "A comma-separated list of scaling factors."
+    );
+
+    public static final Option RDBMS_FETCH_SIZE = new Option(
+        "rdbmsdatabase.fetchsize",
+        500,
+        "The number of records to fetch from the database at a time.",
+        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option SGD_LEARNING_RATE = new Option(

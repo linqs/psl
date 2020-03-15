@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.SelectivityHistogram;
@@ -55,22 +55,6 @@ import java.util.Map;
  * PostgreSQL Connection Wrapper.
  */
 public class PostgreSQLDriver implements DatabaseDriver {
-    public static final String CONFIG_PREFIX = "postgres";
-
-    public static final String KEY_STATS_PERCENTAGE = CONFIG_PREFIX + ".statspercentage";
-    public static final double DEFAULT_STATS_PERCENTAGE = 0.25;
-
-    public static final String KEY_HOST = CONFIG_PREFIX + ".host";
-    public static final String DEFAULT_HOST = "localhost";
-
-    public static final String KEY_PORT = CONFIG_PREFIX + ".port";
-    public static final String DEFAULT_PORT = "5432";
-
-    public static final String KEY_USER = CONFIG_PREFIX + ".user";
-    public static final String DEFAULT_USER = "";
-
-    public static final String KEY_PASSWORD = CONFIG_PREFIX + ".password";
-
     private static final int MAX_STATS = 10000;
     private static final String ENCODING = "UTF-8";
 
@@ -80,14 +64,12 @@ public class PostgreSQLDriver implements DatabaseDriver {
     private final double statsPercentage;
 
     public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
-        this(Config.getString(KEY_HOST, DEFAULT_HOST), Config.getString(KEY_PORT, DEFAULT_PORT),
-                databaseName, clearDatabase);
+        this(Options.POSTGRES_HOST.getString(), Options.POSTGRES_PORT.getString(), databaseName, clearDatabase);
     }
 
     public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
         this(host, port,
-                Config.getString(KEY_USER, DEFAULT_USER),
-                (String)Config.getUnloggedProperty(KEY_PASSWORD),
+                Options.POSTGRES_USER.getString(), Options.POSTGRES_PASSWORD.getUnloggedString(),
                 databaseName, clearDatabase);
     }
 
@@ -104,7 +86,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         log.debug("Connecting to PostgreSQL database: " + databaseName);
 
-        statsPercentage = Config.getDouble(KEY_STATS_PERCENTAGE, DEFAULT_STATS_PERCENTAGE);
+        statsPercentage = Options.POSTGRES_STATS_PERCENTAGE.getDouble();
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(connectionString);

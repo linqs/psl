@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database.atom;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
@@ -60,22 +60,6 @@ import java.util.Set;
  * real atoms.
  */
 public class LazyAtomManager extends PersistedAtomManager {
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "lazyatommanager";
-
-    /**
-     * The minimum value an atom must take for it to be activated.
-     * Must be a float in (0,1].
-     */
-    public static final String ACTIVATION_THRESHOLD_KEY = CONFIG_PREFIX + ".activation";
-
-    /**
-     * Default value for ACTIVATION_THRESHOLD_KEY property.
-     */
-    public static final double ACTIVATION_THRESHOLD_DEFAULT = 0.01;
-
     private static final Logger log = LoggerFactory.getLogger(LazyAtomManager.class);
 
     /**
@@ -92,13 +76,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         }
 
         lazyAtoms = new HashSet<RandomVariableAtom>();
-        activation = Config.getDouble(ACTIVATION_THRESHOLD_KEY, ACTIVATION_THRESHOLD_DEFAULT);
-
-        if (activation <= 0 || activation > 1) {
-            throw new IllegalArgumentException(
-                    "Activation threshold must be in (0,1]." +
-                    " Got: " + activation + ".");
-        }
+        activation = Options.LAM_ACTIVATION_THRESHOLD.getDouble();
     }
 
     @Override
