@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
-import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;

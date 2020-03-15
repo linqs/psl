@@ -17,33 +17,24 @@
  */
 package org.linqs.psl.util;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 
 /**
  * Get versioning information about the project.
  */
 public class Version {
-    // Properties set by maven.
-    public static final String VERSION_KEY = "project.version";
-    public static final String VERSION_DEFAULT = "UNKNOWN";
-
-    public static final String GIT_COMMIT_SHORT_KEY = "git.commit.id.abbrev";
-    public static final String GIT_COMMIT_SHORT_DEFAULT = "xxxxxxx";
-
-    public static final String GIT_DIRTY_KEY = "git.dirty";
-
     // Static only.
     private Version() {}
 
     public static String get() {
-        return Config.getString(VERSION_KEY, VERSION_DEFAULT);
+        return Options.PROJECT_VERSION.getString();
     }
 
     public static String getFull() {
-        String version = Config.getString(VERSION_KEY, VERSION_DEFAULT);
-        version += "-" + Config.getString(GIT_COMMIT_SHORT_KEY, GIT_COMMIT_SHORT_DEFAULT);
+        String version = Options.PROJECT_VERSION.getString();
+        version += "-" + Options.GIT_COMMIT_SHORT.getString();
 
-        if (Config.getBoolean(GIT_DIRTY_KEY, false)) {
+        if (Options.GIT_DIRTY.getBoolean()) {
             version += "-dirty";
         }
 

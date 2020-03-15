@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.util;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,11 +32,6 @@ import java.util.Random;
  * If parallel randomness is required, then use this RNG to seed the per-thread RNGs.
  */
 public final class RandUtils {
-    public static final String CONFIG_PREFIX = "random";
-
-    public static final String SEED_KEY = CONFIG_PREFIX + ".seed";
-    public static final int SEED_DEFAULT = 4;
-
     private static Random rng = null;
 
     // Static only.
@@ -47,7 +42,7 @@ public final class RandUtils {
             return;
         }
 
-        rng = new Random(Config.getInt(SEED_KEY, SEED_DEFAULT));
+        rng = new Random(Options.RANDOM_SEED.getInt());
     }
 
     public static synchronized void seed(int seed) {

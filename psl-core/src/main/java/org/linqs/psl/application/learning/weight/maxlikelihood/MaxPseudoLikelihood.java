@@ -43,36 +43,6 @@ import java.util.Map;
  * See {@link org.linqs.psl.reasoner.term.blocker.ConstraintBlockerTermGenerator ConstraintBlockerTermGenerator} for details on those restrictions.
  */
 public class MaxPseudoLikelihood extends VotedPerceptron {
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "maxspeudolikelihood";
-
-    /**
-     * Boolean property. If true, MaxPseudoLikelihood will treat RandomVariableAtoms
-     * as boolean valued. Note that this restricts the types of contraints supported.
-     */
-    public static final String BOOLEAN_KEY = CONFIG_PREFIX + ".bool";
-    /**
-     * Default value for BOOLEAN_KEY
-     */
-    public static final boolean BOOLEAN_DEFAULT = false;
-
-    /**
-     * Key for positive integer property.
-     * MaxPseudoLikelihood will sample this many values to approximate
-     * the integrals in the marginal computation.
-     */
-    public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
-    public static final int NUM_SAMPLES_DEFAULT = 10;
-
-    /**
-     * Key for positive double property.
-     * Used as minimum width for bounds of integration.
-     */
-    public static final String MIN_WIDTH_KEY = CONFIG_PREFIX + ".minwidth";
-    public static final double MIN_WIDTH_DEFAULT = 1e-2;
-
     private final boolean bool;
     private final double minWidth;
 

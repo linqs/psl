@@ -40,11 +40,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(BaseGridSearch.class);
 
     /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "basegridsearch";
-
-    /**
      * The current location we are investigating.
      * The exact representation is up to the implementing child class.
      */

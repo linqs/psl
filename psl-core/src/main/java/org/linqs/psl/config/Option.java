@@ -53,6 +53,14 @@ public class Option {
         this(name, Integer.valueOf(defaultValue), int.class, description, flags);
     }
 
+    public Option(String name, long defaultValue, String description) {
+        this(name, Long.valueOf(defaultValue), long.class, description, 0);
+    }
+
+    public Option(String name, long defaultValue, String description, int flags) {
+        this(name, Long.valueOf(defaultValue), long.class, description, flags);
+    }
+
     public Option(String name, float defaultValue, String description) {
         this(name, Float.valueOf(defaultValue), float.class, description, 0);
     }
@@ -111,6 +119,10 @@ public class Option {
         return Config.getProperty(name);
     }
 
+    public Object getUnlogged() {
+        return Config.getUnloggedProperty(name);
+    }
+
     public boolean getBoolean() {
         return Config.getBoolean(name, ((Boolean)defaultValue).booleanValue());
     }
@@ -119,12 +131,14 @@ public class Option {
         return Config.getString(name, ((String)defaultValue));
     }
 
-    public String getUnloggedString() {
-        return (String)Config.getUnloggedProperty(name);
-    }
-
     public int getInt() {
         int value = Config.getInt(name, ((Integer)defaultValue).intValue());
+        checkNumericFlags(value, "" + value);
+        return value;
+    }
+
+    public long getLong() {
+        long value = Config.getLong(name, ((Long)defaultValue).longValue());
         checkNumericFlags(value, "" + value);
         return value;
     }

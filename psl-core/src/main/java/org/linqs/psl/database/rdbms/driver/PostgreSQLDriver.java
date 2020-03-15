@@ -69,7 +69,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
     public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
         this(host, port,
-                Options.POSTGRES_USER.getString(), Options.POSTGRES_PASSWORD.getUnloggedString(),
+                Options.POSTGRES_USER.getString(), (String)Options.POSTGRES_PASSWORD.getUnlogged(),
                 databaseName, clearDatabase);
     }
 

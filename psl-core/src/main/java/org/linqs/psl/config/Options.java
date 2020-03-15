@@ -180,8 +180,8 @@ public class Options {
         0,
         "If greater than 0, then various different scaled versions of the weights will be tested."
         + " For example, if set to 3 then 10x, 100x, and 1000x will also be tested."
-        + " These additional tests DO NOT count against MAX_LOCATIONS_KEY,"
-        + " i.e. MAX_LOCATIONS_KEY * (SCALE_ORDERS_KEY + 1) configurations will be tested.",
+        + " These additional tests DO NOT count against WLA_CRGS_MAX_LOCATIONS,"
+        + " i.e. WLA_CRGS_MAX_LOCATIONS * (WLA_CRGS_SCALE_ORDERS + 1) configurations will be tested.",
         Option.FLAG_NON_NEGATIVE
     );
 
@@ -292,6 +292,18 @@ public class Options {
         "The path for the reasoner executable to invoke."
     );
 
+    public static final Option GIT_COMMIT_SHORT = new Option(
+        "git.commit.id.abbrev",
+        "xxxxxxx",
+        "The git commit of the current build of PSL."
+    );
+
+    public static final Option GIT_DIRTY = new Option(
+        "git.dirty",
+        false,
+        "Whether the current build of PSL was made in a dirty git repository."
+    );
+
     public static final Option WLA_GPP_EARLY_STOPPING = new Option(
         "gpp.earlyStopping",
         true,
@@ -367,6 +379,18 @@ public class Options {
         "gridsearch.weights",
         "0.001:0.01:0.1:1:10",
         "A comma-separated list of possible weights. These weights should be in some sorted order."
+    );
+
+    public static final Option GROUNDING_REWRITE_QUERY = new Option(
+        "grounding.rewritequeries",
+        false,
+        "Potentially rewrite the grounding queries."
+    );
+
+    public static final Option GROUNDING_SERIAL = new Option(
+        "grounding.serial",
+        false,
+        "Whether or not queries are being rewritten, perform the grounding queries one at a time."
     );
 
     public static final Option WLA_GRGS_EXPLORE_LOCATIONS = new Option(
@@ -529,6 +553,13 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option PARALLEL_NUM_THREADS = new Option(
+        "parallel.numthreads",
+        Runtime.getRuntime().availableProcessors(),
+        "The number of threads to use for parallel tasks.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option PAM_THROW_ACCESS_EXCEPTION = new Option(
         "persistedatommanager.throwaccessexception",
         true,
@@ -570,6 +601,12 @@ public class Options {
         "The Postgres user to connect with (when not explicitly specified)."
     );
 
+    public static final Option PROJECT_VERSION = new Option(
+        "project.version",
+        "UNKNOWN",
+        "The current version of PSL."
+    );
+
     public static final Option QR_ALLOWED_STEP_INCREASE = new Option(
         "queryrewriter.allowedsteocostincrease",
         1.5,
@@ -586,6 +623,12 @@ public class Options {
         "queryrewriter.costestimator",
         QueryRewriter.CostEstimator.HISTOGRAM.toString(),
         "The method to use when estimating join size."
+    );
+
+    public static final Option RANDOM_SEED = new Option(
+        "random.seed",
+        4,
+        "The random seed to use for PSL."
     );
 
     public static final Option WLA_RGS_MAX_LOCATIONS = new Option(
@@ -619,6 +662,18 @@ public class Options {
         500,
         "The number of records to fetch from the database at a time.",
         Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option RUNTIME_STATS_COLLECT = new Option(
+        "runtimestats.collect",
+        false,
+        "Whether to periodically collect stats on the JVM."
+    );
+
+    public static final Option RUNTIME_COLLECTION_PERIOD = new Option(
+        "runtimestats.period",
+        250l,
+        "The period (in ms) of stats collection."
     );
 
     public static final Option SGD_LEARNING_RATE = new Option(
@@ -809,9 +864,6 @@ public class Options {
 
     /**
      * Reflexively parse the options from this class.
-     * Keys are suffixed with "_KEY",
-     * default values are suffixed with "_DEFAULT",
-     * and descriptions are suffixed with "_DESCRIPTION".
      */
     public static List<Option> fetchOptions() throws IllegalAccessException {
         List<Option> options = new ArrayList<Option>();

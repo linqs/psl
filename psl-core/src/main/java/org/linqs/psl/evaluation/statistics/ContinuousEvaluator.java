@@ -36,11 +36,6 @@ public class ContinuousEvaluator extends Evaluator {
         MSE
     }
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "continuousevaluator";
-
     private RepresentativeMetric representative;
 
     private int count;

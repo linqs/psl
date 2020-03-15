@@ -50,16 +50,6 @@ public class RDBMSDataStore implements DataStore {
     private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
 
     /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "rdbmsdatastore";
-
-    /**
-     * Default value for the USE_STRING_ID_KEY property.
-     */
-    public static final boolean USE_STRING_ID_DEFAULT = true;
-
-    /**
      * This Database Driver associated to the datastore.
      */
     private DatabaseDriver dbDriver;

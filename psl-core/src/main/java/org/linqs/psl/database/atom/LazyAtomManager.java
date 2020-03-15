@@ -56,8 +56,7 @@ import java.util.Set;
  * A persisted atom manager that will keep track of atoms that it returns, but that
  * don't actually exist (lazy atoms).
  * If activateAtoms() is called, then all lazy atoms above the activation threshold
- * (set by the ACTIVATION_THRESHOLD_KEY configuration option) will be instantiated as
- * real atoms.
+ * (Options.LAM_ACTIVATION_THRESHOLD) will be instantiated as real atoms.
  */
 public class LazyAtomManager extends PersistedAtomManager {
     private static final Logger log = LoggerFactory.getLogger(LazyAtomManager.class);

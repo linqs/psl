@@ -19,6 +19,8 @@ package org.linqs.psl.util;
 
 import static org.junit.Assert.assertNotEquals;
 
+import org.linqs.psl.config.Options;
+
 import org.junit.Test;
 
 public class VersionTest {
@@ -27,6 +29,6 @@ public class VersionTest {
      */
     @Test
     public void testBase() {
-        assertNotEquals(Version.VERSION_DEFAULT, Version.get());
+        assertNotEquals((String)Options.PROJECT_VERSION.defaultValue(), Version.get());
     }
 }
