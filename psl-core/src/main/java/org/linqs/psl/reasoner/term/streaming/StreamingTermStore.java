@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -44,41 +44,6 @@ import java.util.Map;
 
 public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, RandomVariableAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
-
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "streamingtermstore";
-
-    /**
-     * Where on disk to write term pages.
-     */
-    public static final String PAGE_LOCATION_KEY = CONFIG_PREFIX + ".pagelocation";
-    public static final String PAGE_LOCATION_DEFAULT = SystemUtils.getTempDir("streaimg_term_cache_pages");
-
-    /**
-     * The number of terms in a single page.
-     */
-    public static final String PAGE_SIZE_KEY = CONFIG_PREFIX + ".pagesize";
-    public static final int PAGE_SIZE_DEFAULT = 10000;
-
-    /**
-     * Whether to shuffle within a page when it is picked up.
-     */
-    public static final String SHUFFLE_PAGE_KEY = CONFIG_PREFIX + ".shufflepage";
-    public static final boolean SHUFFLE_PAGE_DEFAULT = true;
-
-    /**
-     * Whether to pick up pages in a random order.
-     */
-    public static final String RANDOMIZE_PAGE_ACCESS_KEY = CONFIG_PREFIX + ".randomizepageaccess";
-    public static final boolean RANDOMIZE_PAGE_ACCESS_DEFAULT = true;
-
-    /**
-     * Warn on rules the streaming term store can't handle.
-     */
-    public static final String WARN_RULES_KEY = CONFIG_PREFIX + ".warnunsupportedrules";
-    public static final boolean WARN_RULES_DEFAULT = true;
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
@@ -145,11 +110,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     public StreamingTermStore(List<Rule> rules, AtomManager atomManager,
             HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator) {
-        pageSize = Config.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
-        pageDir = Config.getString(PAGE_LOCATION_KEY, PAGE_LOCATION_DEFAULT);
-        shufflePage = Config.getBoolean(SHUFFLE_PAGE_KEY, SHUFFLE_PAGE_DEFAULT);
-        randomizePageAccess = Config.getBoolean(RANDOMIZE_PAGE_ACCESS_KEY, RANDOMIZE_PAGE_ACCESS_DEFAULT);
-        warnRules = Config.getBoolean(WARN_RULES_KEY, WARN_RULES_DEFAULT);
+        pageSize = Options.STREAMING_TS_PAGE_SIZE.getInt();
+        pageDir = Options.STREAMING_TS_PAGE_LOCATION.getString();
+        shufflePage = Options.STREAMING_TS_SHUFFLE_PAGE.getBoolean();
+        randomizePageAccess = Options.STREAMING_TS_RANDOMIZE_PAGE_ACCESS.getBoolean();
+        warnRules = Options.STREAMING_TS_WARN_RULES.getBoolean();
 
         this.rules = new ArrayList<WeightedRule>();
         for (Rule rule : rules) {

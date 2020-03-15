@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.bool;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.AtomRegisterGroundRuleStore;
 import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -45,44 +45,14 @@ import org.slf4j.LoggerFactory;
 public class BooleanMCSat implements Reasoner {
     private static final Logger log = LoggerFactory.getLogger(BooleanMCSat.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "booleanmcsat";
-
-    /**
-     * Key for length of Markov chain
-     */
-    public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
-
-    /**
-     * Default value for NUM_SAMPLES_KEY
-     */
-    public static final int NUM_SAMPLES_DEFAULT = 2500;
-
-    /**
-     * Number of burn-in samples
-     */
-    public static final String NUM_BURN_IN_KEY = CONFIG_PREFIX + ".numburnin";
-
-    /**
-     * Default value for NUM_BURN_IN_KEY
-     */
-    public static final int NUM_BURN_IN_DEFAULT = 500;
-
     private final int numSamples;
     private final int numBurnIn;
 
     public BooleanMCSat() {
-        numSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
-        if (numSamples <= 0) {
-            throw new IllegalArgumentException("Number of samples must be positive.");
-        }
+        numSamples = Options.BOOLEAN_MCSAT_NUM_SAMPLES.getInt();
+        numBurnIn = Options.BOOLEAN_MCSAT_NUM_BURNIN.getInt();
 
-        numBurnIn = Config.getInt(NUM_BURN_IN_KEY, NUM_BURN_IN_DEFAULT);
-        if (numSamples <= 0) {
-            throw new IllegalArgumentException("Number of burn in samples must be positive.");
-        } else if (numBurnIn >= numSamples) {
+        if (numBurnIn >= numSamples) {
             throw new IllegalArgumentException("Number of burn in samples must be less than number of samples.");
         }
     }

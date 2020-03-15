@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
@@ -40,14 +40,6 @@ import java.util.Map;
  * This class will focus on keeping track of the variables in the terms.
  */
 public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable> {
-    public static final String CONFIG_PREFIX = "admmmemorytermstore";
-
-    /**
-     * Initial size for the memory store.
-     */
-    public static final String INTERNAL_STORE_KEY = CONFIG_PREFIX + ".internalstore";
-    public static final String INTERNAL_STORE_DEFAULT = MemoryTermStore.class.getName();
-
     // Keep an internal store to hold the terms while this class focus on variables.
     private TermStore<ADMMObjectiveTerm, ?> store;
 
@@ -63,7 +55,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
 
     @SuppressWarnings("unchecked")
     public ADMMTermStore() {
-        this((TermStore<ADMMObjectiveTerm, ?>)Config.getNewObject(INTERNAL_STORE_KEY, INTERNAL_STORE_DEFAULT));
+        this((TermStore<ADMMObjectiveTerm, ?>)Options.ADMM_TS_INTERNAL_STORE.getNewObject());
     }
 
     public ADMMTermStore(TermStore<ADMMObjectiveTerm, ?> store) {

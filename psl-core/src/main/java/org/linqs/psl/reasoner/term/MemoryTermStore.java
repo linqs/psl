@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.util.RandUtils;
@@ -26,18 +26,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, RandomVariableAtom> {
-    public static final String CONFIG_PREFIX = "memorytermstore";
-
-    /**
-     * Initial size for the memory store.
-     */
-    public static final String INITIAL_SIZE_KEY = CONFIG_PREFIX + ".initialsize";
-    public static final int INITIAL_SIZE_DEFAULT = 5000;
-
     private ArrayList<T> store;
 
     public MemoryTermStore() {
-        this(Config.getInt(INITIAL_SIZE_KEY, INITIAL_SIZE_DEFAULT));
+        this(Options.MEMORY_TS_INITIAL_SIZE.getInt());
     }
 
     public MemoryTermStore(int initialSize) {

@@ -27,6 +27,8 @@ import org.linqs.psl.evaluation.statistics.RankingEvaluator;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
+import org.linqs.psl.reasoner.term.MemoryTermStore;
+import org.linqs.psl.util.SystemUtils;
 
 import org.json.JSONArray;
 
@@ -41,6 +43,12 @@ import java.util.List;
  * The main() method will collect all the options and write them out to stdout as JSON.
  */
 public class Options {
+    public static final Option ADMM_TS_INTERNAL_STORE = new Option(
+        "admmmemorytermstore.internalstore",
+        MemoryTermStore.class.getName(),
+        "The TermStore to use to hold terms while the ADMMTermStore focuses on variables."
+    );
+
     public static final Option ADMM_COMPUTE_PERIOD = new Option(
         "admmreasoner.computeperiod",
         50,
@@ -93,6 +101,20 @@ public class Options {
         1.0f,
         "The size of steps to take for a random variable every iteration."
         + " Should be positive.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option BOOLEAN_MCSAT_NUM_BURNIN = new Option(
+        "booleanmcsat.numburnin",
+        500,
+        "Number of burn-in samples.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option BOOLEAN_MCSAT_NUM_SAMPLES = new Option(
+        "booleanmcsat.numsamples",
+        2500,
+        "Length of the Markov chain.",
         Option.FLAG_POSITIVE
     );
 
@@ -235,6 +257,24 @@ public class Options {
         1e-3,
         "The minimum absolute change in weights such that EM is considered converged.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option EXECUTABLE_CLEAN_INPUT = new Option(
+        "executablereasoner.cleanupinput",
+        true,
+        "Whether to delete the input file to the external reasoner on close."
+    );
+
+    public static final Option EXECUTABLE_CLEAN_OUTPUT = new Option(
+        "executablereasoner.cleanupoutput",
+        true,
+        "Whether to delete the output file from the external reasoner on close."
+    );
+
+    public static final Option EXECUTABLE_REASONER_PATH = new Option(
+        "executablereasoner.executablepath",
+        "",
+        "The path for the reasoner executable to invoke."
     );
 
     public static final Option WLA_GPP_EARLY_STOPPING = new Option(
@@ -402,6 +442,26 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option MEMORY_TS_INITIAL_SIZE = new Option(
+        "memorytermstore.initialsize",
+        10000,
+        "The initial size for the memory store.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MEMORY_VTS_DEFAULT_SIZE = new Option(
+        "memoryvariabletermstore.defaultsize",
+        1000,
+        "The default size in terms of number of variables.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MEMORY_VTS_SHUFFLE = new Option(
+        "memoryvariabletermstore.shuffle",
+        true,
+        "Shuffle the terms before each return of iterator()."
+    );
+
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
         "pairedduallearner.admmsteps",
         1,
@@ -482,6 +542,37 @@ public class Options {
         1e-5f,
         null,
         Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option STREAMING_TS_PAGE_LOCATION = new Option(
+        "streamingtermstore.pagelocation",
+        SystemUtils.getTempDir("streaimg_term_cache_pages"),
+        "Where on disk to write term pages"
+    );
+
+    public static final Option STREAMING_TS_PAGE_SIZE = new Option(
+        "streamingtermstore.pagesize",
+        10000,
+        "The number of terms in a single page.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option STREAMING_TS_RANDOMIZE_PAGE_ACCESS = new Option(
+        "streamingtermstore.randomizepageaccess",
+        true,
+        "Whether to pick up pages in a random order."
+    );
+
+    public static final Option STREAMING_TS_SHUFFLE_PAGE = new Option(
+        "streamingtermstore.shufflepage",
+        true,
+        "Whether to shuffle within a page when it is picked up."
+    );
+
+    public static final Option STREAMING_TS_WARN_RULES = new Option(
+        "streamingtermstore.warnunsupportedrules",
+        true,
+        "Warn on rules the streaming term store can't handle."
     );
 
     public static final Option WLA_VP_AVERAGE_STEPS = new Option(
