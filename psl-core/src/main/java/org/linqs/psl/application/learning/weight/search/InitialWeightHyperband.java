@@ -19,7 +19,6 @@ package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -63,11 +62,7 @@ public class InitialWeightHyperband extends Hyperband {
 
         // Init the internal WLA.
         internalWLA.initGroundModel(
-            this.reasoner,
-            this.groundRuleStore,
-            this.termStore,
-            this.termGenerator,
-            this.atomManager,
+            this.inference,
             this.trainingMap
         );
     }

@@ -21,15 +21,15 @@ public class SquaredExpKernelTest {
         // Therefore, a new kernel should be constructed each time the config changes.
 
         Options.WLA_GPP_KERNEL_SPACE.set(GaussianProcessKernel.Space.OS.toString());
-        kernel = GaussianProcessKernel.makeKernel(GaussianProcessKernel.KernelType.SQUARED_EXP, null);
+        kernel = new SquaredExpKernel();
         Assert.assertEquals(0.1353352832366127, kernel.kernel(x, y), EPSILON);
 
         Options.WLA_GPP_KERNEL_SPACE.set(GaussianProcessKernel.Space.SS.toString());
-        kernel = GaussianProcessKernel.makeKernel(GaussianProcessKernel.KernelType.SQUARED_EXP, null);
+        kernel = new SquaredExpKernel();
         Assert.assertEquals(0.60799952264954815, kernel.kernel(x, y), EPSILON);
 
         Options.WLA_GPP_KERNEL_SPACE.set(GaussianProcessKernel.Space.LS.toString());
-        kernel = GaussianProcessKernel.makeKernel(GaussianProcessKernel.KernelType.SQUARED_EXP, null);
+        kernel = new SquaredExpKernel();
         Assert.assertEquals(0.48347071575068623, kernel.kernel(x, y), EPSILON);
 
         float[] weights = {1.0f, 0.5f, 1.0f, 0.1f};

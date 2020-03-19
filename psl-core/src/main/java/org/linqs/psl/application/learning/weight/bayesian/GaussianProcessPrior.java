@@ -25,7 +25,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
 
-    private GaussianProcessKernel.KernelType kernelType;
     private int maxIterations;
     private int maxConfigs;
     private float exploration;
@@ -45,8 +44,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
-
-        kernelType = GaussianProcessKernel.KernelType.valueOf(Options.WLA_GPP_KERNEL.getString().toUpperCase());
 
         maxIterations = Options.WLA_GPP_MAX_ITERATIONS.getInt();
         maxConfigs = Options.WLA_GPP_MAX_CONFIGS.getInt();
@@ -95,7 +92,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     @Override
     protected void doLearn() {
         // Very important to define a good kernel.
-        kernel = GaussianProcessKernel.makeKernel(kernelType, this);
+        kernel = new SquaredExpKernel();
 
         reset();
 
@@ -258,21 +255,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
 
         return configs;
-    }
-
-    /**
-     * Computes the amount to scale gradient for each rule.
-     * Scales by the number of groundings of each rule
-     * unless the rule is not grounded in the training set, in which case
-     * scales by 1.0.
-     */
-    protected int[] computeScalingFactor() {
-        int [] factor = new int[mutableRules.size()];
-        for (int i = 0; i < factor.length; i++) {
-            factor[i] = Math.max(1, groundRuleStore.count(mutableRules.get(i)));
-        }
-
-        return factor;
     }
 
     private List<WeightConfig> getRandomConfigs() {

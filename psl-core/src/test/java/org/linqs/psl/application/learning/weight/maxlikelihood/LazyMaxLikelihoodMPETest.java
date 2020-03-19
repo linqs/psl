@@ -17,12 +17,15 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
+import org.linqs.psl.application.inference.mpe.LazyMPEInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
+import org.linqs.psl.config.Options;
 
 public class LazyMaxLikelihoodMPETest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
-        return new LazyMaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        Options.WLA_INFERENCE.set(LazyMPEInference.class.getName());
+        return new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
 }

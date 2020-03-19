@@ -82,7 +82,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 
         for (Rule rule : mutableRules) {
             Map<RandomVariableAtom, List<WeightedGroundRule>> groundRuleMap = new HashMap<RandomVariableAtom, List<WeightedGroundRule>>();
-            for (GroundRule groundRule : groundRuleStore.getGroundRules(rule)) {
+            for (GroundRule groundRule : inference.getGroundRuleStore().getGroundRules(rule)) {
                 for (GroundAtom atom : groundRule.getAtoms()) {
                     if (!(atom instanceof RandomVariableAtom)) {
                         continue;

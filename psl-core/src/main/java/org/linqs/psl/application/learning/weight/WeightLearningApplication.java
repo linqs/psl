@@ -18,29 +18,12 @@
 package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
-import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.rule.misc.GroundValueConstraint;
-import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
-import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
 
@@ -51,8 +34,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Abstract class for learning the weights of weighted mutableRules from data for a model.
@@ -62,32 +43,15 @@ import java.util.Set;
 public abstract class WeightLearningApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
 
-    public static final int MIN_ADMM_STEPS = 3;
-
     protected Database rvDB;
     protected Database observedDB;
-
-    /**
-     * An atom manager on top of the rvDB.
-     */
-    protected PersistedAtomManager atomManager;
 
     protected List<Rule> allRules;
     protected List<WeightedRule> mutableRules;
 
-    /**
-     * Corresponds 1-1 with mutableRules.
-     */
-    protected double[] observedIncompatibility;
-    protected double[] expectedIncompatibility;
-
     protected TrainingMap trainingMap;
 
-    protected Reasoner reasoner;
-    protected GroundRuleStore groundRuleStore;
-    protected TermGenerator termGenerator;
-    protected TermStore termStore;
-
+    protected InferenceApplication inference;
     protected Evaluator evaluator;
 
     private boolean groundModelInit;
@@ -114,9 +78,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
             }
         }
 
-        observedIncompatibility = new double[mutableRules.size()];
-        expectedIncompatibility = new double[mutableRules.size()];
-
         groundModelInit = false;
         inMPEState = false;
 
@@ -125,7 +86,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
     /**
      * Learns new weights.
-     * The {@link RandomVariableAtom RandomVariableAtoms} in the distribution are those
+     * The RandomVariableAtoms in the distribution are those
      * persisted in the random variable Database when this method is called. All
      * RandomVariableAtoms which the Model might access must be persisted in the Database.
      */
@@ -147,19 +108,11 @@ public abstract class WeightLearningApplication implements ModelApplication {
      * Child implementations should make sure to override this and call up the super chain.
      */
     public void setBudget(double budget) {
-        if (reasoner instanceof ADMMReasoner) {
-            int maxIterations = Options.ADMM_MAX_ITER.getInt();
-            int iterations = (int)Math.ceil(maxIterations * budget);
-            ((ADMMReasoner)reasoner).setMaxIter((int)Math.max(MIN_ADMM_STEPS, iterations));
-
-            if (termStore instanceof ADMMTermStore) {
-                ((ADMMTermStore)termStore).resetLocalVairables();
-            }
-        }
+        inference.setBudget(budget);
     }
 
-    public GroundRuleStore getGroundRuleStore() {
-        return groundRuleStore;
+    public InferenceApplication getInferenceApplication() {
+        return inference;
     }
 
     /**
@@ -171,71 +124,30 @@ public abstract class WeightLearningApplication implements ModelApplication {
             return;
         }
 
-        PersistedAtomManager atomManager = createAtomManager();
-
-        // Ensure all targets from the observed (truth) database exist in the RV database.
-        ensureTargets(atomManager);
-
-        GroundRuleStore groundRuleStore = (GroundRuleStore)Options.WLA_GRS.getNewObject();
-
-        log.info("Grounding out model.");
-        int groundCount = Grounding.groundAll(allRules, atomManager, groundRuleStore);
-
-        initGroundModel(atomManager, groundRuleStore);
+        InferenceApplication inference = InferenceApplication.getInferenceApplication(Options.WLA_INFERENCE.getString(), allRules, rvDB);
+        initGroundModel(inference);
     }
 
-    /**
-     * Init the ground model using an already populated ground rule store.
-     * All the targets from the obserevd database should already exist in the RV database
-     * before this ground rule store was populated.
-     * This means that this variant will not call ensureTargets() (unlike the no parameter variant).
-     */
-    public void initGroundModel(GroundRuleStore groundRuleStore) {
+    private void initGroundModel(InferenceApplication inference) {
         if (groundModelInit) {
             return;
         }
 
-        initGroundModel(createAtomManager(), groundRuleStore);
-    }
-
-    private void initGroundModel(PersistedAtomManager atomManager, GroundRuleStore groundRuleStore) {
-        if (groundModelInit) {
-            return;
-        }
-
-        TermStore termStore = (TermStore)Options.WLA_TS.getNewObject();
-        TermGenerator termGenerator = (TermGenerator)Options.WLA_TG.getNewObject();
-
-        log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
-        @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
-        log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
-
-        TrainingMap trainingMap = new TrainingMap(atomManager, observedDB);
-        Reasoner reasoner = (Reasoner)Options.WLA_REASONER.getNewObject();
-
-        initGroundModel(reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
+        TrainingMap trainingMap = new TrainingMap(inference.getAtomManager(), observedDB);
+        initGroundModel(inference, trainingMap);
     }
 
     /**
      * Pass in all the ground model infrastructure.
-     * The caller should be careful calling this method instead of the other variant.
+     * The caller should be careful calling this method instead of the other variants.
      * Children should favor overriding postInitGroundModel() instead of this.
      */
-    public void initGroundModel(
-            Reasoner reasoner, GroundRuleStore groundRuleStore,
-            TermStore termStore, TermGenerator termGenerator,
-            PersistedAtomManager atomManager, TrainingMap trainingMap) {
+    public void initGroundModel(InferenceApplication inference, TrainingMap trainingMap) {
         if (groundModelInit) {
             return;
         }
 
-        this.reasoner = reasoner;
-        this.groundRuleStore = groundRuleStore;
-        this.termStore = termStore;
-        this.termGenerator = termGenerator;
-        this.atomManager = atomManager;
+        this.inference = inference;
         this.trainingMap = trainingMap;
 
         if (Options.WLA_RANDOM_WEIGHTS.getBoolean()) {
@@ -260,167 +172,32 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     protected void postInitGroundModel() {}
 
+    /**
+     * Run inference.
+     * Note that atoms will not be committed to the database until weight learning is closed.
+     * A explicit call can be made to the inference application to override this functionality.
+     */
     @SuppressWarnings("unchecked")
     protected void computeMPEState() {
         if (inMPEState) {
             return;
         }
 
-        termStore.clear();
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
-        termGenerator.generateTerms(groundRuleStore, termStore);
-
-        reasoner.optimize(termStore);
-
+        inference.inference(false, true);
         inMPEState = true;
-    }
-
-    /**
-     * Compute the incompatibility in the model using the labels (truth values) from the observed (truth) database.
-     * This method is responsible for filling the observedIncompatibility member variable.
-     * This may call setLabeledRandomVariables() and not reset any ground atoms to their original value.
-     *
-     * The default implementation just calls setLabeledRandomVariables() and sums the incompatibility for each rule.
-     */
-    protected void computeObservedIncompatibility() {
-        setLabeledRandomVariables();
-
-        // Zero out the observed incompatibility first.
-        for (int i = 0; i < observedIncompatibility.length; i++) {
-            observedIncompatibility[i] = 0.0;
-        }
-
-        // Sums up the incompatibilities.
-        for (int i = 0; i < mutableRules.size(); i++) {
-            for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-                observedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
-            }
-        }
-    }
-
-    /**
-     * Compute the incompatibility in the model.
-     * This method is responsible for filling the expectedIncompatibility member variable.
-     *
-     * The default implementation is the total incompatibility in the MPE state.
-     * IE, just calls computeMPEState() and then sums the incompatibility for each rule.
-     */
-    protected void computeExpectedIncompatibility() {
-        computeMPEState();
-
-        // Zero out the expected incompatibility first.
-        for (int i = 0; i < expectedIncompatibility.length; i++) {
-            expectedIncompatibility[i] = 0.0;
-        }
-
-        // Sums up the incompatibilities.
-        for (int i = 0; i < mutableRules.size(); i++) {
-            for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-                expectedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
-            }
-        }
-    }
-
-    /**
-     * Internal method for computing the loss at the current point before taking a step.
-     * Child methods may override.
-     *
-     * The default implementation just sums the product of the difference between the expected and observed incompatibility.
-     *
-     * @return current learning loss
-     */
-    public double computeLoss() {
-        double loss = 0.0;
-        for (int i = 0; i < mutableRules.size(); i++) {
-            loss += mutableRules.get(i).getWeight() * (observedIncompatibility[i] - expectedIncompatibility[i]);
-        }
-
-        return loss;
     }
 
     @Override
     public void close() {
-        if (groundRuleStore != null) {
-            groundRuleStore.close();
-            groundRuleStore = null;
+        if (inference != null) {
+            inference.commit();
+            inference.close();
+            inference = null;
         }
 
-        if (termStore != null) {
-            termStore.close();
-            termStore = null;
-        }
-
-        if (reasoner != null) {
-            reasoner.close();
-            reasoner = null;
-        }
-
-        termGenerator = null;
         trainingMap = null;
-        atomManager = null;
         rvDB = null;
         observedDB = null;
-    }
-
-    /**
-     * Set RandomVariableAtoms with training labels to their observed values.
-     */
-    protected void setLabeledRandomVariables() {
-        inMPEState = false;
-
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
-            entry.getKey().setValue(entry.getValue().getValue());
-        }
-    }
-
-    /**
-     * Set all RandomVariableAtoms we know of to their default values.
-     */
-    protected void setDefaultRandomVariables() {
-        inMPEState = false;
-
-        for (RandomVariableAtom atom : trainingMap.getLabelMap().keySet()) {
-            atom.setValue(0.0f);
-        }
-
-        for (RandomVariableAtom atom : trainingMap.getLatentVariables()) {
-            atom.setValue(0.0f);
-        }
-    }
-
-    /**
-     * Create an atom manager on top of the RV database.
-     * This allows an opportunity for subclasses to create a special manager.
-     */
-    protected PersistedAtomManager createAtomManager() {
-        return new PersistedAtomManager(rvDB);
-    }
-
-    /**
-     * Make sure that all targets from the observed database exist in the RV database.
-     */
-    private void ensureTargets(PersistedAtomManager atomManager) {
-        // Iterate through all of the registered predicates in the observed.
-        for (StandardPredicate predicate : observedDB.getDataStore().getRegisteredPredicates()) {
-            // Ignore any closed predicates.
-            if (observedDB.isClosed(predicate)) {
-                continue;
-            }
-
-            // Commit the atoms into the RV databse with the default value.
-            for (ObservedAtom observedAtom : observedDB.getAllGroundObservedAtoms(predicate)) {
-                GroundAtom otherAtom = atomManager.getAtom(observedAtom.getPredicate(), observedAtom.getArguments());
-
-                if (otherAtom instanceof ObservedAtom) {
-                    continue;
-                }
-
-                RandomVariableAtom rvAtom = (RandomVariableAtom)otherAtom;
-                rvAtom.setValue(0.0f);
-            }
-        }
-
-        atomManager.commitPersistedAtoms();
     }
 
     /**

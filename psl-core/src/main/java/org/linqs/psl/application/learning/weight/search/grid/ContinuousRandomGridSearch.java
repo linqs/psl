@@ -20,10 +20,7 @@ package org.linqs.psl.application.learning.weight.search.grid;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.List;
@@ -34,14 +31,8 @@ import java.util.List;
 public class ContinuousRandomGridSearch extends BaseGridSearch {
     public static final int SCALE_FACTOR = 10;
 
-    /**
-     * Means for the Gaussian's that we will sample rule weights from.
-     */
-    private double[] weightMeans;
-
     private double baseWeight;
     private double variance;
-    private boolean uniformBase;
 
     private int scaleOrder;
     private int currentScale;
@@ -59,14 +50,6 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
         numLocations = Options.WLA_CRGS_MAX_LOCATIONS.getInt();
         baseWeight = Options.WLA_CRGS_BASE_WEIGHT.getDouble();
         variance = Options.WLA_CRGS_VARIANCE.getDouble();
-        uniformBase = Options.WLA_CRGS_UNIFORM_BASE.getBoolean();
-
-        weightMeans = null;
-    }
-
-    @Override
-    protected void postInitGroundModel() {
-        computeWeightMeans();
     }
 
     @Override
@@ -75,7 +58,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
             // Random choice.
             for (int i = 0; i < mutableRules.size(); i++) {
                 // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-                weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + weightMeans[i];
+                weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + baseWeight;
             }
         } else {
             // Scale current by SCALE_FACTOR.
@@ -95,59 +78,5 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     protected boolean chooseNextLocation() {
         currentLocation = "" + objectives.size();
         return true;
-    }
-
-    /**
-     * For each rule, compute what we will use as the mean in our sampling Gaussian.
-     * Get the average compatability for each rule, set the smallest to the baseline,
-     * and scale all others by that smallest.
-     */
-    private void computeWeightMeans() {
-        weightMeans = new double[mutableRules.size()];
-
-        if (uniformBase) {
-            for (int i = 0; i < mutableRules.size(); i++) {
-                weightMeans[i] = baseWeight;
-            }
-
-            return;
-        }
-
-        // Set all the weights to 1.0 to get a baseline on the number of satisfied ground rules.
-        for (WeightedRule rule : mutableRules) {
-            rule.setWeight(1.0);
-        }
-
-        inMPEState = false;
-        computeMPEState();
-
-        double smallestCompatability = 1.0;
-
-        // We will let the mean be the proportion of ground rules that are violated.
-        for (int i = 0; i < mutableRules.size(); i++) {
-            int count = 0;
-            for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
-                if (!(groundRule instanceof WeightedGroundRule)) {
-                    continue;
-                }
-
-                count++;
-                weightMeans[i] += (1.0 - ((WeightedGroundRule)groundRule).getIncompatibility());
-            }
-
-            if (count == 0) {
-                weightMeans[i] = 0.0;
-            } else {
-                weightMeans[i] /= count;
-            }
-
-            if (weightMeans[i] < smallestCompatability) {
-                smallestCompatability = weightMeans[i];
-            }
-        }
-
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weightMeans[i] = baseWeight * weightMeans[i] / smallestCompatability;
-        }
     }
 }

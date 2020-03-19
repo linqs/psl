@@ -100,7 +100,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         float[] yKnown = new float[]{0.5f, 0.6f, 0.7f};
         FloatMatrix blasYKnown = FloatMatrix.columnVector(yKnown);
 
-        wl.setKernelForTest(GaussianProcessKernel.makeKernel(GaussianProcessKernel.KernelType.SQUARED_EXP, wl));
+        wl.setKernelForTest(new SquaredExpKernel());
         wl.setBlasYKnownForTest(blasYKnown);
 
         GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown);
@@ -114,7 +114,6 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         Options.WLA_GPP_KERNEL_SPACE.set(GaussianProcessKernel.Space.OS.toString());
         Options.WLA_GPP_MAX_CONFIGS.set(5);
         Options.WLA_GPP_MAX_ITERATIONS.set(3);
-        Options.WLA_GPP_KERNEL.set(GaussianProcessKernel.KernelType.SQUARED_EXP.toString());
         Options.WLA_GPP_RANDOM_CONFIGS_ONLY.set(false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();

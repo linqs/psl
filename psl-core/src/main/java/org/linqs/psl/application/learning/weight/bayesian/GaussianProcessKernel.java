@@ -15,10 +15,6 @@ public abstract class GaussianProcessKernel {
         SS, OS, LS
     }
 
-    public static enum KernelType {
-        SQUARED_EXP, WEIGHTED_SQUARED_EXP
-    }
-
     protected final FloatMatrix scalingWeights;
     protected final boolean weighted;
     protected final float scale;
@@ -82,32 +78,5 @@ public abstract class GaussianProcessKernel {
       */
     public float kernel(float[] point1, float[] point2) {
         return kernel(point1, point2, new float[point1.length], new float[point2.length], new FloatMatrix(), new FloatMatrix());
-    }
-
-    public static GaussianProcessKernel makeKernel(KernelType type, GaussianProcessPrior method) {
-        switch (type) {
-            case SQUARED_EXP:
-                return new SquaredExpKernel();
-
-            case WEIGHTED_SQUARED_EXP:
-                int[] counts = method.computeScalingFactor();
-
-                float max = 0.0f;
-                for (int i = 0; i < counts.length; i++) {
-                    if (counts[i] > max) {
-                        max = counts[i];
-                    }
-                }
-
-                float[] scale = new float[counts.length];
-                for (int i = 0; i < counts.length; i++) {
-                    scale[i] = counts[i] / max;
-                }
-
-                return new SquaredExpKernel(scale);
-
-            default:
-                throw new IllegalStateException("Unknown KernelType: " + type);
-        }
     }
 }

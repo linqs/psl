@@ -63,11 +63,7 @@ public class InitialWeightRankSearch extends RankSearch {
     protected void postInitGroundModel() {
         // Init the internal WLA.
         internalWLA.initGroundModel(
-            this.reasoner,
-            this.groundRuleStore,
-            this.termStore,
-            this.termGenerator,
-            this.atomManager,
+            this.inference,
             this.trainingMap
         );
     }

@@ -21,7 +21,6 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,9 +82,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         double bestObjective = -1;
         double[] bestWeights = new double[mutableRules.size()];
 
-        // Computes the observed incompatibilities.
-        computeObservedIncompatibility();
-
         double[] weights = new double[mutableRules.size()];
 
         for (int iteration = 0; iteration < numLocations; iteration++) {
@@ -141,15 +137,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * if lower is better for that evaluator.
      */
     protected double inspectLocation(double[] weights) {
-        // Reset the RVAs to default values.
-        setDefaultRandomVariables();
-
-        if (termStore instanceof ADMMTermStore) {
-            ((ADMMTermStore)termStore).resetLocalVairables();
-        }
-
-        // Computes the expected incompatibility.
-        computeExpectedIncompatibility();
+        computeMPEState();
 
         evaluator.compute(trainingMap);
 

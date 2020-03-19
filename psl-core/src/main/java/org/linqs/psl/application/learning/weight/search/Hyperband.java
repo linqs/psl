@@ -82,9 +82,6 @@ public class Hyperband extends WeightLearningApplication {
         double bestObjective = -1;
         double[] bestWeights = null;
 
-        // Computes the observed incompatibilities.
-        computeObservedIncompatibility();
-
         // The total cost used vs one full round of inference.
         double totalCost = 0.0;
         int numEvaluatedConfigs = 0;
@@ -181,11 +178,7 @@ public class Hyperband extends WeightLearningApplication {
      * if lower is better for that evaluator.
      */
     protected double run(double[] weights) {
-        // Reset the RVAs to default values.
-        setDefaultRandomVariables();
-
-        // Computes the expected incompatibility.
-        computeExpectedIncompatibility();
+        computeMPEState();
 
         evaluator.compute(trainingMap);
 
