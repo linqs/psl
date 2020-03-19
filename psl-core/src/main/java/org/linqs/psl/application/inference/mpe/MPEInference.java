@@ -21,20 +21,21 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
  * Infers the most-probable explanation (MPE) state of the
  * RandomVariableAtoms persisted in a Database,
- * according to a {@link Model}, given the Database's ObservedAtoms.
+ * according to the rules, given the Database's ObservedAtoms.
  *
  * The set of RandomVariableAtoms is those persisted in the Database when inference() is called.
- * This set must contain all RandomVariableAtoms the Model might access.
+ * This set must contain all RandomVariableAtoms the model might access.
  *
  * Note that this class is left non-abstract so that unusual combinations of components
  * (reasoners, term stores, etc) can be used via the InferenceApplication config options.
@@ -42,19 +43,7 @@ import org.slf4j.LoggerFactory;
 public class MPEInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
 
-    public MPEInference(Model model, Database db) {
-        super(model, db);
-    }
-
-    @Override
-    protected void completeInitialize() {
-        log.info("Grounding out model.");
-        int groundCount = Grounding.groundAll(model, atomManager, groundRuleStore);
-        log.info("Grounding complete.");
-
-        log.debug("Initializing objective terms for {} ground rules.", groundCount);
-        @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
-        log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
+    public MPEInference(List<Rule> rules, Database db) {
+        super(rules, db);
     }
 }

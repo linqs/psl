@@ -20,11 +20,13 @@ package org.linqs.psl.application.inference.mpe;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.InferenceTest;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.model.rule.Rule;
+
+import java.util.List;
 
 public class MPEInferenceTest extends InferenceTest {
     @Override
-    protected InferenceApplication getInference(Model model, Database db) {
-        return new MPEInference(model, db);
+    protected InferenceApplication getInference(List<Rule> rules, Database db) {
+        return new MPEInference(rules, db);
     }
 }

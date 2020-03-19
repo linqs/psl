@@ -25,7 +25,6 @@ import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -106,7 +105,7 @@ public class LazyMPEInferenceTest {
      */
     @Test
     public void testBase() {
-        LazyMPEInference inference = new LazyMPEInference(info.model, inferDB);
+        LazyMPEInference inference = new LazyMPEInference(info.model.getRules(), inferDB);
 
         // The Friends predicate should be empty.
         assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
@@ -125,7 +124,7 @@ public class LazyMPEInferenceTest {
     public void testBaseNotNice() {
         initModel(false);
 
-        LazyMPEInference inference = new LazyMPEInference(info.model, inferDB);
+        LazyMPEInference inference = new LazyMPEInference(info.model.getRules(), inferDB);
 
         // The Friends predicate should be empty.
         assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
@@ -161,7 +160,7 @@ public class LazyMPEInferenceTest {
         );
         info.model.addRule(rule);
 
-        LazyMPEInference inference = new LazyMPEInference(info.model, inferDB);
+        LazyMPEInference inference = new LazyMPEInference(info.model.getRules(), inferDB);
 
         // The Friends predicate should be empty.
         assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
@@ -205,7 +204,7 @@ public class LazyMPEInferenceTest {
         );
         info.model.addRule(rule);
 
-        LazyMPEInference inference = new LazyMPEInference(info.model, inferDB);
+        LazyMPEInference inference = new LazyMPEInference(info.model.getRules(), inferDB);
 
         // The Friends predicate should be empty.
         assertEquals(0, inferDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));
@@ -226,7 +225,7 @@ public class LazyMPEInferenceTest {
     @Test
     public void testFullySpecified() {
         Database fullTargetDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
-        LazyMPEInference inference = new LazyMPEInference(info.model, fullTargetDB);
+        LazyMPEInference inference = new LazyMPEInference(info.model.getRules(), fullTargetDB);
 
         // The Friends predicate should be fully defined.
         assertEquals(20, fullTargetDB.countAllGroundRandomVariableAtoms(info.predicates.get("Friends")));

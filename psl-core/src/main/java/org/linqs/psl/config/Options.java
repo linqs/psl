@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.bayesian.GaussianProcessKernel;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.rdbms.QueryRewriter;
@@ -25,6 +26,7 @@ import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.RankingEvaluator;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
@@ -44,12 +46,6 @@ import java.util.List;
  * The main() method will collect all the options and write them out to stdout as JSON.
  */
 public class Options {
-    public static final Option ADMM_TS_INTERNAL_STORE = new Option(
-        "admmmemorytermstore.internalstore",
-        MemoryTermStore.class.getName(),
-        "The TermStore to use to hold terms while the ADMMTermStore focuses on variables."
-    );
-
     public static final Option ADMM_COMPUTE_PERIOD = new Option(
         "admmreasoner.computeperiod",
         50,
@@ -70,18 +66,6 @@ public class Options {
         1e-3f,
         "Relative error component of stopping criteria.",
         Option.FLAG_POSITIVE
-    );
-
-    public static final Option ADMM_INITIAL_CONSENSUS_VALUE = new Option(
-        "admmreasoner.initialconsensusvalue",
-        ADMMReasoner.InitialValue.RANDOM.toString(),
-        "The starting value for consensus variables (see ADMMReasoner.InitialValue)."
-    );
-
-    public static final Option ADMM_INITIAL_LOCAL_VALUE = new Option(
-        "admmreasoner.initiallocalvalue",
-        ADMMReasoner.InitialValue.RANDOM.toString(),
-        "The starting value for local variables (see ADMMReasoner.InitialValue)."
     );
 
     public static final Option ADMM_MAX_ITER = new Option(
@@ -161,10 +145,7 @@ public class Options {
     public static final Option WLA_CRGS_BASE_WEIGHT = new Option(
         "continuousrandomgridsearch.baseweight",
         0.40,
-        "The base weight of a rule."
-        + " The exact use of this value depends on UNIFORM_BASE."
-        + " This will either be used as the mean of the Gaussian from which a weight will be sampled,"
-        + " or as the smallest weight that all rules will be started from.",
+        "The mean of the Gaussian from which a weight will be sampled.",
         Option.FLAG_POSITIVE
     );
 
@@ -183,13 +164,6 @@ public class Options {
         + " These additional tests DO NOT count against WLA_CRGS_MAX_LOCATIONS,"
         + " i.e. WLA_CRGS_MAX_LOCATIONS * (WLA_CRGS_SCALE_ORDERS + 1) configurations will be tested.",
         Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option WLA_CRGS_UNIFORM_BASE = new Option(
-        "continuousrandomgridsearch.uniformbase",
-        true,
-        "If true, then use the same base weight as the Gaussian's mean when sampling the weight."
-        + " Otherwise, use different base weights depending on the inital satisfaction of each rule."
     );
 
     public static final Option WLA_CRGS_VARIANCE = new Option(
@@ -331,12 +305,6 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
-    public static final Option WLA_GPP_KERNEL = new Option(
-        "gpp.kernel",
-        GaussianProcessKernel.KernelType.SQUARED_EXP.toString(),
-        null
-    );
-
     public static final Option WLA_GPP_MAX_CONFIGS = new Option(
         "gpp.maxconfigs",
         1000000,
@@ -446,6 +414,12 @@ public class Options {
         "The ground rule store to use for inference."
     );
 
+    public static final Option INFERENCE_INITIAL_VARIABLE_VALUE = new Option(
+        "inference.initialvalue",
+        InitialValue.RANDOM.toString(),
+        "The starting value for atoms and any local variables during inference."
+    );
+
     public static final Option INFERENCE_REASONER = new Option(
         "inference.reasoner",
         ADMMReasoner.class.getName(),
@@ -495,27 +469,6 @@ public class Options {
         "maxpiecewisepseudolikelihood.numsamples",
         100,
         "The number of samples MPPLE will use to approximate expectations.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_MPLE_BOOL = new Option(
-        "maxspeudolikelihood.bool",
-        false,
-        "If true, MaxPseudoLikelihood will treat RandomVariableAtoms as boolean valued."
-        + " This restricts the types of constraints supported."
-    );
-
-    public static final Option WLA_MPLE_MIN_WIDTH = new Option(
-        "maxspeudolikelihood.minwidth",
-        1e-2,
-        "Minimum width for bounds of integration.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_MPLE_NUM_SAMPLES = new Option(
-        "maxspeudolikelihood.numsamples",
-        10,
-        "The number of samples MPLE will use to approximate the integrals in the marginal computation.",
         Option.FLAG_POSITIVE
     );
 
@@ -828,12 +781,6 @@ public class Options {
         + " but even those will typically output an evaluator score each iteration."
     );
 
-    public static final Option WLA_GRS = new Option(
-        "weightlearning.groundrulestore",
-        MemoryGroundRuleStore.class.getName(),
-        "The ground rule storage to use during weight learning."
-    );
-
     public static final Option WLA_RANDOM_WEIGHTS = new Option(
         "weightlearning.randomweights",
         false,
@@ -841,22 +788,10 @@ public class Options {
         + " The randomization will happen during ground model initialization."
     );
 
-    public static final Option WLA_REASONER = new Option(
-        "weightlearning.reasoner",
-        ADMMReasoner.class.getName(),
-        "The reasoner used for inference during weight learning."
-    );
-
-    public static final Option WLA_TG = new Option(
-        "weightlearning.termgenerator",
-        ADMMTermGenerator.class.getName(),
-        "The term generator to use during weight learning."
-    );
-
-    public static final Option WLA_TS = new Option(
-        "weightlearning.termstore",
-        ADMMTermStore.class.getName(),
-        "The term storage to use during weight learning."
+    public static final Option WLA_INFERENCE = new Option(
+        "weightlearning.inference",
+        ADMMInference.class.getName(),
+        "The inference application used during weight learning."
     );
 
     // Static only.

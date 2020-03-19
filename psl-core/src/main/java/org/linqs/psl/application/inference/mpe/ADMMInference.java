@@ -20,7 +20,7 @@ package org.linqs.psl.application.inference.mpe;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -29,12 +29,14 @@ import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
+import java.util.List;
+
 /**
  * Use an ADMM reasoner to perform MPE inference.
  */
 public class ADMMInference extends MPEInference {
-    public ADMMInference(Model model, Database db) {
-        super(model, db);
+    public ADMMInference(List<Rule> rules, Database db) {
+        super(rules, db);
     }
 
     @Override

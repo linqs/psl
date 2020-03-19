@@ -20,7 +20,7 @@ package org.linqs.psl.application.inference.mpe;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDMemoryTermStore;
@@ -29,12 +29,14 @@ import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
+import java.util.List;
+
 /**
  * Use an SGD reasoner to perform MPE inference.
  */
 public class SGDInference extends MPEInference {
-    public SGDInference(Model model, Database db) {
-        super(model, db);
+    public SGDInference(List<Rule> rules, Database db) {
+        super(rules, db);
     }
 
     @Override

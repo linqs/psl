@@ -17,9 +17,9 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
@@ -49,13 +49,20 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
     private List<List<LocalVariable>> localVariables;
 
     /**
-     * The total number of all local variables (the sum of the sizes of each listin |localVariables|.
+     * The consensus (global) variable values.
+     * This will not be initialized until it is requested the first time.
+     * Once that happens, no more new vaiables will be accepted.
+     * This is because once this array has been gven out optimization is considered started.
+     */
+    private float[] consensusValues;
+
+    /**
+     * The total number of all local variables (the sum of the sizes of each list in |localVariables|).
      */
     private int numLocalVariables;
 
-    @SuppressWarnings("unchecked")
     public ADMMTermStore() {
-        this((TermStore<ADMMObjectiveTerm, ?>)Options.ADMM_TS_INTERNAL_STORE.getNewObject());
+        this(new MemoryTermStore<ADMMObjectiveTerm>());
     }
 
     public ADMMTermStore(TermStore<ADMMObjectiveTerm, ?> store) {
@@ -63,6 +70,7 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
         variableIndexes = new HashMap<RandomVariableAtom, Integer>();
         localVariables = new ArrayList<List<LocalVariable>>();
         numLocalVariables = 0;
+        consensusValues = null;
     }
 
     /**
@@ -93,6 +101,10 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
         if (variableIndexes.containsKey(atom)) {
             globalId = variableIndexes.get(atom).intValue();
         } else {
+            if (consensusValues != null) {
+                throw new RuntimeException("No new variables can be created after the consensus varibles have been requested.");
+            }
+
             // If the global copy has not been registered, register it and prep its local copies.
             globalId = variableIndexes.size();
             variableIndexes.put(atom, globalId);
@@ -117,6 +129,19 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
         return localVariables.get(globalId);
     }
 
+    public float[] getConsensusValues() {
+        if (consensusValues != null) {
+            return consensusValues;
+        }
+
+        consensusValues = new float[variableIndexes.size()];
+        for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
+            consensusValues[entry.getValue().intValue()] = entry.getKey().getValue();
+        }
+
+        return consensusValues;
+    }
+
     /**
      * Get the RVAs managed by this term store.
      */
@@ -125,44 +150,11 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
     }
 
     /**
-     * Update the global variables (RVAs).
-     * The passed in values in indexed according to global id.
+     * Update the global variables (atoms) with the consensus values.
      */
-    public void updateVariables(float[] values) {
+    public void updateVariables() {
         for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
-            entry.getKey().setValue(values[entry.getValue().intValue()]);
-        }
-    }
-
-    /**
-     * Get the values from the atoms corresponding to global (consensus)
-     * variables and put them in the output array.
-     */
-    public void getAtomValues(float[] values) {
-        for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
-            values[entry.getValue().intValue()] = (float)entry.getKey().getValue();
-        }
-    }
-
-    public void resetLocalVairables() {
-        resetLocalVairables(ADMMReasoner.InitialValue.RANDOM);
-    }
-
-    public void resetLocalVairables(ADMMReasoner.InitialValue initialValue) {
-        for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
-            for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
-                if (initialValue == ADMMReasoner.InitialValue.ZERO) {
-                    local.setValue(0.0f);
-                } else if (initialValue == ADMMReasoner.InitialValue.RANDOM) {
-                    local.setValue(RandUtils.nextFloat());
-                } else if (initialValue == ADMMReasoner.InitialValue.ATOM) {
-                    local.setValue((float)(entry.getKey().getValue()));
-                } else {
-                    throw new IllegalStateException("Unknown initial consensus value: " + initialValue);
-                }
-
-                local.setLagrange(0.0f);
-            }
+            entry.getKey().setValue(consensusValues[entry.getValue().intValue()]);
         }
     }
 
@@ -186,6 +178,21 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
         }
 
         numLocalVariables = 0;
+        consensusValues = null;
+    }
+
+    @Override
+    public void reset(InitialValue initialValue) {
+        for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
+            if (consensusValues != null) {
+                consensusValues[entry.getValue().intValue()] = initialValue.getVariableValue(entry.getKey());
+            }
+
+            for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
+                local.setValue(initialValue.getVariableValue(entry.getKey()));
+                local.setLagrange(0.0f);
+            }
+        }
     }
 
     @Override

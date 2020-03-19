@@ -30,6 +30,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
@@ -47,7 +48,7 @@ import java.util.List;
 import java.util.Set;
 
 public abstract class InferenceTest {
-    protected abstract InferenceApplication getInference(Model model, Database db);
+    protected abstract InferenceApplication getInference(List<Rule> rules, Database db);
 
     /**
      * A quick test that only checks to see if the inference method is running.
@@ -59,7 +60,7 @@ public abstract class InferenceTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();
@@ -80,7 +81,7 @@ public abstract class InferenceTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();
@@ -116,7 +117,7 @@ public abstract class InferenceTest {
         toClose.add(info.predicates.get("Friends"));
 
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();
@@ -129,9 +130,6 @@ public abstract class InferenceTest {
     @Test
     public void testArithmeticNoOpenPredicates() {
         TestModel.ModelInformation info = TestModel.getModel();
-
-        // Reset the model with only a single rule.
-        // info.model = new Model();
 
         List<Coefficient> coefficients;
         List<SummationAtomOrAtom> atoms;
@@ -158,7 +156,7 @@ public abstract class InferenceTest {
         toClose.add(info.predicates.get("Nice"));
 
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();
@@ -187,7 +185,7 @@ public abstract class InferenceTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         inference.inference();
 
@@ -207,14 +205,14 @@ public abstract class InferenceTest {
         TestModel.ModelInformation info = TestModel.getModel();
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         float preInferenceTotalValue = 0.0f;
         for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
 
-        inference.inference(true);
+        inference.inference(true, true, true);
 
         inference.close();
 
@@ -240,15 +238,14 @@ public abstract class InferenceTest {
         TestModel.ModelInformation info = TestModel.getModel();
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = getInference(info.model, inferDB);
 
         float preInferenceTotalValue = 0.0f;
         for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
 
-        inference.inference(false);
-
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+        inference.inference(false, true, true);
         inference.close();
 
         // The database should be closed after inference to clear the cache before reading in values again.

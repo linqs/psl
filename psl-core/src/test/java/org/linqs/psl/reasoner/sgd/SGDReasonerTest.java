@@ -39,7 +39,7 @@ public class SGDReasonerTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = new SGDInference(info.model, inferDB);
+        InferenceApplication inference = new SGDInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();

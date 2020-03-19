@@ -39,7 +39,7 @@ public class DCDReasonerTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = new DCDInference(info.model, inferDB);
+        InferenceApplication inference = new DCDInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();

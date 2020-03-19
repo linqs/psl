@@ -34,10 +34,10 @@ import java.util.Iterator;
 /**
  * Uses an SGD optimization method to optimize its GroundRules.
  */
-public class SGDReasoner implements Reasoner {
+public class SGDReasoner extends Reasoner {
     private static final Logger log = LoggerFactory.getLogger(SGDReasoner.class);
 
-    private int maxIter;
+    private int maxIterations;
 
     private float tolerance;
     private boolean printObj;
@@ -45,19 +45,11 @@ public class SGDReasoner implements Reasoner {
     private boolean objectiveBreak;
 
     public SGDReasoner() {
-        maxIter = Options.SGD_MAX_ITER.getInt();
+        maxIterations = Options.SGD_MAX_ITER.getInt();
         objectiveBreak = Options.SGD_OBJECTIVE_BREAK.getBoolean();
         printObj = Options.SGD_PRINT_OBJECTIVE.getBoolean();
         printInitialObj = Options.SGD_PRINT_INITIAL_OBJECTIVE.getBoolean();
         tolerance = Options.SGD_TOLERANCE.getFloat();
-    }
-
-    public int getMaxIter() {
-        return maxIter;
-    }
-
-    public void setMaxIter(int maxIter) {
-        this.maxIter = maxIter;
     }
 
     @Override
@@ -87,7 +79,7 @@ public class SGDReasoner implements Reasoner {
         }
 
         long time = 0;
-        while (iteration <= maxIter
+        while (iteration <= (int)(maxIterations * budget)
                 && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tolerance)))) {
             long start = System.currentTimeMillis();
 

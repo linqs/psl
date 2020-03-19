@@ -17,34 +17,33 @@
  */
 package org.linqs.psl.reasoner;
 
-import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.util.RandUtils;
 
 /**
- * An oprimizer to minimize the total weighted incompatibility
- * of the terms provided by a TermStore.
+ * An enum that represents the initial value a variable should take.
+ * ZERO: take a zero value.
+ * RANDOM: take a uniform random value in [0, 1].
+ * ATOM: take the value of the atom representing this variable.
  */
-public abstract class Reasoner {
-    protected double budget;
-
-    public Reasoner() {
-        budget = 1.0;
-    }
+public enum InitialValue {
+    ZERO,
+    RANDOM,
+    ATOM;
 
     /**
-     * Minimizes the total weighted incompatibility of the terms in the provided
-     * TermStore.
+     * Get the value that this enum represents.
      */
-    public abstract void optimize(TermStore termStore);
-
-    /**
-     * Releases all resources acquired by this Reasoner.
-     */
-    public abstract void close();
-
-    /**
-     * Set a budget (given as a proportion of the max budget).
-     */
-    public void setBudget(double budget) {
-        this.budget = budget;
+    public float getVariableValue(GroundAtom atom) {
+        switch (this) {
+            case ZERO:
+                return 0.0f;
+            case RANDOM:
+                return RandUtils.nextFloat();
+            case ATOM:
+                return atom.getValue();
+            default:
+                throw new IllegalStateException("Unknown initial value state: " + this);
+        }
     }
 }

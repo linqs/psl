@@ -20,7 +20,7 @@ package org.linqs.psl.application.inference.mpe;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDMemoryTermStore;
@@ -29,12 +29,14 @@ import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
+import java.util.List;
+
 /**
  * Use an DCD reasoner to perform MPE inference.
  */
 public class DCDInference extends MPEInference {
-    public DCDInference(Model model, Database db) {
-        super(model, db);
+    public DCDInference(List<Rule> rules, Database db) {
+        super(rules, db);
     }
 
     @Override

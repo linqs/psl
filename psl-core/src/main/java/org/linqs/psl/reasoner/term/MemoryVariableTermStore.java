@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.RandUtils;
@@ -156,6 +157,13 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         if (variables != null) {
             variables.clear();
+        }
+    }
+
+    @Override
+    public void reset(InitialValue initialValue) {
+        for (int i = 0; i < variables.size(); i++) {
+            variableValues[i] = initialValue.getVariableValue(variableAtoms[i]);
         }
     }
 

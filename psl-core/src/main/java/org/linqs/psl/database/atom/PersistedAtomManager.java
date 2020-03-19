@@ -26,6 +26,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.util.IteratorUtils;
 
 import org.slf4j.Logger;
@@ -55,21 +56,33 @@ public class PersistedAtomManager extends AtomManager {
     private final boolean throwOnIllegalAccess;
     private boolean warnOnIllegalAccess;
 
+    /**
+     * The initial value to give atoms accessed illegally.
+     */
+    private InitialValue initialValueOnIllegalAccess;
+
     private int persistedAtomCount;
 
     public PersistedAtomManager(Database db) {
         this(db, false);
     }
 
+    public PersistedAtomManager(Database db, boolean prebuiltCache) {
+        this(db, prebuiltCache, InitialValue.ATOM);
+    }
+
     /**
      * Constructs a PersistedAtomManager with a built-in set of all the database's persisted RandomVariableAtoms.
      * @param prebuiltCache the database already has a populated atom cache, no need to build it again.
+     * @param initialValueOnIllegalAccess the initial value to give an atom accessed illegally.
      */
-    public PersistedAtomManager(Database db, boolean prebuiltCache) {
+    public PersistedAtomManager(Database db, boolean prebuiltCache, InitialValue initialValueOnIllegalAccess) {
         super(db);
 
         throwOnIllegalAccess = Options.PAM_THROW_ACCESS_EXCEPTION.getBoolean();
         warnOnIllegalAccess = !throwOnIllegalAccess;
+
+        this.initialValueOnIllegalAccess = initialValueOnIllegalAccess;
 
         if (prebuiltCache) {
             persistedAtomCount = db.getCachedRVACount();
@@ -115,6 +128,11 @@ public class PersistedAtomManager extends AtomManager {
         RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
         if (!rvAtom.getPersisted()) {
+            if (!rvAtom.getAccessException()) {
+                // This is the first time we have seen this atom.
+                rvAtom.setValue(initialValueOnIllegalAccess.getVariableValue(rvAtom));
+            }
+
             rvAtom.setAccessException(true);
         }
 

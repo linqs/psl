@@ -24,7 +24,6 @@ import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
@@ -48,15 +47,16 @@ public class LazyMPEInference extends MPEInference {
 
     protected final int maxRounds;
 
-    public LazyMPEInference(Model model, Database db) {
-        super(model, db);
+    public LazyMPEInference(List<Rule> rules, Database db) {
+        super(rules, db);
         maxRounds = Options.LAZY_INFERENCE_MAX_ROUNDS.getInt();
     }
 
     @Override
     protected void completeInitialize() {
         log.debug("Initial grounding.");
-        Grounding.groundAll(model, atomManager, groundRuleStore);
+        Grounding.groundAll(rules, atomManager, groundRuleStore);
+        log.debug("Initial grounding complete.");
     }
 
     @Override
@@ -66,19 +66,7 @@ public class LazyMPEInference extends MPEInference {
 
     @Override
     protected void internalInference() {
-        inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager,
-                maxRounds);
-    }
-
-    /**
-     * Do the full MPE inference process.
-     * We move the implementation to a static method so it can be accessed
-     * from outsude methods.
-     * Unlike MPEInference which just calls the reasoner, this process is more involved.
-     */
-    public static void inference(List<Rule> rules, Reasoner reasoner, GroundRuleStore groundRuleStore,
-            TermStore termStore, TermGenerator termGenerator, LazyAtomManager lazyAtomManager,
-            int maxRounds) {
+        LazyAtomManager lazyAtomManager = (LazyAtomManager)atomManager;
         // Performs rounds of inference until the ground model stops growing.
         int rounds = 0;
         int numActivated = 0;

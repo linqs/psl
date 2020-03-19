@@ -76,7 +76,7 @@ public class Formula2SQLTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = new MPEInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();
@@ -121,7 +121,7 @@ public class Formula2SQLTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication inference = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = new MPEInference(info.model.getRules(), inferDB);
 
         inference.inference();
         inference.close();

@@ -37,16 +37,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
  */
-public class ADMMReasoner implements Reasoner {
+public class ADMMReasoner extends Reasoner {
     private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
-
-    /**
-     * Possible starting values for the consensus values.
-     *  - ZERO - 0.
-     *  - RANDOM - Uniform sample in [0, 1].
-     *  - ATOM - The value of the RVA that backs this global variable.
-     */
-    public static enum InitialValue { ZERO, RANDOM, ATOM }
 
     private static final float LOWER_BOUND = 0.0f;
     private static final float UPPER_BOUND = 1.0f;
@@ -72,31 +64,19 @@ public class ADMMReasoner implements Reasoner {
     private float lagrangePenalty;
     private float augmentedLagrangePenalty;
 
-    private int maxIter;
-
-    // Also sometimes called 'z'.
-    // Only populated after inference.
-    private float[] consensusValues;
+    private int maxIterations;
 
     private int termBlockSize;
     private int variableBlockSize;
     private boolean objectiveBreak;
 
     public ADMMReasoner() {
-        maxIter = Options.ADMM_MAX_ITER.getInt();
+        maxIterations = Options.ADMM_MAX_ITER.getInt();
         stepSize = Options.ADMM_STEP_SIZE.getFloat();
         computePeriod = Options.ADMM_COMPUTE_PERIOD.getInt();
         objectiveBreak = Options.ADMM_OBJECTIVE_BREAK.getBoolean();
         epsilonAbs = Options.ADMM_EPSILON_ABS.getFloat();
         epsilonRel = Options.ADMM_EPSILON_REL.getFloat();
-    }
-
-    public int getMaxIter() {
-        return maxIter;
-    }
-
-    public void setMaxIter(int maxIter) {
-        this.maxIter = maxIter;
     }
 
     public float getEpsilonRel() {
@@ -125,26 +105,15 @@ public class ADMMReasoner implements Reasoner {
 
     @Override
     public void optimize(TermStore baseTermStore) {
-        InitialValue initialConsensus = InitialValue.valueOf(Options.ADMM_INITIAL_CONSENSUS_VALUE.getString().toUpperCase());
-        InitialValue initialLocal = InitialValue.valueOf(Options.ADMM_INITIAL_LOCAL_VALUE.getString().toUpperCase());
-
-        optimize(baseTermStore, initialConsensus, initialLocal);
-    }
-
-    public void optimize(TermStore baseTermStore, InitialValue initialConsensus, InitialValue initialLocal) {
         if (!(baseTermStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
         ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
 
-        termStore.resetLocalVairables(initialLocal);
-
         int numTerms = termStore.size();
         int numVariables = termStore.getNumGlobalVariables();
 
         log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
-
-        initConsensusValues(termStore, initialConsensus);
 
         termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
         variableBlockSize = numVariables / (Parallel.getNumThreads() * 4) + 1;
@@ -226,12 +195,12 @@ public class ADMMReasoner implements Reasoner {
         }
 
         // Updates variables
-        termStore.updateVariables(consensusValues);
+        termStore.updateVariables();
     }
 
     private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {
         // Always break when the allocated iterations is up.
-        if (iteration > maxIter) {
+        if (iteration > (int)(maxIterations * budget)) {
             return true;
         }
 
@@ -257,57 +226,10 @@ public class ADMMReasoner implements Reasoner {
     public void close() {
     }
 
-    /**
-     * Computes the incompatibility of the local variable copies corresponding to GroundRule groundRule.
-     * The caller should provide a buffer that will be used to keep copies of the consensus values.
-     * It should be sized: termStore().getNumGlobalVariables().
-     * Null may be passed instead, but it will cause an allocation.
-     */
-    public double getDualIncompatibility(GroundRule groundRule, ADMMTermStore termStore, float[] consensusBuffer) {
-        if (consensusBuffer == null) {
-            consensusBuffer = new float[termStore.getNumGlobalVariables()];
-        }
-
-        assert(consensusBuffer.length == consensusValues.length);
-
-        // Set the global variables to the value of the local variables for this rule.
-        for (ADMMObjectiveTerm term : termStore.getTerms(groundRule)) {
-            for (LocalVariable localVariable : term.getVariables()) {
-                consensusBuffer[localVariable.getGlobalId()] = localVariable.getValue();
-            }
-        }
-
-        // Updates variables
-        termStore.updateVariables(consensusBuffer);
-        double incompatibility = ((WeightedGroundRule)groundRule).getIncompatibility();
-
-        // Reset the variables to the correct values.
-        termStore.updateVariables(consensusValues);
-
-        return incompatibility;
-    }
-
-    private void initConsensusValues(ADMMTermStore termStore, InitialValue initialConsensus) {
-        consensusValues = new float[termStore.getNumGlobalVariables()];
-
-        if (initialConsensus == InitialValue.ZERO) {
-            for (int i = 0; i < consensusValues.length; i++) {
-                consensusValues[i] = 0.0f;
-            }
-        } else if (initialConsensus == InitialValue.RANDOM) {
-            for (int i = 0; i < consensusValues.length; i++) {
-                consensusValues[i] = RandUtils.nextFloat();
-            }
-        } else if (initialConsensus == InitialValue.ATOM) {
-            termStore.getAtomValues(consensusValues);
-        } else {
-            throw new IllegalStateException("Unknown initial consensus value: " + initialConsensus);
-        }
-    }
-
     private ObjectiveResult computeObjective(ADMMTermStore termStore, boolean logViolatedConstraints) {
         float objective = 0.0f;
         int violatedConstraints = 0;
+        float[] consensusValues = termStore.getConsensusValues();
 
         for (ADMMObjectiveTerm term : termStore) {
             if (term instanceof LinearConstraintTerm) {
@@ -340,13 +262,16 @@ public class ADMMReasoner implements Reasoner {
     }
 
     private class TermWorker extends Parallel.Worker<Integer> {
-        private ADMMTermStore termStore;
-        private int blockSize;
+        private final ADMMTermStore termStore;
+        private final int blockSize;
+        private final float[] consensusValues;
 
         public TermWorker(ADMMTermStore termStore, int blockSize) {
             super();
+
             this.termStore = termStore;
             this.blockSize = blockSize;
+            this.consensusValues = termStore.getConsensusValues();
         }
 
         public Object clone() {
@@ -372,13 +297,16 @@ public class ADMMReasoner implements Reasoner {
     }
 
     private class VariableWorker extends Parallel.Worker<Integer> {
-        private ADMMTermStore termStore;
-        private int blockSize;
+        private final ADMMTermStore termStore;
+        private final int blockSize;
+        private final float[] consensusValues;
 
         public VariableWorker(ADMMTermStore termStore, int blockSize) {
             super();
+
             this.termStore = termStore;
             this.blockSize = blockSize;
+            this.consensusValues = termStore.getConsensusValues();
         }
 
         public Object clone() {

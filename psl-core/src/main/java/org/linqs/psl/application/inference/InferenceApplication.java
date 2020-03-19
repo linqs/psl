@@ -21,9 +21,12 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -37,22 +40,37 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * All the tools necessary to perform infernce.
+ * An inference application owns the ground atoms (Database/AtomManager), ground rules (GroundRuleStore), the terms (TermStore),
+ * how terms are generated (TermGenerator), and how inference is actually performed (Reasoner).
+ * As such, the inference application is the top level authority for these items and methods.
+ * For example, inference may set the value of the random variables on construction.
+ */
 public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
 
-    protected Model model;
+    protected List<Rule> rules;
     protected Database db;
     protected Reasoner reasoner;
+    protected InitialValue initialValue;
 
     protected GroundRuleStore groundRuleStore;
     protected TermStore termStore;
     protected TermGenerator termGenerator;
     protected PersistedAtomManager atomManager;
 
-    public InferenceApplication(Model model, Database db) {
-        this.model = model;
+    private boolean atomsCommitted;
+
+    public InferenceApplication(List<Rule> rules, Database db) {
+        this.rules = new ArrayList<Rule>(rules);
         this.db = db;
+        this.atomsCommitted = false;
+
+        this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
 
         initialize();
     }
@@ -66,6 +84,8 @@ public abstract class InferenceApplication implements ModelApplication {
         atomManager = createAtomManager(db);
         log.debug("Atom manager initialization complete.");
 
+        initializeAtoms();
+
         reasoner = createReasoner();
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
@@ -77,7 +97,7 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     protected PersistedAtomManager createAtomManager(Database db) {
-        return new PersistedAtomManager(db);
+        return new PersistedAtomManager(db, false, initialValue);
     }
 
     protected GroundRuleStore createGroundRuleStore() {
@@ -102,31 +122,47 @@ public abstract class InferenceApplication implements ModelApplication {
      * The child is responsible for constructing the AtomManager
      * and populating the ground rule store.
      */
-    protected void completeInitialize() {}
+    protected void completeInitialize() {
+        log.info("Grounding out model.");
+        int groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
+        log.info("Grounding complete.");
+
+        log.debug("Initializing objective terms for {} ground rules.", groundCount);
+        @SuppressWarnings("unchecked")
+        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+        log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
+    }
 
     /**
      * Alias for inference() with committing atoms.
      */
     public void inference() {
-        inference(true);
+        inference(true, true, true);
     }
 
     /**
-     * Minimizes the total weighted incompatibility of the GroundAtoms in the Database
-     * according to the Model and commits the updated truth values back to the Database.
+     * Minimize the total weighted incompatibility of the atoms according to the rules,
+     * and optionally commit the updated atoms back to the database.
      *
-     * All RandomVariableAtoms which the Model might access must be persisted in the Database.
+     * All RandomVariableAtoms which the model might access must be persisted in the Database.
      */
-    public void inference(boolean commitAtoms) {
+    public void inference(boolean commitAtoms, boolean initializeAtoms, boolean resetTerms) {
+        if (initializeAtoms) {
+            initializeAtoms();
+        }
+
+        if (resetTerms && termStore != null) {
+            termStore.reset(initialValue);
+        }
+
         log.info("Beginning inference.");
         internalInference();
         log.info("Inference complete.");
+        atomsCommitted = false;
 
         // Commits the RandomVariableAtoms back to the Database.
         if (commitAtoms) {
-            log.info("Writing results to Database.");
-            atomManager.commitPersistedAtoms();
-            log.info("Results committed to database.");
+            commit();
         }
     }
 
@@ -153,25 +189,63 @@ public abstract class InferenceApplication implements ModelApplication {
         return atomManager;
     }
 
+    /**
+     * Set a budget (given as a proportion of the max budget).
+     */
+    public void setBudget(double budget) {
+        reasoner.setBudget(budget);
+    }
+
+    /**
+     * Set all the random variable atoms to the initial value for this inference application.
+     */
+    public void initializeAtoms() {
+        for (RandomVariableAtom atom : atomManager.getDatabase().getAllCachedRandomVariableAtoms()) {
+            atom.setValue(initialValue.getVariableValue(atom));
+        }
+    }
+
+    /**
+     * Commit the results of inference to the database.
+     */
+    public void commit() {
+        if (atomsCommitted) {
+            return;
+        }
+
+        log.info("Writing results to Database.");
+        atomManager.commitPersistedAtoms();
+        log.info("Results committed to database.");
+
+        atomsCommitted = true;
+    }
+
     @Override
     public void close() {
-        termStore.close();
-        groundRuleStore.close();
-        reasoner.close();
+        if (termStore != null) {
+            termStore.close();
+            termStore = null;
+        }
 
-        termStore = null;
-        groundRuleStore = null;
-        reasoner = null;
+        if (groundRuleStore != null) {
+            groundRuleStore.close();
+            groundRuleStore = null;
+        }
 
-        model = null;
+        if (reasoner != null) {
+            reasoner.close();
+            reasoner = null;
+        }
+
+        rules = null;
         db = null;
     }
 
     /**
      * Construct an inference application given the data.
-     * Look for a constructor like: (Model, Database).
+     * Look for a constructor like: (List<Rule>, Database).
      */
-    public static InferenceApplication getInferenceApplication(String className, Model model, Database db) {
+    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database db) {
         className = Reflection.resolveClassName(className);
 
         Class<? extends InferenceApplication> classObject = null;
@@ -185,14 +259,14 @@ public abstract class InferenceApplication implements ModelApplication {
 
         Constructor<? extends InferenceApplication> constructor = null;
         try {
-            constructor = classObject.getConstructor(Model.class, Database.class);
+            constructor = classObject.getConstructor(List.class, Database.class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No sutible constructor found for inference application: " + className + ".", ex);
+            throw new IllegalArgumentException("No sutible constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
         }
 
         InferenceApplication inferenceApplication = null;
         try {
-            inferenceApplication = constructor.newInstance(model, db);
+            inferenceApplication = constructor.newInstance(rules, db);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate inference application (" + className + ")", ex);
         } catch (IllegalAccessException ex) {
