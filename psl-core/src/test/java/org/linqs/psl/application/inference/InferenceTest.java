@@ -212,7 +212,7 @@ public abstract class InferenceTest {
             preInferenceTotalValue += atom.getValue();
         }
 
-        inference.inference(true, true, true);
+        inference.inference(true, true);
 
         inference.close();
 
@@ -245,7 +245,7 @@ public abstract class InferenceTest {
         }
 
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);
-        inference.inference(false, true, true);
+        inference.inference(false, true);
         inference.close();
 
         // The database should be closed after inference to clear the cache before reading in values again.

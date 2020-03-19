@@ -137,7 +137,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * Alias for inference() with committing atoms.
      */
     public void inference() {
-        inference(true, true, true);
+        inference(true, false);
     }
 
     /**
@@ -146,13 +146,13 @@ public abstract class InferenceApplication implements ModelApplication {
      *
      * All RandomVariableAtoms which the model might access must be persisted in the Database.
      */
-    public void inference(boolean commitAtoms, boolean initializeAtoms, boolean resetTerms) {
-        if (initializeAtoms) {
+    public void inference(boolean commitAtoms, boolean reset) {
+        if (reset) {
             initializeAtoms();
-        }
 
-        if (resetTerms && termStore != null) {
-            termStore.reset(initialValue);
+            if (termStore != null) {
+                termStore.reset(initialValue);
+            }
         }
 
         log.info("Beginning inference.");

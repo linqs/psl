@@ -204,7 +204,7 @@ public class Launcher {
 
         boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
 
-        inferenceApplication.inference(commitAtoms, true, true);
+        inferenceApplication.inference(commitAtoms, false);
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);

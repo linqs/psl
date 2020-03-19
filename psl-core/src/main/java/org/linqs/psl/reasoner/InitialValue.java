@@ -28,6 +28,8 @@ import org.linqs.psl.util.RandUtils;
  */
 public enum InitialValue {
     ZERO,
+    ONE,
+    HALF,
     RANDOM,
     ATOM;
 
@@ -38,6 +40,10 @@ public enum InitialValue {
         switch (this) {
             case ZERO:
                 return 0.0f;
+            case ONE:
+                return 1.0f;
+            case HALF:
+                return 0.5f;
             case RANDOM:
                 return RandUtils.nextFloat();
             case ATOM:
