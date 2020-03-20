@@ -21,7 +21,7 @@
     <groupId>org.linqs</groupId>
     <artifactId>psl</artifactId>
     <name>psl</name>
-    <version>2.2.1</version>
+    <version>2.2.2</version>
     <packaging>pom</packaging>
     <description>The PSL software from the LINQS research group.</description>
     <url>https://psl.linqs.org</url>
