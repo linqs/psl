@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learn.weight;
+package org.linqs.psl.application.learning.weight;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
