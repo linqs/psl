@@ -119,14 +119,23 @@ public class RankingEvaluator extends Evaluator {
 
     /**
      * Returns area under the precision recall curve.
-     * This is a simple implementation that assumes all the ground truth is 0/1
-     * and does not make any effort to approximate the first point.
      */
     public double positiveAUPRC() {
-        // both lists are sorted
+        return auprc(true);
+    }
+
+    /**
+     * Returns area under the precision recall curve for the negative class.
+     */
+    public double negativeAUPRC() {
+        return auprc(false);
+    }
+
+    private double auprc(boolean positiveIsTrue) {
+        // Both lists are sorted.
         int totalPositives = 0;
         for (GroundAtom atom : truth) {
-            if (atom.getValue() > threshold) {
+            if (!((atom.getValue() >= threshold) ^ positiveIsTrue)) {
                 totalPositives++;
             }
         }
@@ -139,20 +148,25 @@ public class RankingEvaluator extends Evaluator {
         int tp = 0;
         int fp = 0;
 
-        // Precision is along the Y-axis.
+        // Precision is along the Y-axis, and we always start at full precision.
         double prevY = 1.0;
-        // Recall is along the X-axis.
+        // Recall is along the X-axis, and we always start at no recall.
         double prevX = 0.0;
 
         // Go through the atoms from highest truth value to lowest.
         for (GroundAtom atom : predicted) {
-            Boolean label = getLabel(atom);
-            if (label == null) {
+            Boolean rawLabel = getLabel(atom);
+            if (rawLabel == null) {
                 continue;
             }
 
+            boolean label = rawLabel.booleanValue();
+            if (!positiveIsTrue) {
+                label = !label;
+            }
+
             // Assume we predicted everything positive.
-            if (label != null && label) {
+            if (label) {
                 tp++;
             } else {
                 fp++;
@@ -161,66 +175,10 @@ public class RankingEvaluator extends Evaluator {
             double newY = tp / (double)(tp + fp);
             double newX = tp / (double)totalPositives;
 
-            area += 0.5 * (newX - prevX) * Math.abs(newY - prevY) + (newX - prevX) * newY;
-            prevY = newY;
-            prevX = newX;
-        }
+            // Use trapezoids to compute the area.
+            // Consider the area of the largest rectangle (highest y), and then cut out a triangle.
+            area += ((newX - prevX) * Math.max(prevY, newY)) - 0.5 * ((newX - prevX) * Math.abs(newY - prevY));
 
-        // Add the final piece.
-        area += 0.5 * (1.0 - prevX) * Math.abs(0.0 - prevY) + (1.0 - prevX) * 0.0;
-
-        return area;
-    }
-
-    /**
-     * Returns area under the precision recall curve for the negative class.
-     * The same stipulations for AUPRC hold here.
-     */
-    public double negativeAUPRC() {
-        // both lists are sorted
-        int totalPositives = 0;
-        for (GroundAtom atom : truth) {
-            if (atom.getValue() > threshold) {
-                totalPositives++;
-            }
-        }
-
-        int totalNegatives = predicted.size() - totalPositives;
-        if (totalNegatives == 0) {
-            return 0.0;
-        }
-
-        double area = 0.0;
-        // Assume we have already predicted everything false, and correct as we go.
-        int fn = totalPositives;
-        int tn = totalNegatives;
-
-        // Precision is along the Y-axis.
-        double prevY = tn / (double)(tn + fn);
-        // Recall is along the X-axis.
-        double prevX = 1.0;
-
-        // Go through the atoms from highest truth value to lowest.
-        for (GroundAtom atom : predicted) {
-            Boolean label = getLabel(atom);
-            if (label == null) {
-                continue;
-            }
-
-            if (label != null && label) {
-                fn--;
-            } else {
-                tn--;
-            }
-
-            double newY = 0.0;
-            if (tn + fn > 0) {
-                newY = tn / (double)(tn + fn);
-            }
-
-            double newX = tn / (double)totalNegatives;
-
-            area += 0.5 * (prevX - newX) * Math.abs(newY - prevY) + (prevX - newX) * newY;
             prevY = newY;
             prevX = newX;
         }
