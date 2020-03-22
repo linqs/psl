@@ -23,6 +23,8 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 import java.util.HashMap;
@@ -209,6 +211,14 @@ public class CategoricalEvaluator extends Evaluator {
 
             if (atom.getValue() > oldBest.getValue()) {
                 return atom;
+            } else if (MathUtils.equals(atom.getValue(), oldBest.getValue())) {
+                // If there is a tie, flip a coin to decide which atom is kept.
+                // This helps remove bias from the order atoms are accessed.
+                if (RandUtils.nextBoolean()) {
+                    return atom;
+                }
+
+                return oldBest;
             } else {
                 return oldBest;
             }
