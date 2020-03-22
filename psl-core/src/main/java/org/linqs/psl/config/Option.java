@@ -128,29 +128,33 @@ public class Option {
     }
 
     public String getString() {
-        return Config.getString(name, ((String)defaultValue));
+        if (defaultValue == null) {
+            return Config.getString(name, null);
+        } else {
+            return Config.getString(name, defaultValue.toString());
+        }
     }
 
     public int getInt() {
-        int value = Config.getInt(name, ((Integer)defaultValue).intValue());
+        int value = Config.getInt(name, ((Number)defaultValue).intValue());
         checkNumericFlags(value, "" + value);
         return value;
     }
 
     public long getLong() {
-        long value = Config.getLong(name, ((Long)defaultValue).longValue());
+        long value = Config.getLong(name, ((Number)defaultValue).longValue());
         checkNumericFlags(value, "" + value);
         return value;
     }
 
     public float getFloat() {
-        float value = Config.getFloat(name, ((Float)defaultValue).floatValue());
+        float value = Config.getFloat(name, ((Number)defaultValue).floatValue());
         checkNumericFlags(value, "" + value);
         return value;
     }
 
     public double getDouble() {
-        double value = Config.getDouble(name, ((Double)defaultValue).doubleValue());
+        double value = Config.getDouble(name, ((Number)defaultValue).doubleValue());
         checkNumericFlags(value, "" + value);
         return value;
     }
