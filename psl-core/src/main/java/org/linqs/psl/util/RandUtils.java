@@ -19,6 +19,9 @@ package org.linqs.psl.util;
 
 import org.linqs.psl.config.Options;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -32,6 +35,8 @@ import java.util.Random;
  * If parallel randomness is required, then use this RNG to seed the per-thread RNGs.
  */
 public final class RandUtils {
+    private static final Logger log = LoggerFactory.getLogger(RandUtils.class);
+
     private static Random rng = null;
 
     // Static only.
@@ -42,7 +47,9 @@ public final class RandUtils {
             return;
         }
 
-        rng = new Random(Options.RANDOM_SEED.getInt());
+        long seed = Options.RANDOM_SEED.getInt();
+        log.info("Using random seed: " + seed);
+        rng = new Random(seed);
     }
 
     public static synchronized void seed(int seed) {

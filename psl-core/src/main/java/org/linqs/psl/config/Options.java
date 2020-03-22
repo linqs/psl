@@ -580,8 +580,9 @@ public class Options {
 
     public static final Option RANDOM_SEED = new Option(
         "random.seed",
-        4,
+        (long)(Math.random() * 100000000l),
         "The random seed to use for PSL."
+        + " If not explicitly set, the seed is chosen by the system."
     );
 
     public static final Option WLA_RGS_MAX_LOCATIONS = new Option(
