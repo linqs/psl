@@ -23,6 +23,8 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
@@ -239,6 +241,40 @@ public abstract class InferenceApplication implements ModelApplication {
 
         rules = null;
         db = null;
+    }
+
+    /**
+     * Relax hard constraints into weighted rules.
+     * This is not called directly by InferenceApplication, but children can utilize this method.
+     */
+    protected void relaxHardConstraints() {
+        double largestWeight = 0.0f;
+        boolean hasUnweightedRule = false;
+
+        for (Rule rule : rules) {
+            if (rule instanceof WeightedRule) {
+                double weight = ((WeightedRule)rule).getWeight();
+                if (weight > largestWeight) {
+                    largestWeight = weight;
+                }
+            } else {
+                hasUnweightedRule = true;
+            }
+        }
+
+        if (!hasUnweightedRule) {
+            return;
+        }
+
+        double weight = largestWeight * Options.INFERENCE_RELAXATION_MULTIPLIER.getDouble();
+        boolean squared = Options.INFERENCE_RELAXATION_SQUARED.getBoolean();
+
+        for (int i = 0; i < rules.size(); i++) {
+            if (rules.get(i) instanceof UnweightedRule) {
+                log.debug("Relaxing hard constraint (weight: {}, squared: {}): {}", weight, squared, rules.get(i));
+                rules.set(i, ((UnweightedRule)rules.get(i)).relax(weight, squared));
+            }
+        }
     }
 
     /**

@@ -426,6 +426,19 @@ public class Options {
         "The reasoner to use for inference."
     );
 
+    public static final Option INFERENCE_RELAXATION_MULTIPLIER = new Option(
+        "inference.relax.multiplier",
+        10000,
+        "When relaxing a hard constraint into a soft one, the weight of the rule is set to this value times the largest weight seen.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option INFERENCE_RELAXATION_SQUARED = new Option(
+        "inference.relax.squared",
+        true,
+        "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
+    );
+
     public static final Option INFERENCE_TG = new Option(
         "inference.termgenerator",
         ADMMTermGenerator.class.getName(),

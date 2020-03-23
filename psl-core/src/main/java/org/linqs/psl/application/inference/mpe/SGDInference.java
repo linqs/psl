@@ -58,4 +58,10 @@ public class SGDInference extends MPEInference {
     protected TermStore createTermStore() {
         return new SGDMemoryTermStore();
     }
+
+    @Override
+    protected void completeInitialize() {
+        relaxHardConstraints();
+        super.completeInitialize();
+    }
 }

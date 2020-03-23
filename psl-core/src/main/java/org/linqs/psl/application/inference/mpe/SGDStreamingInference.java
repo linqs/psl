@@ -71,6 +71,8 @@ public class SGDStreamingInference extends MPEInference {
 
     @Override
     protected void completeInitialize() {
-        // Do nothing. Specifically, do not ground.
+        relaxHardConstraints();
+
+        // Do nothing else. Specifically, do not ground.
     }
 }
