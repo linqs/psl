@@ -153,7 +153,7 @@ public abstract class InferenceApplication implements ModelApplication {
             initializeAtoms();
 
             if (termStore != null) {
-                termStore.reset(initialValue);
+                termStore.reset();
             }
         }
 

@@ -23,7 +23,6 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
-import org.linqs.psl.util.RandUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,7 +100,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         int index = variables.size();
 
         variables.put(variable, index);
-        variableValues[index] = RandUtils.nextFloat();
+        variableValues[index] = atom.getValue();
         variableAtoms[index] = atom;
 
         return variable;
@@ -161,9 +160,9 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void reset(InitialValue initialValue) {
+    public void reset() {
         for (int i = 0; i < variables.size(); i++) {
-            variableValues[i] = initialValue.getVariableValue(variableAtoms[i]);
+            variableValues[i] = variableAtoms[i].getValue();
         }
     }
 

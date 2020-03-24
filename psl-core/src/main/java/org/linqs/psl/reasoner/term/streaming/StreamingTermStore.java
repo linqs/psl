@@ -27,7 +27,6 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
-import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
@@ -231,7 +230,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         int index = variables.size();
 
         variables.put(atom, index);
-        variableValues[index] = RandUtils.nextFloat();
+        variableValues[index] = atom.getValue();
         variableAtoms[index] = atom;
 
         return atom;
@@ -384,9 +383,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public void reset(InitialValue initialValue) {
+    public void reset() {
         for (int i = 0; i < variables.size(); i++) {
-            variableValues[i] = initialValue.getVariableValue(variableAtoms[i]);
+            variableValues[i] = variableAtoms[i].getValue();
         }
     }
 

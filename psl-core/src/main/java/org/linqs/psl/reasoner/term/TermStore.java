@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 
@@ -42,9 +41,10 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
 
     /**
      * Reset the existing terms for another round of inference.
+     * Atom values are used to reset variables.
      * Does NOT clear().
      */
-    public void reset(InitialValue initialValue);
+    public void reset();
 
     /**
      * Close down the term store, it will not be used any more.

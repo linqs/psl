@@ -20,7 +20,6 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
@@ -50,7 +49,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
-    public void reset(InitialValue initialValue) {
+    public void reset() {
         // Nothing is required for a MemoryTermStore to reset.
     }
 

@@ -25,7 +25,6 @@ import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
-import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -182,14 +181,14 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
     }
 
     @Override
-    public void reset(InitialValue initialValue) {
+    public void reset() {
         for (Map.Entry<RandomVariableAtom, Integer> entry : variableIndexes.entrySet()) {
             if (consensusValues != null) {
-                consensusValues[entry.getValue().intValue()] = initialValue.getVariableValue(entry.getKey());
+                consensusValues[entry.getValue().intValue()] = entry.getKey().getValue();
             }
 
             for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
-                local.setValue(initialValue.getVariableValue(entry.getKey()));
+                local.setValue(entry.getKey().getValue());
                 local.setLagrange(0.0f);
             }
         }
