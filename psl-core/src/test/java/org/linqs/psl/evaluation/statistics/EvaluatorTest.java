@@ -111,8 +111,6 @@ public abstract class EvaluatorTest<T extends Evaluator> {
     public void testBase() {
         Evaluator evaluator = getEvaluator();
         evaluator.compute(trainingMap, predicate);
-
-        boolean higherBetter = evaluator.isHigherRepresentativeBetter();
-        double score = evaluator.getRepresentativeMetric();
+        double score = evaluator.getNormalizedRepMetric();
     }
 }

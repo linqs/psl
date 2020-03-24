@@ -148,8 +148,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
             computeMPEState();
 
             evaluator.compute(trainingMap);
-            double objective = evaluator.getRepresentativeMetric();
-            objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
+            double objective = -1.0 * evaluator.getNormalizedRepMetric();
 
             log.debug("Initial Training Objective: {}", objective);
         }
@@ -222,8 +221,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 computeMPEState();
 
                 evaluator.compute(trainingMap);
-                objective = evaluator.getRepresentativeMetric();
-                objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
+                objective = -1.0 * evaluator.getNormalizedRepMetric();
 
                 if (cutObjective && step > 0 && objective > lastObjective) {
                     log.trace("Objective increased: {} -> {}, cutting step size: {} -> {}.",

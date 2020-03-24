@@ -81,7 +81,7 @@ public class ContinuousEvaluator extends Evaluator {
     }
 
     @Override
-    public double getRepresentativeMetric() {
+    public double getRepMetric() {
         switch (representative) {
             case MAE:
                 return mae();
@@ -93,7 +93,7 @@ public class ContinuousEvaluator extends Evaluator {
     }
 
     @Override
-    public boolean isHigherRepresentativeBetter() {
+    public boolean isHigherRepBetter() {
         return false;
     }
 

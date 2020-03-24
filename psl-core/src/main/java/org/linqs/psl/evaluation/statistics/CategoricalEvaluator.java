@@ -133,7 +133,7 @@ public class CategoricalEvaluator extends Evaluator {
     }
 
     @Override
-    public double getRepresentativeMetric() {
+    public double getRepMetric() {
         switch (representative) {
             case ACCURACY:
                 return accuracy();
@@ -143,7 +143,7 @@ public class CategoricalEvaluator extends Evaluator {
     }
 
     @Override
-    public boolean isHigherRepresentativeBetter() {
+    public boolean isHigherRepBetter() {
         return true;
     }
 

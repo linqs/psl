@@ -95,7 +95,7 @@ public class RankingEvaluator extends Evaluator {
     }
 
     @Override
-    public double getRepresentativeMetric() {
+    public double getRepMetric() {
         switch (representative) {
             case AUROC:
                 return auroc();
@@ -109,7 +109,7 @@ public class RankingEvaluator extends Evaluator {
     }
 
     @Override
-    public boolean isHigherRepresentativeBetter() {
+    public boolean isHigherRepBetter() {
         return true;
     }
 

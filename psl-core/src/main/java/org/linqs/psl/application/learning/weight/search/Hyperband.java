@@ -181,9 +181,7 @@ public class Hyperband extends WeightLearningApplication {
         computeMPEState();
 
         evaluator.compute(trainingMap);
-
-        double score = evaluator.getRepresentativeMetric();
-        score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
+        double score = -1.0 * evaluator.getNormalizedRepMetric();
 
         return score;
     }

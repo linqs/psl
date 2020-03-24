@@ -50,9 +50,28 @@ public abstract class Evaluator {
      */
     public abstract void compute(TrainingMap data, StandardPredicate predicate);
 
-    public abstract double getRepresentativeMetric();
+    /**
+     * The representative (rep) metric is the metric that was chosen to be the representative for this evaluator.
+     * This metric is chosen via config.
+     */
+    public abstract double getRepMetric();
 
-    public abstract boolean isHigherRepresentativeBetter();
+    /**
+     * Is a higher value for the current representative metric better?
+     */
+    public abstract boolean isHigherRepBetter();
+
+    /**
+     * Combine getRepMetric() with isHigherRepBetter() so that higher values that come out of this method are always better.
+     */
+    public double getNormalizedRepMetric() {
+        double value = getRepMetric();
+        if (!isHigherRepBetter()) {
+            value = -value;
+        }
+
+        return value;
+    }
 
     /**
      * Get a string that contains the full range of stats that this Evaluator can provide.

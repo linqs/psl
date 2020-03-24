@@ -107,7 +107,7 @@ public class DiscreteEvaluator extends Evaluator {
     }
 
     @Override
-    public double getRepresentativeMetric() {
+    public double getRepMetric() {
         switch (representative) {
             case F1:
                 return f1();
@@ -127,7 +127,7 @@ public class DiscreteEvaluator extends Evaluator {
     }
 
     @Override
-    public boolean isHigherRepresentativeBetter() {
+    public boolean isHigherRepBetter() {
         return true;
     }
 

@@ -141,10 +141,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
         evaluator.compute(trainingMap);
 
-        double score = evaluator.getRepresentativeMetric();
-        score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
-
-        return score;
+        return -1.0 * evaluator.getNormalizedRepMetric();
     }
 
     /**

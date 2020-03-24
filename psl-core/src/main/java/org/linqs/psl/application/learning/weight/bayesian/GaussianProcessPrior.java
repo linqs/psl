@@ -310,9 +310,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         setWeights(config);
         computeMPEState();
         evaluator.compute(trainingMap);
-        double score = evaluator.getRepresentativeMetric();
-        score = (evaluator.isHigherRepresentativeBetter()) ? score : -1.0 * score;
-        return (float)score;
+        return (float)evaluator.getNormalizedRepMetric();
     }
 
     // Exploration strategy
