@@ -93,6 +93,7 @@ public class Config {
         // Load list of classes build at compile time.
         stream = ClassLoader.getSystemClassLoader().getResourceAsStream(CLASS_LIST_PROPS);
         if (stream != null) {
+          //Personal change
             loadResource(stream, CLASS_LIST_PROPS);
         }
 

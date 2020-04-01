@@ -340,6 +340,10 @@ public class Launcher {
             predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
         }
 
+        //TEST
+        //We have predictionDatabase and truthDatabase here, we need to put them into a TrainingMap
+        //I think ill have to learn how these datebases work first
+
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
         Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
@@ -350,6 +354,16 @@ public class Launcher {
                 log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
                 continue;
             }
+
+            //TEST
+            // We could have another function here that grabs the prediction and truth databases and
+            // creates a TrainingMap, just the same as compute does
+            // But instead of doing any calulations, you just use map for sake of output,
+
+            //alternativly one training map and send it to this new statistics / output function
+            //so that change would be done in the Evaluator.java class
+
+            //Question is, how expensive is it to make multiple trainingMaps?
 
             evaluator.compute(predictionDatabase, truthDatabase, targetPredicate, !closePredictionDB);
             log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());

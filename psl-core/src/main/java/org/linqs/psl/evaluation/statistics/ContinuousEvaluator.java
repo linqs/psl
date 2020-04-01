@@ -82,10 +82,20 @@ public class ContinuousEvaluator extends Evaluator {
         absoluteError = 0.0;
         squaredError = 0.0;
 
+
+        System.out.println("Can potentially grab ground truth <-> model predictions here");
+
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }
+
+            //TEST
+            //Trying to compare ground truth to model output
+            // System.out.println("Ground Truth: " + entry.getValue() + " " + entry.getValue().getValue());
+            // System.out.println("Predicted : " + entry.getKey() + " " + entry.getKey().getValue());
+
+            //but can we get this same output in cli source-code? / does it matter??
 
             count++;
             absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());
