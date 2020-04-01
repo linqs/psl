@@ -227,6 +227,8 @@ public class LazyAtomManager extends PersistedAtomManager {
      * Will will drop all the ground rules originating from this rule and reground.
      */
     private void lazyComplexGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore) {
+        log.trace(String.format("Complex lazy grounding on rule [%s]", rule));
+
         // Remove all existing ground rules.
         groundRuleStore.removeGroundRules(rule);
 
@@ -245,8 +247,11 @@ public class LazyAtomManager extends PersistedAtomManager {
             return;
         }
 
+        log.trace(String.format("Simple lazy grounding on rule: [%s], formula: [%s]", rule, formula));
+
         List<GroundRule> groundRules = new ArrayList<GroundRule>();
         for (int i = 0; i < groundingResults.size(); i++) {
+            groundRules.clear();
             rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), this, groundRules);
             for (GroundRule groundRule : groundRules) {
                 if (groundRule != null) {
