@@ -114,6 +114,23 @@ public final class IteratorUtils {
         };
     }
 
+    public static Iterator<Integer> count(int amount) {
+        return count(0, amount);
+    }
+
+    public static Iterator<Integer> count(int start, int amount) {
+        assert(amount >= 0);
+        return new CountingIterator(start, amount);
+    }
+
+    public interface MapFunction<T, S> {
+        public S map(T value);
+    }
+
+    public interface FilterFunction<T> {
+        public boolean keep(T value);
+    }
+
     private static class MapIterable<T, S> implements Iterable<S> {
         private Iterable<T> baseIterable;
         private MapFunction<T, S> mapFunction;
@@ -172,10 +189,6 @@ public final class IteratorUtils {
         public void remove() {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public interface MapFunction<T, S> {
-        public S map(T value);
     }
 
     private static class FilterIterable<T> implements Iterable<T> {
@@ -237,10 +250,6 @@ public final class IteratorUtils {
         public void remove() {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public interface FilterFunction<T> {
-        public boolean keep(T value);
     }
 
     private static class ConcatenationIterable<T> implements Iterable<T> {
@@ -354,6 +363,36 @@ public final class IteratorUtils {
         @Override
         public boolean hasNext() {
             return count < (int)Math.pow(2, size);
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class CountingIterator implements Iterator<Integer> {
+        private final int end;
+
+        private int next;
+
+        public CountingIterator(int start, int count) {
+            next = start;
+            end = start + count;
+        }
+
+        @Override
+        public Integer next() {
+            if (!hasNext()) {
+                throw new java.util.NoSuchElementException();
+            }
+
+            return Integer.valueOf(next++);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return next < end;
         }
 
         @Override
