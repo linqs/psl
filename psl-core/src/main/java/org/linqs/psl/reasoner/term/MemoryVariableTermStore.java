@@ -18,23 +18,32 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.model.predicate.model.ModelPredicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A general TermStore that handles terms and variables all in memory.
  * Variables are stored in an array along with their values.
  */
 public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements VariableTermStore<T, V> {
+    private static final Logger log = LoggerFactory.getLogger(MemoryVariableTermStore.class);
+
     // Keep an internal store to hold the terms while this class focuses on variables.
     private MemoryTermStore<T> store;
 
@@ -42,11 +51,14 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     private Map<V, Integer> variables;
 
     // Matching arrays for variables values and atoms.
+    // A -1 will be stored if we need to go to the atom for the value.
     private float[] variableValues;
     private RandomVariableAtom[] variableAtoms;
 
     private boolean shuffle;
     private int defaultSize;
+
+    private Set<ModelPredicate> modelPredicates;
 
     public MemoryVariableTermStore() {
         shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();
@@ -54,11 +66,25 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         store = new MemoryTermStore<T>();
         ensureVariableCapacity(defaultSize);
+
+        modelPredicates = new HashSet<ModelPredicate>();
     }
 
     @Override
     public int getVariableIndex(V variable) {
         return variables.get(variable).intValue();
+    }
+
+    // TODO(eriq): Remove
+    @Override
+    public float getVariableValue(int index) {
+        return variableValues[index];
+    }
+
+    // TODO(eriq): Remove?
+    @Override
+    public void updateVariableValue(int index, float gradient, float gradientStep) {
+        variableValues[index] = Math.max(0.0f, Math.min(1.0f, variableValues[index] - gradientStep));
     }
 
     @Override
@@ -102,6 +128,10 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         variables.put(variable, index);
         variableValues[index] = atom.getValue();
         variableAtoms[index] = atom;
+
+        if (atom.getPredicate() instanceof ModelPredicate) {
+            modelPredicates.add((ModelPredicate)atom.getPredicate());
+        }
 
         return variable;
     }
@@ -157,6 +187,13 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         if (variables != null) {
             variables.clear();
         }
+
+        if (modelPredicates != null) {
+            modelPredicates.clear();
+        }
+
+        variableValues = null;
+        variableAtoms = null;
     }
 
     @Override
@@ -176,6 +213,61 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         variables = null;
+    }
+
+    @Override
+    public void initForOptimization() {
+        updateModelAtoms();
+    }
+
+    @Override
+    public void iterationComplete() {
+        fitModelAtoms();
+        updateModelAtoms();
+    }
+
+    private void updateModelAtoms() {
+        if (modelPredicates.size() == 0) {
+            return;
+        }
+
+        for (ModelPredicate predicate : modelPredicates) {
+            predicate.runModel();
+        }
+
+        int count = 0;
+        for (int i = 0; i < variableAtoms.length; i++) {
+            if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
+                variableValues[i] = ((ModelPredicate)variableAtoms[i].getPredicate()).getValue(variableAtoms[i]);
+                count++;
+            }
+        }
+
+        log.debug("Batch update of {} model atoms.", count);
+    }
+
+    private void fitModelAtoms() {
+        if (modelPredicates.size() == 0) {
+            return;
+        }
+
+        for (ModelPredicate predicate : modelPredicates) {
+            predicate.resetLabels();
+        }
+
+        int count = 0;
+        for (int i = 0; i < variableAtoms.length; i++) {
+            if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
+                ((ModelPredicate)variableAtoms[i].getPredicate()).setLabel(variableAtoms[i], variableValues[i]);
+                count++;
+            }
+        }
+
+        for (ModelPredicate predicate : modelPredicates) {
+            predicate.fit();
+        }
+
+        log.debug("Batch fit of {} model atoms.", count);
     }
 
     @Override

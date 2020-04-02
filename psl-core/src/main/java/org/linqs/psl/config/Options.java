@@ -505,6 +505,32 @@ public class Options {
         "Shuffle the terms before each return of iterator()."
     );
 
+    public static final Option MODEL_PREDICATE_BATCH_SIZE = new Option(
+        "modelpredicate.batchsize",
+        32,
+        "The size of batches for model updates.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option MODEL_PREDICATE_ENTITY_ARGS = new Option(
+        "modelpredicate.entityargs",
+        "0",
+        "A comma separated list of indexes to the predicate arguments that identity the data point (as opposed to the target label)."
+    );
+
+    public static final Option MODEL_PREDICATE_ITERATIONS = new Option(
+        "modelpredicate.iterations",
+        100,
+        "The number of iterations for the internal model to go through for updates.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option MODEL_PREDICATE_LABEL_ARGS = new Option(
+        "modelpredicate.labelargs",
+        "1",
+        "A comma separated list of indexes to the predicate arguments that identity the target label (as opposed to the identity of the data point)."
+    );
+
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
         "pairedduallearner.admmsteps",
         1,

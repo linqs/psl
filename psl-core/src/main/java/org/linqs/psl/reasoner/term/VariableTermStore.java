@@ -42,6 +42,17 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public int getVariableIndex(V variable);
 
     /**
+     * Get the variable for the given index.
+     */
+    public float getVariableValue(int index);
+
+    /**
+     * Update the variable value at the given index.
+     * Both the gradient and suggested gradient step should be supplied.
+     */
+    public void updateVariableValue(int index, float gradient, float gradientStep);
+
+    /**
      * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().
      */
     public void syncAtoms();

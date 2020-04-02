@@ -61,6 +61,14 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
+    public void initForOptimization() {
+    }
+
+    @Override
+    public void iterationComplete() {
+    }
+
+    @Override
     public T get(int index) {
         return store.get(index);
     }

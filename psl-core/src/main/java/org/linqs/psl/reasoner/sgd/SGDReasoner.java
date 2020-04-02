@@ -55,15 +55,13 @@ public class SGDReasoner extends Reasoner {
     @Override
     public void optimize(TermStore baseTermStore) {
         if (!(baseTermStore instanceof VariableTermStore)) {
-            throw new IllegalArgumentException("SGDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
+            throw new IllegalArgumentException("SGDReasoner requires a VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
 
         @SuppressWarnings("unchecked")
         VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
 
-        // This must be called after the term store has to correct variable capacity.
-        // A reallocation can cause this array to become out-of-date.
-        float[] variableValues = termStore.getVariableValues();
+        termStore.initForOptimization();
 
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
@@ -73,7 +71,7 @@ public class SGDReasoner extends Reasoner {
             log.trace("objective:Iterations,Time(ms),Objective");
 
             if (printInitialObj) {
-                objective = computeObjective(termStore, variableValues);
+                objective = computeObjective(termStore);
                 log.trace("objective:{},{},{}", 0, 0, objective);
             }
         }
@@ -84,12 +82,12 @@ public class SGDReasoner extends Reasoner {
             long start = System.currentTimeMillis();
 
             for (SGDObjectiveTerm term : termStore) {
-                term.minimize(iteration, variableValues);
+                term.minimize(iteration, termStore);
             }
 
             long end = System.currentTimeMillis();
             oldObjective = objective;
-            objective = computeObjective(termStore, variableValues);
+            objective = computeObjective(termStore);
             time += end - start;
 
             if (printObj) {
@@ -97,6 +95,7 @@ public class SGDReasoner extends Reasoner {
             }
 
             iteration++;
+            termStore.iterationComplete();
         }
 
         termStore.syncAtoms();
@@ -105,7 +104,7 @@ public class SGDReasoner extends Reasoner {
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
-    public float computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
+    public float computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
         float objective = 0.0f;
 
         // If possible, use a readonly iterator.
@@ -117,7 +116,7 @@ public class SGDReasoner extends Reasoner {
         }
 
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate(variableValues);
+            objective += term.evaluate(termStore);
         }
 
         return objective / termStore.size();

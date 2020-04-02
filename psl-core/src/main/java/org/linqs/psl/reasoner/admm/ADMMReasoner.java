@@ -109,6 +109,8 @@ public class ADMMReasoner extends Reasoner {
         }
         ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
 
+        termStore.initForOptimization();
+
         int numTerms = termStore.size();
         int numVariables = termStore.getNumGlobalVariables();
 
@@ -173,6 +175,7 @@ public class ADMMReasoner extends Reasoner {
             }
 
             iteration++;
+            termStore.iterationComplete();
 
             if (breakOptimization(iteration, objective, oldObjective)) {
                 // Before we break, compute the objective so we can look for violated constraints.

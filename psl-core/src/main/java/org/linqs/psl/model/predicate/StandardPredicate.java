@@ -27,7 +27,7 @@ import org.linqs.psl.model.term.ConstantType;
 public class StandardPredicate extends Predicate {
     private boolean isBlock;
 
-    private StandardPredicate(String name, ConstantType[] types) {
+    protected StandardPredicate(String name, ConstantType[] types) {
         super(name, types);
         isBlock = false;
 
@@ -74,20 +74,24 @@ public class StandardPredicate extends Predicate {
             return new StandardPredicate(name, types);
         }
 
+        validateTypes(predicate, types);
+
+        return predicate;
+    }
+
+    protected static void validateTypes(Predicate predicate, ConstantType[] types) {
         if (predicate.getArity() != types.length) {
             throw new IllegalArgumentException(
-                    name + " -- Size mismatch for predicate types. Existing predicate: " +
+                    predicate.getName() + " -- Size mismatch for predicate types. Existing predicate: " +
                     predicate.getArity() + ", Query Predicate: " + types.length);
         }
 
         for (int i = 0; i < types.length; i++) {
             if (!predicate.getArgumentType(i).equals(types[i])) {
                 throw new IllegalArgumentException(
-                        name + " -- Type mismatch on " + i + ". Existing predicate: " +
+                        predicate.getName() + " -- Type mismatch on " + i + ". Existing predicate: " +
                         predicate.getArgumentType(i) + ", Query Predicate: " + types[i]);
             }
         }
-
-        return predicate;
     }
 }

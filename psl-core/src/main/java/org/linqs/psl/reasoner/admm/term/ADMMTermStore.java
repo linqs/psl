@@ -208,6 +208,16 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm, LocalVariable
     }
 
     @Override
+    public void initForOptimization() {
+        store.initForOptimization();
+    }
+
+    @Override
+    public void iterationComplete() {
+        store.iterationComplete();
+    }
+
+    @Override
     public ADMMObjectiveTerm get(int index) {
         return store.get(index);
     }

@@ -65,6 +65,8 @@ public class DCDReasoner extends Reasoner {
         @SuppressWarnings("unchecked")
         VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)baseTermStore;
 
+        termStore.initForOptimization();
+
         // This must be called after the term store has to correct variable capacity.
         // A reallocation can cause this array to become out-of-date.
         float[] variableValues = termStore.getVariableValues();
@@ -108,6 +110,7 @@ public class DCDReasoner extends Reasoner {
             }
 
             iteration++;
+            termStore.iterationComplete();
         }
 
         termStore.syncAtoms();
