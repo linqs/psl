@@ -266,7 +266,7 @@ public abstract class InferenceApplication implements ModelApplication {
             return;
         }
 
-        double weight = largestWeight * Options.INFERENCE_RELAXATION_MULTIPLIER.getDouble();
+        double weight = Math.max(1.0, largestWeight * Options.INFERENCE_RELAXATION_MULTIPLIER.getDouble());
         boolean squared = Options.INFERENCE_RELAXATION_SQUARED.getBoolean();
 
         for (int i = 0; i < rules.size(); i++) {
