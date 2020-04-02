@@ -67,13 +67,11 @@ public class ADMMReasoner extends Reasoner {
 
     private int termBlockSize;
     private int variableBlockSize;
-    private boolean objectiveBreak;
 
     public ADMMReasoner() {
         maxIterations = Options.ADMM_MAX_ITER.getInt();
         stepSize = Options.ADMM_STEP_SIZE.getFloat();
         computePeriod = Options.ADMM_COMPUTE_PERIOD.getInt();
-        objectiveBreak = Options.ADMM_OBJECTIVE_BREAK.getBoolean();
         epsilonAbs = Options.ADMM_EPSILON_ABS.getFloat();
         epsilonRel = Options.ADMM_EPSILON_REL.getFloat();
     }

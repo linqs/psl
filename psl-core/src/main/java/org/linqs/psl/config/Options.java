@@ -75,12 +75,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option ADMM_OBJECTIVE_BREAK = new Option(
-        "admmreasoner.objectivebreak",
-        true,
-        "Stop if the objective has not changed since the last logging period (see ADMM_COMPUTE_PERIOD)."
-    );
-
     public static final Option ADMM_STEP_SIZE = new Option(
         "admmreasoner.stepsize",
         1.0f,
@@ -185,27 +179,6 @@ public class Options {
         200,
         "The maximum number of iterations of DCD to perform in a round of inference.",
         Option.FLAG_POSITIVE
-    );
-
-    public static final Option DCD_OBJECTIVE_BREAK = new Option(
-        "dcd.objectivebreak",
-        true,
-        "Stop if the objective has not changed since the last iteration."
-    );
-
-    public static final Option DCD_PRINT_INITIAL_OBJECTIVE = new Option(
-        "dcd.printinitialobj",
-        false,
-        "Print the objective before any optimization."
-        + " Note that this will require a pass through all the terms,"
-        + " and therefore may affect performance."
-        + " Has no effect if dcd.printobj is false."
-    );
-
-    public static final Option DCD_PRINT_OBJECTIVE = new Option(
-        "dcd.printobj",
-        true,
-        null
     );
 
     public static final Option DCD_TOLERANCE = new Option(
@@ -669,6 +642,21 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option REASONER_OBJECTIVE_BREAK = new Option(
+        "reasoner.objectivebreak",
+        true,
+        "Stop if the objective has not changed since the last iteration (or logging period)."
+    );
+
+    public static final Option REASONER_PRINT_INITIAL_OBJECTIVE = new Option(
+        "reasoner.printinitialobj",
+        false,
+        "Print the objective before any optimization."
+        + " Note that this will require a pass through all the terms,"
+        + " and therefore may affect performance."
+        + " Has no effect if logging is not set to TRACE."
+    );
+
     public static final Option RUNTIME_STATS_COLLECT = new Option(
         "runtimestats.collect",
         false,
@@ -693,27 +681,6 @@ public class Options {
         200,
         "The maximum number of iterations of SGD to perform in a round of inference.",
         Option.FLAG_POSITIVE
-    );
-
-    public static final Option SGD_OBJECTIVE_BREAK = new Option(
-        "sgd.objectivebreak",
-        true,
-        "Stop if the objective has not changed since the last iteration."
-    );
-
-    public static final Option SGD_PRINT_INITIAL_OBJECTIVE = new Option(
-        "sgd.printinitialobj",
-        false,
-        "Print the objective before any optimization."
-        + " Note that this will require a pass through all the terms,"
-        + " and therefore may affect performance."
-        + " Has no effect if sgd.printobj is false."
-    );
-
-    public static final Option SGD_PRINT_OBJECTIVE = new Option(
-        "sgd.printobj",
-        true,
-        null
     );
 
     public static final Option SGD_TOLERANCE = new Option(
