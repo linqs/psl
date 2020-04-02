@@ -43,6 +43,10 @@ import java.util.List;
 public class MPEInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
 
+    public MPEInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
+        super(rules, db, relaxHardConstraints);
+    }
+
     public MPEInference(List<Rule> rules, Database db) {
         super(rules, db);
     }

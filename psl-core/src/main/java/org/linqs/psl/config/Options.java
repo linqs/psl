@@ -426,14 +426,26 @@ public class Options {
         "The reasoner to use for inference."
     );
 
-    public static final Option INFERENCE_RELAXATION_MULTIPLIER = new Option(
+    public static final Option INFERENCE_NORMALIZE_WEIGHTS = new Option(
+        "inference.normalize",
+        true,
+        "Normalize weights to be in [0, 1]. Normalization will be done by dividing all weights by the largest weight."
+    );
+
+    public static final Option INFERENCE_RELAX = new Option(
+        "inference.relax",
+        false,
+        "Relax hard constraints into soft ones."
+    );
+
+    public static final Option INFERENCE_RELAX_MULTIPLIER = new Option(
         "inference.relax.multiplier",
-        10000,
+        100,
         "When relaxing a hard constraint into a soft one, the weight of the rule is set to this value times the largest weight seen.",
         Option.FLAG_POSITIVE
     );
 
-    public static final Option INFERENCE_RELAXATION_SQUARED = new Option(
+    public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
         true,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."

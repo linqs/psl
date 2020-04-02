@@ -35,6 +35,8 @@ import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Reflection;
 
 import org.slf4j.Logger;
@@ -60,6 +62,11 @@ public abstract class InferenceApplication implements ModelApplication {
     protected Reasoner reasoner;
     protected InitialValue initialValue;
 
+    protected boolean normalizeWeights;
+    protected boolean relaxHardConstraints;
+    protected double relaxationMultiplier;
+    protected boolean relaxationSquared;
+
     protected GroundRuleStore groundRuleStore;
     protected TermStore termStore;
     protected TermGenerator termGenerator;
@@ -67,12 +74,20 @@ public abstract class InferenceApplication implements ModelApplication {
 
     private boolean atomsCommitted;
 
-    public InferenceApplication(List<Rule> rules, Database db) {
+    protected InferenceApplication(List<Rule> rules, Database db) {
+        this(rules, db, Options.INFERENCE_RELAX.getBoolean());
+    }
+
+    protected InferenceApplication(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         this.rules = new ArrayList<Rule>(rules);
         this.db = db;
         this.atomsCommitted = false;
 
         this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
+        this.normalizeWeights = Options.INFERENCE_NORMALIZE_WEIGHTS.getBoolean();
+        this.relaxHardConstraints = relaxHardConstraints;
+        this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getDouble();
+        this.relaxationSquared = Options.INFERENCE_RELAX_SQUARED.getBoolean();
 
         initialize();
     }
@@ -94,6 +109,14 @@ public abstract class InferenceApplication implements ModelApplication {
         termGenerator = createTermGenerator();
 
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
+
+        if (normalizeWeights) {
+            normalizeWeights();
+        }
+
+        if (relaxHardConstraints) {
+            relaxHardConstraints();
+        }
 
         completeInitialize();
     }
@@ -244,11 +267,42 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     /**
+     * Normalize all weights to be in [0, 1].
+     */
+    protected void normalizeWeights() {
+        double max = 0.0;
+        boolean hasWeightedRule = false;
+
+        for (WeightedRule rule : IteratorUtils.filterClass(rules, WeightedRule.class)) {
+            double weight = rule.getWeight();
+            if (!hasWeightedRule || weight > max) {
+                max = weight;
+                hasWeightedRule = true;
+            }
+        }
+
+        if (!hasWeightedRule) {
+            return;
+        }
+
+        for (WeightedRule rule : IteratorUtils.filterClass(rules, WeightedRule.class)) {
+            double oldWeight = rule.getWeight();
+
+            double newWeight = 1.0;
+            if (!MathUtils.isZero(max)) {
+                newWeight = oldWeight / max;
+            }
+
+            log.debug("Normalizing rule weight (old weight: {}, new weight: {}): {}", oldWeight, newWeight, rule);
+            rule.setWeight(newWeight);
+        }
+    }
+
+    /**
      * Relax hard constraints into weighted rules.
-     * This is not called directly by InferenceApplication, but children can utilize this method.
      */
     protected void relaxHardConstraints() {
-        double largestWeight = 0.0f;
+        double largestWeight = 0.0;
         boolean hasUnweightedRule = false;
 
         for (Rule rule : rules) {
@@ -266,13 +320,12 @@ public abstract class InferenceApplication implements ModelApplication {
             return;
         }
 
-        double weight = Math.max(1.0, largestWeight * Options.INFERENCE_RELAXATION_MULTIPLIER.getDouble());
-        boolean squared = Options.INFERENCE_RELAXATION_SQUARED.getBoolean();
+        double weight = Math.max(1.0, largestWeight * relaxationMultiplier);
 
         for (int i = 0; i < rules.size(); i++) {
             if (rules.get(i) instanceof UnweightedRule) {
-                log.debug("Relaxing hard constraint (weight: {}, squared: {}): {}", weight, squared, rules.get(i));
-                rules.set(i, ((UnweightedRule)rules.get(i)).relax(weight, squared));
+                log.debug("Relaxing hard constraint (weight: {}, squared: {}): {}", weight, relaxationSquared, rules.get(i));
+                rules.set(i, ((UnweightedRule)rules.get(i)).relax(weight, relaxationSquared));
             }
         }
     }
