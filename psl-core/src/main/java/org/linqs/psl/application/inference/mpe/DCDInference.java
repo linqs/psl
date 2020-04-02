@@ -36,7 +36,7 @@ import java.util.List;
  */
 public class DCDInference extends MPEInference {
     public DCDInference(List<Rule> rules, Database db) {
-        super(rules, db);
+        super(rules, db, true);
     }
 
     @Override
