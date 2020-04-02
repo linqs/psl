@@ -59,6 +59,7 @@
         <module>psl-cli</module>
         <module>psl-core</module>
         <module>psl-java</module>
+        <module>psl-neural</module>
         <module>psl-parser</module>
         <module>psl-python</module>
     </modules>
@@ -162,6 +163,10 @@
                     <value>true</value>
                 </property>
             </activation>
+
+            <properties>
+                <performRelease>true</performRelease>
+            </properties>
 
             <build>
                 <plugins>
