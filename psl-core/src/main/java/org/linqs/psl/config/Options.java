@@ -181,13 +181,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option DCD_TOLERANCE = new Option(
-        "dcd.tolerance",
-        1e-6f,
-        null,
-        Option.FLAG_NON_NEGATIVE
-    );
-
     public static final Option DCD_TRUNCATE_EVERY_STEP = new Option(
         "dcd.truncateeverystep",
         false,
@@ -657,6 +650,13 @@ public class Options {
         + " Has no effect if logging is not set to TRACE."
     );
 
+    public static final Option REASONER_TOLERANCE = new Option(
+        "reasoner.tolerance",
+        1e-5f,
+        "How close towo objective values need to be to be considered the same.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option RUNTIME_STATS_COLLECT = new Option(
         "runtimestats.collect",
         false,
@@ -681,13 +681,6 @@ public class Options {
         200,
         "The maximum number of iterations of SGD to perform in a round of inference.",
         Option.FLAG_POSITIVE
-    );
-
-    public static final Option SGD_TOLERANCE = new Option(
-        "sgd.tolerance",
-        1e-5f,
-        null,
-        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option STREAMING_TS_PAGE_LOCATION = new Option(

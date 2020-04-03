@@ -39,13 +39,11 @@ public class DCDReasoner extends Reasoner {
 
     private int maxIterations;
 
-    private float tolerance;
     private float c;
     private boolean truncateEveryStep;
 
     public DCDReasoner() {
         maxIterations = Options.DCD_MAX_ITER.getInt();
-        tolerance = Options.DCD_TOLERANCE.getFloat();
         c = Options.DCD_C.getFloat();
         truncateEveryStep = Options.DCD_TRUNCATE_EVERY_STEP.getBoolean();
     }
@@ -75,8 +73,7 @@ public class DCDReasoner extends Reasoner {
 
         int iteration = 1;
         long totalTime = 0;
-        while (iteration <= (int)(maxIterations * budget)
-                && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tolerance)))) {
+        while (true) {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {
@@ -103,6 +100,10 @@ public class DCDReasoner extends Reasoner {
 
             iteration++;
             termStore.iterationComplete();
+
+            if (breakOptimization(iteration, objective, oldObjective)) {
+                break;
+            }
         }
 
         termStore.syncAtoms();
@@ -110,6 +111,20 @@ public class DCDReasoner extends Reasoner {
         log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
                 iteration - 1, objective, totalTime);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+    }
+
+    private boolean breakOptimization(int iteration, float objective, float oldObjective) {
+        // Always break when the allocated iterations is up.
+        if (iteration > (int)(maxIterations * budget)) {
+            return true;
+        }
+
+        // Break if the objective has not changed.
+        if (objectiveBreak && iteration != 1 && MathUtils.equals(objective, oldObjective, tolerance)) {
+            return true;
+        }
+
+        return false;
     }
 
     private float computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {

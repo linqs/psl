@@ -215,7 +215,7 @@ public class ADMMReasoner extends Reasoner {
         }
 
         // Break if the objective has not changed.
-        if (objectiveBreak && oldObjective != null && MathUtils.equals(objective.objective, oldObjective.objective)) {
+        if (objectiveBreak && oldObjective != null && MathUtils.equals(objective.objective, oldObjective.objective, tolerance)) {
             return true;
         }
 

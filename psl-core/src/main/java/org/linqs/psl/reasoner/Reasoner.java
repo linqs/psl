@@ -26,13 +26,19 @@ import org.linqs.psl.reasoner.term.TermStore;
  */
 public abstract class Reasoner {
     protected double budget;
+
     protected boolean printInitialObj;
     protected boolean objectiveBreak;
 
+    protected float tolerance;
+
     public Reasoner() {
         budget = 1.0;
+
         objectiveBreak = Options.REASONER_OBJECTIVE_BREAK.getBoolean();
         printInitialObj = Options.REASONER_PRINT_INITIAL_OBJECTIVE.getBoolean();
+
+        tolerance = Options.REASONER_TOLERANCE.getFloat();
     }
 
     /**
