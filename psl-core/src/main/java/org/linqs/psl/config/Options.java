@@ -683,6 +683,19 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option SGD_MOVEMENT = new Option(
+        "sgd.movement",
+        true,
+        "Keep track of the mean movement of the random variables. Do not stop optimization if that value is greater than some threshold."
+    );
+
+    public static final Option SGD_MOVEMENT_THRESHOLD = new Option(
+        "sgd.movement.threshold",
+        0.05f,
+        "If movement watching is enabled, don't stop optimization if the mean random variable movement is greater than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option STREAMING_TS_PAGE_LOCATION = new Option(
         "streamingtermstore.pagelocation",
         SystemUtils.getTempDir("streaimg_term_cache_pages"),

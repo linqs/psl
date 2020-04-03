@@ -120,7 +120,7 @@ public class DCDReasoner extends Reasoner {
         }
 
         // Break if the objective has not changed.
-        if (objectiveBreak && iteration != 1 && MathUtils.equals(objective, oldObjective, tolerance)) {
+        if (objectiveBreak && MathUtils.equals(objective, oldObjective, tolerance)) {
             return true;
         }
 

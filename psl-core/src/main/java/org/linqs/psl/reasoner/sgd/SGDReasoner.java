@@ -39,8 +39,14 @@ public class SGDReasoner extends Reasoner {
 
     private int maxIterations;
 
+    private boolean watchMovement;
+    private float movementThreshold;
+
     public SGDReasoner() {
         maxIterations = Options.SGD_MAX_ITER.getInt();
+
+        watchMovement = Options.SGD_MOVEMENT.getBoolean();
+        movementThreshold = Options.SGD_MOVEMENT_THRESHOLD.getFloat();
     }
 
     @Override
@@ -59,16 +65,26 @@ public class SGDReasoner extends Reasoner {
 
         if (printInitialObj && log.isTraceEnabled()) {
             objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0, 0);
+            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0.0f, 0, 0);
         }
 
         int iteration = 1;
         long totalTime = 0;
         while (true) {
             long start = System.currentTimeMillis();
+
+            // Keep track of the mean movement of the random variables.
+            float movement = 0.0f;
+
+            float[] variableValues = termStore.getVariableValues();
             for (SGDObjectiveTerm term : termStore) {
-                term.minimize(iteration, termStore);
+                movement += term.minimize(iteration, variableValues);
             }
+
+            if (variableValues.length != 0) {
+                movement /= variableValues.length;
+            }
+
             long end = System.currentTimeMillis();
 
             oldObjective = objective;
@@ -76,14 +92,14 @@ public class SGDReasoner extends Reasoner {
             totalTime += end - start;
 
             if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimiztion Time: {}",
-                        iteration, objective, (end - start), totalTime);
+                log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}",
+                        iteration, objective, movement, (end - start), totalTime);
             }
 
             iteration++;
             termStore.iterationComplete();
 
-            if (breakOptimization(iteration, objective, oldObjective)) {
+            if (breakOptimization(iteration, objective, oldObjective, movement)) {
                 break;
             }
         }
@@ -95,14 +111,19 @@ public class SGDReasoner extends Reasoner {
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
-    private boolean breakOptimization(int iteration, float objective, float oldObjective) {
+    private boolean breakOptimization(int iteration, float objective, float oldObjective, float movement) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
         }
 
+        // Do not break if there is too much movement.
+        if (watchMovement && movement > movementThreshold) {
+            return false;
+        }
+
         // Break if the objective has not changed.
-        if (objectiveBreak && iteration != 1 && MathUtils.equals(objective, oldObjective, tolerance)) {
+        if (objectiveBreak && MathUtils.equals(objective, oldObjective, tolerance)) {
             return true;
         }
 
@@ -120,8 +141,9 @@ public class SGDReasoner extends Reasoner {
             termIterator = termStore.iterator();
         }
 
+        float[] variableValues = termStore.getVariableValues();
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate(termStore);
+            objective += term.evaluate(variableValues);
         }
 
         return objective / termStore.size();
