@@ -20,7 +20,6 @@ package org.linqs.psl.evaluation.statistics;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
@@ -171,7 +170,7 @@ public class CategoricalEvaluator extends Evaluator {
         // or another Map<Constant, Object>, and so on.
         Map<Constant, Object> predictedCategories = null;
 
-        for (GroundAtom atom : trainingMap.getAllTargets()) {
+        for (GroundAtom atom : getTargets(trainingMap)) {
             if (atom.getPredicate() != predicate) {
                 continue;
             }

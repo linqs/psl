@@ -26,14 +26,25 @@ import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.util.IteratorUtils;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Test training maps, which create the mapping between RVAs and their observed truth values.
@@ -79,7 +90,7 @@ public class TrainingMapTest {
             }
         }
 
-        // Create four truth atoms: three observed, one unobserved.
+        // Create four truth atoms: three observed, one unobserved, and three non-existant.
         // (0, 2, 4) = observed.
         // (1, 3, 5) = not existent.
         // (6) = unobserved.
@@ -125,5 +136,79 @@ public class TrainingMapTest {
         assertEquals(1, trainingMap.getLatentVariables().size());
         assertEquals(1, trainingMap.getMissingLabels().size());
         assertEquals(1, trainingMap.getMissingTargets().size());
+    }
+
+    /**
+     * Commandeer the TrainingMapTest infrastructure for an Evalautor test on getMap().
+     */
+    @Test
+    public void testEvaluatorGetMap() {
+        Evaluator evaluator = new ContinuousEvaluator();
+        List<Map.Entry<GroundAtom, GroundAtom>> map = null;
+        Set<String> expected = null;
+
+        evaluator.setIncludeObserved(false);
+        evaluator.setCloseTruth(false);
+        map = IteratorUtils.toList(evaluator.getMap(trainingMap));
+        expected = new HashSet<String>(Arrays.asList("0"));
+        assertEquals(expected, collectMapIDs(map));
+
+        evaluator.setIncludeObserved(false);
+        evaluator.setCloseTruth(true);
+        map = IteratorUtils.toList(evaluator.getMap(trainingMap));
+        expected = new HashSet<String>(Arrays.asList("0", "1"));
+        assertEquals(expected, collectMapIDs(map));
+
+        evaluator.setIncludeObserved(true);
+        evaluator.setCloseTruth(false);
+        map = IteratorUtils.toList(evaluator.getMap(trainingMap));
+        expected = new HashSet<String>(Arrays.asList("0", "2"));
+        assertEquals(expected, collectMapIDs(map));
+
+        evaluator.setIncludeObserved(true);
+        evaluator.setCloseTruth(true);
+        map = IteratorUtils.toList(evaluator.getMap(trainingMap));
+        expected = new HashSet<String>(Arrays.asList("0", "1", "2"));
+        assertEquals(expected, collectMapIDs(map));
+    }
+
+    /**
+     * Commandeer the TrainingMapTest infrastructure for an Evalautor test on getTargets().
+     */
+    @Test
+    public void testEvaluatorGetTargets() {
+        Evaluator evaluator = new ContinuousEvaluator();
+        List<GroundAtom> targets = null;
+        Set<String> expected = null;
+
+        evaluator.setIncludeObserved(false);
+        targets = IteratorUtils.toList(evaluator.getTargets(trainingMap));
+        expected = new HashSet<String>(Arrays.asList("0", "1"));
+        assertEquals(expected, collectListIDs(targets));
+
+        evaluator.setIncludeObserved(true);
+        targets = IteratorUtils.toList(evaluator.getTargets(trainingMap));
+        expected = new HashSet<String>(Arrays.asList("0", "1", "2", "3"));
+        assertEquals(expected, collectListIDs(targets));
+    }
+
+    private Set<String> collectMapIDs(List<Map.Entry<GroundAtom, GroundAtom>> targets) {
+        Set<String> ids = new HashSet<String>();
+
+        for (Map.Entry<GroundAtom, GroundAtom> entry : targets) {
+            ids.add(entry.getKey().getArguments()[0].rawToString());
+        }
+
+        return ids;
+    }
+
+    private Set<String> collectListIDs(List<GroundAtom> targets) {
+        Set<String> ids = new HashSet<String>();
+
+        for (GroundAtom target : targets) {
+            ids.add(target.getArguments()[0].rawToString());
+        }
+
+        return ids;
     }
 }

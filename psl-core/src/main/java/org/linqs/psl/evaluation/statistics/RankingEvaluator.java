@@ -20,8 +20,6 @@ package org.linqs.psl.evaluation.statistics;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.MathUtils;
 
@@ -81,7 +79,7 @@ public class RankingEvaluator extends Evaluator {
         truth = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
         predicted = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
 
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+        for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }

@@ -25,6 +25,9 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,8 +53,11 @@ import java.util.Set;
  *   (observed, not existent) - Missing Labels
  *   (not existent, observed) - Missing Targets
  *   (not existent, not existent) - Ignored
+ * Missing targts will always log a warning.
  */
 public class TrainingMap {
+    private static final Logger log = LoggerFactory.getLogger(TrainingMap.class);
+
     /**
      * The mapping between an RVA and its observed truth atom.
      */
@@ -144,6 +150,11 @@ public class TrainingMap {
         latentVariables = Collections.unmodifiableList(tempLatentVariables);
         missingLabels = Collections.unmodifiableList(tempMissingLabels);
         missingTargets = Collections.unmodifiableList(tempMissingTargets);
+
+        if (missingTargets.size() > 0) {
+            log.warn("Found {} missing targets (truth atoms without a matching target). Example: {}.",
+                    missingTargets.size(), missingTargets.get(0));
+        }
     }
 
     /**

@@ -20,8 +20,6 @@ package org.linqs.psl.evaluation.statistics;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.MathUtils;
 
@@ -86,7 +84,7 @@ public class DiscreteEvaluator extends Evaluator {
         tn = 0;
         fp = 0;
 
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+        for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }

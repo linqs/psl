@@ -214,6 +214,18 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option EVAL_CLOSE_TRUTH = new Option(
+        "eval.closetruth",
+        false,
+        "Include in evaluation latent target atoms (using the closed world assumption for truth atoms)."
+    );
+
+    public static final Option EVAL_INCLUDE_OBS = new Option(
+        "eval.includeobs",
+        false,
+        "Include in evaluation observed target atoms that match against a truth atom."
+    );
+
     public static final Option EXECUTABLE_CLEAN_INPUT = new Option(
         "executablereasoner.cleanupinput",
         true,
