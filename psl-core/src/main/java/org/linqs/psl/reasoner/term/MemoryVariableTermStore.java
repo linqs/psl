@@ -75,16 +75,9 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         return variables.get(variable).intValue();
     }
 
-    // TODO(eriq): Remove
     @Override
     public float getVariableValue(int index) {
         return variableValues[index];
-    }
-
-    // TODO(eriq): Remove?
-    @Override
-    public void updateVariableValue(int index, float gradient, float gradientStep) {
-        variableValues[index] = Math.max(0.0f, Math.min(1.0f, variableValues[index] - gradientStep));
     }
 
     @Override

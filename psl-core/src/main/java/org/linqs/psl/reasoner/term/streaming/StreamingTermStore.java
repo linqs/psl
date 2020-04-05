@@ -209,11 +209,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public void updateVariableValue(int index, float gradient, float gradientStep) {
-        variableValues[index] = Math.max(0.0f, Math.min(1.0f, variableValues[index] - gradientStep));
-    }
-
-    @Override
     public int getVariableIndex(RandomVariableAtom variable) {
         return variables.get(variable).intValue();
     }
