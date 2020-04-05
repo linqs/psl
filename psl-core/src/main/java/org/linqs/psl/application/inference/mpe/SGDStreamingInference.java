@@ -18,7 +18,6 @@
 package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
@@ -34,7 +33,7 @@ import java.util.List;
  */
 public class SGDStreamingInference extends MPEInference {
     public SGDStreamingInference(List<Rule> rules, Database db) {
-        super(rules, db);
+        super(rules, db, true);
     }
 
     @Override
@@ -71,8 +70,6 @@ public class SGDStreamingInference extends MPEInference {
 
     @Override
     protected void completeInitialize() {
-        relaxHardConstraints();
-
         // Do nothing else. Specifically, do not ground.
     }
 }

@@ -36,7 +36,7 @@ import java.util.List;
  */
 public class SGDInference extends MPEInference {
     public SGDInference(List<Rule> rules, Database db) {
-        super(rules, db);
+        super(rules, db, true);
     }
 
     @Override
@@ -57,11 +57,5 @@ public class SGDInference extends MPEInference {
     @Override
     protected TermStore createTermStore() {
         return new SGDMemoryTermStore();
-    }
-
-    @Override
-    protected void completeInitialize() {
-        relaxHardConstraints();
-        super.completeInitialize();
     }
 }

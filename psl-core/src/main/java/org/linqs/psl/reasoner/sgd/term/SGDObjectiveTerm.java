@@ -66,8 +66,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    public float evaluate(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
-        float dot = dot(termStore);
+    public float evaluate(float[] variableValues) {
+        float dot = dot(variableValues);
 
         if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
@@ -84,14 +84,23 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(int iteration, VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    /**
+     * Minimize the term by changing the random variables and return how much the random variables were moved by.
+     */
+    public float minimize(int iteration, float[] variableValues) {
+        float movement = 0.0f;
+
         for (int i = 0 ; i < size; i++) {
-            float dot = dot(termStore);
+            float dot = dot(variableValues);
             float gradient = computeGradient(iteration, i, dot);
             float gradientStep = gradient * (learningRate / iteration);
 
-            termStore.updateVariableValue(variableIndexes[i], gradient, gradientStep);
+            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[i] - gradientStep));
+            movement += Math.abs(newValue - variableValues[i]);
+            variableValues[i] = newValue;
         }
+
+        return movement;
     }
 
     private float computeGradient(int iteration, int varId, float dot) {
@@ -106,9 +115,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return weight * coefficients[varId];
     }
 
-    private float dot(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    private float dot(float[] variableValues) {
         float value = 0.0f;
-        float[] variableValues = termStore.getVariableValues();
 
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variableValues[variableIndexes[i]];

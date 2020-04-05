@@ -75,12 +75,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option ADMM_OBJECTIVE_BREAK = new Option(
-        "admmreasoner.objectivebreak",
-        true,
-        "Stop if the objective has not changed since the last logging period (see ADMM_COMPUTE_PERIOD)."
-    );
-
     public static final Option ADMM_STEP_SIZE = new Option(
         "admmreasoner.stepsize",
         1.0f,
@@ -187,34 +181,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option DCD_OBJECTIVE_BREAK = new Option(
-        "dcd.objectivebreak",
-        true,
-        "Stop if the objective has not changed since the last iteration."
-    );
-
-    public static final Option DCD_PRINT_INITIAL_OBJECTIVE = new Option(
-        "dcd.printinitialobj",
-        false,
-        "Print the objective before any optimization."
-        + " Note that this will require a pass through all the terms,"
-        + " and therefore may affect performance."
-        + " Has no effect if dcd.printobj is false."
-    );
-
-    public static final Option DCD_PRINT_OBJECTIVE = new Option(
-        "dcd.printobj",
-        true,
-        null
-    );
-
-    public static final Option DCD_TOLERANCE = new Option(
-        "dcd.tolerance",
-        1e-6f,
-        null,
-        Option.FLAG_NON_NEGATIVE
-    );
-
     public static final Option DCD_TRUNCATE_EVERY_STEP = new Option(
         "dcd.truncateeverystep",
         false,
@@ -246,6 +212,18 @@ public class Options {
         1e-3,
         "The minimum absolute change in weights such that EM is considered converged.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option EVAL_CLOSE_TRUTH = new Option(
+        "eval.closetruth",
+        false,
+        "Include in evaluation latent target atoms (using the closed world assumption for truth atoms)."
+    );
+
+    public static final Option EVAL_INCLUDE_OBS = new Option(
+        "eval.includeobs",
+        false,
+        "Include in evaluation observed target atoms that match against a truth atom."
     );
 
     public static final Option EXECUTABLE_CLEAN_INPUT = new Option(
@@ -426,14 +404,26 @@ public class Options {
         "The reasoner to use for inference."
     );
 
-    public static final Option INFERENCE_RELAXATION_MULTIPLIER = new Option(
+    public static final Option INFERENCE_NORMALIZE_WEIGHTS = new Option(
+        "inference.normalize",
+        true,
+        "Normalize weights to be in [0, 1]. Normalization will be done by dividing all weights by the largest weight."
+    );
+
+    public static final Option INFERENCE_RELAX = new Option(
+        "inference.relax",
+        false,
+        "Relax hard constraints into soft ones."
+    );
+
+    public static final Option INFERENCE_RELAX_MULTIPLIER = new Option(
         "inference.relax.multiplier",
-        10000,
+        100,
         "When relaxing a hard constraint into a soft one, the weight of the rule is set to this value times the largest weight seen.",
         Option.FLAG_POSITIVE
     );
 
-    public static final Option INFERENCE_RELAXATION_SQUARED = new Option(
+    public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
         true,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
@@ -657,6 +647,28 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option REASONER_OBJECTIVE_BREAK = new Option(
+        "reasoner.objectivebreak",
+        true,
+        "Stop if the objective has not changed since the last iteration (or logging period)."
+    );
+
+    public static final Option REASONER_PRINT_INITIAL_OBJECTIVE = new Option(
+        "reasoner.printinitialobj",
+        false,
+        "Print the objective before any optimization."
+        + " Note that this will require a pass through all the terms,"
+        + " and therefore may affect performance."
+        + " Has no effect if logging is not set to TRACE."
+    );
+
+    public static final Option REASONER_TOLERANCE = new Option(
+        "reasoner.tolerance",
+        1e-5f,
+        "How close towo objective values need to be to be considered the same.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option RUNTIME_STATS_COLLECT = new Option(
         "runtimestats.collect",
         false,
@@ -683,31 +695,16 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option SGD_OBJECTIVE_BREAK = new Option(
-        "sgd.objectivebreak",
+    public static final Option SGD_MOVEMENT = new Option(
+        "sgd.movement",
         true,
-        "Stop if the objective has not changed since the last iteration."
+        "Keep track of the mean movement of the random variables. Do not stop optimization if that value is greater than some threshold."
     );
 
-    public static final Option SGD_PRINT_INITIAL_OBJECTIVE = new Option(
-        "sgd.printinitialobj",
-        false,
-        "Print the objective before any optimization."
-        + " Note that this will require a pass through all the terms,"
-        + " and therefore may affect performance."
-        + " Has no effect if sgd.printobj is false."
-    );
-
-    public static final Option SGD_PRINT_OBJECTIVE = new Option(
-        "sgd.printobj",
-        true,
-        null
-    );
-
-    public static final Option SGD_TOLERANCE = new Option(
-        "sgd.tolerance",
-        1e-5f,
-        null,
+    public static final Option SGD_MOVEMENT_THRESHOLD = new Option(
+        "sgd.movement.threshold",
+        0.05f,
+        "If movement watching is enabled, don't stop optimization if the mean random variable movement is greater than this threshold.",
         Option.FLAG_NON_NEGATIVE
     );
 

@@ -39,19 +39,11 @@ public class DCDReasoner extends Reasoner {
 
     private int maxIterations;
 
-    private float tolerance;
-    private boolean printObj;
-    private boolean printInitialObj;
-    private boolean objectiveBreak;
     private float c;
     private boolean truncateEveryStep;
 
     public DCDReasoner() {
         maxIterations = Options.DCD_MAX_ITER.getInt();
-        objectiveBreak = Options.DCD_OBJECTIVE_BREAK.getBoolean();
-        printObj = Options.DCD_PRINT_OBJECTIVE.getBoolean();
-        printInitialObj = Options.DCD_PRINT_INITIAL_OBJECTIVE.getBoolean();
-        tolerance = Options.DCD_TOLERANCE.getFloat();
         c = Options.DCD_C.getFloat();
         truncateEveryStep = Options.DCD_TRUNCATE_EVERY_STEP.getBoolean();
     }
@@ -74,19 +66,14 @@ public class DCDReasoner extends Reasoner {
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
-        int iteration = 1;
-        if (printObj) {
-            log.trace("objective:Iterations,Time(ms),Objective");
-
-            if (printInitialObj) {
-                objective = computeObjective(termStore, variableValues);
-                log.trace("objective:{},{},{}", 0, 0, objective);
-            }
+        if (printInitialObj && log.isTraceEnabled()) {
+            objective = computeObjective(termStore, variableValues);
+            log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0, 0);
         }
 
-        long time = 0;
-        while (iteration <= (int)(maxIterations * budget)
-                && (!objectiveBreak || (iteration == 1 || !MathUtils.equals(objective, oldObjective, tolerance)))) {
+        int iteration = 1;
+        long totalTime = 0;
+        while (true) {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {
@@ -101,22 +88,43 @@ public class DCDReasoner extends Reasoner {
             }
 
             long end = System.currentTimeMillis();
+
             oldObjective = objective;
             objective = computeObjective(termStore, variableValues);
-            time += end - start;
+            totalTime += end - start;
 
-            if (printObj) {
-                log.trace("objective:{},{},{}", iteration, time, objective);
+            if (log.isTraceEnabled()) {
+                log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimiztion Time: {}",
+                        iteration, objective, (end - start), totalTime);
             }
 
             iteration++;
             termStore.iterationComplete();
+
+            if (breakOptimization(iteration, objective, oldObjective)) {
+                break;
+            }
         }
 
         termStore.syncAtoms();
 
-        log.info("Optimization completed in {} iterations. Objective.: {}", iteration - 1, objective);
+        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
+                iteration - 1, objective, totalTime);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+    }
+
+    private boolean breakOptimization(int iteration, float objective, float oldObjective) {
+        // Always break when the allocated iterations is up.
+        if (iteration > (int)(maxIterations * budget)) {
+            return true;
+        }
+
+        // Break if the objective has not changed.
+        if (objectiveBreak && MathUtils.equals(objective, oldObjective, tolerance)) {
+            return true;
+        }
+
+        return false;
     }
 
     private float computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {

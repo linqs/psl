@@ -136,6 +136,14 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
     }
 
     /**
+     * Whether this atom is managed by an AtomManager.
+     * Only in very rare cases do we have unmanaged atoms.
+     */
+    public boolean isManaged() {
+        return true;
+    }
+
+    /**
      * Verifies that this atom has valid arguments.
      * This will also convert arguments of the incorrect type into the declared type if they are trivially similar
      * (eg. StringAttribute and UniqueStringID).

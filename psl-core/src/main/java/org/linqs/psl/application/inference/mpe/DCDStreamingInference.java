@@ -34,7 +34,7 @@ import java.util.List;
  */
 public class DCDStreamingInference extends MPEInference {
     public DCDStreamingInference(List<Rule> rules, Database db) {
-        super(rules, db);
+        super(rules, db, true);
     }
 
     @Override

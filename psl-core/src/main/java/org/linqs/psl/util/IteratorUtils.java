@@ -18,6 +18,8 @@
 package org.linqs.psl.util;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Various static iterator/iterable utilities.
@@ -114,20 +116,46 @@ public final class IteratorUtils {
         };
     }
 
+    /**
+     * Get an iterator that will go through the numbers [0, amount).
+     */
     public static Iterator<Integer> count(int amount) {
         return count(0, amount);
     }
 
+    /**
+     * Get an iterator that will go through the numbers [start, start + amount).
+     */
     public static Iterator<Integer> count(int start, int amount) {
         assert(amount >= 0);
         return new CountingIterator(start, amount);
     }
 
-    public interface MapFunction<T, S> {
+    /**
+     * Convert an iterable to a persisted list (LinkedList).
+     */
+    public static <T> List<T> toList(Iterable<T> elements) {
+        return toList(elements.iterator());
+    }
+
+    /**
+     * Convert an iterator to a persisted list (LinkedList).
+     */
+    public static <T> List<T> toList(Iterator<T> elements) {
+        List<T> list = new LinkedList<T>();
+
+        while (elements.hasNext()) {
+            list.add(elements.next());
+        }
+
+        return list;
+    }
+
+    public static interface MapFunction<T, S> {
         public S map(T value);
     }
 
-    public interface FilterFunction<T> {
+    public static interface FilterFunction<T> {
         public boolean keep(T value);
     }
 
