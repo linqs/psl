@@ -17,9 +17,11 @@
  */
 package org.linqs.psl.model.predicate.model;
 
+import org.linqs.psl.config.NeuralOptions;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.deeplearning4j.datasets.iterator.INDArrayDataSetIterator;
@@ -68,6 +70,8 @@ public class NeuralModel extends SupportingModel {
 
     private int epochs;
     private int batchSize;
+    private double newLearningRate;
+    private String lossFunction;
 
     public NeuralModel() {
         features = null;
@@ -79,6 +83,8 @@ public class NeuralModel extends SupportingModel {
 
         epochs = Options.MODEL_PREDICATE_ITERATIONS.getInt();
         batchSize = Options.MODEL_PREDICATE_BATCH_SIZE.getInt();
+        newLearningRate = NeuralOptions.NEURAL_LEARNING_RATE.getDouble();
+        lossFunction = NeuralOptions.NEURAL_LOSS_FUNCTION.getString();
     }
 
     @Override
@@ -185,6 +191,10 @@ public class NeuralModel extends SupportingModel {
         model = new MultiLayerNetwork(newConfig, rawModel.params());
 
         iterationCount = model.getIterationCount();
+
+        if (!MathUtils.isZero(newLearningRate)) {
+            model.setLearningRate(newLearningRate);
+        }
     }
 
     /**
@@ -199,7 +209,7 @@ public class NeuralModel extends SupportingModel {
                 .nIn(labelIndexMapping.size())
                 .nOut(labelIndexMapping.size())
                 .build())
-            .layer(new LossLayer.Builder(LossFunctions.LossFunction.L2)
+            .layer(new LossLayer.Builder(LossFunctions.LossFunction.valueOf(lossFunction))
                 .build())
             .build();
 
