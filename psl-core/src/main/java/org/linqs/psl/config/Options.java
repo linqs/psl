@@ -831,8 +831,14 @@ public class Options {
         "The inference application used during weight learning."
     );
 
+    private static List<Option> additionalOptions = new ArrayList<Option>();
+
     // Static only.
     private Options() {}
+
+    public static void addOption(Option option) {
+        additionalOptions.add(option);
+    }
 
     /**
      * Reflexively parse the options from this class.
@@ -862,6 +868,10 @@ public class Options {
         JSONArray json = new JSONArray();
 
         for (Option option : fetchOptions()) {
+            json.put(option.toJSON());
+        }
+
+        for (Option option : additionalOptions) {
             json.put(option.toJSON());
         }
 
