@@ -25,6 +25,9 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.MathUtils;
 
+//Test
+import org.linqs.psl.util.VizDataCollection;
+
 import java.util.Map;
 
 /**
@@ -83,7 +86,7 @@ public class ContinuousEvaluator extends Evaluator {
         squaredError = 0.0;
 
 
-        System.out.println("Can potentially grab ground truth <-> model predictions here");
+        // System.out.println("Can potentially grab ground truth <-> model predictions here");
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
@@ -95,12 +98,17 @@ public class ContinuousEvaluator extends Evaluator {
             // System.out.println("Ground Truth: " + entry.getValue() + " " + entry.getValue().getValue());
             // System.out.println("Predicted : " + entry.getKey() + " " + entry.getKey().getValue());
 
+            VizDataCollection.PredictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
+
             //but can we get this same output in cli source-code? / does it matter??
 
             count++;
             absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());
             squaredError += Math.pow(entry.getValue().getValue() - entry.getKey().getValue(), 2);
         }
+        //TEST
+        //Using this to test as I dont know how shutdown hook works
+        VizDataCollection.OutputJSON();
     }
 
     @Override

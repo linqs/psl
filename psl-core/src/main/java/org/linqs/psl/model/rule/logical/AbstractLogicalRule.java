@@ -179,8 +179,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         //TEST
         //Any way to get row array up here so we dont have to deal with this parallelism?
-        System.out.println(this);
-        System.out.println("Rules object id (hash): " + hashCode());
+        // System.out.println(this);
+        // System.out.println("Rules object id (hash): " + hashCode());
 
         for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
             System.out.print(entry.getKey() + ":" + entry.getValue().toString() + " ");
@@ -195,12 +195,12 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
                 //TEST
                 //This prints out the possible constants for the above rule
-                ArrayList<String> temp = new ArrayList<String>();
-                for (int i = 0; i < row.length; i++){
-                  temp.add(row[i].toString());
-                }
-                System.out.println(StringUtils.join(" ", temp));
-
+        //         ArrayList<String> temp = new ArrayList<String>();
+        //         for (int i = 0; i < row.length; i++){
+        //           temp.add(row[i].toString());
+        //         }
+        //         System.out.println(StringUtils.join(" ", temp));
+        
                 if (groundRule != null) {
                     finalGroundRuleStore.addGroundRule(groundRule);
                 }
