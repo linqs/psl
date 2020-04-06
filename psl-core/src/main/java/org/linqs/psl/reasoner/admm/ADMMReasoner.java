@@ -110,7 +110,7 @@ public class ADMMReasoner extends Reasoner {
         termStore.initForOptimization();
 
         int numTerms = termStore.size();
-        int numVariables = termStore.getNumGlobalVariables();
+        int numVariables = termStore.getNumConsensusVariables();
 
         log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
 
@@ -194,8 +194,8 @@ public class ADMMReasoner extends Reasoner {
             computeObjective(termStore, true);
         }
 
-        // Updates variables
-        termStore.updateVariables();
+        // Sync the consensus values back to the atoms.
+        termStore.syncAtoms();
     }
 
     private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {
@@ -315,7 +315,7 @@ public class ADMMReasoner extends Reasoner {
 
         @Override
         public void work(int blockIndex, Integer ignore) {
-            int numVariables = termStore.getNumGlobalVariables();
+            int numVariables = termStore.getNumConsensusVariables();
 
             float primalResInc = 0.0f;
             float dualResInc = 0.0f;
