@@ -170,10 +170,11 @@ public class ADMMReasoner extends Reasoner {
                             iteration, objective.objective, (objective.violatedConstraints == 0),
                             primalRes, dualRes, epsilonPrimal, epsilonDual);
                 }
+
+                termStore.iterationComplete();
             }
 
             iteration++;
-            termStore.iterationComplete();
 
             if (breakOptimization(iteration, objective, oldObjective)) {
                 // Before we break, compute the objective so we can look for violated constraints.
