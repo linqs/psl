@@ -138,6 +138,10 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
 
+        if (capacity == 0) {
+            return;
+        }
+
         if (variables == null || variables.size() == 0) {
             // If there are no variables, then (re-)allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
