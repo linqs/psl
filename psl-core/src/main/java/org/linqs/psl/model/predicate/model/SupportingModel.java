@@ -44,6 +44,7 @@ public abstract class SupportingModel {
     protected static final String CONFIG_FEATURES = "features";
     protected static final String CONFIG_LABELS = "labels";
     protected static final String CONFIG_MODEL = "model";
+    protected static final String CONFIG_OBSERVATIONS = "observations";
 
     /**
      * The indexes of this predicate that compose the entity ID.
@@ -74,12 +75,19 @@ public abstract class SupportingModel {
      */
     protected float[][] manualLabels;
 
+    /**
+     * Labels that are observed.
+     * {entity index: labels}
+     */
+    protected Map<Integer, float[]> observedLabels;
+
     public SupportingModel() {
         entityIndexMapping = null;
         labelIndexMapping = null;
         numFeatures = -1;
 
         manualLabels = null;
+        observedLabels = new HashMap<Integer, float[]>();
 
         entityArgumentIndexes = StringUtils.splitInt(Options.MODEL_PREDICATE_ENTITY_ARGS.getString(), ",");
         labelArgumentIndexes = StringUtils.splitInt(Options.MODEL_PREDICATE_LABEL_ARGS.getString(), ",");
@@ -117,8 +125,15 @@ public abstract class SupportingModel {
 
     public void resetLabels() {
         for (int i = 0; i < manualLabels.length; i++) {
-            for (int j = 0; j < manualLabels[i].length; j++) {
-                manualLabels[i][j] = 0.0f;
+            if (observedLabels.containsKey(Integer.valueOf(i))) {
+                float[] labels = observedLabels.get(Integer.valueOf(i));
+                for (int j = 0; j < labels.length; j++) {
+                    manualLabels[i][j] = labels[j];
+                }
+            } else {
+                for (int j = 0; j < manualLabels[i].length; j++) {
+                    manualLabels[i][j] = 0.0f;
+                }
             }
         }
     }
@@ -158,7 +173,7 @@ public abstract class SupportingModel {
 
                 if (parts.length != labelArgumentIndexes.length) {
                     throw new RuntimeException(
-                            String.format("Incorrectly sized label line (%d). Expected: %d, found: %d",
+                            String.format("Incorrectly sized label line (%d). Expected: %d values, found: %d",
                             lineNumber, labelArgumentIndexes.length, parts.length));
                 }
 
@@ -205,12 +220,12 @@ public abstract class SupportingModel {
 
                     if (numFeatures <= 0) {
                         throw new RuntimeException(String.format(
-                                "Line too short (%d). Expected at least %d, found %d.",
+                                "Line too short (%d). Expected at least %d values, found %d.",
                                 lineNumber, entityArgumentIndexes.length + 1, width));
                     }
                 } else if (parts.length != width) {
                     throw new RuntimeException(String.format(
-                            "Incorrectly sized line (%d). Expected: %d, found: %d.",
+                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
                             lineNumber, width, parts.length));
                 }
 
@@ -237,6 +252,69 @@ public abstract class SupportingModel {
         log.debug("Loaded features for {} [{} x {}]", this, arrayFeatures.length, numFeatures);
 
         return arrayFeatures;
+    }
+
+    /**
+     * Load observations.
+     * Observations will be in the form of the atom arguments and either a float or nothing (indicating a 1.0).
+     * This is the same format as a standard PSL data file.
+     * The observations will be loaded directly into |observedLabels|.
+     * Although not invoked directly by this class, this is made available to supporting models.
+     * Labels should already be loaded before calling this.
+     */
+    protected void loadObservations(String path) {
+        log.debug("Loading observations for {} from {}", this, path);
+
+        int minWidth = entityArgumentIndexes.length + labelArgumentIndexes.length;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            String line = null;
+            int lineNumber = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                String[] parts = line.split(DELIM);
+
+                if (parts.length < minWidth || parts.length > (minWidth + 1)) {
+                    throw new RuntimeException(
+                            String.format("Incorrectly sized observation line (%d). Expected: %d (or %d) values, found: %d",
+                            lineNumber, minWidth, minWidth + 1, parts.length));
+                }
+
+                Integer entityIndex = entityIndexMapping.get(getAtomIdentifier(parts, entityArgumentIndexes));
+                if (entityIndex == null) {
+                    throw new RuntimeException(
+                            String.format("Unknown entity seen in observations. Line: %d, File: %s.",
+                            lineNumber, path));
+                }
+
+                Integer labelIndex = labelIndexMapping.get(getAtomIdentifier(parts, labelArgumentIndexes));
+                if (labelIndex == null) {
+                    throw new RuntimeException(
+                            String.format("Unknown label seen in observations. Line: %d, File: %s.",
+                            lineNumber, path));
+                }
+
+                float value = 1.0f;
+                if (parts.length == (minWidth + 1)) {
+                    value = Float.valueOf(parts[minWidth]);
+                }
+
+                if (!observedLabels.containsKey(entityIndex)) {
+                    observedLabels.put(entityIndex, new float[labelIndexMapping.size()]);
+                }
+
+                observedLabels.get(entityIndex)[labelIndex.intValue()] = value;
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to parse observations file: " + path, ex);
+        }
     }
 
     protected AtomIndexes getAtomIndexes(RandomVariableAtom atom) {
@@ -318,6 +396,10 @@ public abstract class SupportingModel {
      * If the given path is absolute, then don't change it.
      */
     protected static String makePath(String relativeDir, String basePath) {
+        if (basePath == null) {
+            return null;
+        }
+
         if (Paths.get(basePath).isAbsolute()) {
             return basePath;
         }
