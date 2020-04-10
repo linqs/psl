@@ -25,7 +25,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.mpe.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -75,18 +76,10 @@ public class Formula2SQLTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = null;
+        InferenceApplication inference = new MPEInference(info.model.getRules(), inferDB);
 
-        try {
-            mpe = new MPEInference(info.model, inferDB);
-        } catch (Exception ex) {
-            System.out.println(ex);
-            ex.printStackTrace();
-            fail("Exception thrown during MPE constructor.");
-        }
-
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
 
         // There are 5 people, and the rule chooses 2.
@@ -128,18 +121,10 @@ public class Formula2SQLTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = null;
+        InferenceApplication inference = new MPEInference(info.model.getRules(), inferDB);
 
-        try {
-            mpe = new MPEInference(info.model, inferDB);
-        } catch (Exception ex) {
-            System.out.println(ex);
-            ex.printStackTrace();
-            fail("Exception thrown during MPE constructor.");
-        }
-
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
 
         // External functions are only called when instantiating ground rules.

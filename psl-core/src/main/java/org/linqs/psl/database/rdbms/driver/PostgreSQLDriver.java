@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.SelectivityHistogram;
@@ -30,8 +30,7 @@ import org.linqs.psl.util.StringUtils;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONValue;
+import org.json.JSONArray;
 import org.postgresql.PGConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,22 +55,6 @@ import java.util.Map;
  * PostgreSQL Connection Wrapper.
  */
 public class PostgreSQLDriver implements DatabaseDriver {
-    public static final String CONFIG_PREFIX = "postgres";
-
-    public static final String KEY_STATS_PERCENTAGE = CONFIG_PREFIX + ".statspercentage";
-    public static final double DEFAULT_STATS_PERCENTAGE = 0.25;
-
-    public static final String KEY_HOST = CONFIG_PREFIX + ".host";
-    public static final String DEFAULT_HOST = "localhost";
-
-    public static final String KEY_PORT = CONFIG_PREFIX + ".port";
-    public static final String DEFAULT_PORT = "5432";
-
-    public static final String KEY_USER = CONFIG_PREFIX + ".user";
-    public static final String DEFAULT_USER = "";
-
-    public static final String KEY_PASSWORD = CONFIG_PREFIX + ".password";
-
     private static final int MAX_STATS = 10000;
     private static final String ENCODING = "UTF-8";
 
@@ -81,14 +64,12 @@ public class PostgreSQLDriver implements DatabaseDriver {
     private final double statsPercentage;
 
     public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
-        this(Config.getString(KEY_HOST, DEFAULT_HOST), Config.getString(KEY_PORT, DEFAULT_PORT),
-                databaseName, clearDatabase);
+        this(Options.POSTGRES_HOST.getString(), Options.POSTGRES_PORT.getString(), databaseName, clearDatabase);
     }
 
     public PostgreSQLDriver(String host, String port, String databaseName, boolean clearDatabase) {
         this(host, port,
-                Config.getString(KEY_USER, DEFAULT_USER),
-                (String)Config.getUnloggedProperty(KEY_PASSWORD),
+                Options.POSTGRES_USER.getString(), (String)Options.POSTGRES_PASSWORD.getUnlogged(),
                 databaseName, clearDatabase);
     }
 
@@ -105,7 +86,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         log.debug("Connecting to PostgreSQL database: " + databaseName);
 
-        statsPercentage = Config.getDouble(KEY_STATS_PERCENTAGE, DEFAULT_STATS_PERCENTAGE);
+        statsPercentage = Options.POSTGRES_STATS_PERCENTAGE.getDouble();
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(connectionString);
@@ -336,16 +317,16 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         // Try to parse the bucket histogram.
         if (rawBounds != null) {
-            JSONArray histogram = parseJSONArray(rawBounds);
+            JSONArray histogram = new JSONArray(rawBounds);
 
-            if (histogram.size() > 0) {
+            if (histogram.length() > 0) {
                 bounds = new ArrayList<Comparable>();
                 counts = new ArrayList<Integer>();
 
-                int bucketCount = rowCount / (histogram.size() - 1);
+                int bucketCount = rowCount / (histogram.length() - 1);
                 bounds.add(convertHistogramBound(histogram.get(0)));
 
-                for (int i = 1; i < histogram.size(); i++) {
+                for (int i = 1; i < histogram.length(); i++) {
                     bounds.add(convertHistogramBound(histogram.get(i)));
                     counts.add(new Integer(bucketCount));
                 }
@@ -354,13 +335,13 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         // Check if the most common values were supplied.
         if (rawMostCommonVals != null) {
-            JSONArray mostCommonVals = parseJSONArray(rawMostCommonVals);
-            JSONArray mostCommonCounts = parseJSONArray(rawMostCommonCounts);
+            JSONArray mostCommonVals = new JSONArray(rawMostCommonVals);
+            JSONArray mostCommonCounts = new JSONArray(rawMostCommonCounts);
 
-            if (mostCommonVals.size() > 0) {
+            if (mostCommonVals.length() > 0) {
                 mostCommonHistogram = new HashMap<Comparable, Integer>();
 
-                for (int i = 0; i < mostCommonVals.size(); i++) {
+                for (int i = 0; i < mostCommonVals.length(); i++) {
                     // The most common values come in as proportion of the total rows in the table.
                     // So, we will normalize them to raw counts.
                     double proportion = ((Number)mostCommonCounts.get(i)).doubleValue();
@@ -433,15 +414,6 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
             counts.set(bucketIndex, new Integer(counts.get(bucketIndex).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
         }
-    }
-
-    private JSONArray parseJSONArray(String text) {
-        Object parsed = JSONValue.parse(text);
-        if (!(parsed instanceof JSONArray)) {
-            throw new IllegalStateException("Text in unexpected format. Expected JSON array, got: " + parsed.getClass().getName());
-        }
-
-        return (JSONArray)parsed;
     }
 
     private Comparable convertHistogramBound(Object bound) {

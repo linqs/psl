@@ -15,16 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference;
+package org.linqs.psl.application.inference.mpe;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
@@ -43,31 +42,21 @@ import java.util.List;
  * if its truth value is above some threshold at the end of each inference round.
  * See LazyAtomManager for details on lazy atoms.
  */
-public class LazyMPEInference extends InferenceApplication {
+public class LazyMPEInference extends MPEInference {
     private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
-
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "lazympeinference";
-
-    /**
-     * Key for int property for the maximum number of rounds of inference.
-     */
-    public static final String MAX_ROUNDS_KEY = CONFIG_PREFIX + ".maxrounds";
-    public static final int MAX_ROUNDS_DEFAULT = 100;
 
     protected final int maxRounds;
 
-    public LazyMPEInference(Model model, Database db) {
-        super(model, db);
-        maxRounds = Config.getInt(MAX_ROUNDS_KEY, MAX_ROUNDS_DEFAULT);
+    public LazyMPEInference(List<Rule> rules, Database db) {
+        super(rules, db);
+        maxRounds = Options.LAZY_INFERENCE_MAX_ROUNDS.getInt();
     }
 
     @Override
     protected void completeInitialize() {
         log.debug("Initial grounding.");
-        Grounding.groundAll(model, atomManager, groundRuleStore);
+        Grounding.groundAll(rules, atomManager, groundRuleStore);
+        log.debug("Initial grounding complete.");
     }
 
     @Override
@@ -77,19 +66,7 @@ public class LazyMPEInference extends InferenceApplication {
 
     @Override
     protected void internalInference() {
-        inference(model.getRules(), reasoner, groundRuleStore, termStore, termGenerator, (LazyAtomManager)atomManager,
-                maxRounds);
-    }
-
-    /**
-     * Do the full MPE inference process.
-     * We move the implementation to a static method so it can be accessed
-     * from outsude methods.
-     * Unlike MPEInference which just calls the reasoner, this process is more involved.
-     */
-    public static void inference(List<Rule> rules, Reasoner reasoner, GroundRuleStore groundRuleStore,
-            TermStore termStore, TermGenerator termGenerator, LazyAtomManager lazyAtomManager,
-            int maxRounds) {
+        LazyAtomManager lazyAtomManager = (LazyAtomManager)atomManager;
         // Performs rounds of inference until the ground model stops growing.
         int rounds = 0;
         int numActivated = 0;

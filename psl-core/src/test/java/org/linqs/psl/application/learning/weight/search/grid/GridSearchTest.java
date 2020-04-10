@@ -19,7 +19,7 @@ package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 
 public class GridSearchTest extends WeightLearningTest {
     public GridSearchTest() {
@@ -31,7 +31,7 @@ public class GridSearchTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
         // Narrow the search space for tests.
-        Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+        Options.WLA_GS_POSSIBLE_WEIGHTS.set("0.01:1:10");
 
         return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }

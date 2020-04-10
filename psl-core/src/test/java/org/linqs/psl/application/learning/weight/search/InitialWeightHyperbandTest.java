@@ -20,7 +20,7 @@ package org.linqs.psl.application.learning.weight.search;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 
 public class InitialWeightHyperbandTest extends WeightLearningTest {
     public InitialWeightHyperbandTest() {
@@ -33,9 +33,9 @@ public class InitialWeightHyperbandTest extends WeightLearningTest {
 
     @Override
     protected WeightLearningApplication getWLA() {
-        Config.setProperty(Hyperband.NUM_BRACKETS_KEY, 1);
-        Config.setProperty(Hyperband.BASE_BRACKET_SIZE_KEY, 2);
-        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
+        Options.WLA_HB_NUM_BRACKETS.set(1);
+        Options.WLA_HB_BRACKET_SIZE.set(2);
+        Options.WLA_VP_NUM_STEPS.set(5);
 
         return new InitialWeightHyperband(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }

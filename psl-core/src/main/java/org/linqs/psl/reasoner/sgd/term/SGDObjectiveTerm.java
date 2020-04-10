@@ -84,13 +84,23 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(int iteration, float[] variableValues) {
+    /**
+     * Minimize the term by changing the random variables and return how much the random variables were moved by.
+     */
+    public float minimize(int iteration, float[] variableValues) {
+        float movement = 0.0f;
+
         for (int i = 0 ; i < size; i++) {
             float dot = dot(variableValues);
-            float gradient = computeGradient(iteration, i, dot) * (learningRate / iteration);
+            float gradient = computeGradient(iteration, i, dot);
+            float gradientStep = gradient * (learningRate / iteration);
 
-            variableValues[variableIndexes[i]] = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradient));
+            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[i] - gradientStep));
+            movement += Math.abs(newValue - variableValues[i]);
+            variableValues[i] = newValue;
         }
+
+        return movement;
     }
 
     private float computeGradient(int iteration, int varId, float dot) {
@@ -175,6 +185,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     @Override
     public String toString() {
+        return toString(null);
+    }
+
+    public String toString(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
         // weight * [max(coeffs^T * x - constant, 0.0)]^2
 
         StringBuilder builder = new StringBuilder();
@@ -183,15 +197,24 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         builder.append(" * ");
 
         if (hinge) {
-            builder.append(" * max(0.0, ");
+            builder.append("max(0.0, ");
+        } else {
+            builder.append("(");
         }
 
         for (int i = 0; i < size; i++) {
             builder.append("(");
             builder.append(coefficients[i]);
-            builder.append(" * ");
-            builder.append(variableIndexes[i]);
-            builder.append(")");
+
+            if (termStore == null) {
+                builder.append(" * <index:");
+                builder.append(variableIndexes[i]);
+                builder.append(">)");
+            } else {
+                builder.append(" * ");
+                builder.append(termStore.getVariableValue(variableIndexes[i]));
+                builder.append(")");
+            }
 
             if (i != size - 1) {
                 builder.append(" + ");
@@ -201,12 +224,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         builder.append(" - ");
         builder.append(constant);
 
-        if (hinge) {
-            builder.append(")");
-        }
+        builder.append(")");
 
         if (squared) {
-            builder.append("^2");
+            builder.append(" ^2");
         }
 
         return builder.toString();

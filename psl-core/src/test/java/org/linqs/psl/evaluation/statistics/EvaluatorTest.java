@@ -26,7 +26,6 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 
@@ -46,6 +45,22 @@ public abstract class EvaluatorTest<T extends Evaluator> {
 
     @Before
     public void setUp() {
+        // Initialize with the default setup:
+        // The full map will be (target, truth):
+        // (1.0, 1.0)
+        // (0.8, 0.0)
+        // (0.6, 1.0)
+        // (0.4, 0.0)
+
+        float[] predictions = new float[]{1.0f, 0.8f, 0.6f, 0.4f, 0.2f};
+        float[] truth = new float[]{1.0f, 0.0f, 1.0f, 0.0f};
+
+        init(predictions, truth);
+    }
+
+    protected void init(float[] predictions, float[] truth) {
+        cleanup();
+
         dataStore = new RDBMSDataStore(new H2DatabaseDriver(
                 H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
 
@@ -57,41 +72,36 @@ public abstract class EvaluatorTest<T extends Evaluator> {
         Partition targetPartition = dataStore.getPartition("targets");
         Partition truthPartition = dataStore.getPartition("truth");
 
-        // Create five RVAs with values [1.0, 0.8, 0.6, 0.4, 0.2].
         Inserter inserter = dataStore.getInserter(predicate, targetPartition);
-        for (int i = 0; i < 5; i++) {
-            inserter.insertValue(1.0 - (i / 5.0), new UniqueIntID(i), new UniqueIntID(i));
+        for (int i = 0; i < predictions.length; i++) {
+            inserter.insertValue(predictions[i], new UniqueIntID(i), new UniqueIntID(i));
         }
 
-        // Create four truth atoms (note that this makes one latent target).
-        // Evens will have the value 1.0, odds will have 0.0.
         inserter = dataStore.getInserter(predicate, truthPartition);
-        for (int i = 0; i < 4; i++) {
-            inserter.insertValue((i % 2 == 0) ? 1.0 : 0.0, new UniqueIntID(i), new UniqueIntID(i));
+        for (int i = 0; i < truth.length; i++) {
+            inserter.insertValue(truth[i], new UniqueIntID(i), new UniqueIntID(i));
         }
-
-        // The full map will be (target, truth):
-        // (1.0, 1.0)
-        // (0.8, 0.0)
-        // (0.6, 1.0)
-        // (0.4, 0.0)
 
         // Redefine the truth database with no atoms in the write partition.
-        Database results = dataStore.getDatabase(targetPartition);
-        Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+        Database resultsDB = dataStore.getDatabase(targetPartition);
+        Database truthDB = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        PersistedAtomManager atomManager = new PersistedAtomManager(results);
-        trainingMap = new TrainingMap(atomManager, truth);
+        PersistedAtomManager atomManager = new PersistedAtomManager(resultsDB);
+        trainingMap = new TrainingMap(atomManager, truthDB);
 
         // Since we only need the map, we can close all the databases.
-        results.close();
-        truth.close();
+        resultsDB.close();
+        truthDB.close();
     }
 
     @After
     public void cleanup() {
         trainingMap = null;
-        dataStore.close();
+
+        if (dataStore != null) {
+            dataStore.close();
+            dataStore = null;
+        }
     }
 
     /**
@@ -101,8 +111,6 @@ public abstract class EvaluatorTest<T extends Evaluator> {
     public void testBase() {
         Evaluator evaluator = getEvaluator();
         evaluator.compute(trainingMap, predicate);
-
-        boolean higherBetter = evaluator.isHigherRepresentativeBetter();
-        double score = evaluator.getRepresentativeMetric();
+        double score = evaluator.getNormalizedRepMetric();
     }
 }

@@ -19,8 +19,7 @@ package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
@@ -43,18 +42,6 @@ import java.util.PriorityQueue;
 public class InitialWeightHyperband extends Hyperband {
     private static final Logger log = LoggerFactory.getLogger(InitialWeightHyperband.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "initialweighthyperband";
-
-    /**
-     * The internal weight learning application (WLA) to use.
-     * Should actually be a VotedPerceptron.
-     */
-    public static final String INTERNAL_WLA_KEY = CONFIG_PREFIX + ".internalwla";
-    public static final String INTERNAL_WLA_DEFAULT = MaxLikelihoodMPE.class.getName();
-
     private VotedPerceptron internalWLA;
 
     public InitialWeightHyperband(Model model, Database rvDB, Database observedDB) {
@@ -65,7 +52,7 @@ public class InitialWeightHyperband extends Hyperband {
         super(rules, rvDB, observedDB);
 
         // TODO(eriq): Can we generalizse to actual WLA?
-        String wlaName = Config.getString(INTERNAL_WLA_KEY, INTERNAL_WLA_DEFAULT);
+        String wlaName = Options.WLA_IWHB_WLA.getString();
         this.internalWLA = (VotedPerceptron)WeightLearningApplication.getWLA(wlaName, rules, rvDB, observedDB);
     }
 
@@ -75,11 +62,7 @@ public class InitialWeightHyperband extends Hyperband {
 
         // Init the internal WLA.
         internalWLA.initGroundModel(
-            this.reasoner,
-            this.groundRuleStore,
-            this.termStore,
-            this.termGenerator,
-            this.atomManager,
+            this.inference,
             this.trainingMap
         );
     }

@@ -19,7 +19,7 @@ package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 
 public class GridSearchContinuousLossMAETest extends WeightLearningTest {
@@ -32,11 +32,11 @@ public class GridSearchContinuousLossMAETest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
         // Narrow the search space for tests.
-        Config.setProperty(GridSearch.POSSIBLE_WEIGHTS_KEY, "0.01:1:10");
+        Options.WLA_GS_POSSIBLE_WEIGHTS.set("0.01:1:10");
 
         // Use MAE as an objective.
-        Config.setProperty(WeightLearningApplication.EVALUATOR_KEY, ContinuousEvaluator.class.getName());
-        Config.setProperty(ContinuousEvaluator.REPRESENTATIVE_KEY, "MAE");
+        Options.WLA_EVAL.set(ContinuousEvaluator.class.getName());
+        Options.EVAL_CONT_REPRESENTATIVE.set(ContinuousEvaluator.RepresentativeMetric.MAE.toString());
 
         return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }

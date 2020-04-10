@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -47,19 +47,10 @@ import java.util.Set;
 public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
     private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
-    public static final String CONFIG_PREFIX = "hyperplanetermgenerator";
-
-    /**
-     * If true, then invert negative weight rules into their positive weight counterparts
-     * (negate the weight and expression).
-     */
-    public static final String INVERT_NEGATIVE_WEIGHTS_KEY = CONFIG_PREFIX + ".invertnegativeweights";
-    public static final boolean INVERT_NEGATIVE_WEIGHTS_DEFAULT = false;
-
     private boolean invertNegativeWeight;
 
     public HyperplaneTermGenerator() {
-        invertNegativeWeight = Config.getBoolean(INVERT_NEGATIVE_WEIGHTS_KEY, INVERT_NEGATIVE_WEIGHTS_DEFAULT);
+        invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
     }
 
     @Override

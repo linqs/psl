@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -41,18 +41,6 @@ import java.util.Random;
  * the voted perceptron algorithm.
  */
 public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "maxpiecewisepseudolikelihood";
-
-    /**
-     * Key for positive integer property.
-     * MaxPiecewisePseudoLikelihood will sample this many values to approximate the expectations.
-     */
-    public static final String NUM_SAMPLES_KEY = CONFIG_PREFIX + ".numsamples";
-    public static final int NUM_SAMPLES_DEFAULT = 100;
-
     private final int maxNumSamples;
     private int numSamples;
     private List<Map<RandomVariableAtom, List<WeightedGroundRule>>> ruleRandomVariableMap;
@@ -67,11 +55,8 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
     public MaxPiecewisePseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        maxNumSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+        maxNumSamples = Options.WLA_MPPLE_NUM_SAMPLES.getInt();
         numSamples = maxNumSamples;
-        if (numSamples <= 0) {
-            throw new IllegalArgumentException("Number of samples must be positive.");
-        }
 
         rands = new Random[Parallel.getNumThreads()];
         for (int i = 0; i < Parallel.getNumThreads(); i++) {
@@ -97,7 +82,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
 
         for (Rule rule : mutableRules) {
             Map<RandomVariableAtom, List<WeightedGroundRule>> groundRuleMap = new HashMap<RandomVariableAtom, List<WeightedGroundRule>>();
-            for (GroundRule groundRule : groundRuleStore.getGroundRules(rule)) {
+            for (GroundRule groundRule : inference.getGroundRuleStore().getGroundRules(rule)) {
                 for (GroundAtom atom : groundRule.getAtoms()) {
                     if (!(atom instanceof RandomVariableAtom)) {
                         continue;

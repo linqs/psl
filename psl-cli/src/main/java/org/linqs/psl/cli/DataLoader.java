@@ -22,6 +22,8 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
+import org.linqs.psl.model.predicate.model.ModelPredicate;
+import org.linqs.psl.model.predicate.model.SupportingModel;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
@@ -39,6 +41,7 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -60,6 +63,8 @@ public class DataLoader {
     public static final String PROPERTY_TYPES = "types";
     public static final String PROPERTY_BLOCK = "block";
     public static final String PROPERTY_FUNCTION = "implementation";
+    public static final String PROPERTY_MODEL_TYPE = "modeltype";
+    public static final String PROPERTY_CONFIG = "config";
 
     public static final Set<String> TOP_LEVEL_PROPS = new HashSet<String>(Arrays.asList(
             new String[]{KEY_PREDICATE, KEY_PARTITION_OBS, KEY_PARTITION_TARGETS, KEY_PARTITION_TRUTH}));
@@ -82,7 +87,7 @@ public class DataLoader {
         validate(yaml);
 
         // Fetch the predicates.
-        Set<StandardPredicate> closedPredicates = parsePredicates(yaml, useIntIds, dataStore);
+        Set<StandardPredicate> closedPredicates = parsePredicates(yaml, useIntIds, dataStore, relativeDir);
 
         // Load the partitions.
         loadPartitions(yaml, dataStore, relativeDir);
@@ -162,7 +167,7 @@ public class DataLoader {
         insert.loadDelimitedDataAutomatic(makePath(relativeDir, path));
     }
 
-    private static Set<StandardPredicate> parsePredicates(YAMLConfiguration yaml, boolean useIntIds, DataStore dataStore) {
+    private static Set<StandardPredicate> parsePredicates(YAMLConfiguration yaml, boolean useIntIds, DataStore dataStore, String relativeDir) {
         Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>();
 
         boolean foundPredicate = false;
@@ -187,7 +192,7 @@ public class DataLoader {
                 throw new IllegalStateException(String.format("Predicate, %s, has an unknown value type: %s.", predicateName, rawValue.getClass().getName()));
             }
 
-            parsePredicate(predicateName, values, useIntIds, dataStore, closedPredicates);
+            parsePredicate(predicateName, values, useIntIds, dataStore, closedPredicates, relativeDir);
         }
 
         if (!foundPredicate) {
@@ -197,11 +202,13 @@ public class DataLoader {
         return closedPredicates;
     }
 
-    private static void parsePredicate(String name, List<Object> properties, boolean useIntIds, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
+    private static void parsePredicate(String name, List<Object> properties, boolean useIntIds, DataStore dataStore, Set<StandardPredicate> closedPredicates, String relativeDir) {
         int arity = -1;
         Boolean isClosed = null;
         boolean isBlock = false;
         String externalFunctionImplementation = null;
+        String modelType = null;
+        Map<String, String> config = new HashMap<String, String>();
         List<ConstantType> types = new ArrayList<ConstantType>();
 
         if (name.contains("/")) {
@@ -246,10 +253,29 @@ public class DataLoader {
                     } else if (key.equals(PROPERTY_FUNCTION)) {
                         Object rawValue = mapProperty.get(key);
                         if (!(rawValue instanceof String)) {
-                            throw new IllegalStateException(String.format("Predicate, %s, has a function with an unknown type (%s). Should the target class name (as a string).", name, rawValue.getClass().getName()));
+                            throw new IllegalStateException(String.format("Predicate, %s, has a function with an unknown type (%s). The value should be the target class name (as a string).", name, rawValue.getClass().getName()));
                         }
 
                         externalFunctionImplementation = (String)rawValue;
+                    } else if (key.equals(PROPERTY_MODEL_TYPE)) {
+                        Object rawValue = mapProperty.get(key);
+                        if (!(rawValue instanceof String)) {
+                            throw new IllegalStateException(String.format("Predicate, %s, has a model type key with an unknown type (%s), should be a string.", name, rawValue.getClass().getName()));
+                        }
+
+                        modelType = (String)rawValue;
+                    } else if (key.equals(PROPERTY_CONFIG)) {
+                        Object rawValue = mapProperty.get(key);
+                        if (!(rawValue instanceof Map)) {
+                            throw new IllegalStateException(String.format("Predicate, %s, has a config key with an unknown type (%s), should be a Map<String, String>.", name, rawValue.getClass().getName()));
+                        }
+
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> rawMap = (Map<String, Object>)rawValue;
+
+                        for (Map.Entry<String, Object> entry : rawMap.entrySet()) {
+                            config.put(entry.getKey(), entry.getValue().toString());
+                        }
                     } else {
                         throw new IllegalStateException(String.format("Predicate, %s, has an unknown property: '%s'.", name, key));
                     }
@@ -287,12 +313,35 @@ public class DataLoader {
             }
         }
 
-        StandardPredicate predicate = StandardPredicate.get(name, types.toArray(new ConstantType[0]));
+        StandardPredicate predicate = null;
+        if (modelType != null) {
+            String modelClassName = Reflection.resolveClassName(modelType);
+            if (modelClassName == null) {
+                // Try one more time, but assuming the given name was short and we know the package.
+                // This is because supporting models may be outside of psl-core and thus not resolvable.
+                modelClassName = Reflection.resolveClassName("org.linqs.psl.model.predicate.model." + modelType);
+                if (modelClassName == null) {
+                    throw new IllegalArgumentException("Unable to resolve the model type: " + modelType);
+                }
+            }
+
+            SupportingModel model = (SupportingModel)Reflection.newObject(modelClassName);
+
+            predicate = ModelPredicate.get(name, model, types.toArray(new ConstantType[0]));
+            ((ModelPredicate)predicate).loadModel(config, relativeDir);
+        } else {
+            predicate = StandardPredicate.get(name, types.toArray(new ConstantType[0]));
+        }
+
         predicate.setBlock(isBlock);
         dataStore.registerPredicate(predicate);
 
         if (isClosed.booleanValue()) {
             closedPredicates.add(predicate);
+
+            if (predicate instanceof ModelPredicate) {
+                throw new IllegalArgumentException(String.format("Model predicates (%s) cannot be closed.", predicate));
+            }
         }
     }
 

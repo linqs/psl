@@ -18,10 +18,8 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.MathUtils;
 
@@ -40,25 +38,6 @@ public class DiscreteEvaluator extends Evaluator {
         ACCURACY
     }
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "discreteevaluator";
-
-    /**
-     * The truth threshold.
-     */
-    public static final String THRESHOLD_KEY = CONFIG_PREFIX + ".threshold";
-    public static final double DEFAULT_THRESHOLD = 0.5;
-
-    /**
-     * The representative metric.
-     * Default to F1.
-     * Must match a string from the RepresentativeMetric enum.
-     */
-    public static final String REPRESENTATIVE_KEY = CONFIG_PREFIX + ".representative";
-    public static final String DEFAULT_REPRESENTATIVE = "F1";
-
     private double threshold;
     private RepresentativeMetric representative;
 
@@ -68,12 +47,11 @@ public class DiscreteEvaluator extends Evaluator {
     private int fp;
 
     public DiscreteEvaluator() {
-        this(Config.getDouble(THRESHOLD_KEY, DEFAULT_THRESHOLD),
-                Config.getString(REPRESENTATIVE_KEY, DEFAULT_REPRESENTATIVE));
+        this(Options.EVAL_DISCRETE_THRESHOLD.getDouble());
     }
 
     public DiscreteEvaluator(double threshold) {
-        this(threshold, DEFAULT_REPRESENTATIVE);
+        this(threshold, Options.EVAL_DISCRETE_REPRESENTATIVE.getString());
     }
 
     public DiscreteEvaluator(double threshold, String representative) {
@@ -106,7 +84,7 @@ public class DiscreteEvaluator extends Evaluator {
         tn = 0;
         fp = 0;
 
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+        for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
                 continue;
             }
@@ -127,7 +105,7 @@ public class DiscreteEvaluator extends Evaluator {
     }
 
     @Override
-    public double getRepresentativeMetric() {
+    public double getRepMetric() {
         switch (representative) {
             case F1:
                 return f1();
@@ -147,7 +125,7 @@ public class DiscreteEvaluator extends Evaluator {
     }
 
     @Override
-    public boolean isHigherRepresentativeBetter() {
+    public boolean isHigherRepBetter() {
         return true;
     }
 

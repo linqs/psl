@@ -17,21 +17,45 @@
  */
 package org.linqs.psl.reasoner;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.reasoner.term.TermStore;
 
 /**
  * An oprimizer to minimize the total weighted incompatibility
  * of the terms provided by a TermStore.
  */
-public interface Reasoner {
+public abstract class Reasoner {
+    protected double budget;
+
+    protected boolean printInitialObj;
+    protected boolean objectiveBreak;
+
+    protected float tolerance;
+
+    public Reasoner() {
+        budget = 1.0;
+
+        objectiveBreak = Options.REASONER_OBJECTIVE_BREAK.getBoolean();
+        printInitialObj = Options.REASONER_PRINT_INITIAL_OBJECTIVE.getBoolean();
+
+        tolerance = Options.REASONER_TOLERANCE.getFloat();
+    }
+
     /**
      * Minimizes the total weighted incompatibility of the terms in the provided
      * TermStore.
      */
-    public void optimize(TermStore termStore);
+    public abstract void optimize(TermStore termStore);
 
     /**
      * Releases all resources acquired by this Reasoner.
      */
-    public void close();
+    public abstract void close();
+
+    /**
+     * Set a budget (given as a proportion of the max budget).
+     */
+    public void setBudget(double budget) {
+        this.budget = budget;
+    }
 }

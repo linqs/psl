@@ -18,6 +18,8 @@
 package org.linqs.psl.util;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Various static iterator/iterable utilities.
@@ -114,6 +116,49 @@ public final class IteratorUtils {
         };
     }
 
+    /**
+     * Get an iterator that will go through the numbers [0, amount).
+     */
+    public static Iterator<Integer> count(int amount) {
+        return count(0, amount);
+    }
+
+    /**
+     * Get an iterator that will go through the numbers [start, start + amount).
+     */
+    public static Iterator<Integer> count(int start, int amount) {
+        assert(amount >= 0);
+        return new CountingIterator(start, amount);
+    }
+
+    /**
+     * Convert an iterable to a persisted list (LinkedList).
+     */
+    public static <T> List<T> toList(Iterable<T> elements) {
+        return toList(elements.iterator());
+    }
+
+    /**
+     * Convert an iterator to a persisted list (LinkedList).
+     */
+    public static <T> List<T> toList(Iterator<T> elements) {
+        List<T> list = new LinkedList<T>();
+
+        while (elements.hasNext()) {
+            list.add(elements.next());
+        }
+
+        return list;
+    }
+
+    public static interface MapFunction<T, S> {
+        public S map(T value);
+    }
+
+    public static interface FilterFunction<T> {
+        public boolean keep(T value);
+    }
+
     private static class MapIterable<T, S> implements Iterable<S> {
         private Iterable<T> baseIterable;
         private MapFunction<T, S> mapFunction;
@@ -172,10 +217,6 @@ public final class IteratorUtils {
         public void remove() {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public interface MapFunction<T, S> {
-        public S map(T value);
     }
 
     private static class FilterIterable<T> implements Iterable<T> {
@@ -237,10 +278,6 @@ public final class IteratorUtils {
         public void remove() {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public interface FilterFunction<T> {
-        public boolean keep(T value);
     }
 
     private static class ConcatenationIterable<T> implements Iterable<T> {
@@ -354,6 +391,36 @@ public final class IteratorUtils {
         @Override
         public boolean hasNext() {
             return count < (int)Math.pow(2, size);
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class CountingIterator implements Iterator<Integer> {
+        private final int end;
+
+        private int next;
+
+        public CountingIterator(int start, int count) {
+            next = start;
+            end = start + count;
+        }
+
+        @Override
+        public Integer next() {
+            if (!hasNext()) {
+                throw new java.util.NoSuchElementException();
+            }
+
+            return Integer.valueOf(next++);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return next < end;
         }
 
         @Override

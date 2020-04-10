@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.util;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,19 +33,6 @@ import java.util.TimerTask;
  */
 public final class RuntimeStats {
     private static final Logger log = LoggerFactory.getLogger(RuntimeStats.class);
-
-    public static final String CONFIG_PREFIX = "runtimestats";
-
-    /**
-     * Periodically collect stats on the JVM.
-     */
-    public static final String COLLECT_KEY = CONFIG_PREFIX + ".collect";
-
-    /**
-     * The period (in ms) of stats collection.
-     */
-    public static final String COLLECTION_PERIOD_KEY = CONFIG_PREFIX + ".period";
-    public static final long COLLECTION_PERIOD_DEFAULT = 250;
 
     private static MeanStats totalMemory = new MeanStats();
     private static MeanStats freeMemory = new MeanStats();
@@ -79,14 +66,14 @@ public final class RuntimeStats {
             return;
         }
 
-        Object property = Config.getUnloggedProperty(COLLECT_KEY);
+        Object property = Options.RUNTIME_STATS_COLLECT.getUnlogged();
         if (property == null || !Boolean.parseBoolean((String)property)) {
             return;
         }
 
         init();
 
-        long period = Config.getLong(COLLECTION_PERIOD_KEY, COLLECTION_PERIOD_DEFAULT);
+        long period = Options.RUNTIME_COLLECTION_PERIOD.getLong();
 
         collectionTimer = new Timer(RuntimeStats.class.getName(), true);
         collectionTimer.schedule(new CollectionTask(), 0, period);

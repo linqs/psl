@@ -42,6 +42,11 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public int getVariableIndex(V variable);
 
     /**
+     * Get the variable for the given index.
+     */
+    public float getVariableValue(int index);
+
+    /**
      * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().
      */
     public void syncAtoms();

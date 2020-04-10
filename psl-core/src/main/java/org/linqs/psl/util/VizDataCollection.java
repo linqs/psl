@@ -1,7 +1,7 @@
 package org.linqs.psl.util;
 
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONArray;
 import java.util.HashMap;
 import java.util.Map;
 import java.io.File;
@@ -10,7 +10,6 @@ import java.io.IOException;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 
@@ -47,7 +46,7 @@ public class VizDataCollection {
     //Running org.linqs.psl.application.learning.weight.bayesian.GaussianProcessPriorTest
 
     //Takes in a prediction truth pair and adds it to our map
-    public static void PredictionTruth(ObservedAtom target, float predictVal, float truthVal ) {
+    public static void PredictionTruth(GroundAtom target, float predictVal, float truthVal ) {
         // HashMap<String,Float> valueMap = new HashMap<>();
         // valueMap.put("Prediction", predictVal);
         // valueMap.put("Truth", truthVal);
@@ -59,7 +58,7 @@ public class VizDataCollection {
         valueObj.put("Truth", truthVal);
         valueObj.put("Prediction", predictVal);
         valueObj.put("Predicate", target.toString());
-        vizData.jsonArray.add(valueObj);
+        vizData.jsonArray.put(valueObj);
         // vizData.vizJson.put(target,valueObj);
 
 
@@ -90,7 +89,7 @@ public class VizDataCollection {
         try (FileWriter file = new FileWriter("output.json")) {
 
             // file.write(vizData.vizJson.toJSONString());
-            file.write(vizData.jsonArray.toJSONString());
+            file.write(vizData.jsonArray.toString(4));
             file.flush();
 
         } catch (IOException e) {

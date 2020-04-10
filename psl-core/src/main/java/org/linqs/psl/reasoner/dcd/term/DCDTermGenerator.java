@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -40,7 +40,7 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     private float c;
 
     public DCDTermGenerator() {
-        c = Config.getFloat(DCDReasoner.C_KEY, DCDReasoner.C_DEFAULT);
+        c = Options.DCD_C.getFloat();
     }
 
     @Override

@@ -1450,7 +1450,6 @@ public class GroundRuleTest {
         AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
-        List<String> expected;
         List<Coefficient> coefficients;
         List<SummationAtomOrAtom> atoms;
         Map<SummationVariable, Formula> filters;
@@ -1797,5 +1796,36 @@ public class GroundRuleTest {
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
+    }
+
+    /**
+     * Ensure a PAM exception is thrown for a logical rule.
+     */
+    @Test
+    public void testLogicalAccessEcception() {
+        GroundRuleStore store = new MemoryGroundRuleStore();
+        AtomManager manager = new PersistedAtomManager(database);
+
+        Rule rule;
+
+        // Nice(A) && Nice(B) -> !Friends('__Missing1__', '__Missing2__')
+        rule = new WeightedLogicalRule(
+            new Implication(
+                new Conjunction(
+                    new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
+                    new QueryAtom(model.predicates.get("Nice"), new Variable("B"))
+                ),
+                new QueryAtom(model.predicates.get("Friends"), new UniqueStringID("__Missing1__"), new UniqueStringID("__Missing2__"))
+            ),
+            1.0,
+            true
+        );
+
+        try {
+            rule.groundAll(manager, store);
+            fail("PAM exception not thrown for a logcial rule.");
+        } catch (Exception ex) {
+            // Expected
+        }
     }
 }

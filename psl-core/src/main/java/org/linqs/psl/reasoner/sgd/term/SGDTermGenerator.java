@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -40,7 +40,7 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     private float learningRate;
 
     public SGDTermGenerator() {
-        learningRate = Config.getFloat(SGDReasoner.LEARNING_RATE_KEY, SGDReasoner.LEARNING_RATE_DEFAULT);
+        learningRate = Options.SGD_LEARNING_RATE.getFloat();
     }
 
     @Override

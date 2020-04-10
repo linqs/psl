@@ -1,6 +1,5 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
-import org.linqs.psl.config.Config;
 import org.linqs.psl.util.FloatMatrix;
 
 import java.util.Collections;

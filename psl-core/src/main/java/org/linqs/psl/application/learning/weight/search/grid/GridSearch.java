@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -36,18 +36,6 @@ public class GridSearch extends BaseGridSearch {
     private static final Logger log = LoggerFactory.getLogger(GridSearch.class);
 
     /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "gridsearch";
-
-    /**
-     * A comma-separated list of possible weights.
-     * These weights should be in some sorted order.
-     */
-    public static final String POSSIBLE_WEIGHTS_KEY = CONFIG_PREFIX + ".weights";
-    public static final String POSSIBLE_WEIGHTS_DEFAULT = "0.001:0.01:0.1:1:10";
-
-    /**
      * The delimiter to separate rule weights (and lication ids).
      * Note that we cannot use ',' because our configuration infrastructure will try
      * interpret it as a list of strings.
@@ -63,7 +51,7 @@ public class GridSearch extends BaseGridSearch {
     public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        possibleWeights = StringUtils.splitDouble(Config.getString(POSSIBLE_WEIGHTS_KEY, POSSIBLE_WEIGHTS_DEFAULT), DELIM);
+        possibleWeights = StringUtils.splitDouble(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
         if (possibleWeights.length == 0) {
             throw new IllegalArgumentException("No weights provided for grid search.");
         }

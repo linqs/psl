@@ -15,21 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.learning.weight.em;
+package org.linqs.psl.application.inference.mpe;
 
-import org.linqs.psl.application.learning.weight.VotedPerceptron;
-import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.InferenceTest;
+import org.linqs.psl.database.Database;
+import org.linqs.psl.model.rule.Rule;
 
-import org.junit.After;
+import java.util.List;
 
-public class HardEMTest extends WeightLearningTest {
+public class DCDInferenceTest extends InferenceTest {
     @Override
-    protected WeightLearningApplication getWLA() {
-        // Do less steps for tests.
-        Config.setProperty(VotedPerceptron.NUM_STEPS_KEY, 5);
-
-        return new HardEM(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    protected InferenceApplication getInference(List<Rule> rules, Database db) {
+        return new DCDInference(rules, db);
     }
 }

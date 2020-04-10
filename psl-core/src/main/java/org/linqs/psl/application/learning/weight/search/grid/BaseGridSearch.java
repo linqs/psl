@@ -18,11 +18,9 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +37,6 @@ import java.util.Map;
  */
 public abstract class BaseGridSearch extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(BaseGridSearch.class);
-
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "basegridsearch";
 
     /**
      * The current location we are investigating.
@@ -88,9 +81,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected void doLearn() {
         double bestObjective = -1;
         double[] bestWeights = new double[mutableRules.size()];
-
-        // Computes the observed incompatibilities.
-        computeObservedIncompatibility();
 
         double[] weights = new double[mutableRules.size()];
 
@@ -147,22 +137,11 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * if lower is better for that evaluator.
      */
     protected double inspectLocation(double[] weights) {
-        // Reset the RVAs to default values.
-        setDefaultRandomVariables();
-
-        if (termStore instanceof ADMMTermStore) {
-            ((ADMMTermStore)termStore).resetLocalVairables();
-        }
-
-        // Computes the expected incompatibility.
-        computeExpectedIncompatibility();
+        computeMPEState();
 
         evaluator.compute(trainingMap);
 
-        double score = evaluator.getRepresentativeMetric();
-        score = evaluator.isHigherRepresentativeBetter() ? -1.0 * score : score;
-
-        return score;
+        return -1.0 * evaluator.getNormalizedRepMetric();
     }
 
     /**

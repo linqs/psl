@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import org.slf4j.Logger;
@@ -39,30 +39,8 @@ import java.util.List;
  *
  * Ground models are provided to the executable and results are read via temporary files.
  */
-public abstract class ExecutableReasoner implements Reasoner {
+public abstract class ExecutableReasoner extends Reasoner {
     private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
-
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "executablereasoner";
-
-    /**
-     * Key for int property for the path of the executable.
-     */
-    public static final String EXECUTABLE_PATH_KEY = CONFIG_PREFIX + ".executablepath";
-
-    /**
-     * Key for boolean property for whether to delete the input file to external the reasoner on close.
-     */
-    public static final String CLEANUP_INPUT_KEY = CONFIG_PREFIX + ".cleanupinput";
-    public static final boolean CLEANUP_INPUT_DEFAULT = true;
-
-    /**
-     * Key for boolean property for whether to delete the output file to external the reasoner on close.
-     */
-    public static final String CLEANUP_OUTPUT_KEY = CONFIG_PREFIX + ".cleanupoutput";
-    public static final boolean CLEANUP_OUTPUT_DEFAULT = true;
 
     /**
      * The file that PSL will write for the reasoner.
@@ -85,9 +63,9 @@ public abstract class ExecutableReasoner implements Reasoner {
     protected String[] args;
 
     public ExecutableReasoner() {
-        this.executablePath = Config.getString(EXECUTABLE_PATH_KEY, "");
-        this.cleanupInput = Config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
-        this.cleanupOutput = Config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
+        this.executablePath = Options.EXECUTABLE_REASONER_PATH.getString();
+        this.cleanupInput = Options.EXECUTABLE_CLEAN_INPUT.getBoolean();
+        this.cleanupOutput = Options.EXECUTABLE_CLEAN_OUTPUT.getBoolean();
     }
 
     public ExecutableReasoner(String executablePath,
@@ -98,8 +76,8 @@ public abstract class ExecutableReasoner implements Reasoner {
         this.executableOutputPath = executableOutputPath;
         this.args = args;
 
-        this.cleanupInput = Config.getBoolean(CLEANUP_INPUT_KEY, CLEANUP_INPUT_DEFAULT);
-        this.cleanupOutput = Config.getBoolean(CLEANUP_OUTPUT_KEY, CLEANUP_OUTPUT_DEFAULT);
+        this.cleanupInput = Options.EXECUTABLE_CLEAN_INPUT.getBoolean();
+        this.cleanupOutput = Options.EXECUTABLE_CLEAN_OUTPUT.getBoolean();
     }
 
     @Override

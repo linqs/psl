@@ -18,7 +18,6 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.DataStore;
@@ -132,6 +131,11 @@ public class Launcher {
      * @param path where to output the ground rules. Use stdout if null.
      */
     private void outputGroundRules(GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
+        // Some inference/learning application will not have ground rule stores (if they stream).
+        if (groundRuleStore == null) {
+            return;
+        }
+
         PrintStream stream = System.out;
         boolean closeStream = false;
 
@@ -191,7 +195,7 @@ public class Launcher {
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
         InferenceApplication inferenceApplication =
-                InferenceApplication.getInferenceApplication(inferenceName, model, database);
+                InferenceApplication.getInferenceApplication(inferenceName, model.getRules(), database);
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
@@ -200,7 +204,7 @@ public class Launcher {
 
         boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
 
-        inferenceApplication.inference(commitAtoms);
+        inferenceApplication.inference(commitAtoms, false);
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
@@ -279,14 +283,14 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
-            outputGroundRules(learner.getGroundRuleStore(), path, false);
+            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, false);
         }
 
         learner.close();
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            outputGroundRules(learner.getGroundRuleStore(), path, true);
+            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, true);
         }
 
         randomVariableDatabase.close();

@@ -18,18 +18,25 @@
 package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.ModelApplication;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Reflection;
 
 import org.slf4j.Logger;
@@ -37,53 +44,50 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * All the tools necessary to perform infernce.
+ * An inference application owns the ground atoms (Database/AtomManager), ground rules (GroundRuleStore), the terms (TermStore),
+ * how terms are generated (TermGenerator), and how inference is actually performed (Reasoner).
+ * As such, the inference application is the top level authority for these items and methods.
+ * For example, inference may set the value of the random variables on construction.
+ */
 public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
 
-    /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "inference";
-
-    /**
-     * The class to use for a reasoner.
-     */
-    public static final String REASONER_KEY = CONFIG_PREFIX + ".reasoner";
-    public static final String REASONER_DEFAULT = ADMMReasoner.class.getName();
-
-    /**
-     * The class to use for ground rule storage.
-     */
-    public static final String GROUND_RULE_STORE_KEY = CONFIG_PREFIX + ".groundrulestore";
-    public static final String GROUND_RULE_STORE_DEFAULT = MemoryGroundRuleStore.class.getName();
-
-    /**
-     * The class to use for term storage.
-     * Should be compatible with REASONER_KEY.
-     */
-    public static final String TERM_STORE_KEY = CONFIG_PREFIX + ".termstore";
-    public static final String TERM_STORE_DEFAULT = ADMMTermStore.class.getName();
-
-    /**
-     * The class to use for term generator.
-     * Should be compatible with REASONER_KEY and TERM_STORE_KEY.
-     */
-    public static final String TERM_GENERATOR_KEY = CONFIG_PREFIX + ".termgenerator";
-    public static final String TERM_GENERATOR_DEFAULT = ADMMTermGenerator.class.getName();
-
-    protected Model model;
+    protected List<Rule> rules;
     protected Database db;
     protected Reasoner reasoner;
+    protected InitialValue initialValue;
+
+    protected boolean normalizeWeights;
+    protected boolean relaxHardConstraints;
+    protected double relaxationMultiplier;
+    protected boolean relaxationSquared;
 
     protected GroundRuleStore groundRuleStore;
     protected TermStore termStore;
     protected TermGenerator termGenerator;
     protected PersistedAtomManager atomManager;
 
-    public InferenceApplication(Model model, Database db) {
-        this.model = model;
+    private boolean atomsCommitted;
+
+    protected InferenceApplication(List<Rule> rules, Database db) {
+        this(rules, db, Options.INFERENCE_RELAX.getBoolean());
+    }
+
+    protected InferenceApplication(List<Rule> rules, Database db, boolean relaxHardConstraints) {
+        this.rules = new ArrayList<Rule>(rules);
         this.db = db;
+        this.atomsCommitted = false;
+
+        this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
+        this.normalizeWeights = Options.INFERENCE_NORMALIZE_WEIGHTS.getBoolean();
+        this.relaxHardConstraints = relaxHardConstraints;
+        this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getDouble();
+        this.relaxationSquared = Options.INFERENCE_RELAX_SQUARED.getBoolean();
 
         initialize();
     }
@@ -97,6 +101,8 @@ public abstract class InferenceApplication implements ModelApplication {
         atomManager = createAtomManager(db);
         log.debug("Atom manager initialization complete.");
 
+        initializeAtoms();
+
         reasoner = createReasoner();
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
@@ -104,27 +110,35 @@ public abstract class InferenceApplication implements ModelApplication {
 
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
+        if (normalizeWeights) {
+            normalizeWeights();
+        }
+
+        if (relaxHardConstraints) {
+            relaxHardConstraints();
+        }
+
         completeInitialize();
     }
 
     protected PersistedAtomManager createAtomManager(Database db) {
-        return new PersistedAtomManager(db);
+        return new PersistedAtomManager(db, false, initialValue);
     }
 
     protected GroundRuleStore createGroundRuleStore() {
-        return (GroundRuleStore)Config.getNewObject(GROUND_RULE_STORE_KEY, GROUND_RULE_STORE_DEFAULT);
+        return (GroundRuleStore)Options.INFERENCE_GRS.getNewObject();
     }
 
     protected Reasoner createReasoner() {
-        return (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
+        return (Reasoner)Options.INFERENCE_REASONER.getNewObject();
     }
 
     protected TermGenerator createTermGenerator() {
-        return (TermGenerator)Config.getNewObject(TERM_GENERATOR_KEY, TERM_GENERATOR_DEFAULT);
+        return (TermGenerator)Options.INFERENCE_TG.getNewObject();
     }
 
     protected TermStore createTermStore() {
-        return (TermStore)Config.getNewObject(TERM_STORE_KEY, TERM_STORE_DEFAULT);
+        return (TermStore)Options.INFERENCE_TS.getNewObject();
     }
 
     /**
@@ -133,25 +147,43 @@ public abstract class InferenceApplication implements ModelApplication {
      * The child is responsible for constructing the AtomManager
      * and populating the ground rule store.
      */
-    protected void completeInitialize() {}
+    protected void completeInitialize() {
+        log.info("Grounding out model.");
+        int groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
+        log.info("Grounding complete.");
+
+        log.debug("Initializing objective terms for {} ground rules.", groundCount);
+        @SuppressWarnings("unchecked")
+        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+        log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
+    }
 
     /**
      * Alias for inference() with committing atoms.
      */
     public void inference() {
-        inference(true);
+        inference(true, false);
     }
 
     /**
-     * Minimizes the total weighted incompatibility of the GroundAtoms in the Database
-     * according to the Model and commits the updated truth values back to the Database.
+     * Minimize the total weighted incompatibility of the atoms according to the rules,
+     * and optionally commit the updated atoms back to the database.
      *
-     * All RandomVariableAtoms which the Model might access must be persisted in the Database.
+     * All RandomVariableAtoms which the model might access must be persisted in the Database.
      */
-    public void inference(boolean commitAtoms) {
+    public void inference(boolean commitAtoms, boolean reset) {
+        if (reset) {
+            initializeAtoms();
+
+            if (termStore != null) {
+                termStore.reset();
+            }
+        }
+
         log.info("Beginning inference.");
         internalInference();
         log.info("Inference complete.");
+        atomsCommitted = false;
 
         //TEST
         //We want to iterate through the ground rules and output the satisfaction along with the ground rule's object ID.
@@ -172,9 +204,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         // Commits the RandomVariableAtoms back to the Database.
         if (commitAtoms) {
-            log.info("Writing results to Database.");
-            atomManager.commitPersistedAtoms();
-            log.info("Results committed to database.");
+            commit();
         }
     }
 
@@ -201,25 +231,127 @@ public abstract class InferenceApplication implements ModelApplication {
         return atomManager;
     }
 
+    /**
+     * Set a budget (given as a proportion of the max budget).
+     */
+    public void setBudget(double budget) {
+        reasoner.setBudget(budget);
+    }
+
+    /**
+     * Set all the random variable atoms to the initial value for this inference application.
+     */
+    public void initializeAtoms() {
+        for (RandomVariableAtom atom : atomManager.getDatabase().getAllCachedRandomVariableAtoms()) {
+            atom.setValue(initialValue.getVariableValue(atom));
+        }
+    }
+
+    /**
+     * Commit the results of inference to the database.
+     */
+    public void commit() {
+        if (atomsCommitted) {
+            return;
+        }
+
+        log.info("Writing results to Database.");
+        atomManager.commitPersistedAtoms();
+        log.info("Results committed to database.");
+
+        atomsCommitted = true;
+    }
+
     @Override
     public void close() {
-        termStore.close();
-        groundRuleStore.close();
-        reasoner.close();
+        if (termStore != null) {
+            termStore.close();
+            termStore = null;
+        }
 
-        termStore = null;
-        groundRuleStore = null;
-        reasoner = null;
+        if (groundRuleStore != null) {
+            groundRuleStore.close();
+            groundRuleStore = null;
+        }
 
-        model = null;
+        if (reasoner != null) {
+            reasoner.close();
+            reasoner = null;
+        }
+
+        rules = null;
         db = null;
     }
 
     /**
-     * Construct an inference application given the data.
-     * Look for a constructor like: (Model, Database).
+     * Normalize all weights to be in [0, 1].
      */
-    public static InferenceApplication getInferenceApplication(String className, Model model, Database db) {
+    protected void normalizeWeights() {
+        double max = 0.0;
+        boolean hasWeightedRule = false;
+
+        for (WeightedRule rule : IteratorUtils.filterClass(rules, WeightedRule.class)) {
+            double weight = rule.getWeight();
+            if (!hasWeightedRule || weight > max) {
+                max = weight;
+                hasWeightedRule = true;
+            }
+        }
+
+        if (!hasWeightedRule) {
+            return;
+        }
+
+        for (WeightedRule rule : IteratorUtils.filterClass(rules, WeightedRule.class)) {
+            double oldWeight = rule.getWeight();
+
+            double newWeight = 1.0;
+            if (!MathUtils.isZero(max)) {
+                newWeight = oldWeight / max;
+            }
+
+            log.debug("Normalizing rule weight (old weight: {}, new weight: {}): {}", oldWeight, newWeight, rule);
+            rule.setWeight(newWeight);
+        }
+    }
+
+    /**
+     * Relax hard constraints into weighted rules.
+     */
+    protected void relaxHardConstraints() {
+        double largestWeight = 0.0;
+        boolean hasUnweightedRule = false;
+
+        for (Rule rule : rules) {
+            if (rule instanceof WeightedRule) {
+                double weight = ((WeightedRule)rule).getWeight();
+                if (weight > largestWeight) {
+                    largestWeight = weight;
+                }
+            } else {
+                hasUnweightedRule = true;
+            }
+        }
+
+        if (!hasUnweightedRule) {
+            return;
+        }
+
+        double weight = Math.max(1.0, largestWeight * relaxationMultiplier);
+
+        for (int i = 0; i < rules.size(); i++) {
+            if (rules.get(i) instanceof UnweightedRule) {
+                log.debug("Relaxing hard constraint (weight: {}, squared: {}): {}", weight, relaxationSquared, rules.get(i));
+                rules.set(i, ((UnweightedRule)rules.get(i)).relax(weight, relaxationSquared));
+            }
+        }
+    }
+
+    /**
+     * Construct an inference application given the data.
+     * Look for a constructor like: (List<Rule>, Database).
+     */
+    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database db) {
         className = Reflection.resolveClassName(className);
 
         Class<? extends InferenceApplication> classObject = null;
@@ -233,14 +365,14 @@ public abstract class InferenceApplication implements ModelApplication {
 
         Constructor<? extends InferenceApplication> constructor = null;
         try {
-            constructor = classObject.getConstructor(Model.class, Database.class);
+            constructor = classObject.getConstructor(List.class, Database.class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No sutible constructor found for inference application: " + className + ".", ex);
+            throw new IllegalArgumentException("No sutible constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
         }
 
         InferenceApplication inferenceApplication = null;
         try {
-            inferenceApplication = constructor.newInstance(model, db);
+            inferenceApplication = constructor.newInstance(rules, db);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate inference application (" + className + ")", ex);
         } catch (IllegalAccessException ex) {

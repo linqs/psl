@@ -2,7 +2,7 @@ package org.linqs.psl.application.learning.weight.bayesian;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -19,27 +19,27 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {
         // Do less steps for tests.
-        Config.setProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 2);
+        Options.WLA_GPP_MAX_ITERATIONS.set(2);
 
         return new GaussianProcessPrior(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
 
     protected WeightLearningApplication getWLALocal() {
         // Do less steps for tests.
-        Config.setProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 2);
+        Options.WLA_GPP_MAX_ITERATIONS.set(2);
 
         return new GPPTest(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
 
     @Test
     public void testGetNext() {
-        GaussianProcessPrior wl = (GaussianProcessPrior) getWLA();
+        GaussianProcessPrior wl = (GaussianProcessPrior)getWLA();
         List<Float> yPred = Arrays.asList(0.5f, 0.4f, 0.6f, 0.7f);
         List<Float> yStd = Arrays.asList(0.2f, 0.7f, 0.3f, 0.1f);
 
         List<GaussianProcessPrior.WeightConfig> weightConfigs = new ArrayList<GaussianProcessPrior.WeightConfig>();
         for (int i = 0; i < yPred.size(); i++) {
-            weightConfigs.add(new GaussianProcessPrior.WeightConfig(null, yPred.get(i), yStd.get(i)));
+            weightConfigs.add(wl.new WeightConfig(null, yPred.get(i), yStd.get(i)));
         }
 
         Assert.assertEquals(1, wl.getNextPoint(weightConfigs, 1));
@@ -47,8 +47,8 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testGetConfigs() {
-        Config.setProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
-        Config.setProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
+        Options.WLA_GPP_MAX_CONFIGS.set(5);
+        Options.WLA_GPP_RANDOM_CONFIGS_ONLY.set(false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior)getWLA();
         List<GaussianProcessPrior.WeightConfig> configs = wl.getConfigs();
@@ -72,11 +72,11 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testPredictFnValAndStd() {
-        Config.setProperty(GaussianProcessKernel.REL_DEP_KEY, 100);
-        Config.setProperty(GaussianProcessKernel.SCALE_KEY, 1.0);
-        Config.setProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
+        Options.WLA_GPP_KERNEL_REL_DEP.set(100.0f);
+        Options.WLA_GPP_KERNEL_SCALE.set(1.0f);
+        Options.WLA_GPP_KERNEL_SPACE.set(GaussianProcessKernel.Space.OS.toString());
 
-        GaussianProcessPrior wl = (GaussianProcessPrior) getWLA();
+        GaussianProcessPrior wl = (GaussianProcessPrior)getWLA();
 
         FloatMatrix inverseMat = FloatMatrix.zeroes(3, 3);
         inverseMat.set(0, 0, 1);
@@ -94,13 +94,13 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
         float[] x = new float[]{0.4f, 0.2f, 0.1f};
         List<GaussianProcessPrior.WeightConfig> xKnown = new ArrayList<GaussianProcessPrior.WeightConfig>();
-        xKnown.add(new GaussianProcessPrior.WeightConfig(new float[]{0.1f, 0.2f, 0.3f}));
-        xKnown.add(new GaussianProcessPrior.WeightConfig(new float[]{0.2f, 0.2f, 0.1f}));
-        xKnown.add(new GaussianProcessPrior.WeightConfig(new float[]{0.4f, 0.3f, 0.2f}));
+        xKnown.add(wl.new WeightConfig(new float[]{0.1f, 0.2f, 0.3f}));
+        xKnown.add(wl.new WeightConfig(new float[]{0.2f, 0.2f, 0.1f}));
+        xKnown.add(wl.new WeightConfig(new float[]{0.4f, 0.3f, 0.2f}));
         float[] yKnown = new float[]{0.5f, 0.6f, 0.7f};
         FloatMatrix blasYKnown = FloatMatrix.columnVector(yKnown);
 
-        wl.setKernelForTest(GaussianProcessKernel.makeKernel(GaussianProcessKernel.KernelType.SQUARED_EXP, wl));
+        wl.setKernelForTest(new SquaredExpKernel());
         wl.setBlasYKnownForTest(blasYKnown);
 
         GaussianProcessPrior.ValueAndStd fnAndStd = wl.predictFnValAndStd(x, xKnown);
@@ -110,12 +110,11 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     @Test
     public void testDoLearn() {
-        Config.setProperty(GaussianProcessKernel.REL_DEP_KEY, 1);
-        Config.setProperty(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.Space.OS);
-        Config.setProperty(GaussianProcessPrior.MAX_CONFIGS_KEY, 5);
-        Config.setProperty(GaussianProcessPrior.MAX_ITERATIONS_KEY, 3);
-        Config.setProperty(GaussianProcessPrior.KERNEL_KEY, GaussianProcessKernel.KernelType.SQUARED_EXP);
-        Config.setProperty(GaussianProcessPrior.RANDOM_CONFIGS_ONLY_KEY, false);
+        Options.WLA_GPP_KERNEL_REL_DEP.set(1.0f);
+        Options.WLA_GPP_KERNEL_SPACE.set(GaussianProcessKernel.Space.OS.toString());
+        Options.WLA_GPP_MAX_CONFIGS.set(5);
+        Options.WLA_GPP_MAX_ITERATIONS.set(3);
+        Options.WLA_GPP_RANDOM_CONFIGS_ONLY.set(false);
 
         GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();
         wl.doLearn();

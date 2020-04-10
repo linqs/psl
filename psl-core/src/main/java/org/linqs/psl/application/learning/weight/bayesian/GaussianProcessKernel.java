@@ -1,6 +1,6 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.util.FloatMatrix;
 
 import java.util.Collections;
@@ -11,25 +11,8 @@ import java.util.Set;
  * All kernel methods MUST be threadsafe.
  */
 public abstract class GaussianProcessKernel {
-    public static final String CONFIG_PREFIX = "gppker";
-
-    public static final String SCALE_KEY = CONFIG_PREFIX + ".scale";
-    public static float SCALE_DEFAULT = 1.0f;
-
-    // Smaller means longer dependence. Smaller better when number of rules large
-    // TODO(sriram): learn this from data.
-    public static final String REL_DEP_KEY = CONFIG_PREFIX + ".reldep";
-    public static float REL_DEP_DEFAULT = 1.0f;
-
     public static enum Space {
         SS, OS, LS
-    }
-
-    public static final String SPACE_KEY = CONFIG_PREFIX + ".space";
-    public static final String SPACE_DEFAULT = Space.SS.toString();
-
-    public static enum KernelType {
-        SQUARED_EXP, WEIGHTED_SQUARED_EXP
     }
 
     protected final FloatMatrix scalingWeights;
@@ -55,9 +38,9 @@ public abstract class GaussianProcessKernel {
         this.scalingWeights = scalingWeights;
         this.weighted = weighted;
 
-        scale = Config.getFloat(SCALE_KEY, SCALE_DEFAULT);
-        relDep = Config.getFloat(REL_DEP_KEY, REL_DEP_DEFAULT);
-        space = Space.valueOf(Config.getString(SPACE_KEY, SPACE_DEFAULT).toUpperCase());
+        scale = Options.WLA_GPP_KERNEL_SCALE.getFloat();
+        relDep = Options.WLA_GPP_KERNEL_REL_DEP.getFloat();
+        space = Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
     }
 
     /**
@@ -95,32 +78,5 @@ public abstract class GaussianProcessKernel {
       */
     public float kernel(float[] point1, float[] point2) {
         return kernel(point1, point2, new float[point1.length], new float[point2.length], new FloatMatrix(), new FloatMatrix());
-    }
-
-    public static GaussianProcessKernel makeKernel(KernelType type, GaussianProcessPrior method) {
-        switch (type) {
-            case SQUARED_EXP:
-                return new SquaredExpKernel();
-
-            case WEIGHTED_SQUARED_EXP:
-                int[] counts = method.computeScalingFactor();
-
-                float max = 0.0f;
-                for (int i = 0; i < counts.length; i++) {
-                    if (counts[i] > max) {
-                        max = counts[i];
-                    }
-                }
-
-                float[] scale = new float[counts.length];
-                for (int i = 0; i < counts.length; i++) {
-                    scale[i] = counts[i] / max;
-                }
-
-                return new SquaredExpKernel(scale);
-
-            default:
-                throw new IllegalStateException("Unknown KernelType: " + type);
-        }
     }
 }

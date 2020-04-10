@@ -18,13 +18,10 @@
 package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.TestModel;
-import org.linqs.psl.config.Config;
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.inference.mpe.SGDInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
-import org.linqs.psl.reasoner.sgd.term.SGDMemoryTermStore;
 
 import org.junit.Test;
 
@@ -38,18 +35,14 @@ public class SGDReasonerTest {
      */
     @Test
     public void baseTest() {
-        Config.setProperty(InferenceApplication.REASONER_KEY, SGDReasoner.class.getName());
-        Config.setProperty(InferenceApplication.TERM_GENERATOR_KEY, SGDTermGenerator.class.getName());
-        Config.setProperty(InferenceApplication.TERM_STORE_KEY, SGDMemoryTermStore.class.getName());
-
         TestModel.ModelInformation info = TestModel.getModel();
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = new SGDInference(info.model.getRules(), inferDB);
 
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 }

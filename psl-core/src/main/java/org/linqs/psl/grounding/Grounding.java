@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.grounding;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
@@ -44,20 +44,6 @@ import java.util.Map;
  */
 public class Grounding {
     private static final Logger log = LoggerFactory.getLogger(Grounding.class);
-
-    public static final String CONFIG_PREFIX = "grounding";
-
-    /**
-     * Potentially rewrite the grounding queries.
-     */
-    public static final String REWRITE_QUERY_KEY = CONFIG_PREFIX + ".rewritequeries";
-    public static final boolean REWRITE_QUERY_DEFAULT = false;
-
-    /**
-     * Whether or not queries are being rewritten, perform the grounding queries one at a time.
-     */
-    public static final String SERIAL_KEY = CONFIG_PREFIX + ".serial";
-    public static final boolean SERIAL_DEFAULT = false;
 
     // Static only.
     private Grounding() {}
@@ -89,8 +75,8 @@ public class Grounding {
      * @return the number of ground rules generated.
      */
     public static int groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        boolean rewrite = Config.getBoolean(REWRITE_QUERY_KEY, REWRITE_QUERY_DEFAULT);
-        boolean serial = Config.getBoolean(SERIAL_KEY, SERIAL_DEFAULT);
+        boolean rewrite = Options.GROUNDING_REWRITE_QUERY.getBoolean();
+        boolean serial = Options.GROUNDING_SERIAL.getBoolean();
 
         Map<Formula, List<Rule>> queries = new HashMap<Formula, List<Rule>>();
         List<Rule> bypassRules = new ArrayList<Rule>();

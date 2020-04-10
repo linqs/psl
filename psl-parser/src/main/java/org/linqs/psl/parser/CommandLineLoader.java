@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.parser;
 
-import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -83,7 +83,7 @@ public class CommandLineLoader {
 
     public static final String DEFAULT_H2_DB_PATH = SystemUtils.getTempDir("cli");
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-    public static final String DEFAULT_IA = MPEInference.class.getName();
+    public static final String DEFAULT_IA = ADMMInference.class.getName();
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     private static Options options = setupOptions();
@@ -202,7 +202,7 @@ public class CommandLineLoader {
         newOptions.addOption(Option.builder(OPERATION_INFER)
                 .longOpt(OPERATION_INFER_LONG)
                 .desc("Run MAP inference." +
-                        " You can optionally supply a fully qualified name for an inference application" +
+                        " You can optionally supply a name for an inference application" +
                         " (defaults to " + DEFAULT_IA + ").")
                 .hasArg()
                 .argName("inferenceMethod")
@@ -212,7 +212,7 @@ public class CommandLineLoader {
         newOptions.addOption(Option.builder(OPERATION_LEARN)
                 .longOpt(OPERATION_LEARN_LONG)
                 .desc("Run weight learning." +
-                        " You can optionally supply a fully qualified name for a weight learner" +
+                        " You can optionally supply a name for a weight learner" +
                         " (defaults to " + DEFAULT_WLA + ").")
                 .hasArg()
                 .argName("learner")

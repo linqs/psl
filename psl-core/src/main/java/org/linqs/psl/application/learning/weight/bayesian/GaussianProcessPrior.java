@@ -1,7 +1,7 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -22,30 +22,9 @@ import java.util.List;
 public class GaussianProcessPrior extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(GaussianProcessPrior.class);
 
-    public static final String CONFIG_PREFIX = "gpp";
-
-    public static final String KERNEL_KEY = CONFIG_PREFIX + ".kernel";
-    public static final String KERNEL_DEFAULT = GaussianProcessKernel.KernelType.SQUARED_EXP.toString();
-
-    public static final String MAX_ITERATIONS_KEY = CONFIG_PREFIX + ".maxiterations";
-    public static final int MAX_ITERATIONS_DEFAULT = 25;
-
-    public static final String MAX_CONFIGS_KEY = CONFIG_PREFIX + ".maxconfigs";
-    public static final int MAX_CONFIGS_DEFAULT = 1000000;
-
-    public static final String EXPLORATION_KEY = CONFIG_PREFIX + ".explore";
-    public static final float EXPLORATION_DEFAULT = 2.0f;
-
-    public static final String RANDOM_CONFIGS_ONLY_KEY = CONFIG_PREFIX + ".randomConfigsOnly";
-    public static final boolean RANDOM_CONFIGS_ONLY_DEFAULT = true;
-
-    public static final String EARLY_STOPPING_KEY = CONFIG_PREFIX + ".earlyStopping";
-    public static final boolean EARLY_STOPPING_DEFAULT = true;
-
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
 
-    private GaussianProcessKernel.KernelType kernelType;
     private int maxIterations;
     private int maxConfigs;
     private float exploration;
@@ -60,20 +39,22 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private List<WeightConfig> exploredConfigs;
     private FloatMatrix blasYKnown;
 
+    private float initialWeightValue;
+    private float initialStdValue;
+
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        kernelType = GaussianProcessKernel.KernelType.valueOf(
-                Config.getString(KERNEL_KEY, KERNEL_DEFAULT).toUpperCase());
+        maxIterations = Options.WLA_GPP_MAX_ITERATIONS.getInt();
+        maxConfigs = Options.WLA_GPP_MAX_CONFIGS.getInt();
+        exploration = Options.WLA_GPP_EXPLORATION.getFloat();
+        randomConfigsOnly = Options.WLA_GPP_RANDOM_CONFIGS_ONLY.getBoolean();
+        earlyStopping = Options.WLA_GPP_EARLY_STOPPING.getBoolean();
 
-        maxIterations = Config.getInt(MAX_ITERATIONS_KEY, MAX_ITERATIONS_DEFAULT);
-        maxConfigs = Config.getInt(MAX_CONFIGS_KEY, MAX_CONFIGS_DEFAULT);
-        exploration = Config.getFloat(EXPLORATION_KEY, EXPLORATION_DEFAULT);
-        randomConfigsOnly = Config.getBoolean(RANDOM_CONFIGS_ONLY_KEY, RANDOM_CONFIGS_ONLY_DEFAULT);
-        earlyStopping = Config.getBoolean(EARLY_STOPPING_KEY, EARLY_STOPPING_DEFAULT);
+        initialWeightValue = Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat();
+        initialStdValue = Options.WLA_GPP_INITIAL_WEIGHT_STD.getFloat();
 
-        space = GaussianProcessKernel.Space.valueOf(
-                Config.getString(GaussianProcessKernel.SPACE_KEY, GaussianProcessKernel.SPACE_DEFAULT));
+        space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
         minConfigVal = 1.0f / MAX_RAND_INT_VAL;
     }
@@ -111,7 +92,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     @Override
     protected void doLearn() {
         // Very important to define a good kernel.
-        kernel = GaussianProcessKernel.makeKernel(kernelType, this);
+        kernel = new SquaredExpKernel();
 
         reset();
 
@@ -276,21 +257,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return configs;
     }
 
-    /**
-     * Computes the amount to scale gradient for each rule.
-     * Scales by the number of groundings of each rule
-     * unless the rule is not grounded in the training set, in which case
-     * scales by 1.0.
-     */
-    protected int[] computeScalingFactor() {
-        int [] factor = new int[mutableRules.size()];
-        for (int i = 0; i < factor.length; i++) {
-            factor[i] = Math.max(1, groundRuleStore.count(mutableRules.get(i)));
-        }
-
-        return factor;
-    }
-
     private List<WeightConfig> getRandomConfigs() {
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = new ArrayList<WeightConfig>();
@@ -344,9 +310,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         setWeights(config);
         computeMPEState();
         evaluator.compute(trainingMap);
-        double score = evaluator.getRepresentativeMetric();
-        score = (evaluator.isHigherRepresentativeBetter()) ? score : -1.0 * score;
-        return (float)score;
+        return (float)evaluator.getNormalizedRepMetric();
     }
 
     // Exploration strategy
@@ -354,7 +318,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
         for (int i = 0; i < configs.size(); i++) {
-            float curVal = (configs.get(i).valueAndStd.value/exploration) + configs.get(i).valueAndStd.std;
+            float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
             if (bestConfig == -1 || curVal > curBestVal) {
                 curBestVal = curVal;
                 bestConfig = i;
@@ -364,26 +328,26 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return bestConfig;
     }
 
-    protected static class ValueAndStd {
+    protected class ValueAndStd {
         float value;
         float std;
 
-        ValueAndStd() {
-            this(0,1);
+        public ValueAndStd() {
+            this(initialWeightValue, initialStdValue);
         }
 
-        ValueAndStd(float value, float std) {
+        public ValueAndStd(float value, float std) {
             this.value = value;
             this.std = std;
         }
     }
 
-    protected static class WeightConfig {
+    protected class WeightConfig {
         public float[] config;
         public ValueAndStd valueAndStd;
 
         public WeightConfig(float[] config) {
-            this(config, 0, 1);
+            this(config, initialWeightValue, initialStdValue);
         }
 
         public WeightConfig(WeightConfig config) {

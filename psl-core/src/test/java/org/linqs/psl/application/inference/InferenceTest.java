@@ -19,10 +19,8 @@ package org.linqs.psl.application.inference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
 
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
@@ -32,7 +30,6 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -43,8 +40,6 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -52,9 +47,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class MPEInferenceTest {
+public abstract class InferenceTest {
+    protected abstract InferenceApplication getInference(List<Rule> rules, Database db);
+
     /**
-     * A quick test that only checks to see if MPEInference is running.
+     * A quick test that only checks to see if the inference method is running.
      * This is not a targeted or exhaustive test, just a starting point.
      */
     @Test
@@ -63,18 +60,18 @@ public class MPEInferenceTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 
     /**
-     * Same as testBase(), but using postgres.
+     * Same as baseTest(), but using postgres.
      */
     @Test
-    public void testBasePostgres() {
+    public void baseTestPostgres() {
         DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
         if (driver == null) {
             return;
@@ -84,10 +81,10 @@ public class MPEInferenceTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 
@@ -120,10 +117,10 @@ public class MPEInferenceTest {
         toClose.add(info.predicates.get("Friends"));
 
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 
@@ -133,9 +130,6 @@ public class MPEInferenceTest {
     @Test
     public void testArithmeticNoOpenPredicates() {
         TestModel.ModelInformation info = TestModel.getModel();
-
-        // Reset the model with only a single rule.
-        // info.model = new Model();
 
         List<Coefficient> coefficients;
         List<SummationAtomOrAtom> atoms;
@@ -162,10 +156,10 @@ public class MPEInferenceTest {
         toClose.add(info.predicates.get("Nice"));
 
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-        mpe.inference();
-        mpe.close();
+        inference.inference();
+        inference.close();
         inferDB.close();
     }
 
@@ -191,15 +185,15 @@ public class MPEInferenceTest {
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        MPEInference mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-        mpe.inference();
+        inference.inference();
 
         // There are 20 ground rules, and they are all trivial.
-        assertEquals(20, mpe.getGroundRuleStore().size());
-        assertEquals(0, mpe.getTermStore().size());
+        assertEquals(20, inference.getGroundRuleStore().size());
+        assertEquals(0, inference.getTermStore().size());
 
-        mpe.close();
+        inference.close();
         inferDB.close();
     }
 
@@ -211,16 +205,16 @@ public class MPEInferenceTest {
         TestModel.ModelInformation info = TestModel.getModel();
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication mpe = new MPEInference(info.model, inferDB);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         float preInferenceTotalValue = 0.0f;
         for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
 
-        mpe.inference(true);
+        inference.inference(true, true);
 
-        mpe.close();
+        inference.close();
 
         // The database should be closed after inference to clear the cache before reading in values again.
         // This ensures that the values returned won't be from the cache.
@@ -244,16 +238,15 @@ public class MPEInferenceTest {
         TestModel.ModelInformation info = TestModel.getModel();
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-        InferenceApplication mpe = new MPEInference(info.model, inferDB);
 
         float preInferenceTotalValue = 0.0f;
         for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
 
-        mpe.inference(false);
-
-        mpe.close();
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+        inference.inference(false, true);
+        inference.close();
 
         // The database should be closed after inference to clear the cache before reading in values again.
         // This ensures that the values returned won't be from the cache.

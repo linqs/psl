@@ -20,6 +20,7 @@ package org.linqs.psl.model.rule.arithmetic;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.UnweightedRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -58,6 +59,11 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule implements 
     protected UnweightedGroundArithmeticRule makeGroundRule(List<Float> coefficients, List<GroundAtom> atoms,
             FunctionComparator comparator, float constant) {
         return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
+    }
+
+    @Override
+    public WeightedRule relax(double weight, boolean squared) {
+        return new WeightedArithmeticRule(expression, filters, weight, squared, name);
     }
 
     @Override

@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.database.atom;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -26,6 +26,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.util.IteratorUtils;
 
 import org.slf4j.Logger;
@@ -49,26 +50,16 @@ public class PersistedAtomManager extends AtomManager {
     private static final Logger log = LoggerFactory.getLogger(PersistedAtomManager.class);
 
     /**
-     * Prefix of property keys used by this class.
-     */
-    public static final String CONFIG_PREFIX = "persistedatommanager";
-
-    /**
-     * Whether or not to throw an exception on illegal access.
-     * Note that in most cases, this indicates incorrectly formed data.
-     * This should only be set to false when the user understands why these
-     * exceptions are thrown in the first place and the grounding implications of
-     * not having the atom initially in the database.
-     */
-    public static final String THROW_ACCESS_EXCEPTION_KEY = CONFIG_PREFIX + ".throwaccessexception";
-    public static final boolean THROW_ACCESS_EXCEPTION_DEFAULT = true;
-
-    /**
      * If false, ignore any atoms that would otherwise throw a PersistedAccessException.
      * Instead, just give a single warning and return the RVA as-is.
      */
     private final boolean throwOnIllegalAccess;
     private boolean warnOnIllegalAccess;
+
+    /**
+     * The initial value to give atoms accessed illegally.
+     */
+    private InitialValue initialValueOnIllegalAccess;
 
     private int persistedAtomCount;
 
@@ -76,15 +67,22 @@ public class PersistedAtomManager extends AtomManager {
         this(db, false);
     }
 
+    public PersistedAtomManager(Database db, boolean prebuiltCache) {
+        this(db, prebuiltCache, InitialValue.ATOM);
+    }
+
     /**
      * Constructs a PersistedAtomManager with a built-in set of all the database's persisted RandomVariableAtoms.
      * @param prebuiltCache the database already has a populated atom cache, no need to build it again.
+     * @param initialValueOnIllegalAccess the initial value to give an atom accessed illegally.
      */
-    public PersistedAtomManager(Database db, boolean prebuiltCache) {
+    public PersistedAtomManager(Database db, boolean prebuiltCache, InitialValue initialValueOnIllegalAccess) {
         super(db);
 
-        throwOnIllegalAccess = Config.getBoolean(THROW_ACCESS_EXCEPTION_KEY, THROW_ACCESS_EXCEPTION_DEFAULT);
+        throwOnIllegalAccess = Options.PAM_THROW_ACCESS_EXCEPTION.getBoolean();
         warnOnIllegalAccess = !throwOnIllegalAccess;
+
+        this.initialValueOnIllegalAccess = initialValueOnIllegalAccess;
 
         if (prebuiltCache) {
             persistedAtomCount = db.getCachedRVACount();
@@ -130,6 +128,11 @@ public class PersistedAtomManager extends AtomManager {
         RandomVariableAtom rvAtom = (RandomVariableAtom)atom;
 
         if (!rvAtom.getPersisted()) {
+            if (!rvAtom.getAccessException()) {
+                // This is the first time we have seen this atom.
+                rvAtom.setValue(initialValueOnIllegalAccess.getVariableValue(rvAtom));
+            }
+
             rvAtom.setAccessException(true);
         }
 
@@ -185,7 +188,7 @@ public class PersistedAtomManager extends AtomManager {
                     " If you do not understand the implications of this warning," +
                     " check your configuration and set '%s' to true." +
                     " This warning will only be logged once.",
-                    offendingAtom, THROW_ACCESS_EXCEPTION_KEY));
+                    offendingAtom, Options.PAM_THROW_ACCESS_EXCEPTION.name()));
         }
     }
 

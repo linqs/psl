@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.util;
 
-import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,11 +44,6 @@ import java.util.concurrent.TimeUnit;
 public final class Parallel {
     private static final Logger log = LoggerFactory.getLogger(Parallel.class);
 
-    public static final String CONFIG_PREFIX = "parallel";
-
-    public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
-    public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
-
     private static boolean initialized = false;
 
     // Defer assignment until a request is actually made to let the config get initialized.
@@ -72,7 +67,7 @@ public final class Parallel {
 
     public synchronized static int getNumThreads() {
         if (numThreads == -1) {
-            numThreads = Config.getInt(NUM_THREADS_KEY, NUM_THREADS_DEFAULT);
+            numThreads = Options.PARALLEL_NUM_THREADS.getInt();
         }
 
         return numThreads;

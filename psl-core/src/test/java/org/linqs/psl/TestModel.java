@@ -17,7 +17,6 @@
  */
 package org.linqs.psl;
 
-import org.linqs.psl.application.inference.MPEInference;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
