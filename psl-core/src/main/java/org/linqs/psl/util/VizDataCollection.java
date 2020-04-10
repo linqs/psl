@@ -47,19 +47,10 @@ public class VizDataCollection {
 
     //Takes in a prediction truth pair and adds it to our map
     public static void PredictionTruth(GroundAtom target, float predictVal, float truthVal ) {
-        // HashMap<String,Float> valueMap = new HashMap<>();
-        // valueMap.put("Prediction", predictVal);
-        // valueMap.put("Truth", truthVal);
-        // vizData.predictionTruthPairs.put(target.toString(),valueMap);
-        // JSONArray valueArr  = new JSONArray();
-        // valueArr.add("Prediction : " + Float.toString(predictVal));
-        // valueArr.add("Truth : " + Float.toString(truthVal));
-        JSONObject valueObj = new JSONObject();
         valueObj.put("Truth", truthVal);
         valueObj.put("Prediction", predictVal);
         valueObj.put("Predicate", target.toString());
         vizData.jsonArray.put(valueObj);
-        // vizData.vizJson.put(target,valueObj);
 
 
     }
@@ -73,19 +64,9 @@ public class VizDataCollection {
         //     {predicate: Friends((alice,george), prediction: 0.00003, truth: 1}
         //     etc...
         // ]
-
     public static void OutputJSON() {
         //Debug
-        // System.out.println(vizData.predictionTruthPairs);
         // System.out.println(vizData.jsonArray);
-
-        // vizData.vizJson.putAll(vizData.predictionTruthPairs); // HashMap -> JSONObject
-        // JSONArray jsonArray = new JSONArray();
-        // for (Map.Entry<String, Map<String, Float>> entry : vizData.predictionTruthPairs.entrySet()) {
-        //     jsonArray.add(entry);
-        // }
-        //simply put obj into jsonArray
-        // jsonArray.put(vizData.vizJson); //JSONObject -> JSONArray
         try (FileWriter file = new FileWriter("output.json")) {
 
             // file.write(vizData.vizJson.toJSONString());
@@ -95,10 +76,6 @@ public class VizDataCollection {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        //Test
-        //Reset the array. This is just for testing!
-        // vizData.jsonArray = new JSONArray();
     }
 
     private static class ShutdownHook extends Thread {
