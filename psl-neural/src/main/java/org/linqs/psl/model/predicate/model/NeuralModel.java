@@ -89,30 +89,28 @@ public class NeuralModel extends SupportingModel {
 
     @Override
     public void load(Map<String, String> config, String relativeDir) {
-        String modelPath = config.get(CONFIG_MODEL);
+        String modelPath = makePath(relativeDir, config.get(CONFIG_MODEL));
         if (modelPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A NeuralModel must have a model path (\"%s\") specified in predicate config.",
                     CONFIG_MODEL));
         }
 
-        String labelsPath = config.get(CONFIG_LABELS);
+        String labelsPath = makePath(relativeDir, config.get(CONFIG_LABELS));
         if (labelsPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A NeuralModel must have a label path (\"%s\") specified in predicate config.",
                     CONFIG_LABELS));
         }
 
-        String featuresPath = config.get(CONFIG_FEATURES);
+        String featuresPath = makePath(relativeDir, config.get(CONFIG_FEATURES));
         if (featuresPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A NeuralModel must have a feature path (\"%s\") specified in predicate config.",
                     CONFIG_FEATURES));
         }
 
-        modelPath = makePath(relativeDir, modelPath);
-        labelsPath = makePath(relativeDir, labelsPath);
-        featuresPath = makePath(relativeDir, featuresPath);
+        String observationsPath = makePath(relativeDir, config.get(CONFIG_OBSERVATIONS));
 
         loadLabels(labelsPath);
 
@@ -122,6 +120,10 @@ public class NeuralModel extends SupportingModel {
         loadModel(modelPath);
 
         manualLabels = new float[entityIndexMapping.size()][labelIndexMapping.size()];
+
+        if (observationsPath != null) {
+            loadObservations(observationsPath);
+        }
     }
 
     @Override
