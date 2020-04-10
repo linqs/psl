@@ -16,33 +16,30 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 
 public class VizDataCollection {
 
-    private static SinglePSLRunStats vizData = new SinglePSLRunStats();
+    private static VizDataCollection vizData = null;
     private static Runtime runtime = null;
 
+    private JSONArray jsonArray;
+
+    static {
+        init();
+    }
+
     // Static only.
-    private VizDataCollection() {}
+    private VizDataCollection() {
+        jsonArray = new JSONArray();
+    }
 
     private static synchronized void init() {
         if (runtime != null) {
             return;
         }
 
+        vizData = new VizDataCollection();
         runtime = Runtime.getRuntime();
         runtime.addShutdownHook(new ShutdownHook());
     }
 
-
-    //For any run of PSL we make/use this object to collect all the needed info
-    private static class SinglePSLRunStats {
-        // private static JSONObject vizJson = new JSONObject();
-        private static JSONArray jsonArray  = new JSONArray();
-        //Here we can have objects that hold the information we are building up throughout a PSL run
-        // e.x. a map that keeps track of predictions vs truth
-        // private static HashMap<String, Map<String, Float>> predictionTruthPairs = new HashMap<>();;
-
-        //Some things may not required to be build up, they can all be gathered at once.
-        // Should we still use member variables for those are handle all of them in function?
-    }
 
 
     //All the methods can be void as we will just be outputting to JSON
@@ -102,7 +99,7 @@ public class VizDataCollection {
 
         //Test
         //Reset the array. This is just for testing!
-        vizData.jsonArray  = new JSONArray();
+        // vizData.jsonArray = new JSONArray();
     }
 
     private static class ShutdownHook extends Thread {

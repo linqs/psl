@@ -108,7 +108,7 @@ public class ContinuousEvaluator extends Evaluator {
         }
         //TEST
         //Using this to test as I dont know how shutdown hook works
-        VizDataCollection.OutputJSON();
+        // VizDataCollection.OutputJSON();
     }
 
     @Override

@@ -18,3 +18,5 @@ classpath.out
 *.swp
 
 .secrets
+
+output.json
