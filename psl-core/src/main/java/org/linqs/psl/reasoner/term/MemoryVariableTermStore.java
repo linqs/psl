@@ -233,7 +233,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         int count = 0;
-        for (int i = 0; i < variableAtoms.length; i++) {
+        for (int i = 0; i < variables.size(); i++) {
             if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
                 variableValues[i] = ((ModelPredicate)variableAtoms[i].getPredicate()).getValue(variableAtoms[i]);
                 count++;
@@ -253,7 +253,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         int count = 0;
-        for (int i = 0; i < variableAtoms.length; i++) {
+        for (int i = 0; i < variables.size(); i++) {
             if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
                 ((ModelPredicate)variableAtoms[i].getPredicate()).setLabel(variableAtoms[i], variableValues[i]);
                 count++;
