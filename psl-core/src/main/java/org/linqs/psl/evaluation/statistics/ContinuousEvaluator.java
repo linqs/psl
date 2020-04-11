@@ -80,7 +80,7 @@ public class ContinuousEvaluator extends Evaluator {
             // System.out.println("Ground Truth: " + entry.getValue() + " " + entry.getValue().getValue());
             // System.out.println("Predicted : " + entry.getKey() + " " + entry.getKey().getValue());
 
-            VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
+            // VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
 
             //but can we get this same output in cli source-code? / does it matter??
 

@@ -43,6 +43,9 @@ import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
+import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.util.VizDataCollection;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -322,6 +325,58 @@ public class Launcher {
         }
     }
 
+    private void vizualization(DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates, String evalClassName) {
+        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
+        openPredicates.removeAll(closedPredicates);
+
+        // Create database.
+        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+
+        boolean closePredictionDB = false;
+        if (predictionDatabase == null) {
+            closePredictionDB = true;
+            predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+        }
+
+        Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+
+        for (StandardPredicate targetPredicate : openPredicates) {
+            // Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
+            if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
+                log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
+                continue;
+            }
+
+            //Create TrainingMap as we would for eval
+            PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
+            TrainingMap map = new TrainingMap(atomManager, truthDatabase);
+
+            //TEST
+            // Using the evalutaor class for one function, we can probably avoid this
+            Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
+            //Use training map to get json file
+            for (Map.Entry<GroundAtom, GroundAtom> entry : evaluator.getMap(map)) {
+                if (targetPredicate != null && entry.getKey().getPredicate() != targetPredicate) {
+                    continue;
+                }
+                //TEST
+                //Trying to compare ground truth to model output
+                // System.out.println("Ground Truth: " + entry.getValue() + " " + entry.getValue().getValue());
+                // System.out.println("Predicted : " + entry.getKey() + " " + entry.getKey().getValue());
+                VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
+            }
+            // evaluator.compute(predictionDatabase, truthDatabase, targetPredicate, !closePredictionDB);
+            // log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
+        }
+
+        if (closePredictionDB) {
+            predictionDatabase.close();
+        }
+        truthDatabase.close();
+    }
+
     /**
      * Run eval.
      * @param predictionDatabase can be passed in to speed up evaluation. If null, one will be created and closed internally.
@@ -419,6 +474,18 @@ public class Launcher {
         } else {
             throw new IllegalArgumentException("No valid operation provided.");
         }
+
+        //Vizualization
+        // if (parsedOptions.hasOption(CommandLineLoader.OPERATION_VIZ)) {
+        // }
+        //TEST using this as a way to test for now
+        // in future we will make a flag and a test that uses the flag
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+            for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
+                vizualization(dataStore, evalDB, closedPredicates, evaluator);
+            }
+        }
+
 
         // Evaluation
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
