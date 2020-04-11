@@ -182,10 +182,10 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         // System.out.println(this);
         // System.out.println("Rules object id (hash): " + hashCode());
 
-        for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
-            System.out.print(entry.getKey() + ":" + entry.getValue().toString() + " ");
-        }
-        System.out.println("");
+        // for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
+        //     System.out.print(entry.getKey() + ":" + entry.getValue().toString() + " ");
+        // }
+        // System.out.println("");
 
         Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
             @Override
@@ -200,7 +200,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         //           temp.add(row[i].toString());
         //         }
         //         System.out.println(StringUtils.join(" ", temp));
-        
+
                 if (groundRule != null) {
                     finalGroundRuleStore.addGroundRule(groundRule);
                 }

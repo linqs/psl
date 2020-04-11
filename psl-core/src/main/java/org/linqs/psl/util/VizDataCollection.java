@@ -64,7 +64,7 @@ public class VizDataCollection {
     }
 
     //Tests:
-    //predictionTruth -> GaussianProcessPriorTest
+    //predictionTruth -> ContinuousEvaluatorTest, GaussianProcessPriorTest, InitialWeightHyperbandTest (not called from cli)
 
     //All the methods can be void as we will just be outputting to JSON
 
