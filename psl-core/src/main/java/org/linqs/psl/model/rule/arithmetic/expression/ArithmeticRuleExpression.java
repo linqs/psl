@@ -244,11 +244,15 @@ public class ArithmeticRuleExpression {
             return false;
         }
 
-        if (this.comparator != otherExpression.comparator || this.constant != otherExpression.constant) {
+        if (this.comparator != otherExpression.comparator) {
             return false;
         }
 
         if (this.atoms.size() != otherExpression.atoms.size()) {
+            return false;
+        }
+
+        if (!this.constant.equals(otherExpression.constant)) {
             return false;
         }
 

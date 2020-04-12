@@ -20,9 +20,6 @@ package org.linqs.psl.model.rule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.database.DataStore;
@@ -76,6 +73,10 @@ import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -219,7 +219,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}");
     }
 
@@ -245,7 +247,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
     }
 
@@ -270,7 +274,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .   {A : SINGLECLOSED(B)}");
     }
 
@@ -294,7 +300,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}", true);
     }
 
@@ -448,7 +456,10 @@ public class AbstractArithmeticRuleTest {
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = 1.0 .");
     }
 
@@ -465,7 +476,10 @@ public class AbstractArithmeticRuleTest {
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new Cardinality(new SummationVariable("A"))));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new Cardinality(new SummationVariable("A"))));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = |A| .");
     }
 
@@ -484,7 +498,10 @@ public class AbstractArithmeticRuleTest {
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0 .", true);
     }
 
@@ -522,7 +539,10 @@ public class AbstractArithmeticRuleTest {
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
 
@@ -539,7 +559,10 @@ public class AbstractArithmeticRuleTest {
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
 
@@ -558,7 +581,10 @@ public class AbstractArithmeticRuleTest {
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", true);
     }
 
@@ -575,7 +601,10 @@ public class AbstractArithmeticRuleTest {
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .");
     }
 

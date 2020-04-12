@@ -45,4 +45,17 @@ public abstract class Coefficient {
      * Get a simplified version of this Coefficient, the Coefficient itself if it cannot be simplified further.
      */
     public abstract Coefficient simplify();
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        if (other == null || this.getClass() != other.getClass()) {
+            return false;
+        }
+
+        return this.hashCode() == other.hashCode();
+    }
 }
