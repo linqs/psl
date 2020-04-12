@@ -360,7 +360,9 @@ public class Launcher {
 
             //TEST
             // This is pulled straight from Evaluators getMap, should a different way of getting this be used?
+            @SuppressWarnings("unchecked")
             Iterable<Map.Entry<GroundAtom, GroundAtom>> map = (Iterable)(trainingMap.getLabelMap().entrySet());
+            @SuppressWarnings("unchecked")
             Iterable<GroundAtom> latentAtoms = (Iterable)trainingMap.getLatentVariables();
             Iterable<Map.Entry<GroundAtom, GroundAtom>> latentMap =
                 IteratorUtils.map(latentAtoms, new IteratorUtils.MapFunction<GroundAtom, Map.Entry<GroundAtom, GroundAtom>>() {

@@ -75,15 +75,6 @@ public class ContinuousEvaluator extends Evaluator {
                 continue;
             }
 
-            //TEST
-            //Trying to compare ground truth to model output
-            // System.out.println("Ground Truth: " + entry.getValue() + " " + entry.getValue().getValue());
-            // System.out.println("Predicted : " + entry.getKey() + " " + entry.getKey().getValue());
-
-            // VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
-
-            //but can we get this same output in cli source-code? / does it matter??
-
             count++;
             absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());
             squaredError += Math.pow(entry.getValue().getValue() - entry.getKey().getValue(), 2);
