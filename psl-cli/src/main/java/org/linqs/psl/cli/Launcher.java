@@ -43,9 +43,12 @@ import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
+//Viz imports
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.util.VizDataCollection;
+import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.model.atom.UnmanagedAtom;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -66,6 +69,8 @@ import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+//Viz imports
+import java.util.AbstractMap;
 
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -351,24 +356,28 @@ public class Launcher {
 
             //Create TrainingMap as we would for eval
             PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
-            TrainingMap map = new TrainingMap(atomManager, truthDatabase);
+            TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
 
             //TEST
-            // Using the evalutaor class for one function, we can probably avoid this
-            Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
+            // This is pulled straight from Evaluators getMap, should a different way of getting this be used?
+            Iterable<Map.Entry<GroundAtom, GroundAtom>> map = (Iterable)(trainingMap.getLabelMap().entrySet());
+            Iterable<GroundAtom> latentAtoms = (Iterable)trainingMap.getLatentVariables();
+            Iterable<Map.Entry<GroundAtom, GroundAtom>> latentMap =
+                IteratorUtils.map(latentAtoms, new IteratorUtils.MapFunction<GroundAtom, Map.Entry<GroundAtom, GroundAtom>>() {
+                    @Override public Map.Entry<GroundAtom, GroundAtom> map(GroundAtom atom) {
+                        GroundAtom truthAtom = new UnmanagedAtom(atom.getPredicate(), atom.getArguments(), 0.0f);
+                        return new AbstractMap.SimpleEntry<GroundAtom, GroundAtom>(atom, truthAtom);
+                    }
+                });
+            map = IteratorUtils.join(map, latentMap);
+
             //Use training map to get json file
-            for (Map.Entry<GroundAtom, GroundAtom> entry : evaluator.getMap(map)) {
+            for (Map.Entry<GroundAtom, GroundAtom> entry : map) {
                 if (targetPredicate != null && entry.getKey().getPredicate() != targetPredicate) {
                     continue;
                 }
-                //TEST
-                //Trying to compare ground truth to model output
-                // System.out.println("Ground Truth: " + entry.getValue() + " " + entry.getValue().getValue());
-                // System.out.println("Predicted : " + entry.getKey() + " " + entry.getKey().getValue());
                 VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
             }
-            // evaluator.compute(predictionDatabase, truthDatabase, targetPredicate, !closePredictionDB);
-            // log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
         }
 
         if (closePredictionDB) {
