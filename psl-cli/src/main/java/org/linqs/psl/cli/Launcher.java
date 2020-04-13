@@ -47,8 +47,8 @@ import org.linqs.psl.util.Version;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.util.VizDataCollection;
-import org.linqs.psl.util.IteratorUtils;
-import org.linqs.psl.model.atom.UnmanagedAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -69,8 +69,6 @@ import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-//Viz imports
-import java.util.AbstractMap;
 
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -347,39 +345,13 @@ public class Launcher {
 
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        for (StandardPredicate targetPredicate : openPredicates) {
-            // Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
-            if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
-                log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
-                continue;
-            }
+        //Create TrainingMap between predictions and truth
+        PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
+        TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
 
-            //Create TrainingMap as we would for eval
-            PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
-            TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
-
-            //TEST
-            // This is pulled straight from Evaluators getMap, should a different way of getting this be used?
-            @SuppressWarnings("unchecked")
-            Iterable<Map.Entry<GroundAtom, GroundAtom>> map = (Iterable)(trainingMap.getLabelMap().entrySet());
-            @SuppressWarnings("unchecked")
-            Iterable<GroundAtom> latentAtoms = (Iterable)trainingMap.getLatentVariables();
-            Iterable<Map.Entry<GroundAtom, GroundAtom>> latentMap =
-                IteratorUtils.map(latentAtoms, new IteratorUtils.MapFunction<GroundAtom, Map.Entry<GroundAtom, GroundAtom>>() {
-                    @Override public Map.Entry<GroundAtom, GroundAtom> map(GroundAtom atom) {
-                        GroundAtom truthAtom = new UnmanagedAtom(atom.getPredicate(), atom.getArguments(), 0.0f);
-                        return new AbstractMap.SimpleEntry<GroundAtom, GroundAtom>(atom, truthAtom);
-                    }
-                });
-            map = IteratorUtils.join(map, latentMap);
-
-            //Use training map to get json file
-            for (Map.Entry<GroundAtom, GroundAtom> entry : map) {
-                if (targetPredicate != null && entry.getKey().getPredicate() != targetPredicate) {
-                    continue;
-                }
-                VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
-            }
+        //Loop through trainingMap, adding predicates, prediction val, and truth val to json
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+            VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
         }
 
         if (closePredictionDB) {
