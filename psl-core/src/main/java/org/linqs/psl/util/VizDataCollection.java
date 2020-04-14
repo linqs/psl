@@ -9,6 +9,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.UnweightedGroundRule;
+import org.linqs.psl.model.rule.WeightedGroundRule;
 
 public class VizDataCollection {
 
@@ -81,9 +86,25 @@ public class VizDataCollection {
     //
     // }
     //
-    // public static void totalRuleSatDis() {
-    //
-    // }
+    public static void totalRuleSatDis(GroundRuleStore groundRuleStore) {
+        for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
+            String row = "";
+            double satisfaction = 0.0;
+
+            if (groundRule instanceof WeightedGroundRule) {
+                WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
+                row = StringUtils.join("\t",
+                        "" + weightedGroundRule.getWeight(), "", groundRule.baseToString());
+                satisfaction = 1.0 - weightedGroundRule.getIncompatibility();
+            } else {
+                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+                row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
+                satisfaction = 1.0 - unweightedGroundRule.getInfeasibility();
+            }
+            System.out.println(row);
+            System.out.println(satisfaction);
+        }
+    }
     //
     // public static void debugOutput() {
     //

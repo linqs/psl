@@ -64,7 +64,7 @@ public class CommandLineLoader {
     public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
     public static final String OPTION_EVAL = "e";
     public static final String OPTION_EVAL_LONG = "eval";
-    public static final String OPTION_VISUAL = "visual";
+    public static final String OPTION_VISUAL = "visual"; //TODO: respective setup code
     public static final String OPTION_INT_IDS = "int";
     public static final String OPTION_INT_IDS_LONG = "int-ids";
     public static final String OPTION_LOG4J = "4j";

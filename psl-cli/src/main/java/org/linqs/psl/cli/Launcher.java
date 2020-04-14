@@ -217,6 +217,12 @@ public class Launcher {
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
+        //TEST
+        //if viz flag is up
+        // if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
+        VizDataCollection.totalRuleSatDis(inferenceApplication.getGroundRuleStore());
+        // }
+
         log.info("Inference Complete");
 
         // Output the results.
@@ -328,7 +334,7 @@ public class Launcher {
         }
     }
 
-    private void vizualization(DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates, String evalClassName) {
+    private void vizualization(Model model, DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
         Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
         openPredicates.removeAll(closedPredicates);
 
@@ -459,13 +465,13 @@ public class Launcher {
         }
 
         //Vizualization
-        // if (parsedOptions.hasOption(CommandLineLoader.OPERATION_VIZ)) {
+        // if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
         // }
         //TEST using this as a way to test for now
         // in future we will make a flag and a test that uses the flag
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
             for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-                vizualization(dataStore, evalDB, closedPredicates, evaluator);
+                vizualization(model, dataStore, evalDB, closedPredicates);
             }
         }
 
