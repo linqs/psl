@@ -4,6 +4,7 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,6 +22,7 @@ public class VizDataCollection {
     private static Runtime runtime = null;
 
     private JSONArray jsonArray;
+    private JSONArray ruleCountArray;
 
     static {
         init();
@@ -29,6 +31,7 @@ public class VizDataCollection {
     // Static only.
     private VizDataCollection() {
         jsonArray = new JSONArray();
+        ruleCountArray = new JSONArray();
     }
 
     private static synchronized void init() {
@@ -49,11 +52,13 @@ public class VizDataCollection {
         //     {predicate: Friends((alice,george), prediction: 0.00003, truth: 1}
         //     etc...
         // ]
-    public static void outputJSON() {
+    public static void outputJSON( String name, JSONArray obj) {
         //Debug
         // System.out.println(vizData.jsonArray);
-        try (FileWriter file = new FileWriter("output.json")) {
-            file.write(vizData.jsonArray.toString(4));
+        String fileName = name + ".json";
+
+        try (FileWriter file = new FileWriter(fileName)) {
+            file.write(obj.toString(4));
             file.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -64,7 +69,8 @@ public class VizDataCollection {
         @Override
         public void run() {
             System.out.println("ShutdownHook running");
-            outputJSON();
+            outputJSON("output", vizData.jsonArray);
+            outputJSON("countPerRule", vizData.ruleCountArray);
         }
     }
 
@@ -82,10 +88,29 @@ public class VizDataCollection {
         vizData.jsonArray.put(valueObj);
     }
 
-    // public static void groundingsPerRule() {
-    //
-    // }
-    //
+     public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
+        // Recording number of ground rules per rule
+        int unparentedGroundRuleCount = groundRuleStore.size();
+        HashMap<String, Integer> groundRuleCountPerRule = new HashMap();
+        for (Rule rule: rules)
+        {
+            int groundRuleCount = groundRuleStore.count( rule );
+            unparentedGroundRuleCount -= groundRuleCount;
+            groundRuleCountPerRule.put(rule.getName(), groundRuleCount);
+        }
+        if (unparentedGroundRuleCount != 0) {
+            groundRuleCountPerRule.put( "Unparented Rules",
+                                        unparentedGroundRuleCount);
+        }
+
+        for (Map.Entry<String, Integer> entry: groundRuleCountPerRule.entrySet())
+        {
+            JSONObject valueObj = new JSONObject();
+            valueObj.put(entry.getKey(), entry.getValue());
+            vizData.ruleCountArray.put(valueObj);
+        }
+     }
+    
     public static void totalRuleSatDis(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String row = "";
@@ -101,8 +126,6 @@ public class VizDataCollection {
                 row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
                 satisfaction = 1.0 - unweightedGroundRule.getInfeasibility();
             }
-            System.out.println(row);
-            System.out.println(satisfaction);
         }
     }
     //

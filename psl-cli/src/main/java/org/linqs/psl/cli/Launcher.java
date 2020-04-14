@@ -136,7 +136,7 @@ public class Launcher {
      * Possible output the ground rules.
      * @param path where to output the ground rules. Use stdout if null.
      */
-    private void outputGroundRules(GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
+    private void outputGroundRules(Model model, GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
         // Some inference/learning application will not have ground rule stores (if they stream).
         if (groundRuleStore == null) {
             return;
@@ -205,7 +205,7 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
-            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, false);
+            outputGroundRules(model, inferenceApplication.getGroundRuleStore(), path, false);
         }
 
         boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
@@ -214,12 +214,13 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
+            outputGroundRules(model, inferenceApplication.getGroundRuleStore(), path, true);
         }
 
         //TEST
         //if viz flag is up
         // if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
+        VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
         VizDataCollection.totalRuleSatDis(inferenceApplication.getGroundRuleStore());
         // }
 
@@ -295,14 +296,14 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
-            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, false);
+            outputGroundRules(model, learner.getInferenceApplication().getGroundRuleStore(), path, false);
         }
 
         learner.close();
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, true);
+            outputGroundRules(model, learner.getInferenceApplication().getGroundRuleStore(), path, true);
         }
 
         randomVariableDatabase.close();
@@ -467,6 +468,7 @@ public class Launcher {
         //Vizualization
         // if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
         // }
+
         //TEST using this as a way to test for now
         // in future we will make a flag and a test that uses the flag
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
