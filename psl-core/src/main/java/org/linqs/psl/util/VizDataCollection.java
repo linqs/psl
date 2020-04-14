@@ -63,7 +63,6 @@ public class VizDataCollection {
     private static class ShutdownHook extends Thread {
         @Override
         public void run() {
-            System.out.println("ShutdownHook running");
             outputJSON();
         }
     }
@@ -85,24 +84,24 @@ public class VizDataCollection {
     // public static void groundingsPerRule() {
     //
     // }
-    //
+
     public static void totalRuleSatDis(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String row = "";
             double satisfaction = 0.0;
+            JSONObject valueObj = new JSONObject();
+
+            valueObj.put("Rule", groundRule.baseToString());
 
             if (groundRule instanceof WeightedGroundRule) {
                 WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
-                row = StringUtils.join("\t",
-                        "" + weightedGroundRule.getWeight(), "", groundRule.baseToString());
-                satisfaction = 1.0 - weightedGroundRule.getIncompatibility();
+                valueObj.put("Satisfaction", 1.0 - weightedGroundRule.getIncompatibility());
             } else {
                 UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
-                satisfaction = 1.0 - unweightedGroundRule.getInfeasibility();
+                valueObj.put("Satisfaction", 1.0 - unweightedGroundRule.getInfeasibility());
             }
-            System.out.println(row);
-            System.out.println(satisfaction);
+
+            vizData.jsonArray.put(valueObj);
         }
     }
     //
