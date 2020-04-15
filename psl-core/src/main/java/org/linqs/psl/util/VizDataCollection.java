@@ -115,24 +115,45 @@ public class VizDataCollection {
         }
      }
 
-    public static void totalRuleSatDis(GroundRuleStore groundRuleStore) {
-        for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
-            String row = "";
-            double satisfaction = 0.0;
+    public static void totalRuleSatDis(List<Rule> rules, GroundRuleStore groundRuleStore) {
+        for (Rule rule : rules) {
+            Iterable<GroundRule> groundedRuleList = groundRuleStore.getGroundRules(rule);
+            double totalSat = 0.0;
             JSONObject valueObj = new JSONObject();
-
-            valueObj.put("Rule", groundRule.baseToString());
-
-            if (groundRule instanceof WeightedGroundRule) {
-                WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
-                valueObj.put("Satisfaction", 1.0 - weightedGroundRule.getIncompatibility());
-            } else {
-                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                valueObj.put("Satisfaction", 1.0 - unweightedGroundRule.getInfeasibility());
+            for (GroundRule groundRule : groundedRuleList) {
+                if (groundRule instanceof WeightedGroundRule) {
+                    WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
+                    totalSat += 1.0 - weightedGroundRule.getIncompatibility();
+                } else {
+                    UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+                    totalSat += 1.0 - unweightedGroundRule.getInfeasibility();
+                }
             }
+            valueObj.put("Rule", rule.getName());
+            valueObj.put("Total Satisfaction", totalSat);
             vizData.totRuleSatArray.put(valueObj);
         }
     }
+
+    // public static void individualRuleSatDis(List<Rule> rules, GroundRuleStore groundRuleStore) {
+        // for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
+        //     String row = "";
+        //     double satisfaction = 0.0;
+        //     JSONObject valueObj = new JSONObject();
+        //
+        //     valueObj.put("Rule", groundRule.baseToString());
+        //
+        //     if (groundRule instanceof WeightedGroundRule) {
+        //         WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
+        //         valueObj.put("Satisfaction", 1.0 - weightedGroundRule.getIncompatibility());
+        //     } else {
+        //         UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+        //         valueObj.put("Satisfaction", 1.0 - unweightedGroundRule.getInfeasibility());
+        //     }
+        //     vizData.totRuleSatArray.put(valueObj);
+        // }
+    // }
+    
     //
     // public static void debugOutput() {
     //

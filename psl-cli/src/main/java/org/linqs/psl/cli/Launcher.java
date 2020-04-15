@@ -221,7 +221,7 @@ public class Launcher {
         //if viz flag is up
         // if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
         VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
-        VizDataCollection.totalRuleSatDis(inferenceApplication.getGroundRuleStore());
+        VizDataCollection.totalRuleSatDis(model.getRules(), inferenceApplication.getGroundRuleStore());
         // }
 
         log.info("Inference Complete");
