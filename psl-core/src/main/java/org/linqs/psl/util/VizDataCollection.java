@@ -137,7 +137,6 @@ public class VizDataCollection {
                 // }
                 groundRuleCount++;
             }
-            System.out.println(weightedGroundRuleCount);
             valueObj.put("Rule", rule.getName());
             valueObj.put("Total Satisfaction", totalSat);
             valueObj.put("Satisfaction Percentage", totalSat / groundRuleCount);
