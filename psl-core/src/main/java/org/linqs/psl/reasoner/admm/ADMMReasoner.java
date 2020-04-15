@@ -29,6 +29,8 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
+//Viz imports
+import org.linqs.psl.util.VizDataCollection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -242,6 +244,8 @@ public class ADMMReasoner extends Reasoner {
                     }
                 }
             } else {
+                // if viz flag is up
+                VizDataCollection.violatedGroundRules(term.getGroundRule(), term.evaluate(consensusValues));
                 objective += term.evaluate(consensusValues);
             }
         }

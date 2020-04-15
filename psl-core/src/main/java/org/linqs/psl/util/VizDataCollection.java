@@ -25,6 +25,7 @@ public class VizDataCollection {
     private JSONArray predictionTruthArray;
     private JSONArray ruleCountArray;
     private JSONArray totRuleSatArray;
+    private JSONArray violatedGroundRulesArray;
 
     static {
         init();
@@ -36,6 +37,7 @@ public class VizDataCollection {
         predictionTruthArray = new JSONArray();
         ruleCountArray = new JSONArray();
         totRuleSatArray = new JSONArray();
+        violatedGroundRulesArray = new JSONArray();
     }
 
     private static synchronized void init() {
@@ -60,6 +62,7 @@ public class VizDataCollection {
         vizData.fullJSON.put("PredictionTruth", vizData.predictionTruthArray);
         vizData.fullJSON.put("RuleCount", vizData.ruleCountArray);
         vizData.fullJSON.put("SatDis", vizData.totRuleSatArray);
+        vizData.fullJSON.put("ViolatedGroundRules", vizData.violatedGroundRulesArray);
 
         try (FileWriter file = new FileWriter("PSLVizData.json")) {
             file.write(vizData.fullJSON.toString(4));
@@ -144,6 +147,13 @@ public class VizDataCollection {
             valueObj.put("Dissatisfaction Percentage", totalDis / groundRuleCount);
             vizData.totRuleSatArray.put(valueObj);
         }
+    }
+
+    public static void violatedGroundRules(GroundRule groundRule, float consensusVal) {
+        JSONObject valueObj = new JSONObject();
+        valueObj.put("Rule", groundRule.baseToString());
+        valueObj.put("Consensus Value", consensusVal);
+        vizData.violatedGroundRulesArray.put(valueObj);
     }
 
     // public static void individualRuleSatDis(List<Rule> rules, GroundRuleStore groundRuleStore) {
