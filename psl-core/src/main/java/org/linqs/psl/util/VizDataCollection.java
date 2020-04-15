@@ -119,18 +119,30 @@ public class VizDataCollection {
         for (Rule rule : rules) {
             Iterable<GroundRule> groundedRuleList = groundRuleStore.getGroundRules(rule);
             double totalSat = 0.0;
+            double totalDis = 0.0;
+            int groundRuleCount = 0;
             JSONObject valueObj = new JSONObject();
+
             for (GroundRule groundRule : groundedRuleList) {
                 if (groundRule instanceof WeightedGroundRule) {
                     WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
                     totalSat += 1.0 - weightedGroundRule.getIncompatibility();
-                } else {
-                    UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                    totalSat += 1.0 - unweightedGroundRule.getInfeasibility();
+                    totalDis += weightedGroundRule.getIncompatibility();
                 }
+                //We only want to take weighted rules into account
+                // else {
+                //     UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+                //     totalSat += 1.0 - unweightedGroundRule.getInfeasibility();
+                //     totalDis += unweightedGroundRule.getInfeasibility();
+                // }
+                groundRuleCount++;
             }
+            System.out.println(weightedGroundRuleCount);
             valueObj.put("Rule", rule.getName());
             valueObj.put("Total Satisfaction", totalSat);
+            valueObj.put("Satisfaction Percentage", totalSat / groundRuleCount);
+            valueObj.put("Total Dissatisfaction", totalDis);
+            valueObj.put("Dissatisfaction Percentage", totalDis / groundRuleCount);
             vizData.totRuleSatArray.put(valueObj);
         }
     }
@@ -153,7 +165,7 @@ public class VizDataCollection {
         //     vizData.totRuleSatArray.put(valueObj);
         // }
     // }
-    
+
     //
     // public static void debugOutput() {
     //
