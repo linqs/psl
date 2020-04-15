@@ -23,6 +23,7 @@ public class VizDataCollection {
 
     private JSONArray jsonArray;
     private JSONArray ruleCountArray;
+    private JSONArray totRuleSatArray;
 
     static {
         init();
@@ -32,6 +33,7 @@ public class VizDataCollection {
     private VizDataCollection() {
         jsonArray = new JSONArray();
         ruleCountArray = new JSONArray();
+        totRuleSatArray = new JSONArray();
     }
 
     private static synchronized void init() {
@@ -69,8 +71,9 @@ public class VizDataCollection {
         @Override
         public void run() {
             System.out.println("ShutdownHook running");
-            outputJSON("output", vizData.jsonArray);
+            outputJSON("predictionTable", vizData.jsonArray);
             outputJSON("countPerRule", vizData.ruleCountArray);
+            outputJSON("totRuleSat", vizData.totRuleSatArray);
         }
     }
 
@@ -106,7 +109,8 @@ public class VizDataCollection {
         for (Map.Entry<String, Integer> entry: groundRuleCountPerRule.entrySet())
         {
             JSONObject valueObj = new JSONObject();
-            valueObj.put(entry.getKey(), entry.getValue());
+            valueObj.put("Rule", entry.getKey());
+            valueObj.put("Count", entry.getValue());
             vizData.ruleCountArray.put(valueObj);
         }
      }
@@ -126,7 +130,7 @@ public class VizDataCollection {
                 UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
                 valueObj.put("Satisfaction", 1.0 - unweightedGroundRule.getInfeasibility());
             }
-            vizData.jsonArray.put(valueObj);
+            vizData.totRuleSatArray.put(valueObj);
         }
     }
     //

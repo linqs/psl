@@ -19,5 +19,4 @@ classpath.out
 
 .secrets
 
-output.json
-countPerRule.json
+*.json
