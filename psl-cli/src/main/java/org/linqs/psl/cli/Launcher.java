@@ -471,11 +471,11 @@ public class Launcher {
 
         //TEST using this as a way to test for now
         // in future we will make a flag and a test that uses the flag
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-            for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-                vizualization(model, dataStore, evalDB, closedPredicates);
-            }
-        }
+        // if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+            // for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
+        vizualization(model, dataStore, evalDB, closedPredicates);
+        //     }
+        // }
 
 
         // Evaluation

@@ -21,7 +21,8 @@ public class VizDataCollection {
     private static VizDataCollection vizData = null;
     private static Runtime runtime = null;
 
-    private JSONArray jsonArray;
+    private JSONObject fullJSON;
+    private JSONArray predictionTruthArray;
     private JSONArray ruleCountArray;
     private JSONArray totRuleSatArray;
 
@@ -31,7 +32,8 @@ public class VizDataCollection {
 
     // Static only.
     private VizDataCollection() {
-        jsonArray = new JSONArray();
+        fullJSON = new JSONObject();
+        predictionTruthArray = new JSONArray();
         ruleCountArray = new JSONArray();
         totRuleSatArray = new JSONArray();
     }
@@ -54,13 +56,13 @@ public class VizDataCollection {
         //     {predicate: Friends((alice,george), prediction: 0.00003, truth: 1}
         //     etc...
         // ]
-    public static void outputJSON( String name, JSONArray obj) {
-        //Debug
-        // System.out.println(vizData.jsonArray);
-        String fileName = name + ".json";
+    public static void outputJSON() {
+        vizData.fullJSON.put("PredictionTruth", vizData.predictionTruthArray);
+        vizData.fullJSON.put("RuleCount", vizData.ruleCountArray);
+        vizData.fullJSON.put("SatDis", vizData.totRuleSatArray);
 
-        try (FileWriter file = new FileWriter(fileName)) {
-            file.write(obj.toString(4));
+        try (FileWriter file = new FileWriter("PSLVizData.json")) {
+            file.write(vizData.fullJSON.toString(4));
             file.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,10 +72,8 @@ public class VizDataCollection {
     private static class ShutdownHook extends Thread {
         @Override
         public void run() {
-            System.out.println("ShutdownHook running");
-            outputJSON("predictionTable", vizData.jsonArray);
-            outputJSON("countPerRule", vizData.ruleCountArray);
-            outputJSON("totRuleSat", vizData.totRuleSatArray);
+            // System.out.println("ShutdownHook running");
+            outputJSON();
         }
     }
 
@@ -88,7 +88,7 @@ public class VizDataCollection {
         valueObj.put("Truth", truthVal);
         valueObj.put("Prediction", predictVal);
         valueObj.put("Predicate", target.toString());
-        vizData.jsonArray.put(valueObj);
+        vizData.predictionTruthArray.put(valueObj);
     }
 
      public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
@@ -114,7 +114,7 @@ public class VizDataCollection {
             vizData.ruleCountArray.put(valueObj);
         }
      }
-    
+
     public static void totalRuleSatDis(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String row = "";
