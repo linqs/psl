@@ -222,6 +222,7 @@ public class Launcher {
         // if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
         VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
         VizDataCollection.totalRuleSatDis(model.getRules(), inferenceApplication.getGroundRuleStore());
+        VizDataCollection.violatedGroundRules(model.getRules(), inferenceApplication.getGroundRuleStore());
         // }
 
         log.info("Inference Complete");
@@ -469,13 +470,12 @@ public class Launcher {
         // if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
         // }
 
+        //Have to get rid of this if to get full json output
         //TEST using this as a way to test for now
-        // in future we will make a flag and a test that uses the flag
-        // if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-            // for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-        vizualization(model, dataStore, evalDB, closedPredicates);
-        //     }
-        // }
+        //If you dont have it certain tests may fail from faulty input
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+            vizualization(model, dataStore, evalDB, closedPredicates);
+        }
 
 
         // Evaluation

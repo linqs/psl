@@ -4,6 +4,7 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.List;
 import java.io.File;
 import java.io.FileWriter;
@@ -26,6 +27,8 @@ public class VizDataCollection {
     private JSONArray ruleCountArray;
     private JSONArray totRuleSatArray;
     private JSONArray violatedGroundRulesArray;
+
+    public static ArrayList<GroundRule> violatedGroundRulesList = new ArrayList<>();
 
     static {
         init();
@@ -132,12 +135,6 @@ public class VizDataCollection {
                     totalSat += 1.0 - weightedGroundRule.getIncompatibility();
                     totalDis += weightedGroundRule.getIncompatibility();
                 }
-                //We only want to take weighted rules into account
-                // else {
-                //     UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                //     totalSat += 1.0 - unweightedGroundRule.getInfeasibility();
-                //     totalDis += unweightedGroundRule.getInfeasibility();
-                // }
                 groundRuleCount++;
             }
             valueObj.put("Rule", rule.getName());
@@ -149,11 +146,34 @@ public class VizDataCollection {
         }
     }
 
-    public static void violatedGroundRules(GroundRule groundRule, float consensusVal) {
-        JSONObject valueObj = new JSONObject();
-        valueObj.put("Rule", groundRule.baseToString());
-        valueObj.put("Consensus Value", consensusVal);
-        vizData.violatedGroundRulesArray.put(valueObj);
+    //To test this
+    // mvn -Dtest=SimpleAcquaintancesTest#testBase test -DfailIfNoTests=false -Dadmmreasoner.maxiterations=1
+    public static void violatedGroundRules(List<Rule> rules, GroundRuleStore groundRuleStore) {
+        // System.out.println(vizData.violatedGroundRulesList.size());
+        for (Rule rule : rules) {
+            JSONObject valueObj = new JSONObject();
+            double violation = 0.0;
+            boolean weightFlag = false;
+            Iterable<GroundRule> groundedRuleList = groundRuleStore.getGroundRules(rule);
+            for (GroundRule groundRule : groundedRuleList) {
+                if (vizData.violatedGroundRulesList.contains(groundRule)) {
+                    if (groundRule instanceof WeightedGroundRule) {
+                        WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
+                        violation = weightedGroundRule.getIncompatibility();
+                        weightFlag = true;
+                    }
+                    else {
+                        UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+                        violation = unweightedGroundRule.getInfeasibility();
+                    }
+                    valueObj.put("Violated Rule", groundRule.baseToString());
+                    valueObj.put("Parent Rule", rule.getName());
+                    valueObj.put("Weighted", weightFlag);
+                    valueObj.put("Violation", violation);
+                    vizData.violatedGroundRulesArray.put(valueObj);
+                }
+            }
+        }
     }
 
     // public static void individualRuleSatDis(List<Rule> rules, GroundRuleStore groundRuleStore) {

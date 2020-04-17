@@ -238,14 +238,13 @@ public class ADMMReasoner extends Reasoner {
             if (term instanceof LinearConstraintTerm) {
                 if (term.evaluate(consensusValues) > 0.0f) {
                     violatedConstraints++;
+                    VizDataCollection.violatedGroundRulesList.add(term.getGroundRule());
 
                     if (logViolatedConstraints) {
                         log.trace("    {}", term.getGroundRule());
                     }
                 }
             } else {
-                // if viz flag is up
-                VizDataCollection.violatedGroundRules(term.getGroundRule(), term.evaluate(consensusValues));
                 objective += term.evaluate(consensusValues);
             }
         }
