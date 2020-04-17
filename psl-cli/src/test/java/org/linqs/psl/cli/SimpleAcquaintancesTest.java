@@ -153,6 +153,18 @@ public class SimpleAcquaintancesTest extends CLITest {
         }
     }
 
+    @Test
+    public void testVisual() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+
+        List<String> additionalArgs = Arrays.asList(
+            "--" + CommandLineLoader.OPTION_VISUAL
+        );
+
+        run(modelPath, dataPath, additionalArgs);
+    }
+
     // Not an actual similarity.
     public static class SimNameExternalFunction implements ExternalFunction {
         @Override

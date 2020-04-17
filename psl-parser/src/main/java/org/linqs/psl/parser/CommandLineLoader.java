@@ -64,7 +64,8 @@ public class CommandLineLoader {
     public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
     public static final String OPTION_EVAL = "e";
     public static final String OPTION_EVAL_LONG = "eval";
-    public static final String OPTION_VISUAL = "visual"; //TODO: respective setup code
+    public static final String OPTION_VISUAL = "vis";
+    public static final String OPTION_VISUAL_LONG = "visualization";
     public static final String OPTION_INT_IDS = "int";
     public static final String OPTION_INT_IDS_LONG = "int-ids";
     public static final String OPTION_LOG4J = "4j";
@@ -262,6 +263,17 @@ public class CommandLineLoader {
                         " If multiple evaluators are specific, they will each be run.")
                 .hasArgs()
                 .argName("evaluator ...")
+                .build());
+
+        //TODO: Figure out where we may want default path to be
+        newOptions.addOption(Option.builder(OPTION_VISUAL)
+                .longOpt(OPTION_VISUAL_LONG)
+                .desc("Gather data for creating a visualization of a given PSL run." +
+                        " If a path is specified, the visualization will be output there." +
+                        " Otherwise, they will be output to the psl base directory")
+                .hasArg()
+                .argName("path")
+                .optionalArg(true)
                 .build());
 
         newOptions.addOption(Option.builder(OPTION_INT_IDS)
