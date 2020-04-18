@@ -98,18 +98,11 @@ public class VizDataCollection {
     }
 
      public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
-        // Recording number of ground rules per rule
-        int unparentedGroundRuleCount = groundRuleStore.size();
         HashMap<String, Integer> groundRuleCountPerRule = new HashMap();
         for (Rule rule: rules)
         {
             int groundRuleCount = groundRuleStore.count( rule );
-            unparentedGroundRuleCount -= groundRuleCount;
             groundRuleCountPerRule.put(rule.getName(), groundRuleCount);
-        }
-        if (unparentedGroundRuleCount != 0) {
-            groundRuleCountPerRule.put( "Unparented Rules",
-                                        unparentedGroundRuleCount);
         }
 
         for (Map.Entry<String, Integer> entry: groundRuleCountPerRule.entrySet())
