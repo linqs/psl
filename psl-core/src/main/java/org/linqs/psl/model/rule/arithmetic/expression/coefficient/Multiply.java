@@ -24,13 +24,9 @@ import org.linqs.psl.util.MathUtils;
 import java.util.Map;
 import java.util.Set;
 
-public class Multiply extends Coefficient {
-    protected final Coefficient c1;
-    protected final Coefficient c2;
-
+public class Multiply extends BinaryCoefficient {
     public Multiply(Coefficient c1, Coefficient c2) {
-        this.c1 = c1;
-        this.c2 = c2;
+        super(c1, c2);
     }
 
     @Override

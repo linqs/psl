@@ -24,13 +24,9 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
 
-public class Add extends Coefficient {
-    protected final Coefficient c1;
-    protected final Coefficient c2;
-
+public class Add extends BinaryCoefficient {
     public Add(Coefficient c1, Coefficient c2) {
-        this.c1 = c1;
-        this.c2 = c2;
+        super(c1, c2);
     }
 
     @Override

@@ -44,4 +44,10 @@ public class ConstantNumber extends Coefficient {
     public Coefficient simplify() {
         return this;
     }
+
+    @Override
+    public int hashCode() {
+        // This method is allso sufficient for equals().
+        return Float.floatToIntBits(value);
+    }
 }

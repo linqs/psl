@@ -31,13 +31,9 @@ import org.linqs.psl.util.MathUtils;
  *  - When simplifying
  *  - when getting the actual value (using actual values)
  */
-public class Divide extends Coefficient {
-    protected final Coefficient c1;
-    protected final Coefficient c2;
-
+public class Divide extends BinaryCoefficient {
     public Divide(Coefficient c1, Coefficient c2) {
-        this.c1 = c1;
-        this.c2 = c2;
+        super(c1, c2);
 
         // If the denoinator is 0, then throw an exception.
         if (c2 instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)c2).value)) {

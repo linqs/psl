@@ -221,24 +221,20 @@ public class ModelLoaderTest {
             "1: 5E6 Single(A) = 1 ^2\n" +
             "1: 5e6 Single(A) = 1 ^2\n" +
             "1: -5e6 Single(A) = 1 ^2\n" +
-            // "1: 5e-2 Single(A) = 1 ^2\n" +
             "1: 1.2e6 Single(A) = 1 ^2\n" +
             "1: -1.2e6 Single(A) = 1 ^2\n" +
-            // "1: 1.2e-2 Single(A) = 1 ^2\n" +
             "";
         String[] expected = new String[]{
             "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
-            "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
+            // "1.0: 1.0 * SINGLE(A) = 1.0 ^2",  // Duplicate rule ignored.
             "1.0: 1.5 * SINGLE(A) = 1.0 ^2",
             "1.0: 0.5 * SINGLE(A) = 1.0 ^2",
             "1.0: -1.0 * SINGLE(A) = 1.0 ^2",
             "1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
-            "1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",
+            // "1.0: 5000000.0 * SINGLE(A) = 1.0 ^2",  // Duplicate rule ignored.
             "1.0: -5000000.0 * SINGLE(A) = 1.0 ^2",
-            // "1.0: 5.0E-2 * SINGLE(A) = 1.0 ^2",
             "1.0: 1200000.0 * SINGLE(A) = 1.0 ^2",
             "1.0: -1200000.0 * SINGLE(A) = 1.0 ^2",
-            // "1.0: 1.2E-2 * SINGLE(A) = 1.0 ^2"
         };
 
         PSLTest.assertModel(dataStore, input, expected);
@@ -428,7 +424,7 @@ public class ModelLoaderTest {
             "";
         String[] expected = new String[]{
             "1.0: 1.0 * SINGLE(A) = 1.0 ^2",
-            "1.0: 1.0 * SINGLE(A) = 1.0 ^2"
+            // "1.0: 1.0 * SINGLE(A) = 1.0 ^2"  // Duplicate rule ignored.
         };
 
         PSLTest.assertModel(dataStore, input, expected);
@@ -718,18 +714,18 @@ public class ModelLoaderTest {
             "7.0 * SINGLE(A) + -34.0 * SINGLE(B) = 0.0 .",
             "0.0 * SINGLE(A) = 99.0 .",
             "2.0 * SINGLE(A) = 99.0 .",
-            "2.0 * SINGLE(A) = 99.0 .",
-            "0.0 * SINGLE(A) = 99.0 .",
-            "7.0 * SINGLE(A) = 99.0 .",
+            // "2.0 * SINGLE(A) = 99.0 .",  // Duplicate rule ignored.
+            // "0.0 * SINGLE(A) = 99.0 .",  // Duplicate rule ignored.
+            // "7.0 * SINGLE(A) = 99.0 .",  // Duplicate rule ignored.
             "9.0 * SINGLE(A) = 99.0 .",
             "(1.0 + (2.0 * |A|)) * SINGLE(+A) = 99.0 .",
             "7.0 * SINGLE(+A) = 99.0 .",
             "9.0 * SINGLE(+A) = 99.0 .",
             "11.0 * SINGLE(A) = 99.0 .",
-            "11.0 * SINGLE(A) = 99.0 .",
+            // "11.0 * SINGLE(A) = 99.0 .",  // Duplicate rule ignored.
             "21.0 * SINGLE(A) = 99.0 .",
             "-4.5 * SINGLE(A) = 99.0 .",
-            "-4.5 * SINGLE(A) = 99.0 .",
+            // "-4.5 * SINGLE(A) = 99.0 .",  // Duplicate rule ignored.
             "1.0 * SINGLE(A) = 99.0 ."
         };
 
@@ -878,7 +874,7 @@ public class ModelLoaderTest {
             "";
         String[] expected = new String[]{
             "1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 0.0 .",
-            "1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 0.0 ."
+            // "1.0 * SINGLE(A) + 1.0 * SINGLE(B) = 0.0 ."  // Duplicate rule ignored.
         };
 
         PSLTest.assertModel(dataStore, input, expected);
