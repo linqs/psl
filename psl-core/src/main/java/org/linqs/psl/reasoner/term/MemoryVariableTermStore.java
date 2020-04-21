@@ -232,15 +232,23 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             predicate.runModel();
         }
 
+        double rmse = 0.0;
+
         int count = 0;
         for (int i = 0; i < variables.size(); i++) {
             if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
-                variableValues[i] = ((ModelPredicate)variableAtoms[i].getPredicate()).getValue(variableAtoms[i]);
+                ModelPredicate predicate = (ModelPredicate)variableAtoms[i].getPredicate();
+                variableValues[i] = predicate.getValue(variableAtoms[i]);
+                rmse += Math.pow(variableValues[i] - predicate.getLabel(variableAtoms[i]), 2);
                 count++;
             }
         }
 
-        log.debug("Batch update of {} model atoms.", count);
+        if (count != 0) {
+            rmse = Math.pow(rmse / count, 0.5);
+        }
+
+        log.trace("Batch update of {} model atoms. RMSE: {}", count, rmse);
     }
 
     private void fitModelAtoms() {
@@ -264,7 +272,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             predicate.fit();
         }
 
-        log.debug("Batch fit of {} model atoms.", count);
+        log.trace("Batch fit of {} model atoms.", count);
     }
 
     @Override

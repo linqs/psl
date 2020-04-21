@@ -82,6 +82,12 @@ public class ModelPredicate extends StandardPredicate {
         model.resetLabels();
     }
 
+    public float getLabel(RandomVariableAtom atom) {
+        checkModel();
+
+        return model.getLabel(atom);
+    }
+
     public void setLabel(RandomVariableAtom atom, float label) {
         checkModel();
 
