@@ -138,6 +138,15 @@ public abstract class SupportingModel {
         }
     }
 
+    public float getLabel(RandomVariableAtom atom) {
+        AtomIndexes indexes = getAtomIndexes(atom);
+        if (indexes == null) {
+            return 0.0f;
+        }
+
+        return manualLabels[indexes.entityIndex][indexes.labelIndex];
+    }
+
     public void setLabel(RandomVariableAtom atom, float labelValue) {
         AtomIndexes indexes = getAtomIndexes(atom);
         if (indexes == null) {
