@@ -150,18 +150,12 @@ public class VizDataCollection {
             Iterable<GroundRule> groundedRuleList = groundRuleStore.getGroundRules(rule);
             for (GroundRule groundRule : groundedRuleList) {
                 if (vizData.violatedGroundRulesList.contains(groundRule)) {
-                    if (groundRule instanceof WeightedGroundRule) {
-                        WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
-                        violation = weightedGroundRule.getIncompatibility();
-                        weightFlag = true;
-                    }
-                    else {
-                        UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                        violation = unweightedGroundRule.getInfeasibility();
-                    }
+                    //There can't be weighted violated rules so we can make an assumption here
+                    UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+                    violation = unweightedGroundRule.getInfeasibility();
                     valueObj.put("Violated Rule", groundRule.baseToString());
                     valueObj.put("Parent Rule", rule.getName());
-                    valueObj.put("Weighted", weightFlag);
+                    // valueObj.put("Weighted", weightFlag);
                     valueObj.put("Violation", violation);
                     vizData.violatedGroundRulesArray.put(valueObj);
                 }
