@@ -1,11 +1,15 @@
 package org.linqs.psl.util;
 
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -17,6 +21,7 @@ import java.util.HashMap;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 
 public class VizDataCollection {
 
@@ -153,6 +158,32 @@ public class VizDataCollection {
                 }
             }
         }
+    }
+
+    public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
+                            Map<Variable, Integer> variableMap,  Constant[] constantsList) {
+      System.out.println(parentRule);
+      HashSet<Atom> atomSet = new HashSet<>();
+      parentRule.getFormula().getAtoms(atomSet);
+      System.out.println("Rule object id (hash): " + parentRule.hashCode());
+      System.out.println(atomSet);
+      System.out.println("Atom object ids (hash):");
+      for (Atom a : atomSet) {
+        System.out.println(a.hashCode());
+      }
+      for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
+          System.out.print(entry.getKey() + ":" + entry.getValue().toString() + " ");
+      }
+      System.out.println("");
+
+      System.out.println(groundRule);
+      System.out.println("Ground rule object id (hash) : " + groundRule.hashCode());
+
+      ArrayList<String> constants = new ArrayList<String>();
+      for (int i = 0; i < constantsList.length; i++){
+        constants.add(constantsList[i].toString());
+      }
+      System.out.println(StringUtils.join(" ", constants));
     }
 
     // public static void debugOutput() {

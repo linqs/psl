@@ -43,6 +43,7 @@ import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
+import org.linqs.psl.util.VizDataCollection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,12 +181,23 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         //TEST
         //Any way to get row array up here so we dont have to deal with this parallelism?
         // System.out.println(this);
-        // System.out.println("Rules object id (hash): " + hashCode());
-
+        // HashSet<Atom> atomSet = new HashSet<>();
+        // this.getFormula().getAtoms(atomSet);
+        //Can use this atomSet to have individual atoms accounted for
+        // this will get entire rule
+        // System.out.println(this);
+        // System.out.println("Rule object id (hash): " + hashCode());
+        // System.out.println(atomSet);
+        // System.out.println("Atom object ids (hash):");
+        // for (Atom a : atomSet) {
+        //   System.out.println(a.hashCode());
+        // }
+        //
         // for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
         //     System.out.print(entry.getKey() + ":" + entry.getValue().toString() + " ");
         // }
         // System.out.println("");
+        AbstractLogicalRule parentRule = this;
 
         Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
             @Override
@@ -195,11 +207,14 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
                 //TEST
                 //This prints out the possible constants for the above rule
-        //         ArrayList<String> temp = new ArrayList<String>();
-        //         for (int i = 0; i < row.length; i++){
-        //           temp.add(row[i].toString());
-        //         }
-        //         System.out.println(StringUtils.join(" ", temp));
+                // System.out.println(groundRule);
+                // System.out.println("Ground rule object id (hash) : " + groundRule.hashCode());
+                // ArrayList<String> constants = new ArrayList<String>();
+                // for (int i = 0; i < row.length; i++){
+                //   constants.add(row[i].toString());
+                // }
+                // System.out.println(StringUtils.join(" ", temp));
+                VizDataCollection.ruleMapInsertElement(parentRule, groundRule, variableMap, row);
 
                 if (groundRule != null) {
                     finalGroundRuleStore.addGroundRule(groundRule);
