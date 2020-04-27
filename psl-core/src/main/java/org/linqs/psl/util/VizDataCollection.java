@@ -1,21 +1,22 @@
 package org.linqs.psl.util;
 
-import org.json.JSONObject;
-import org.json.JSONArray;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.io.File;
+import java.io.FileWriter;
+import java.util.HashMap;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 public class VizDataCollection {
 
@@ -53,8 +54,8 @@ public class VizDataCollection {
     }
 
     //We want to make:
-    // A jsonArray filled with jsonObjects
-    // each object represents a predicate, prediction val, and truth value
+    // A jsonObject filled with JSONArrays
+    // Will be organized into different JSON arrays that refer to specific modules, all in one object
     //e.x.
         // [
         //     {predicate: Friends((bob,george), prediction: 0.00003, truth: 1}
@@ -78,27 +79,21 @@ public class VizDataCollection {
     private static class ShutdownHook extends Thread {
         @Override
         public void run() {
-            // System.out.println("ShutdownHook running");
             outputJSON();
         }
     }
 
-    //Tests:
-    //predictionTruth -> ContinuousEvaluatorTest, GaussianProcessPriorTest, InitialWeightHyperbandTest (not called from cli)
-
-    //All the methods can be void as we will just be outputting to JSON
-
     //Takes in a prediction truth pair and adds it to our map
     public static void predictionTruth(GroundAtom target, float predictVal, float truthVal ) {
-        JSONObject valueObj = new JSONObject();
-        valueObj.put("Truth", truthVal);
-        valueObj.put("Prediction", predictVal);
-        valueObj.put("Predicate", target.toString());
-        vizData.predictionTruthArray.put(valueObj);
+        JSONObject moduleElement = new JSONObject();
+        moduleElement.put("Truth", truthVal);
+        moduleElement.put("Prediction", predictVal);
+        moduleElement.put("Predicate", target.toString());
+        vizData.predictionTruthArray.put(moduleElement);
     }
 
      public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
-        HashMap<String, Integer> groundRuleCountPerRule = new HashMap();
+        HashMap<String, Integer> groundRuleCountPerRule = new HashMap<>();
         for (Rule rule: rules)
         {
             int groundRuleCount = groundRuleStore.count( rule );
@@ -107,10 +102,10 @@ public class VizDataCollection {
 
         for (Map.Entry<String, Integer> entry: groundRuleCountPerRule.entrySet())
         {
-            JSONObject valueObj = new JSONObject();
-            valueObj.put("Rule", entry.getKey());
-            valueObj.put("Count", entry.getValue());
-            vizData.ruleCountArray.put(valueObj);
+            JSONObject moduleElement = new JSONObject();
+            moduleElement.put("Rule", entry.getKey());
+            moduleElement.put("Count", entry.getValue());
+            vizData.ruleCountArray.put(moduleElement);
         }
      }
 
@@ -120,7 +115,7 @@ public class VizDataCollection {
             double totalSat = 0.0;
             double totalDis = 0.0;
             int groundRuleCount = 0;
-            JSONObject valueObj = new JSONObject();
+            JSONObject moduleElement = new JSONObject();
 
             for (GroundRule groundRule : groundedRuleList) {
                 if (groundRule instanceof WeightedGroundRule) {
@@ -130,21 +125,18 @@ public class VizDataCollection {
                 }
                 groundRuleCount++;
             }
-            valueObj.put("Rule", rule.getName());
-            valueObj.put("Total Satisfaction", totalSat);
-            valueObj.put("Satisfaction Percentage", totalSat / groundRuleCount);
-            valueObj.put("Total Dissatisfaction", totalDis);
-            valueObj.put("Dissatisfaction Percentage", totalDis / groundRuleCount);
-            vizData.totRuleSatArray.put(valueObj);
+            moduleElement.put("Rule", rule.getName());
+            moduleElement.put("Total Satisfaction", totalSat);
+            moduleElement.put("Satisfaction Percentage", totalSat / groundRuleCount);
+            moduleElement.put("Total Dissatisfaction", totalDis);
+            moduleElement.put("Dissatisfaction Percentage", totalDis / groundRuleCount);
+            vizData.totRuleSatArray.put(moduleElement);
         }
     }
 
-    //To test this
-    // mvn -Dtest=SimpleAcquaintancesTest#testBase test -DfailIfNoTests=false -Dadmmreasoner.maxiterations=1
     public static void violatedGroundRules(List<Rule> rules, GroundRuleStore groundRuleStore) {
-        // System.out.println(vizData.violatedGroundRulesList.size());
         for (Rule rule : rules) {
-            JSONObject valueObj = new JSONObject();
+            JSONObject moduleElement = new JSONObject();
             double violation = 0.0;
             boolean weightFlag = false;
             Iterable<GroundRule> groundedRuleList = groundRuleStore.getGroundRules(rule);
@@ -153,36 +145,16 @@ public class VizDataCollection {
                     //There can't be weighted violated rules so we can make an assumption here
                     UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
                     violation = unweightedGroundRule.getInfeasibility();
-                    valueObj.put("Violated Rule", groundRule.baseToString());
-                    valueObj.put("Parent Rule", rule.getName());
-                    // valueObj.put("Weighted", weightFlag);
-                    valueObj.put("Violation", violation);
-                    vizData.violatedGroundRulesArray.put(valueObj);
+                    moduleElement.put("Violated Rule", groundRule.baseToString());
+                    moduleElement.put("Parent Rule", rule.getName());
+                    // moduleElement.put("Weighted", weightFlag);
+                    moduleElement.put("Violation", violation);
+                    vizData.violatedGroundRulesArray.put(moduleElement);
                 }
             }
         }
     }
 
-    // public static void individualRuleSatDis(List<Rule> rules, GroundRuleStore groundRuleStore) {
-        // for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
-        //     String row = "";
-        //     double satisfaction = 0.0;
-        //     JSONObject valueObj = new JSONObject();
-        //
-        //     valueObj.put("Rule", groundRule.baseToString());
-        //
-        //     if (groundRule instanceof WeightedGroundRule) {
-        //         WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
-        //         valueObj.put("Satisfaction", 1.0 - weightedGroundRule.getIncompatibility());
-        //     } else {
-        //         UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-        //         valueObj.put("Satisfaction", 1.0 - unweightedGroundRule.getInfeasibility());
-        //     }
-        //     vizData.totRuleSatArray.put(valueObj);
-        // }
-    // }
-
-    //
     // public static void debugOutput() {
     //
     // }
