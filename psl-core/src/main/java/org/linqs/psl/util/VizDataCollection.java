@@ -214,7 +214,6 @@ public class VizDataCollection {
         String val = (String)atomElement.getValue();
         vizData.ruleMappings.getJSONObject("groundAtoms").put(key, val);
       }
-
     }
 
     // public static void debugOutput() {
