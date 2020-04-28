@@ -34,6 +34,8 @@ public class VizDataCollection {
     private JSONArray totRuleSatArray;
     private JSONArray violatedGroundRulesArray;
 
+    private JSONObject ruleMappings;
+
     public static ArrayList<GroundRule> violatedGroundRulesList = new ArrayList<>();
 
     static {
@@ -47,6 +49,14 @@ public class VizDataCollection {
         ruleCountArray = new JSONArray();
         totRuleSatArray = new JSONArray();
         violatedGroundRulesArray = new JSONArray();
+
+        ruleMappings = new JSONObject();
+        JSONObject rules = new JSONObject();
+        JSONObject groundRules = new JSONObject();
+        JSONObject groundAtoms = new JSONObject();
+        ruleMappings.put("rules", rules);
+        ruleMappings.put("groundRules", groundRules);
+        ruleMappings.put("groundAtoms", groundAtoms);
     }
 
     private static synchronized void init() {
@@ -72,6 +82,7 @@ public class VizDataCollection {
         vizData.fullJSON.put("RuleCount", vizData.ruleCountArray);
         vizData.fullJSON.put("SatDis", vizData.totRuleSatArray);
         vizData.fullJSON.put("ViolatedGroundRules", vizData.violatedGroundRulesArray);
+        vizData.fullJSON.put("RuleMap" , vizData.ruleMappings);
 
         try (FileWriter file = new FileWriter("PSLVizData.json")) {
             file.write(vizData.fullJSON.toString(4));
@@ -162,28 +173,48 @@ public class VizDataCollection {
 
     public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
                             Map<Variable, Integer> variableMap,  Constant[] constantsList) {
-      System.out.println(parentRule);
+      //Creating some atom elements first as rule and groundRule may use
       HashSet<Atom> atomSet = new HashSet<>();
       parentRule.getFormula().getAtoms(atomSet);
-      System.out.println("Rule object id (hash): " + parentRule.hashCode());
-      System.out.println(atomSet);
-      System.out.println("Atom object ids (hash):");
+      String[] atomHashSet = new String[atomSet.size()];
+      int atomCount = 0;
+      HashMap<String,String> atomMap = new HashMap<>();
       for (Atom a : atomSet) {
-        System.out.println(a.hashCode());
+        atomHashSet[atomCount] = Integer.toString(a.hashCode());
+        atomMap.put(Integer.toString(a.hashCode()), a.toString());
+        atomCount++;
       }
+
+      //Adds a rule element to RuleMap
+      JSONObject rulesElement = new JSONObject();
+      String ruleStringID = Integer.toString(parentRule.hashCode());
+      vizData.ruleMappings.getJSONObject("rules").put(ruleStringID, parentRule);
+
+      //Adds a groundRule element to RuleMap
+      HashMap<String, String> varConstMap = new HashMap<>();
       for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
-          System.out.print(entry.getKey() + ":" + entry.getValue().toString() + " ");
+          varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].toString());
       }
-      System.out.println("");
-
-      System.out.println(groundRule);
-      System.out.println("Ground rule object id (hash) : " + groundRule.hashCode());
-
-      ArrayList<String> constants = new ArrayList<String>();
-      for (int i = 0; i < constantsList.length; i++){
-        constants.add(constantsList[i].toString());
+      JSONObject groundRulesElement = new JSONObject();
+      groundRulesElement.put("ruleID", ruleStringID);
+      JSONObject constants = new JSONObject();
+      for (Map.Entry varConstElement : varConstMap.entrySet()) {
+        String key = (String)varConstElement.getKey();
+        String val = (String)varConstElement.getValue();
+        constants.put(key,val);
       }
-      System.out.println(StringUtils.join(" ", constants));
+      groundRulesElement.put("constants", constants);
+      groundRulesElement.put("groundAtoms", atomHashSet);
+      String groundRuleStringID = Integer.toString(groundRule.hashCode());
+      vizData.ruleMappings.getJSONObject("groundRules").put(groundRuleStringID, groundRulesElement);
+
+      //Adds a groundAtom element to RuleMap
+      for (Map.Entry atomElement : atomMap.entrySet()) {
+        String key = (String)atomElement.getKey();
+        String val = (String)atomElement.getValue();
+        vizData.ruleMappings.getJSONObject("groundAtoms").put(key, val);
+      }
+
     }
 
     // public static void debugOutput() {
