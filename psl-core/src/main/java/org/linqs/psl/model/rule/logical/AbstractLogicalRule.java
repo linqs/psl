@@ -178,25 +178,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         final GroundRuleStore finalGroundRuleStore = groundRuleStore;
         final Map<Variable, Integer> variableMap = groundVariables.getVariableMap();
 
-        //TEST
-        //Any way to get row array up here so we dont have to deal with this parallelism?
-        // System.out.println(this);
-        // HashSet<Atom> atomSet = new HashSet<>();
-        // this.getFormula().getAtoms(atomSet);
-        //Can use this atomSet to have individual atoms accounted for
-        // this will get entire rule
-        // System.out.println(this);
-        // System.out.println("Rule object id (hash): " + hashCode());
-        // System.out.println(atomSet);
-        // System.out.println("Atom object ids (hash):");
-        // for (Atom a : atomSet) {
-        //   System.out.println(a.hashCode());
-        // }
-        //
-        // for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
-        //     System.out.print(entry.getKey() + ":" + entry.getValue().toString() + " ");
-        // }
-        // System.out.println("");
+        //Visualization
+        //Can't use "this" keyword in the next function as it is being parallelized
         AbstractLogicalRule parentRule = this;
 
         Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
@@ -205,15 +188,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
                 GroundRule groundRule = ground(row, variableMap, finalAtomManager);
 
-                //TEST
-                //This prints out the possible constants for the above rule
-                // System.out.println(groundRule);
-                // System.out.println("Ground rule object id (hash) : " + groundRule.hashCode());
-                // ArrayList<String> constants = new ArrayList<String>();
-                // for (int i = 0; i < row.length; i++){
-                //   constants.add(row[i].toString());
-                // }
-                // System.out.println(StringUtils.join(" ", temp));
+                //Visualization
                 VizDataCollection.ruleMapInsertElement(parentRule, groundRule, variableMap, row);
 
                 if (groundRule != null) {
