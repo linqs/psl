@@ -172,6 +172,7 @@ public class VizDataCollection {
 
     public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
                             Map<Variable, Integer> variableMap,  Constant[] constantsList) {
+
       //Creating some atom elements first as rule and groundRule may use
       HashSet<Atom> atomSet = new HashSet<>();
       parentRule.getFormula().getAtoms(atomSet);

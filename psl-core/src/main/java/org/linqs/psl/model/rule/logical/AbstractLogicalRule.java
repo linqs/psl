@@ -155,7 +155,13 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     @Override
     public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
-        results.add(ground(constants, variableMap, atomManager));
+        // TEST:
+        // This needs to be changed soon so that visualization data is ONLY collected when visualization
+        // runtime argument is specified. Perhaps there is a better place in the code to obtain the ground rule,
+        // parent rule, variables, and constants
+        GroundRule groundRule = ground(constants, variableMap, atomManager);
+        VizDataCollection.ruleMapInsertElement(this, groundRule, variableMap, constants);
+        results.add(groundRule);
     }
 
     private GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
@@ -178,18 +184,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         final GroundRuleStore finalGroundRuleStore = groundRuleStore;
         final Map<Variable, Integer> variableMap = groundVariables.getVariableMap();
 
-        //Visualization
-        //Can't use "this" keyword in the next function as it is being parallelized
-        AbstractLogicalRule parentRule = this;
-
         Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
             @Override
             public void work(int index, Constant[] row) {
 
                 GroundRule groundRule = ground(row, variableMap, finalAtomManager);
-
-                //Visualization
-                VizDataCollection.ruleMapInsertElement(parentRule, groundRule, variableMap, row);
 
                 if (groundRule != null) {
                     finalGroundRuleStore.addGroundRule(groundRule);
@@ -298,7 +297,6 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                     resources.accessExceptionAtoms, this));
             atomManager.reportAccessException(ex, resources.accessExceptionAtoms.iterator().next());
         }
-
         return groundFormulaInstance(resources.positiveAtoms, resources.negativeAtoms, rvaCount);
     }
 

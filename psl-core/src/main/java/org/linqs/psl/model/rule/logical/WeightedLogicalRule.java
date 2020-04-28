@@ -42,6 +42,7 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 
     @Override
     protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
+        System.out.println("In WeightedRule");
         return new WeightedGroundLogicalRule(this, posLiterals, negLiterals, rvaCount);
     }
 
