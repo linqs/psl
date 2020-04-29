@@ -108,19 +108,23 @@ public class VizDataCollection {
     }
 
      public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
-        HashMap<String, Integer> groundRuleCountPerRule = new HashMap<>();
+
         for (Rule rule: rules)
         {
+            String stringRuleId = Integer.toString(System.identityHashCode(rule));
             int groundRuleCount = groundRuleStore.count( rule );
-            groundRuleCountPerRule.put(rule.getName(), groundRuleCount);
-        }
-
-        for (Map.Entry<String, Integer> entry: groundRuleCountPerRule.entrySet())
-        {
-            JSONObject moduleElement = new JSONObject();
-            moduleElement.put("Rule", entry.getKey());
-            moduleElement.put("Count", entry.getValue());
-            vizData.ruleCountArray.put(moduleElement);
+            if ( !vizData.rules.isNull(stringRuleId) ) {
+                JSONObject ruleElement = vizData.rules.getJSONObject(stringRuleId);
+                ruleElement.put("count", groundRuleCount);
+                ruleElement.put("weighted", rule.isWeighted());
+            }
+            else {
+                JSONObject newRuleElement = new JSONObject();
+                newRuleElement.put("string", rule.getName());
+                newRuleElement.put("count", groundRuleCount);
+                newRuleElement.put("weighted", rule.isWeighted());
+                vizData.rules.put(stringRuleId, newRuleElement);
+            }
         }
      }
 
@@ -189,7 +193,9 @@ public class VizDataCollection {
       //Adds a rule element to RuleMap
       JSONObject rulesElement = new JSONObject();
       String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
-      vizData.rules.put(ruleStringID, parentRule);
+      JSONObject rulesElementItem = new JSONObject();
+      rulesElementItem.put("text", parentRule);
+      vizData.rules.put(ruleStringID, rulesElementItem);
 
       //Adds a groundRule element to RuleMap
       HashMap<String, String> varConstMap = new HashMap<>();
