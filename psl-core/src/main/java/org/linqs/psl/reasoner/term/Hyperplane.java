@@ -26,8 +26,8 @@ import java.lang.reflect.Array;
  */
 public class Hyperplane<E extends ReasonerLocalVariable> {
     private E[] variables;
-    private float[] coefficients;
-    private int size;
+    private float[] variableCoefficients;
+    private int variableIndex;
     private float constant;
 
     @SuppressWarnings("unchecked")
@@ -35,45 +35,45 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
         this((E[])Array.newInstance(localVariableClass, maxSize) , new float[maxSize], constant, 0);
     }
 
-    public Hyperplane(E[] variables, float[] coefficients, float constant, int size) {
+    public Hyperplane(E[] variables, float[] variableCoefficients, float constant, int variableIndex) {
         this.variables = variables;
-        this.coefficients = coefficients;
+        this.variableCoefficients = variableCoefficients;
         this.constant = constant;
-        this.size = size;
+        this.variableIndex = variableIndex;
     }
 
     public void addTerm(E variable, float coefficient) {
-        variables[size] = variable;
-        coefficients[size] = coefficient;
-        size++;
+        variables[variableIndex] = variable;
+        variableCoefficients[variableIndex] = coefficient;
+        variableIndex++;
     }
 
     public int size() {
-        return size;
+        return variableIndex;
     }
 
     public E getVariable(int index) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + size + " exist.");
+        if (index >= variableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + variableIndex + " exist.");
         }
 
         return variables[index];
     }
 
     public float getCoefficient(int index) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+        if (index >= variableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + variableIndex + " exist.");
         }
 
-        return coefficients[index];
+        return variableCoefficients[index];
     }
 
     public void appendCoefficient(int index, float value) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+        if (index >= variableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + variableIndex + " exist.");
         }
 
-        coefficients[index] += value;
+        variableCoefficients[index] += value;
     }
 
     public float getConstant() {
@@ -85,7 +85,7 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
     }
 
     public int indexOfVariable(E needle) {
-        return ArrayUtils.indexOf(variables, size, needle);
+        return ArrayUtils.indexOf(variables, variableIndex, needle);
     }
 
     public E[] getVariables() {
@@ -93,6 +93,6 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
     }
 
     public float[] getCoefficients() {
-        return coefficients;
+        return variableCoefficients;
     }
 }
