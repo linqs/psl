@@ -172,17 +172,18 @@ public class VizDataCollection {
 
     public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
                             Map<Variable, Integer> variableMap,  Constant[] constantsList) {
-
-      //Creating some atom elements first as rule and groundRule may use
-      HashSet<Atom> atomSet = new HashSet<>();
-      parentRule.getFormula().getAtoms(atomSet);
-      int[] atomHashSet = new int[atomSet.size()];
-      int atomCount = 0;
-      HashMap<String,String> atomMap = new HashMap<>();
-      for (Atom a : atomSet) {
-        atomHashSet[atomCount] = System.identityHashCode(a);
-        atomMap.put(Integer.toString(System.identityHashCode(a)), a.toString());
-        atomCount++;
+      //Adds a groundAtom element to RuleMap
+      //Why are some groundRules null? Perhaps a thread thing??
+      ArrayList<Integer> atomHashList = new ArrayList<>();
+      if (groundRule != null) {
+        HashSet<Atom> atomSet = new HashSet<>(groundRule.getAtoms());
+        int atomCount = 0;
+        HashMap<String,String> atomMap = new HashMap<>();
+        for (Atom a : atomSet) {
+          atomHashList.add(System.identityHashCode(a));
+          vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)), a.toString());
+          atomCount++;
+        }
       }
 
       //Adds a rule element to RuleMap
@@ -204,16 +205,10 @@ public class VizDataCollection {
         constants.put(key,val);
       }
       groundRulesElement.put("constants", constants);
-      groundRulesElement.put("groundAtoms", atomHashSet);
+      groundRulesElement.put("groundAtoms", atomHashList);
+      //We dont get any null groundRules here???
       String groundRuleStringID = Integer.toString(System.identityHashCode(groundRule));
       vizData.groundRules.put(groundRuleStringID, groundRulesElement);
-
-      //Adds a groundAtom element to RuleMap
-      for (Map.Entry atomElement : atomMap.entrySet()) {
-        String key = (String)atomElement.getKey();
-        String val = (String)atomElement.getValue();
-        vizData.groundAtoms.put(key, val);
-      }
     }
 
     // public static void debugOutput() {
