@@ -136,7 +136,7 @@ public class Launcher {
      * Possible output the ground rules.
      * @param path where to output the ground rules. Use stdout if null.
      */
-    private void outputGroundRules(Model model, GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
+    private void outputGroundRules(GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
         // Some inference/learning application will not have ground rule stores (if they stream).
         if (groundRuleStore == null) {
             return;
@@ -205,7 +205,7 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
-            outputGroundRules(model, inferenceApplication.getGroundRuleStore(), path, false);
+            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, false);
         }
 
         boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
@@ -218,12 +218,11 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            outputGroundRules(model, inferenceApplication.getGroundRuleStore(), path, true);
+            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
             VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
-            VizDataCollection.totalRuleSatDis(model.getRules(), inferenceApplication.getGroundRuleStore());
             VizDataCollection.violatedGroundRules(model.getRules(), inferenceApplication.getGroundRuleStore());
         }
 
@@ -299,14 +298,14 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
-            outputGroundRules(model, learner.getInferenceApplication().getGroundRuleStore(), path, false);
+            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, false);
         }
 
         learner.close();
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            outputGroundRules(model, learner.getInferenceApplication().getGroundRuleStore(), path, true);
+            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, true);
         }
 
         randomVariableDatabase.close();
@@ -361,7 +360,7 @@ public class Launcher {
 
         //Loop through trainingMap, adding predicates, prediction val, and truth val to json
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
-            VizDataCollection.predictionTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
+            VizDataCollection.addTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
         }
 
         if (closePredictionDB) {
