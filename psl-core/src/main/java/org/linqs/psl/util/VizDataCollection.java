@@ -67,7 +67,6 @@ public class VizDataCollection {
         // ]
     public static void outputJSON() {
         vizData.fullJSON.put("truthMap", vizData.truthMap);
-        vizData.fullJSON.put("ViolatedGroundRules", vizData.violatedGroundRulesArray);
         vizData.fullJSON.put("rules", vizData.rules);
         vizData.fullJSON.put("groundRules", vizData.groundRules);
         vizData.fullJSON.put("groundAtoms", vizData.groundAtoms);
