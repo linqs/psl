@@ -42,7 +42,6 @@ public class VizDataCollection {
         init();
     }
 
-    // Static only.
     private VizDataCollection() {
         fullJSON = new JSONObject();
         predictionTruthArray = new JSONArray();
@@ -61,7 +60,7 @@ public class VizDataCollection {
         runtime.addShutdownHook(new ShutdownHook());
     }
 
-    //We want to make:
+    // We want to make:
     // A jsonObject filled with JSONArrays
     // Will be organized into different JSON arrays that refer to specific modules, all in one object
     //e.x.
@@ -92,7 +91,7 @@ public class VizDataCollection {
         }
     }
 
-    //Takes in a prediction truth pair and adds it to our map
+    // Takes in a prediction truth pair and adds it to our map
     public static void addTruth(GroundAtom target, float predictVal, float truthVal ) {
         JSONObject moduleElement = new JSONObject();
         moduleElement.put("Truth", truthVal);
