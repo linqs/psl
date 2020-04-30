@@ -192,7 +192,7 @@ public abstract class OnlineHyperplaneTermGenerator<T extends ReasonerTerm, V ex
                     // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
                     // A mismatch in signs for the same variable means that a ground atom appeared twice,
                     // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
-                    if (sum.isNonNegative() && !MathUtils.signsMatch(onlineHyperplane.getCoefficient(localIndex), coefficient)) {
+                    if (sum.isNonNegative() && !MathUtils.signsMatch(onlineHyperplane.getCoefficient(localIndex), observedCoefficient)) {
                         return null;
                     }
 

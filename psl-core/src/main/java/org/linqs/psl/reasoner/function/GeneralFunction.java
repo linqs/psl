@@ -19,6 +19,8 @@ package org.linqs.psl.reasoner.function;
 
 import org.linqs.psl.model.atom.GroundAtom;
 
+import java.util.Arrays;
+
 /**
  * A general function that can handle various cases.
  * The function is some linear combination of terms.
@@ -30,6 +32,10 @@ public class GeneralFunction implements FunctionTerm {
     private final float[] coefficients;
     private final FunctionTerm[] terms;
     private int size;
+
+    private float[] observedCoefficients;
+    private FunctionTerm[] observedTerms;
+    private int observedSize;
 
     // All constants will get merged into this.
     private float constant;
@@ -47,6 +53,10 @@ public class GeneralFunction implements FunctionTerm {
         terms = new FunctionTerm[maxSize];
         size = 0;
         constant = 0.0f;
+
+        observedCoefficients = new float[0];
+        observedTerms = new FunctionTerm[0];
+        observedSize = 0;
 
         this.nonNegative = nonNegative;
         this.squared = squared;
@@ -98,6 +108,16 @@ public class GeneralFunction implements FunctionTerm {
         // Merge constants.
         if (term.isConstant()) {
             constant += (coefficient * term.getValue());
+
+            // Store observed values (Temporary solution)
+            // Since most runs do not want to store observations, this should be moved out of general function
+            observedSize++;
+
+            observedTerms = Arrays.copyOf(observedTerms, observedSize);
+            observedTerms[observedSize - 1] = term;
+
+            observedCoefficients = Arrays.copyOf(observedCoefficients, observedSize);
+            observedCoefficients[observedSize - 1] = coefficient;
             return;
         }
 
@@ -118,13 +138,19 @@ public class GeneralFunction implements FunctionTerm {
         return size;
     }
 
+    public int observedSize() { return observedSize; }
+
     public float getCoefficient(int index) {
         return coefficients[index];
     }
 
+    public float getObservedCoefficient(int index) { return observedCoefficients[index]; }
+
     public FunctionTerm getTerm(int index) {
         return terms[index];
     }
+
+    public FunctionTerm getObservedTerm(int index) { return observedTerms[index]; }
 
     @Override
     public float getValue() {
