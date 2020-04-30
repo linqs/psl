@@ -29,7 +29,7 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
-import org.linqs.psl.reasoner.term.online.OnlineTermStore;
+import org.linqs.psl.reasoner.term.online.OnlineStreamingTermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 import org.slf4j.Logger;
@@ -179,7 +179,7 @@ public abstract class OnlineHyperplaneTermGenerator<T extends ReasonerTerm, V ex
             float observedCoefficient = (float) sum.getObservedCoefficient(i);
             FunctionTerm term = sum.getObservedTerm(i);
             if (term instanceof ObservedAtom) {
-                ObservedAtom observed = termStore.createLocalObservedVariable((ObservedAtom) term);
+                ObservedAtom observed = termStore.createLocalObserved((ObservedAtom) term);
 
                 // Check to see if we have seen this variable before in this online.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
