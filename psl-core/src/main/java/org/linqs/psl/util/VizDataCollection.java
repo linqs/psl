@@ -29,7 +29,7 @@ public class VizDataCollection {
     private static Runtime runtime = null;
 
     private JSONObject fullJSON;
-    private JSONArray truthMap;
+    private JSONObject truthMap;
 
     JSONObject rules;
     JSONObject groundRules;
@@ -41,7 +41,7 @@ public class VizDataCollection {
 
     private VizDataCollection() {
         fullJSON = new JSONObject();
-        truthMap = new JSONArray();
+        truthMap = new JSONObject();
         rules = new JSONObject();
         groundRules = new JSONObject();
         groundAtoms = new JSONObject();
@@ -89,9 +89,9 @@ public class VizDataCollection {
     // Takes in a prediction truth pair and adds it to our map
     public static void addTruth(GroundAtom target, float truthVal ) {
         String groundAtomID = Integer.toString(System.identityHashCode(target));
-        JSONObject moduleElement = new JSONObject();
-        moduleElement.put(groundAtomID, truthVal);
-        vizData.truthMap.put(moduleElement);
+        // JSONObject moduleElement = new JSONObject();
+        // moduleElement.put(groundAtomID, truthVal);
+        vizData.truthMap.put(groundAtomID, truthVal);
     }
 
      public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
