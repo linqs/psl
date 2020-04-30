@@ -94,11 +94,27 @@ public class VizDataCollection {
 
     //Takes in a prediction truth pair and adds it to our map
     public static void addTruth(GroundAtom target, float predictVal, float truthVal ) {
+        String groundAtomID = Integer.toString(System.identityHashCode(target));
         JSONObject moduleElement = new JSONObject();
-        moduleElement.put("Truth", truthVal);
-        moduleElement.put("Prediction", predictVal);
-        moduleElement.put("Predicate", target.toString());
+        moduleElement.put(groundAtomID, truthVal);
         vizData.predictionTruthArray.put(moduleElement);
+
+
+        // System.out.println(vizData.groundAtoms);
+        if (vizData.groundAtoms.isNull(groundAtomID)) {
+          // System.out.println("ID : " + groundAtomID + " not in json");
+          // System.out.println(target.toString());
+          // JSONObject groundAtomObj = new JSONObject();
+          // groundAtomObj.put("string", target.toString());
+          // groundAtomObj.put("prediction", predictVal);
+          // vizData.groundAtoms.put(groundAtomID, groundAtomObj);
+          return;
+        }
+        JSONObject groundAtomElement = vizData.groundAtoms.getJSONObject(groundAtomID);
+        groundAtomElement.put("prediction", predictVal);
+        // System.out.println("ID : " + groundAtomID + " in json");
+        // System.out.println(vizData.groundAtoms.getJSONObject(groundAtomID));
+
     }
 
      public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
@@ -117,26 +133,26 @@ public class VizDataCollection {
         }
      }
 
-    public static void violatedGroundRules(List<Rule> rules, GroundRuleStore groundRuleStore) {
-        for (Rule rule : rules) {
-            JSONObject moduleElement = new JSONObject();
-            double violation = 0.0;
-            boolean weightFlag = false;
-            Iterable<GroundRule> groundedRuleList = groundRuleStore.getGroundRules(rule);
-            for (GroundRule groundRule : groundedRuleList) {
-                if (vizData.violatedGroundRulesList.contains(groundRule)) {
-                    //There can't be weighted violated rules so we can make an assumption here
-                    UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                    violation = unweightedGroundRule.getInfeasibility();
-                    moduleElement.put("Violated Rule", groundRule.baseToString());
-                    moduleElement.put("Parent Rule", rule.getName());
-                    // moduleElement.put("Weighted", weightFlag);
-                    moduleElement.put("Violation", violation);
-                    vizData.violatedGroundRulesArray.put(moduleElement);
-                }
-            }
-        }
-    }
+    // public static void violatedGroundRules(List<Rule> rules, GroundRuleStore groundRuleStore) {
+    //     for (Rule rule : rules) {
+    //         JSONObject moduleElement = new JSONObject();
+    //         double violation = 0.0;
+    //         boolean weightFlag = false;
+    //         Iterable<GroundRule> groundedRuleList = groundRuleStore.getGroundRules(rule);
+    //         for (GroundRule groundRule : groundedRuleList) {
+    //             if (vizData.violatedGroundRulesList.contains(groundRule)) {
+    //                 //There can't be weighted violated rules so we can make an assumption here
+    //                 UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+    //                 violation = unweightedGroundRule.getInfeasibility();
+    //                 moduleElement.put("Violated Rule", groundRule.baseToString());
+    //                 moduleElement.put("Parent Rule", rule.getName());
+    //                 // moduleElement.put("Weighted", weightFlag);
+    //                 moduleElement.put("Violation", violation);
+    //                 vizData.violatedGroundRulesArray.put(moduleElement);
+    //             }
+    //         }
+    //     }
+    // }
 
     public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
                             Map<Variable, Integer> variableMap,  Constant[] constantsList) {
@@ -149,7 +165,10 @@ public class VizDataCollection {
             HashMap<String,String> atomMap = new HashMap<>();
             for (Atom a : atomSet) {
                 atomHashList.add(System.identityHashCode(a));
-                vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)),a.toString());
+
+                JSONObject groundAtomElement = new JSONObject();
+                groundAtomElement.put("string", a.toString());
+                vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)),groundAtomElement);
                 atomCount++;
             }
         }

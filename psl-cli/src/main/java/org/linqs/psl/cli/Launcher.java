@@ -223,7 +223,6 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
             VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
-            VizDataCollection.violatedGroundRules(model.getRules(), inferenceApplication.getGroundRuleStore());
         }
 
         log.info("Inference Complete");
@@ -359,7 +358,7 @@ public class Launcher {
         TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
 
         //Loop through trainingMap, adding predicates, prediction val, and truth val to json
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+        for (Map.Entry<RandomVariableAtom, GroundAtom> entry : trainingMap.getLabelMap().entrySet()) {
             VizDataCollection.addTruth(entry.getValue(), entry.getKey().getValue(), entry.getValue().getValue());
         }
 
