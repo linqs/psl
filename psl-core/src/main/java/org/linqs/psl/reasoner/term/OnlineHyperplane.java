@@ -74,7 +74,7 @@ public class OnlineHyperplane <E extends ReasonerLocalVariable> extends Hyperpla
         observedCoefficients[index] += value;
     }
 
-    public int indexOfObserved(E needle) {
+    public int indexOfObserved(ObservedAtom needle) {
         return ArrayUtils.indexOf(observeds, observedIndex, needle);
     }
 
