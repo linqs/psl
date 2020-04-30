@@ -253,7 +253,7 @@ public class Launcher {
 
         // Loop through trainingMap, adding predicates, prediction val, and truth val to json
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
-            VizDataCollection.addTruth(entry.getValue(), entry.getValue().getValue());
+            VizDataCollection.addTruth(entry.getKey(), entry.getValue().getValue());
         }
 
         if (closePredictionDB) {
