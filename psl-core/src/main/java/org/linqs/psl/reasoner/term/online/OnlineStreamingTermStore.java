@@ -49,8 +49,6 @@ public abstract class OnlineStreamingTermStore<T extends ReasonerTerm> extends S
     // Buffer to hold new terms
     protected List<T> newTermBuffer;
 
-    protected OnlineStreamingIterator<T> activeIterator;
-
     protected OnlineHyperplaneTermGenerator<T, RandomVariableAtom> termGenerator;
 
     public OnlineStreamingTermStore(List<Rule> rules, AtomManager atomManager,
@@ -132,19 +130,4 @@ public abstract class OnlineStreamingTermStore<T extends ReasonerTerm> extends S
         seenTermCount = seenTermCount + 1;
         newTermBuffer.add(term);
     }
-
-    /**
-     * Get an iterator that will perform grounding queries and write the initial pages to disk.
-     */
-    protected abstract OnlineStreamingIterator<T> getInitialRoundIterator();
-
-    /**
-     * Get an iterator that will read and write from disk.
-     */
-    protected abstract OnlineStreamingIterator<T> getCacheIterator();
-
-    /**
-     * Get an iterator that will not write to disk.
-     */
-    protected abstract OnlineStreamingIterator<T> getNoWriteIterator();
 }

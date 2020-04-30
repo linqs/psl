@@ -136,7 +136,7 @@ public abstract class OnlineHyperplaneTermGenerator<T extends ReasonerTerm, V ex
      * Construct a hyperplane from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private OnlineHyperplane<V> processOnlineHyperplane(GeneralFunction sum, OnlineStreamingTermStore<T, V> termStore) {
+    private OnlineHyperplane<V> processOnlineHyperplane(GeneralFunction sum, OnlineStreamingTermStore<T> termStore) {
         OnlineHyperplane<V> onlineHyperplane = new OnlineHyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant(), sum.observedSize());
 
         for (int i = 0; i < sum.size(); i++) {
@@ -144,7 +144,7 @@ public abstract class OnlineHyperplaneTermGenerator<T extends ReasonerTerm, V ex
             FunctionTerm term = sum.getTerm(i);
 
             if (term instanceof RandomVariableAtom) {
-                V variable = termStore.createLocalVariable((RandomVariableAtom)term);
+                RandomVariableAtom variable = termStore.createLocalVariable((RandomVariableAtom)term);
 
                 // Check to see if we have seen this variable before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
@@ -181,22 +181,12 @@ public abstract class OnlineHyperplaneTermGenerator<T extends ReasonerTerm, V ex
             if (term instanceof ObservedAtom) {
                 ObservedAtom observed = termStore.createLocalObserved((ObservedAtom) term);
 
-                // Check to see if we have seen this variable before in this online.
-                // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
-                // variables per online.
                 int localIndex = onlineHyperplane.indexOfObserved(observed);
                 if (localIndex != -1) {
-                    // If this function came from a logical rule
-                    // and the sign of the current coefficient and the coefficient of this variable do not match,
-                    // then this term is trivial.
-                    // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
-                    // A mismatch in signs for the same variable means that a ground atom appeared twice,
-                    // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
                     if (sum.isNonNegative() && !MathUtils.signsMatch(onlineHyperplane.getCoefficient(localIndex), observedCoefficient)) {
                         return null;
                     }
 
-                    // If the local variable already exists, just add to its coefficient.
                     onlineHyperplane.appendObservedCoefficient(localIndex, observedCoefficient);
                 } else {
                     onlineHyperplane.addObservedTerm((ObservedAtom) observed, observedCoefficient);
@@ -208,6 +198,12 @@ public abstract class OnlineHyperplaneTermGenerator<T extends ReasonerTerm, V ex
 
         return onlineHyperplane;
     }
+
+    /**
+     * Get the class object for the local vairable type.
+     * This is for type safety when creating hyperplanes.
+     */
+    public abstract Class<V> getLocalVariableType();
 
     /**
      * Create a term from a ground rule and hyperplane.
