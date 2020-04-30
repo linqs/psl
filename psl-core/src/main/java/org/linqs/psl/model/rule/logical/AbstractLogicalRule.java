@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.rule.logical;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
@@ -155,12 +156,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     @Override
     public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
-        // TEST:
-        // This needs to be changed soon so that visualization data is ONLY collected when visualization
-        // runtime argument is specified. Perhaps there is a better place in the code to obtain the ground rule,
-        // parent rule, variables, and constants
         GroundRule groundRule = ground(constants, variableMap, atomManager);
-        VizDataCollection.ruleMapInsertElement(this, groundRule, variableMap, constants);
+        // Visualization runtime argument is specified.
+        if ( Options.CLI_VIZ.getBoolean() ) {
+            VizDataCollection.ruleMapInsertElement(this, groundRule, variableMap, constants);
+        }
         results.add(groundRule);
     }
 
@@ -297,6 +297,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                     resources.accessExceptionAtoms, this));
             atomManager.reportAccessException(ex, resources.accessExceptionAtoms.iterator().next());
         }
+
         return groundFormulaInstance(resources.positiveAtoms, resources.negativeAtoms, rvaCount);
     }
 

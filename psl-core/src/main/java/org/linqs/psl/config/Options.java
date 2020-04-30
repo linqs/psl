@@ -214,6 +214,12 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+     public static final Option CLI_VIZ = new Option(
+        "cli.viz",
+        false,
+        "Include visualization data collection."
+    );
+
     public static final Option EVAL_CLOSE_TRUTH = new Option(
         "eval.closetruth",
         false,

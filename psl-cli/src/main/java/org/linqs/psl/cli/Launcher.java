@@ -21,6 +21,7 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -212,17 +213,13 @@ public class Launcher {
 
         inferenceApplication.inference(commitAtoms, false);
 
-        // TODO: Should we call the visualization function here?
-        // Passing it inference application and all other stuff we need?
-        // That way we can have the vis specific stuff in this function be in visualization()
-
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
-            VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
+            vizualization(model, inferenceApplication, dataStore, database, closedPredicates);
         }
 
         log.info("Inference Complete");
@@ -231,6 +228,40 @@ public class Launcher {
         outputResults(database, dataStore, closedPredicates);
 
         return database;
+    }
+
+    private void vizualization(Model model, InferenceApplication inferenceApplication, DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
+        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
+        openPredicates.removeAll(closedPredicates);
+
+        // Create database.
+        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+
+        boolean closePredictionDB = false;
+        if (predictionDatabase == null) {
+            closePredictionDB = true;
+            predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+        }
+
+        Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+
+        // Create TrainingMap between predictions and truth
+        PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
+        TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
+
+        // Loop through trainingMap, adding predicates, prediction val, and truth val to json
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+            VizDataCollection.addTruth(entry.getValue(), entry.getValue().getValue());
+        }
+
+        if (closePredictionDB) {
+            predictionDatabase.close();
+        }
+        truthDatabase.close();
+
+        VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
     }
 
     private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
@@ -336,38 +367,6 @@ public class Launcher {
         }
     }
 
-    private void vizualization(Model model, DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
-        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-        openPredicates.removeAll(closedPredicates);
-
-        // Create database.
-        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
-        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
-        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
-
-        boolean closePredictionDB = false;
-        if (predictionDatabase == null) {
-            closePredictionDB = true;
-            predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
-        }
-
-        Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
-
-        //Create TrainingMap between predictions and truth
-        PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
-        TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
-
-        //Loop through trainingMap, adding predicates, prediction val, and truth val to json
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
-            VizDataCollection.addTruth(entry.getKey(), entry.getValue().getValue());
-        }
-
-        if (closePredictionDB) {
-            predictionDatabase.close();
-        }
-        truthDatabase.close();
-    }
-
     /**
      * Run eval.
      * @param predictionDatabase can be passed in to speed up evaluation. If null, one will be created and closed internally.
@@ -442,6 +441,10 @@ public class Launcher {
         // Load model
         Model model = loadModel(dataStore);
 
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
+            Options.CLI_VIZ.set(true);
+        }
+
         // Inference
         Database evalDB = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
@@ -450,11 +453,6 @@ public class Launcher {
             learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
         } else {
             throw new IllegalArgumentException("No valid operation provided.");
-        }
-
-        //Visualization
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
-            vizualization(model, dataStore, evalDB, closedPredicates);
         }
 
         // Evaluation
