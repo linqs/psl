@@ -89,8 +89,6 @@ public class VizDataCollection {
     // Takes in a prediction truth pair and adds it to our map
     public static void addTruth(GroundAtom target, float truthVal ) {
         String groundAtomID = Integer.toString(System.identityHashCode(target));
-        // JSONObject moduleElement = new JSONObject();
-        // moduleElement.put(groundAtomID, truthVal);
         vizData.truthMap.put(groundAtomID, truthVal);
     }
 
