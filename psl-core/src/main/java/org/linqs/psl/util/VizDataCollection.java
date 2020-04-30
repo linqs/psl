@@ -30,13 +30,10 @@ public class VizDataCollection {
 
     private JSONObject fullJSON;
     private JSONArray truthMap;
-    private JSONArray violatedGroundRulesArray;
 
     JSONObject rules;
     JSONObject groundRules;
     JSONObject groundAtoms;
-
-    public static ArrayList<GroundRule> violatedGroundRulesList = new ArrayList<>();
 
     static {
         init();
@@ -45,7 +42,6 @@ public class VizDataCollection {
     private VizDataCollection() {
         fullJSON = new JSONObject();
         truthMap = new JSONArray();
-        violatedGroundRulesArray = new JSONArray();
         rules = new JSONObject();
         groundRules = new JSONObject();
         groundAtoms = new JSONObject();
