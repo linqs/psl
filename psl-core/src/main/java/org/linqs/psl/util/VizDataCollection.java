@@ -144,9 +144,6 @@ public class VizDataCollection {
         if (groundRule instanceof WeightedGroundRule) {
               WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
               groundRulesElement.put("disatisfaction", weightedGroundRule.getIncompatibility());
-        } else {
-            UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule) groundRule;
-            groundRulesElement.put("disatisfaction", unweightedGroundRule.getInfeasibility());
         }
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
         JSONObject constants = new JSONObject();
