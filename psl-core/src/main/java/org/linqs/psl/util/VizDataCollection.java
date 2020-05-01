@@ -122,7 +122,7 @@ public class VizDataCollection {
         for (GroundAtom a : atomSet) {
             atomHashList.add(System.identityHashCode(a));
             JSONObject groundAtomElement = new JSONObject();
-            groundAtomElement.put("string", a.toString());
+            groundAtomElement.put("text", a.toString());
             groundAtomElement.put("prediction", a.getValue());
             vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)), groundAtomElement);
             atomCount++;
