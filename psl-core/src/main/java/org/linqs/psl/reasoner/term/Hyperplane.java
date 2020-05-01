@@ -69,7 +69,7 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
         return variableIndex;
     }
 
-    public int getObservedIndex() {
+    public int observedSize() {
         return observedIndex;
     }
 
