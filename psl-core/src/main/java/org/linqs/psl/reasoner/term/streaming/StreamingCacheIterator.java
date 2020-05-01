@@ -191,6 +191,14 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         readPage(termPagePath, volatilePagePath);
 
+        // Add new Terms at the end of the last page
+        if (currentPage == numPages - 1 && !parentStore.newTermBuffer.isEmpty()) {
+            // Todo handle new term buffer overflow
+            termCache.addAll(parentStore.newTermBuffer);
+            parentStore.rewrite(termPagePath, termCache);
+            parentStore.newTermBuffer.clear();
+        }
+
         if (shufflePage) {
             // Remember that the shuffle map may be larger than the term cache (for not full pages).
             for (int i = 0; i < termCache.size(); i++) {

@@ -171,7 +171,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
         ensureVariableCapacity(atomManager.getCachedRVACount());
-        ensureObservedCapacity(atomManager.getCachedObservedCount());
+        ensureObservedCapacity(atomManager.getCachedOBSCount());
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
@@ -342,6 +342,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             observedValues = Arrays.copyOf(observedValues, capacity);
             observedAtoms = Arrays.copyOf(observedAtoms, capacity);
         }
+    }
+
+    public void rewrite(String termPagePath, List<T> newPageTerms) {
+        // ToDo Implement rewriting of newTermPage
     }
 
     @Override
