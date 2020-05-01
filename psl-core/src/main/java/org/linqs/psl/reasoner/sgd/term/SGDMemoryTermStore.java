@@ -23,7 +23,7 @@ import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
 /**
  * An in-memory TermStore specifically for SDG terms.
  */
-public class SGDMemoryTermStore extends MemoryVariableTermStore<SGDObjectiveTerm, RandomVariableAtom> {
+public abstract class SGDMemoryTermStore extends MemoryVariableTermStore<SGDObjectiveTerm, RandomVariableAtom> {
     @Override
     protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
         return atom;
