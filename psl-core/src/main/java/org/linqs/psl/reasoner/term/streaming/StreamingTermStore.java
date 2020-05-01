@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -50,16 +51,23 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
+    public static final int INITIAL_NEW_TERM_BUFFER_SIZE = 1000;
 
     protected List<WeightedRule> rules;
     protected AtomManager atomManager;
 
-    // Keep track of variable indexes.
+    // Keep track of variable and observation indexes.
     protected Map<RandomVariableAtom, Integer> variables;
+    protected Map<ObservedAtom, Integer> observations;
 
-    // Matching arrays for variables values and atoms.
+    // Matching arrays for variables and observations values and atoms.
     private float[] variableValues;
     private RandomVariableAtom[] variableAtoms;
+    private float[] observedValues;
+    private ObservedAtom[] observedAtoms;
+
+    // Buffer to hold new terms
+    protected List<T> newTermBuffer;
 
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
@@ -163,9 +171,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
         ensureVariableCapacity(atomManager.getCachedRVACount());
+        ensureObservedCapacity(atomManager.getCachedObservedCount());
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
+        newTermBuffer = new ArrayList<T>(INITIAL_NEW_TERM_BUFFER_SIZE);
 
         initialRound = true;
         activeIterator = null;
@@ -198,9 +208,17 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return variables.keySet();
     }
 
+    public Iterable<ObservedAtom> getObservations() {
+        return observations.keySet();
+    }
+
     @Override
     public float[] getVariableValues() {
         return variableValues;
+    }
+
+    public float[] getObservedValues() {
+        return observedValues;
     }
 
     @Override
@@ -208,9 +226,17 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return variableValues[index];
     }
 
+    public float getObservedValue(int index) {
+        return observedValues[index];
+    }
+
     @Override
     public int getVariableIndex(RandomVariableAtom variable) {
         return variables.get(variable).intValue();
+    }
+
+    public int getObservedIndex(ObservedAtom observed) {
+        return observations.get(observed).intValue();
     }
 
     @Override
@@ -237,6 +263,27 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         variables.put(atom, index);
         variableValues[index] = atom.getValue();
         variableAtoms[index] = atom;
+
+        return atom;
+    }
+
+    @Override
+    public synchronized ObservedAtom createLocalObserved(ObservedAtom atom) {
+        if (observations.containsKey(atom)) {
+            return atom;
+        }
+
+        // Got a new variable.
+
+        if (observations.size() >= observedAtoms.length) {
+            ensureObservedCapacity(observations.size() * 2);
+        }
+
+        int index = observations.size();
+
+        observations.put(atom, index);
+        observedValues[index] = atom.getValue();
+        observedAtoms[index] = atom;
 
         return atom;
     }
@@ -269,6 +316,34 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
+    public void ensureObservedCapacity(int capacity) {
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Observed capacity must be non-negative. Got: " + capacity);
+        }
+
+        if (observations == null || observations.size() == 0) {
+            // If there are no variables, then (re-)allocate the variable storage.
+            // The default load factor for Java HashSets is 0.75.
+            observations = new HashMap<ObservedAtom, Integer>((int)Math.ceil(capacity / 0.75));
+
+            observedValues = new float[capacity];
+            observedAtoms = new ObservedAtom[capacity];
+        } else if (observations.size() < capacity) {
+            // Don't bother with small reallocations, if we are reallocating make a lot of room.
+            if (capacity < observations.size() * 2) {
+                capacity = observations.size() * 2;
+            }
+
+            // Reallocate and copy over variables.
+            Map<ObservedAtom, Integer> newObservations = new HashMap<>((int)Math.ceil(capacity / 0.75));
+            newObservations.putAll(observations);
+            observations = newObservations;
+
+            observedValues = Arrays.copyOf(observedValues, capacity);
+            observedAtoms = Arrays.copyOf(observedAtoms, capacity);
+        }
+    }
+
     @Override
     public int size() {
         return seenTermCount;
@@ -276,7 +351,13 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void add(GroundRule rule, T term) {
-        throw new UnsupportedOperationException();
+        this.add(term);
+    }
+
+    public void add(T term) {
+        //Currently a hack, newTermBuffer should be handled dynamically
+        seenTermCount = seenTermCount + 1;
+        newTermBuffer.add(term);
     }
 
     @Override
