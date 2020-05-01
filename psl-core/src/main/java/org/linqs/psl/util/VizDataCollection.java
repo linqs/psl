@@ -100,7 +100,7 @@ public class VizDataCollection {
             // Abstract Arithmetic Rules are not currently being added to the data collection
             if ( vizData.rules.isNull(stringRuleId) ) {
                 JSONObject newRuleElementItem = new JSONObject();
-                newRuleElementItem.put("string", rule.getName());
+                newRuleElementItem.put("text", rule.getName());
                 vizData.rules.put(stringRuleId, newRuleElementItem);
             }
             JSONObject ruleElement = vizData.rules.getJSONObject(stringRuleId);
