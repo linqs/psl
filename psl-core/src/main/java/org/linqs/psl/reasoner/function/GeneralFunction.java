@@ -48,14 +48,14 @@ public class GeneralFunction implements FunctionTerm {
     private boolean nonNegative;
     private boolean squared;
 
-    public GeneralFunction(boolean nonNegative, boolean squared, int maxSize) {
-        coefficients = new float[maxSize];
-        terms = new FunctionTerm[maxSize];
+    public GeneralFunction(boolean nonNegative, boolean squared, int rvaCount, int obsCount) {
+        coefficients = new float[rvaCount];
+        terms = new FunctionTerm[rvaCount];
         size = 0;
         constant = 0.0f;
 
-        observedCoefficients = new float[0];
-        observedTerms = new FunctionTerm[0];
+        observedCoefficients = new float[obsCount];
+        observedTerms = new FunctionTerm[obsCount];
         observedSize = 0;
 
         this.nonNegative = nonNegative;
@@ -109,15 +109,9 @@ public class GeneralFunction implements FunctionTerm {
         if (term.isConstant()) {
             constant += (coefficient * term.getValue());
 
-            // Store observed values (Temporary solution)
-            // Since most runs do not want to store observations, this should be moved out of general function
+            observedTerms[observedSize] = term;
+            observedCoefficients[observedSize] = coefficient;
             observedSize++;
-
-            observedTerms = Arrays.copyOf(observedTerms, observedSize);
-            observedTerms[observedSize - 1] = term;
-
-            observedCoefficients = Arrays.copyOf(observedCoefficients, observedSize);
-            observedCoefficients[observedSize - 1] = coefficient;
             return;
         }
 
