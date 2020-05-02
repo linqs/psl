@@ -110,6 +110,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
         searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
 
+        log.debug("logScale: {}", logScale);
+        log.debug("searchHypersphere: {}", searchHypersphere);
+
         spaceDimension = searchHypersphere ? mutableRules.size() - 1 : mutableRules.size();
     }
 
@@ -200,9 +203,13 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * convert the configuration to a log scale.
 =    */
     protected void toLogScale(double[] weights) {
+        log.trace("Unscaled Weights: {}", weights);
+
         for (int i = 0; i < mutableRules.size(); i++) {
             weights[i] = Math.pow(logBase, weights[i]);
         }
+
+        log.trace("Log Scaled Weights: {}", weights);
     }
 
     /**
@@ -212,11 +219,16 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected void hypersphereToCartesian(double[] radians, double[] weights) {
         double carry = 1.0;
         int i = 0;
+
+        log.trace("Radians: {}", radians);
+
         while (i < mutableRules.size() - 1) {
             weights[i] = carry * hypersphereRadius * Math.cos(radians[i]);
             carry = carry * Math.sin(radians[i]);
             i++;
         }
         weights[i] = carry * hypersphereRadius * Math.sin(radians[i - 1]);
+
+        log.trace("Converted Weights: {}", weights);
     }
 }

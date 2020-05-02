@@ -842,7 +842,7 @@ public class Options {
     );
 
     public static final Option WLA_SEARCH_HYPERSPHERE = new Option(
-            "basegridsearch.hypersphere",
+            "search.hypersphere",
             false,
             "Whether or not to perform weight learning in the polar coordinate system."
     );
@@ -854,8 +854,8 @@ public class Options {
     );
 
     public static final Option WLA_SEARCH_LOG_SCALE = new Option(
-            "basegridsearch.logscale",
-            true,
+            "search.logscale",
+            false,
             "Whether the search should be distributed over a log scale."
     );
 
