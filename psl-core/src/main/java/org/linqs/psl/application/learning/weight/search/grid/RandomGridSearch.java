@@ -59,9 +59,9 @@ public class RandomGridSearch extends GridSearch {
     }
 
     protected String randomConfiguration() {
-        int[] indexes = new int[mutableRules.size()];
+        int[] indexes = new int[spaceDimension];
         for (int i = 0; i < indexes.length; i++) {
-            indexes[i] = RandUtils.nextInt(possibleWeights.length);
+            indexes[i] = RandUtils.nextInt(possibleLocations.length);
         }
         return StringUtils.join(DELIM, indexes);
     }

@@ -32,6 +32,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public static final int SCALE_FACTOR = 10;
 
     private double baseWeight;
+    private double baseAngle;
     private double variance;
 
     private int scaleOrder;
@@ -49,16 +50,36 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
 
         numLocations = Options.WLA_CRGS_MAX_LOCATIONS.getInt();
         baseWeight = Options.WLA_CRGS_BASE_WEIGHT.getDouble();
+        baseAngle = Options.WLA_CRGS_BASE_ANGLE.getDouble();
         variance = Options.WLA_CRGS_VARIANCE.getDouble();
+    }
+
+    private void getHypersphereRandomWeights (double[] weights) {
+        double[] radians = new double[mutableRules.size() - 1];
+
+        for (int i = 0; i < mutableRules.size() - 1; i++) {
+            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
+            radians[i] = RandUtils.nextDouble() * Math.sqrt(variance) + baseAngle;
+        }
+
+        hypersphereToCartesian(radians, weights);
+    }
+
+    private void getCartesianRandomWeights (double[] weights) {
+        for (int i = 0; i < mutableRules.size(); i++) {
+            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
+            weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + baseWeight;
+        }
     }
 
     @Override
     protected void getWeights(double[] weights) {
         if (currentScale == 0) {
             // Random choice.
-            for (int i = 0; i < mutableRules.size(); i++) {
-                // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-                weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + baseWeight;
+            if (searchHypersphere) {
+                getHypersphereRandomWeights(weights);
+            } else {
+                getCartesianRandomWeights(weights);
             }
         } else {
             // Scale current by SCALE_FACTOR.

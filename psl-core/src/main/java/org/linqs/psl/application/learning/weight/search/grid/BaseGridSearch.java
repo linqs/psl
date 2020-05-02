@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -28,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import java.lang.Math;
 
 /**
  * The base for grid search-like method.
@@ -57,6 +60,31 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected int numLocations;
 
     /**
+     * The dimension of the space we are searching over.
+     */
+    protected int spaceDimension;
+
+    /**
+     * Whether to perform search in log scale
+     * */
+    protected double logBase;
+
+    /**
+     * The base of the log scale we are using
+     * */
+    protected boolean logScale;
+
+    /**
+     * The radius of the sphere that is being optimized over
+     * */
+    protected double hypersphereRadius;
+
+    /**
+     * Whether we will be performing search over hypersphere
+     * */
+    protected boolean searchHypersphere;
+
+    /**
      * The objectives at each location.
      * The default implementation does not actually need this, but childen may.
      */
@@ -75,6 +103,14 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         numLocations = maxNumLocations;
 
         objectives = new HashMap<String, Double>();
+
+        logScale = Options.WLA_SEARCH_LOG_SCALE.getBoolean();
+        logBase = Options.WLA_SEARCH_LOG_BASE.getDouble();
+
+        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
+        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
+
+        spaceDimension = searchHypersphere ? mutableRules.size() - 1 : mutableRules.size();
     }
 
     @Override
@@ -94,6 +130,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
             // Set the weights for the current round.
             getWeights(weights);
+            if (logScale) {
+                toLogScale(weights);
+            }
             for (int i = 0; i < mutableRules.size(); i++) {
                 mutableRules.get(i).setWeight(weights[i]);
             }
@@ -155,4 +194,29 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * @return false if the search is to abort.
      */
     protected abstract boolean chooseNextLocation();
+
+    /**
+     * Given a weight configuration in a non scaled space,
+     * convert the configuration to a log scale.
+=    */
+    protected void toLogScale(double[] weights) {
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weights[i] = Math.pow(logBase, weights[i]);
+        }
+    }
+
+    /**
+     * Given a configuration of angles, in radians, for the polar coordinate system, resolve the weights in
+     * the cartesian coordinate system
+     */
+    protected void hypersphereToCartesian(double[] radians, double[] weights) {
+        double carry = 1.0;
+        int i = 0;
+        while (i < mutableRules.size() - 1) {
+            weights[i] = carry * hypersphereRadius * Math.cos(radians[i]);
+            carry = carry * Math.sin(radians[i]);
+            i++;
+        }
+        weights[i] = carry * hypersphereRadius * Math.sin(radians[i - 1]);
+    }
 }

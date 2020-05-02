@@ -43,6 +43,8 @@ public class GridSearch extends BaseGridSearch {
     public static final String DELIM = ":";
 
     protected final double[] possibleWeights;
+    protected final double[] possibleAngles;
+    protected final double[] possibleLocations;
 
     public GridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -51,22 +53,51 @@ public class GridSearch extends BaseGridSearch {
     public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
+        possibleAngles = StringUtils.splitDouble(Options.WLA_GS_POSSIBLE_ANGLES.getString(), DELIM);
         possibleWeights = StringUtils.splitDouble(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
-        if (possibleWeights.length == 0) {
-            throw new IllegalArgumentException("No weights provided for grid search.");
+
+        if (searchHypersphere) {
+            if (possibleAngles.length == 0) {
+                throw new IllegalArgumentException("No angles provided for grid search.");
+            }
+            maxNumLocations = (int)Math.pow(possibleAngles.length, mutableRules.size());
+            possibleLocations = possibleAngles;
+        } else {
+            if (possibleWeights.length == 0) {
+                throw new IllegalArgumentException("No weights provided for grid search.");
+            }
+            maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
+            possibleLocations = possibleWeights;
         }
 
-        maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
         numLocations = maxNumLocations;
+    }
+
+    private void getHypersphereWeights (int[] indexes, double[] weights) {
+        double[] radians = new double[mutableRules.size() - 1];
+
+        for (int i = 0; i < possibleAngles.length; i++) {
+            radians[i] = possibleAngles[indexes[i]];
+        }
+
+        hypersphereToCartesian(radians, weights);
+    }
+
+    private void getCartesianWeights (int[] indexes, double[] weights) {
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weights[i] = possibleWeights[indexes[i]];
+        }
     }
 
     @Override
     protected void getWeights(double[] weights) {
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
-        assert(indexes.length == mutableRules.size());
+        assert(indexes.length == spaceDimension);
 
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weights[i] = possibleWeights[indexes[i]];
+        if (searchHypersphere) {
+            getHypersphereWeights(indexes, weights);
+        } else {
+            getCartesianWeights(indexes, weights);
         }
     }
 
@@ -74,19 +105,19 @@ public class GridSearch extends BaseGridSearch {
     protected boolean chooseNextLocation() {
         // Start at all zeros.
         if (currentLocation == null) {
-            currentLocation = StringUtils.join(DELIM, new int[mutableRules.size()]);
+            currentLocation = StringUtils.join(DELIM, new int[spaceDimension]);
             return true;
         }
 
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
-        assert(indexes.length == mutableRules.size());
+        assert(indexes.length == spaceDimension);
 
         // Start at the last weight and move it.
         // If it rolls over, move the one above it.
-        for (int i = mutableRules.size() - 1; i >= 0; i--) {
+        for (int i = spaceDimension - 1; i >= 0; i--) {
             indexes[i]++;
 
-            if (indexes[i] == possibleWeights.length) {
+            if (indexes[i] == possibleLocations.length) {
                 // Rollover and move to the next rule.
                 indexes[i] = 0;
             } else {

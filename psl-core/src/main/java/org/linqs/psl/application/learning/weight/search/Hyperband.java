@@ -62,6 +62,13 @@ public class Hyperband extends WeightLearningApplication {
     private double bestObjective;
     private double[] bestWeights;
 
+    private boolean logScale;
+    private double logBase;
+
+    private Boolean searchHypersphere;
+    private double hypersphereRadius;
+    private double hypersphereMeanAngle;
+
     private int numBrackets;
     private int baseBracketSize;
 
@@ -75,6 +82,13 @@ public class Hyperband extends WeightLearningApplication {
         survival = Options.WLA_HB_SURVIVAL.getInt();
         numBrackets = Options.WLA_HB_NUM_BRACKETS.getInt();
         baseBracketSize = Options.WLA_HB_BRACKET_SIZE.getInt();
+
+        logScale = Options.WLA_SEARCH_LOG_SCALE.getBoolean();
+        logBase = Options.WLA_SEARCH_LOG_BASE.getDouble();
+
+        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
+        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
+        hypersphereMeanAngle = Options.WLA_HB_HYPERSPHERE_MEAN_ANGLE.getDouble();
     }
 
     @Override
@@ -151,15 +165,63 @@ public class Hyperband extends WeightLearningApplication {
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }
 
+    private void getHypersphereRandomWeights (double[] weights) {
+        double[] radians = new double[mutableRules.size() - 1];
+
+        for (int radianIndex = 0; radianIndex < mutableRules.size() - 1; radianIndex++) {
+            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
+            radians[radianIndex] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + MEAN;
+        }
+
+        hypersphereToCartesian(radians, weights);
+    }
+
+    private void getCartesianRandomWeights (double[] config) {
+        for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
+            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
+            config[weightIndex] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + MEAN;
+        }
+    }
+
+    /**
+     * Given a weight configuration in a non scaled space,
+     * convert the configuration to a log scale.
+     =    */
+    protected void toLogScale(double[] weights) {
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weights[i] = Math.pow(logBase, weights[i]);
+        }
+    }
+
+    /**
+     * Given a configuration of angles, in radians, for the polar coordinate system, resolve the weights in
+     * the cartesian coordinate system
+     */
+    protected void hypersphereToCartesian(double[] radians, double[] weights) {
+        double carry = 1.0;
+        int i = 0;
+        while (i < mutableRules.size() - 1) {
+            weights[i] = carry * hypersphereRadius * Math.cos(radians[i]);
+            carry = carry * Math.sin(radians[i]);
+            i++;
+        }
+        weights[i] = carry * hypersphereRadius * Math.sin(radians[i - 1]);
+    }
+
     private List<double[]> chooseConfigs(int bracketSize) {
         List<double[]> configs = new ArrayList<double[]>(bracketSize);
 
         for (int i = 0; i < bracketSize; i++) {
             double[] config = new double[mutableRules.size()];
 
-            for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
-                // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-                config[weightIndex] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + MEAN;
+            if (searchHypersphere) {
+                getHypersphereRandomWeights(config);
+            } else {
+                getCartesianRandomWeights(config);
+            }
+
+            if (logScale) {
+                toLogScale(config);
             }
 
             configs.add(config);

@@ -37,6 +37,7 @@ import org.json.JSONArray;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -141,6 +142,14 @@ public class Options {
         0.40,
         "The mean of the Gaussian from which a weight will be sampled.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_CRGS_BASE_ANGLE = new Option(
+            "continuousrandomgridsearch.baseweight",
+            Math.PI / 4,
+            "If search over hypershpere, the mean of the Gaussian from which an angle will be " +
+                    "sampled in the hypersphere coordinate system.",
+            Option.FLAG_POSITIVE
     );
 
     public static final Option WLA_CRGS_MAX_LOCATIONS = new Option(
@@ -327,6 +336,12 @@ public class Options {
         "A comma-separated list of possible weights. These weights should be in some sorted order."
     );
 
+    public static final Option WLA_GS_POSSIBLE_ANGLES = new Option(
+            "gridsearch.angles",
+            "0.0001:0.3926:0.7854:1.1781:1.5708",
+            "A comma-separated list of possible weights. These weights should be in some sorted order."
+    );
+
     public static final Option GROUNDING_REWRITE_QUERY = new Option(
         "grounding.rewritequeries",
         false,
@@ -378,6 +393,14 @@ public class Options {
         4,
         "The proportion of configs that survive each round in a brancket.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_HB_HYPERSPHERE_MEAN_ANGLE = new Option(
+            "hyperband.meanAngle",
+            Math.PI / 4,
+            "If search over hypershpere, the mean of the Gaussian from which an angle will be " +
+                    "sampled in the hypersphere coordinate system.",
+            Option.FLAG_POSITIVE
     );
 
     public static final Option HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS = new Option(
@@ -816,6 +839,30 @@ public class Options {
         "The evaluator to use during weight learning."
         + " Not all weight learning methods will use the evaluator for decision making,"
         + " but even those will typically output an evaluator score each iteration."
+    );
+
+    public static final Option WLA_SEARCH_HYPERSPHERE = new Option(
+            "basegridsearch.hypersphere",
+            false,
+            "Whether or not to perform weight learning in the polar coordinate system."
+    );
+
+    public static final Option WLA_SEARCH_HYPERSPHERE_RADIUS = new Option(
+            "basegridsearch.hypersphereradius",
+            100000000.0,
+            "The radius of the hypersphere that is being optimized over."
+    );
+
+    public static final Option WLA_SEARCH_LOG_SCALE = new Option(
+            "basegridsearch.logscale",
+            true,
+            "Whether the search should be distributed over a log scale."
+    );
+
+    public static final Option WLA_SEARCH_LOG_BASE = new Option(
+            "basegridsearch.logbase",
+            10.0,
+            "The base of the log scale."
     );
 
     public static final Option WLA_RANDOM_WEIGHTS = new Option(
