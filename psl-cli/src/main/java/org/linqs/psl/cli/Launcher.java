@@ -218,7 +218,7 @@ public class Launcher {
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
             vizualization(model, inferenceApplication, dataStore, database, closedPredicates);
         }
 
@@ -441,7 +441,7 @@ public class Launcher {
         // Load model
         Model model = loadModel(dataStore);
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUAL)) {
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
             Options.CLI_VIZ.set(true);
         }
 
