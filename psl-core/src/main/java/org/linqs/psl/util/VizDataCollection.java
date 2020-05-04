@@ -118,7 +118,6 @@ public class VizDataCollection {
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
         HashSet<GroundAtom> atomSet = new HashSet<>(groundRule.getAtoms());
         int atomCount = 0;
-        HashMap<String,String> atomMap = new HashMap<>();
         for (GroundAtom a : atomSet) {
             atomHashList.add(System.identityHashCode(a));
             JSONObject groundAtomElement = new JSONObject();
