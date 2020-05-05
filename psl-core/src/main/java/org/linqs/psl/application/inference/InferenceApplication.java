@@ -22,6 +22,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
@@ -38,7 +39,7 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Reflection;
-import org.linqs.psl.model.rule.GroundRule;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
