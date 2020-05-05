@@ -219,7 +219,7 @@ public class Launcher {
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
-            vizualization(model, inferenceApplication, dataStore, database, closedPredicates);
+            visualization(model, inferenceApplication, dataStore, database, closedPredicates);
         }
 
         log.info("Inference Complete");
@@ -230,7 +230,7 @@ public class Launcher {
         return database;
     }
 
-    private void vizualization(Model model, InferenceApplication inferenceApplication, DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
+    private void visualization(Model model, InferenceApplication inferenceApplication, DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
         Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
         openPredicates.removeAll(closedPredicates);
 
