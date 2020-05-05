@@ -23,9 +23,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.MathUtils;
 
-//Test
-import org.linqs.psl.util.VizDataCollection;
-
 import java.util.Map;
 
 /**
