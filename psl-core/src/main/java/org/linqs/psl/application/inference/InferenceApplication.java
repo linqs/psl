@@ -38,7 +38,6 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Reflection;
-//Viz imports
 import org.linqs.psl.model.rule.GroundRule;
 
 import org.slf4j.Logger;
@@ -186,25 +185,6 @@ public abstract class InferenceApplication implements ModelApplication {
         internalInference();
         log.info("Inference complete.");
         atomsCommitted = false;
-
-        //TEST
-        //We want to iterate through the ground rules and output the satisfaction along with the ground rule's object ID.
-        // System.out.println(atomManager.getAllCachedAtoms());
-        //Is there way to just loop through atomManager? or do we need to pass it ground rules?
-
-        // ADMMInferenceTest
-
-        // GroundRuleStore gStore = this.groundRuleStore;
-        // System.out.println(gStore);
-        // Iterable<GroundRule> gRules = gStore.getGroundRules();
-        // System.out.println(gRules);
-        // for (GroundRule rule : gStore.getGroundRules()){
-        //   System.out.println(rule + " ");
-        // }
-        // while (iterator.hasNext())
-        //     System.out.print(iterator.next() + " ");
-
-        //My idea was to loop through groundRule store and use that as args for atomManager... to get sat
 
         // Commits the RandomVariableAtoms back to the Database.
         if (commitAtoms) {
