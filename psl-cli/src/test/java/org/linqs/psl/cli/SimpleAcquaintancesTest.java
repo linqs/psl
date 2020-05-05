@@ -159,7 +159,7 @@ public class SimpleAcquaintancesTest extends CLITest {
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
         List<String> additionalArgs = Arrays.asList(
-            "--" + CommandLineLoader.OPTION_VISUALIZATION
+            "--" + CommandLineLoader.OPTION_VISUALIZATION_LONG
         );
 
         run(modelPath, dataPath, additionalArgs);
