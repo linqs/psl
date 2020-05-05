@@ -66,7 +66,7 @@ public class StandardPredicate extends Predicate {
     }
 
     /**
-     * Get a predicate if one already exists, othereise create a new one.
+     * Get a predicate if one already exists, otherwise create a new one.
      */
     public static StandardPredicate get(String name, ConstantType... types) {
         StandardPredicate predicate = get(name);
