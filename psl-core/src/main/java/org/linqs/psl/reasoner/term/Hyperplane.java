@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.util.ArrayUtils;
 
 import java.lang.reflect.Array;
@@ -26,54 +27,98 @@ import java.lang.reflect.Array;
  */
 public class Hyperplane<E extends ReasonerLocalVariable> {
     private E[] variables;
-    private float[] coefficients;
-    private int size;
+    private float[] variableCoefficients;
+    private int variableIndex;
     private float constant;
 
+    private ObservedAtom[] observations;
+    private float[] observedCoefficients;
+    private int observedIndex;
+
     @SuppressWarnings("unchecked")
-    public Hyperplane(Class<E> localVariableClass, int maxSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxSize) , new float[maxSize], constant, 0);
+    public Hyperplane(Class<E> localVariableClass, int maxVariableSize, float constant, int maxObservedSize) {
+        this((E[])Array.newInstance(localVariableClass, maxVariableSize), new float[maxVariableSize],0, constant,
+                new ObservedAtom [maxObservedSize], new float[maxObservedSize], 0);
     }
 
-    public Hyperplane(E[] variables, float[] coefficients, float constant, int size) {
+    public Hyperplane(E[] variables, float[] variableCoefficients, int variableIndex, float constant,
+                            ObservedAtom[] observations, float[] observedCoefficients, int observedIndex) {
         this.variables = variables;
-        this.coefficients = coefficients;
+        this.variableCoefficients = variableCoefficients;
         this.constant = constant;
-        this.size = size;
+        this.variableIndex = variableIndex;
+
+        this.observations = observations;
+        this.observedCoefficients = observedCoefficients;
+        this.observedIndex = observedIndex;
     }
 
     public void addTerm(E variable, float coefficient) {
-        variables[size] = variable;
-        coefficients[size] = coefficient;
-        size++;
+        variables[variableIndex] = variable;
+        variableCoefficients[variableIndex] = coefficient;
+        variableIndex++;
+    }
+
+    public void addObservedTerm(ObservedAtom observed, float observedCoefficient) {
+        observations[observedIndex] = observed;
+        observedCoefficients[observedIndex] = observedCoefficient;
+        observedIndex++;
     }
 
     public int size() {
-        return size;
+        return variableIndex;
+    }
+
+    public int observedSize() {
+        return observedIndex;
     }
 
     public E getVariable(int index) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + size + " exist.");
+        if (index >= variableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + variableIndex + " exist.");
         }
 
         return variables[index];
     }
 
-    public float getCoefficient(int index) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+    public ObservedAtom getObserved(int index) {
+        if (index >= observedIndex) {
+            throw new IndexOutOfBoundsException("Tried to access observed at index " + index + ", but only " + observedIndex + " exist.");
         }
 
-        return coefficients[index];
+        return observations[index];
+    }
+
+    public float getCoefficient(int index) {
+        if (index >= variableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + variableIndex + " exist.");
+        }
+
+        return variableCoefficients[index];
+    }
+
+    public float getObservedCoefficient(int index) {
+        if (index >= observedIndex) {
+            throw new IndexOutOfBoundsException("Tried to access observed coefficient at index " + index + ", but only " + observedIndex + " exist.");
+        }
+
+        return observedCoefficients[index];
     }
 
     public void appendCoefficient(int index, float value) {
-        if (index >= size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
+        if (index >= variableIndex) {
+            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + variableIndex + " exist.");
         }
 
-        coefficients[index] += value;
+        variableCoefficients[index] += value;
+    }
+
+    public void appendObservedCoefficient(int index, float value) {
+        if (index >= observedIndex) {
+            throw new IndexOutOfBoundsException("Tried to access observed coefficient at index " + index + ", but only " + observedIndex + " exist.");
+        }
+
+        observedCoefficients[index] += value;
     }
 
     public float getConstant() {
@@ -85,14 +130,26 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
     }
 
     public int indexOfVariable(E needle) {
-        return ArrayUtils.indexOf(variables, size, needle);
+        return ArrayUtils.indexOf(variables, variableIndex, needle);
+    }
+
+    public int indexOfObserved(ObservedAtom needle) {
+        return ArrayUtils.indexOf(observations, observedIndex, needle);
     }
 
     public E[] getVariables() {
         return variables;
     }
 
+    public ObservedAtom[] getObservations() {
+        return observations;
+    }
+
     public float[] getCoefficients() {
-        return coefficients;
+        return variableCoefficients;
+    }
+
+    public float[] getObservedCoefficients() {
+        return observedCoefficients;
     }
 }

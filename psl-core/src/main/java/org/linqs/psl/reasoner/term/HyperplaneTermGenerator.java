@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
@@ -28,10 +29,6 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
@@ -138,7 +135,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * Will return null if the term is trivial and should be abandoned.
      */
     private Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
-        Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant());
+        Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant(), sum.observedSize());
 
         for (int i = 0; i < sum.size(); i++) {
             float coefficient = (float)sum.getCoefficient(i);
@@ -170,6 +167,28 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             } else if (term.isConstant()) {
                 // Subtracts because hyperplane is stored as coeffs^T * x = constant.
                 hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
+            } else {
+                throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
+            }
+        }
+
+        // Add observed terms to the onlineHyperplane
+        for (int i = 0; i < sum.observedSize(); i++) {
+            float observedCoefficient = (float) sum.getObservedCoefficient(i);
+            FunctionTerm term = sum.getObservedTerm(i);
+            if (term instanceof ObservedAtom) {
+                ObservedAtom observed = termStore.createLocalObserved((ObservedAtom) term);
+
+                int localIndex = hyperplane.indexOfObserved(observed);
+                if (localIndex != -1) {
+                    if (sum.isNonNegative() && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), observedCoefficient)) {
+                        return null;
+                    }
+
+                    hyperplane.appendObservedCoefficient(localIndex, observedCoefficient);
+                } else {
+                    hyperplane.addObservedTerm((ObservedAtom) observed, observedCoefficient);
+                }
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
             }

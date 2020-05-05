@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -86,6 +87,11 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
      * Create a variable local to a specific term.
      */
     public V createLocalVariable(RandomVariableAtom atom);
+
+    /**
+     * Create a observed local to a specific term.
+     */
+    public ObservedAtom createLocalObserved(ObservedAtom atom);
 
     /**
      * Get an iterator over the terms in the store that does not write to disk.

@@ -62,7 +62,8 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         // If there are at least two literals, then there will be a hinge
         // (otherwise it will just be linear).
         boolean nonNegative = (this.posLiterals.size() + this.negLiterals.size() > 1);
-        dissatisfaction = new GeneralFunction(nonNegative, false, rvaCount);
+        int obsCount = this.posLiterals.size() + this.negLiterals.size() - rvaCount;
+        dissatisfaction = new GeneralFunction(nonNegative, false, rvaCount, obsCount);
 
         // Note that the pos/neg qualifier are w.r.t the negated DNF.
         // This means that the potential function being constructed here is actually the

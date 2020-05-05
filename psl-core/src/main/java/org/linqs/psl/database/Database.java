@@ -192,6 +192,10 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         return cache.getCachedRandomVariableAtoms();
     }
 
+    public int getCachedOBSCount() {
+        return cache.getOBSCount();
+    }
+
     public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
         return getAllGroundAtoms(predicate, allPartitionIDs);
     }

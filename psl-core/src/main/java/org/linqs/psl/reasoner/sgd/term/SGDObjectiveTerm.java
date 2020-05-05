@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -38,7 +39,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private short size;
     private float[] coefficients;
-    private int[] variableIndexes;
+    public int[] variableIndexes;
+
+    private short observedSize;
+    private float[] observedCoefficients;
+    private int[] observedIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
             boolean squared, boolean hinge,
@@ -54,10 +59,19 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
+        observedSize = (short)hyperplane.observedSize();
+        observedCoefficients = hyperplane.getObservedCoefficients();
+
         variableIndexes = new int[size];
         RandomVariableAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
+        }
+
+        observedIndexes = new int[observedSize];
+        ObservedAtom[] observed = hyperplane.getObservations();
+        for (int i = 0; i < observedSize; i++) {
+            observedIndexes[i] = termStore.getObservedIndex(observed[i]);
         }
     }
 
@@ -137,7 +151,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             + Float.SIZE  // constant
             + Float.SIZE  // learningRate
             + Short.SIZE  // size
-            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
+            + Short.SIZE  // observed size
+            + size * (Float.SIZE + Integer.SIZE)  // coefficients + variableIndexes
+            + observedSize * (Float.SIZE + Integer.SIZE);  // observed coefficients + observedIndexes
 
         return bitSize / 8;
     }
@@ -153,10 +169,16 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         fixedBuffer.putFloat(constant);
         fixedBuffer.putFloat(learningRate);
         fixedBuffer.putShort(size);
+        fixedBuffer.putShort(observedSize);
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
             fixedBuffer.putInt(variableIndexes[i]);
+        }
+
+        for (int i = 0; i < observedSize; i++) {
+            fixedBuffer.putFloat(observedCoefficients[i]);
+            fixedBuffer.putInt(observedIndexes[i]);
         }
     }
 
@@ -170,6 +192,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         constant = fixedBuffer.getFloat();
         learningRate = fixedBuffer.getFloat();
         size = fixedBuffer.getShort();
+        observedSize = fixedBuffer.getShort();
 
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
@@ -180,6 +203,16 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
             variableIndexes[i] = fixedBuffer.getInt();
+        }
+
+        if (observedCoefficients.length < observedSize) {
+            observedCoefficients = new float[observedSize];
+            observedIndexes = new int[observedSize];
+        }
+
+        for (int i = 0; i < observedSize; i++) {
+            observedCoefficients[i] = fixedBuffer.getFloat();
+            observedIndexes[i] = fixedBuffer.getInt();
         }
     }
 
