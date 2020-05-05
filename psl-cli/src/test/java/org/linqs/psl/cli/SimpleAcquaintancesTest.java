@@ -154,7 +154,7 @@ public class SimpleAcquaintancesTest extends CLITest {
     }
 
     @Test
-    public void testVisual() {
+    public void testVizualization() {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
