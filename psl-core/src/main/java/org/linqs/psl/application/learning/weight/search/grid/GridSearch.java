@@ -35,16 +35,8 @@ import java.util.List;
 public class GridSearch extends BaseGridSearch {
     private static final Logger log = LoggerFactory.getLogger(GridSearch.class);
 
-    /**
-     * The delimiter to separate rule weights (and lication ids).
-     * Note that we cannot use ',' because our configuration infrastructure will try
-     * interpret it as a list of strings.
-     */
-    public static final String DELIM = ":";
 
     protected final double[] possibleWeights;
-    protected final double[] possibleAngles;
-    protected final double[] possibleLocations;
 
     public GridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -53,37 +45,17 @@ public class GridSearch extends BaseGridSearch {
     public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        possibleAngles = StringUtils.splitDouble(Options.WLA_GS_POSSIBLE_ANGLES.getString(), DELIM);
         possibleWeights = StringUtils.splitDouble(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
 
-        if (searchHypersphere) {
-            if (possibleAngles.length == 0) {
-                throw new IllegalArgumentException("No angles provided for grid search.");
-            }
-            maxNumLocations = (int)Math.pow(possibleAngles.length, mutableRules.size());
-            possibleLocations = possibleAngles;
-        } else {
-            if (possibleWeights.length == 0) {
-                throw new IllegalArgumentException("No weights provided for grid search.");
-            }
-            maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
-            possibleLocations = possibleWeights;
+        if (possibleWeights.length == 0) {
+            throw new IllegalArgumentException("No weights provided for grid search.");
         }
+        maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
 
         numLocations = maxNumLocations;
     }
 
-    private void getHypersphereWeights (int[] indexes, double[] weights) {
-        double[] radians = new double[mutableRules.size() - 1];
-
-        for (int i = 0; i < possibleAngles.length; i++) {
-            radians[i] = possibleAngles[indexes[i]];
-        }
-
-        hypersphereToCartesian(radians, weights);
-    }
-
-    private void getCartesianWeights (int[] indexes, double[] weights) {
+    protected void getCartesianWeights (int[] indexes, double[] weights) {
         for (int i = 0; i < mutableRules.size(); i++) {
             weights[i] = possibleWeights[indexes[i]];
         }
@@ -94,11 +66,7 @@ public class GridSearch extends BaseGridSearch {
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
         assert(indexes.length == spaceDimension);
 
-        if (searchHypersphere) {
-            getHypersphereWeights(indexes, weights);
-        } else {
-            getCartesianWeights(indexes, weights);
-        }
+        getCartesianWeights(indexes, weights);
     }
 
     @Override
@@ -117,7 +85,7 @@ public class GridSearch extends BaseGridSearch {
         for (int i = spaceDimension - 1; i >= 0; i--) {
             indexes[i]++;
 
-            if (indexes[i] == possibleLocations.length) {
+            if (indexes[i] == possibleWeights.length) {
                 // Rollover and move to the next rule.
                 indexes[i] = 0;
             } else {

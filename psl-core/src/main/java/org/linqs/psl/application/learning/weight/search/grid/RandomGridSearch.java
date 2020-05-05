@@ -21,6 +21,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
@@ -37,6 +38,7 @@ import java.util.List;
  */
 public class RandomGridSearch extends GridSearch {
     private int maxLocations;
+    private double hypersphereStepSize;
 
     public RandomGridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -47,6 +49,27 @@ public class RandomGridSearch extends GridSearch {
 
         maxLocations = Options.WLA_RGS_MAX_LOCATIONS.getInt();
         numLocations = Math.min(numLocations, maxLocations);
+
+        hypersphereStepSize = Options.WLA_RGS_HYPERSPHERE_STEP_SIZE.getDouble();
+    }
+
+    private void getHypersphereWeights(double[] weights) {
+        double[] vector = RandUtils.sampleGriddedHypersphereSurface(mutableRules.size(), hypersphereStepSize);
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weights[i] = Math.abs(vector[i]);
+        }
+    }
+
+    @Override
+    protected void getWeights(double[] weights) {
+        int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+        assert(indexes.length == spaceDimension);
+
+        if (searchHypersphere) {
+            getHypersphereWeights(weights);
+        } else {
+            getCartesianWeights(indexes, weights);
+        }
     }
 
     @Override
@@ -61,7 +84,7 @@ public class RandomGridSearch extends GridSearch {
     protected String randomConfiguration() {
         int[] indexes = new int[spaceDimension];
         for (int i = 0; i < indexes.length; i++) {
-            indexes[i] = RandUtils.nextInt(possibleLocations.length);
+            indexes[i] = RandUtils.nextInt(possibleWeights.length);
         }
         return StringUtils.join(DELIM, indexes);
     }

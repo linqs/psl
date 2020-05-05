@@ -23,6 +23,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.RandUtils;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -67,7 +68,12 @@ public class Hyperband extends WeightLearningApplication {
 
     private Boolean searchHypersphere;
     private double hypersphereRadius;
-    private double hypersphereMeanAngle;
+
+    private Boolean searchDirichlet;
+    private double dirichletAlpha;
+    private double[] dirichletAlphas;
+
+    public static final String DELIM = ":";
 
     private int numBrackets;
     private int baseBracketSize;
@@ -88,7 +94,14 @@ public class Hyperband extends WeightLearningApplication {
 
         searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
         hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
-        hypersphereMeanAngle = Options.WLA_HB_HYPERSPHERE_MEAN_ANGLE.getDouble();
+
+        searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
+        dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
+        dirichletAlphas = new double[mutableRules.size()];
+
+        for (int i = 0; i < mutableRules.size(); i ++) {
+            dirichletAlphas[i] = dirichletAlpha;
+        }
     }
 
     @Override
@@ -165,15 +178,13 @@ public class Hyperband extends WeightLearningApplication {
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }
 
-    private void getHypersphereRandomWeights (double[] weights) {
-        double[] radians = new double[mutableRules.size() - 1];
+    private void getHypersphereRandomWeights(double[] weights) {
+        double[] hypersphereSurfaceSample = RandUtils.sampleHypersphereSurface(mutableRules.size(), hypersphereRadius);
 
-        for (int radianIndex = 0; radianIndex < mutableRules.size() - 1; radianIndex++) {
-            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-            radians[radianIndex] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + MEAN;
+        for (int i = 0; i < mutableRules.size(); i++) {
+            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
+            weights[i] = Math.abs(hypersphereSurfaceSample[i]);
         }
-
-        hypersphereToCartesian(radians, weights);
     }
 
     private void getCartesianRandomWeights (double[] config) {
@@ -183,29 +194,15 @@ public class Hyperband extends WeightLearningApplication {
         }
     }
 
-    /**
-     * Given a weight configuration in a non scaled space,
-     * convert the configuration to a log scale.
-     =    */
-    protected void toLogScale(double[] weights) {
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weights[i] = Math.pow(logBase, weights[i]);
-        }
-    }
+    private void getDirichletRandomWeights(double[] weights) {
+        double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
 
-    /**
-     * Given a configuration of angles, in radians, for the polar coordinate system, resolve the weights in
-     * the cartesian coordinate system
-     */
-    protected void hypersphereToCartesian(double[] radians, double[] weights) {
-        double carry = 1.0;
-        int i = 0;
-        while (i < mutableRules.size() - 1) {
-            weights[i] = carry * hypersphereRadius * Math.cos(radians[i]);
-            carry = carry * Math.sin(radians[i]);
-            i++;
+        dirichletSample = MathUtils.toUnit(dirichletSample);
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
+            weights[i] = dirichletSample[i];
         }
-        weights[i] = carry * hypersphereRadius * Math.sin(radians[i - 1]);
     }
 
     private List<double[]> chooseConfigs(int bracketSize) {
@@ -215,13 +212,19 @@ public class Hyperband extends WeightLearningApplication {
             double[] config = new double[mutableRules.size()];
 
             if (searchHypersphere) {
+                log.debug("Getting Hypersphere Weights");
                 getHypersphereRandomWeights(config);
+                log.debug("Hypersphere Weights: {}", config);
+            } else if (searchDirichlet) {
+                log.debug("Getting Dirichlet Weights");
+                getDirichletRandomWeights(config);
+                log.debug("Dirichlet Weights: {}", config);
             } else {
                 getCartesianRandomWeights(config);
             }
 
             if (logScale) {
-                toLogScale(config);
+                config = MathUtils.toLogScale(config, logBase);
             }
 
             configs.add(config);

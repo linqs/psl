@@ -23,6 +23,9 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
+import org.linqs.psl.util.MathUtils;
+
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +43,13 @@ import java.lang.Math;
  */
 public abstract class BaseGridSearch extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(BaseGridSearch.class);
+
+    /**
+     * The delimiter to separate rule weights (and location ids).
+     * Note that we cannot use ',' because our configuration infrastructure will try
+     * interpret it as a list of strings.
+     */
+    public static final String DELIM = ":";
 
     /**
      * The current location we are investigating.
@@ -85,10 +95,31 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected boolean searchHypersphere;
 
     /**
+     * Whether we will be performing search over hypersphere
+     * */
+    protected boolean searchDirichlet;
+
+    /**
+     * Whether we will be performing search over hypersphere
+     * */
+    protected double dirichletAlpha;
+
+    /**
+     * Whether we will be performing search over hypersphere
+     * */
+    protected double[] dirichletAlphas;
+
+    /**
      * The objectives at each location.
      * The default implementation does not actually need this, but childen may.
      */
     protected Map<String, Double> objectives;
+
+    /**
+     * The objectives at each location.
+     * The default implementation does not actually need this, but children may.
+     */
+    protected Map<String, String> exploredConfigurations;
 
     public BaseGridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -104,14 +135,21 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
         objectives = new HashMap<String, Double>();
 
+        exploredConfigurations = new HashMap<String, String>();
+
         logScale = Options.WLA_SEARCH_LOG_SCALE.getBoolean();
         logBase = Options.WLA_SEARCH_LOG_BASE.getDouble();
 
         hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
         searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
 
-        log.debug("logScale: {}", logScale);
-        log.debug("searchHypersphere: {}", searchHypersphere);
+        searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
+        dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
+        dirichletAlphas = new double[mutableRules.size()];
+
+        for (int i = 0; i < mutableRules.size(); i ++) {
+            dirichletAlphas[i] = dirichletAlpha;
+        }
 
         spaceDimension = searchHypersphere ? mutableRules.size() - 1 : mutableRules.size();
     }
@@ -122,6 +160,10 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         double[] bestWeights = new double[mutableRules.size()];
 
         double[] weights = new double[mutableRules.size()];
+
+        double[] unitWeightVector = new double[mutableRules.size()];
+
+        String unitConfiguration;
 
         for (int iteration = 0; iteration < numLocations; iteration++) {
             if (!chooseNextLocation()) {
@@ -134,8 +176,20 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             // Set the weights for the current round.
             getWeights(weights);
             if (logScale) {
-                toLogScale(weights);
+                log.debug("Pre Log scaled weights: {}", weights);
+                weights = MathUtils.toLogScale(weights, logBase);
+                log.debug("Log scaled weights: {}", weights);
             }
+
+            // Check if we have explored this configuration before
+            unitWeightVector = MathUtils.toUnit(weights);
+            unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
+            if (exploredConfigurations.containsKey(unitConfiguration)) {
+                log.debug("Location: {} \nalready explored via: {} \nSkipping", currentLocation,
+                        exploredConfigurations.get(unitConfiguration));
+                continue;
+            }
+
             for (int i = 0; i < mutableRules.size(); i++) {
                 mutableRules.get(i).setWeight(weights[i]);
             }
@@ -149,6 +203,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
             // Log this location.
             objectives.put(currentLocation, new Double(objective));
+            exploredConfigurations.put(unitConfiguration, StringUtils.join(DELIM, weights));
 
             if (iteration == 0 || objective < bestObjective) {
                 bestObjective = objective;
@@ -197,20 +252,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * @return false if the search is to abort.
      */
     protected abstract boolean chooseNextLocation();
-
-    /**
-     * Given a weight configuration in a non scaled space,
-     * convert the configuration to a log scale.
-=    */
-    protected void toLogScale(double[] weights) {
-        log.trace("Unscaled Weights: {}", weights);
-
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weights[i] = Math.pow(logBase, weights[i]);
-        }
-
-        log.trace("Log Scaled Weights: {}", weights);
-    }
 
     /**
      * Given a configuration of angles, in radians, for the polar coordinate system, resolve the weights in

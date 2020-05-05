@@ -271,6 +271,12 @@ public class Options {
         null
     );
 
+    public static final Option WLA_GPP_USE_PROVIDED_WEIGHT = new Option(
+        "gpp.useProvidedWeight",
+        true,
+        null
+    );
+
     public static final Option WLA_GPP_EXPLORATION = new Option(
         "gpp.explore",
         2.0f,
@@ -337,6 +343,12 @@ public class Options {
     );
 
     public static final Option WLA_GS_POSSIBLE_ANGLES = new Option(
+            "gridsearch.angles",
+            "0.0001:0.3926:0.7854:1.1781:1.5708",
+            "A comma-separated list of possible weights. These weights should be in some sorted order."
+    );
+
+    public static final Option WLA_HB_POSSIBLE_ANGLES = new Option(
             "gridsearch.angles",
             "0.0001:0.3926:0.7854:1.1781:1.5708",
             "A comma-separated list of possible weights. These weights should be in some sorted order."
@@ -644,6 +656,13 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option WLA_RGS_HYPERSPHERE_STEP_SIZE = new Option(
+        "randomgridsearch.hyperspherestepsize",
+        0.25,
+        "The step size of the grid",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
         "rankingevaluator.representative",
         RankingEvaluator.RepresentativeMetric.AUROC.toString(),
@@ -849,7 +868,19 @@ public class Options {
 
     public static final Option WLA_SEARCH_HYPERSPHERE_RADIUS = new Option(
             "basegridsearch.hypersphereradius",
-            100000000.0,
+            1.0,
+            "The radius of the hypersphere that is being optimized over."
+    );
+
+    public static final Option WLA_SEARCH_DIRICHLET = new Option(
+            "search.hypersphere",
+            true,
+            "Whether or not to perform weight learning in the polar coordinate system."
+    );
+
+    public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(
+            "basegridsearch.hypersphereradius",
+            0.05,
             "The radius of the hypersphere that is being optimized over."
     );
 

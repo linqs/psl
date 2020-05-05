@@ -21,7 +21,10 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -29,10 +32,11 @@ import java.util.List;
  * A grid search that just randomly samples from a continuous grid [0, 1).
  */
 public class ContinuousRandomGridSearch extends BaseGridSearch {
+    private static final Logger log = LoggerFactory.getLogger(ContinuousRandomGridSearch.class);
+
     public static final int SCALE_FACTOR = 10;
 
     private double baseWeight;
-    private double baseAngle;
     private double variance;
 
     private int scaleOrder;
@@ -50,24 +54,32 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
 
         numLocations = Options.WLA_CRGS_MAX_LOCATIONS.getInt();
         baseWeight = Options.WLA_CRGS_BASE_WEIGHT.getDouble();
-        baseAngle = Options.WLA_CRGS_BASE_ANGLE.getDouble();
         variance = Options.WLA_CRGS_VARIANCE.getDouble();
     }
 
-    private void getHypersphereRandomWeights (double[] weights) {
-        double[] radians = new double[mutableRules.size() - 1];
+    private void getDirichletRandomWeights(double[] weights) {
+        double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
 
-        for (int i = 0; i < mutableRules.size() - 1; i++) {
-            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-            radians[i] = RandUtils.nextDouble() * Math.sqrt(variance) + baseAngle;
+        dirichletSample = MathUtils.toUnit(dirichletSample);
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
+            weights[i] = dirichletSample[i];
         }
+    }
 
-        hypersphereToCartesian(radians, weights);
+    private void getHypersphereRandomWeights (double[] weights) {
+        double[] hypersphereSurfaceSample = RandUtils.sampleHypersphereSurface(mutableRules.size(), hypersphereRadius);
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
+            weights[i] = Math.abs(hypersphereSurfaceSample[i]);
+        }
     }
 
     private void getCartesianRandomWeights (double[] weights) {
         for (int i = 0; i < mutableRules.size(); i++) {
-            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
+            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
             weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + baseWeight;
         }
     }
@@ -76,8 +88,14 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     protected void getWeights(double[] weights) {
         if (currentScale == 0) {
             // Random choice.
-            if (searchHypersphere) {
+            if (searchHypersphere){
+                log.debug("Getting Hypersphere Weights");
                 getHypersphereRandomWeights(weights);
+                log.debug("Hypersphere Weights: {}", weights);
+            } else if (searchDirichlet) {
+                log.debug("Getting Dirichlet Weights");
+                getDirichletRandomWeights(weights);
+                log.debug("Dirichlet Weights: {}", weights);
             } else {
                 getCartesianRandomWeights(weights);
             }

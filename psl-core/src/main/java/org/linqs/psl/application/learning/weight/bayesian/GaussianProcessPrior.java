@@ -24,6 +24,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
+    private static final int PROVIDED_CONFIG_INDEX = 0;
 
     private int maxIterations;
     private int maxConfigs;
@@ -42,6 +43,37 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private float initialWeightValue;
     private float initialStdValue;
 
+    /**
+     * The radius of the sphere that is being optimized over
+     * */
+    private double hypersphereRadius;
+
+    /**
+     * Whether we will be performing search over hypersphere
+     * */
+    private boolean searchHypersphere;
+
+    /**
+     * Whether we will be performing search over hypersphere
+     * */
+    protected boolean searchDirichlet;
+
+    /**
+     * Whether we will be performing search over hypersphere
+     * */
+    protected double dirichletAlpha;
+
+    /**
+     * Whether we will be performing search over hypersphere
+     * */
+    protected double[] dirichletAlphas;
+
+    /**
+     * Whether to usethe provided weight configuration as the first point for exploration
+     * */
+    private boolean useProvidedWeight;
+
+
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
@@ -50,6 +82,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         exploration = Options.WLA_GPP_EXPLORATION.getFloat();
         randomConfigsOnly = Options.WLA_GPP_RANDOM_CONFIGS_ONLY.getBoolean();
         earlyStopping = Options.WLA_GPP_EARLY_STOPPING.getBoolean();
+        useProvidedWeight = Options.WLA_GPP_USE_PROVIDED_WEIGHT.getBoolean();
 
         initialWeightValue = Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat();
         initialStdValue = Options.WLA_GPP_INITIAL_WEIGHT_STD.getFloat();
@@ -57,6 +90,19 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
         minConfigVal = 1.0f / MAX_RAND_INT_VAL;
+
+        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
+        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
+
+        searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
+        dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
+        dirichletAlphas = new double[mutableRules.size()];
+
+        for (int i = 0; i < mutableRules.size(); i ++) {
+            dirichletAlphas[i] = dirichletAlpha;
+        }
+
+        log.debug("searchHypersphere: {}", searchHypersphere);
     }
 
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
@@ -217,53 +263,89 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs) / numMutableRules);
 
+        // Create config for provided weight configuration in model file
+        WeightConfig initialConfig = new WeightConfig(new float[numMutableRules]);
+        for (int j = 0; j < numMutableRules; j++) {
+            initialConfig.config[j] = (float) mutableRules.get(j).getWeight();
+        }
+        if (searchHypersphere) {
+            initialConfig.config = MathUtils.toUnit(initialConfig.config);
+        }
+
         // If systematic generation of points will lead to not a reasonable exploration of space,
         // then just pick random points in space and hope it is better than being systematic.
 
         if (randomConfigsOnly) {
             log.debug("Generating random configs.");
-            return getRandomConfigs();
-        }
+            configs = getRandomConfigs();
+            if (useProvidedWeight) {
+                configs.add(PROVIDED_CONFIG_INDEX, initialConfig);
+            }
+        } else {
 
-        if (numPerSplit < 5) {
-            log.warn("Note not picking random points and large number of rules will yield bad exploration.");
-        }
+            if (numPerSplit < 5) {
+                log.warn("Note not picking random points and large number of rules will yield bad exploration.");
+            }
 
-        float inc = max / numPerSplit;
-        float[] configArray = new float[numMutableRules];
-        Arrays.fill(configArray, min);
-        WeightConfig config = new WeightConfig(configArray);
+            float inc = max / numPerSplit;
+            float[] configArray = new float[numMutableRules];
+            Arrays.fill(configArray, min);
+            WeightConfig config = new WeightConfig(configArray);
 
-        boolean done = false;
-        while (!done) {
-            int i = 0;
-            configs.add(new WeightConfig(config));
-            for (int j = 0; j < numMutableRules; j++) {
-                if (config.config[i] < max) {
-                    config.config[i] += inc;
-                    break;
+            boolean done = false;
+            while (!done) {
+                int i = 0;
+                configs.add(new WeightConfig(config));
+                for (int j = 0; j < numMutableRules; j++) {
+                    if (config.config[i] < max) {
+                        config.config[i] += inc;
+                        break;
+                    }
+
+                    if (i == numMutableRules - 1) {
+                        done = true;
+                        break;
+                    }
+
+                    config.config[i] = min;
+                    i++;
                 }
-
-                if (i == numMutableRules - 1) {
-                    done = true;
-                    break;
-                }
-
-                config.config[i] = min;
-                i++;
             }
         }
-
         return configs;
     }
 
     private List<WeightConfig> getRandomConfigs() {
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = new ArrayList<WeightConfig>();
+
+        if (searchHypersphere) {
+            log.debug("Generating random points from hypersphere");
+        } else if (searchDirichlet) {
+            log.debug("Generating random points from dirichlet");
+        } else {
+            log.debug("Generating random points from hypercube");
+        }
+
         for (int i = 0; i < maxConfigs; i++) {
             WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
-            for (int j = 0; j < numMutableRules; j++) {
-                curConfig.config[j] = (RandUtils.nextInt(MAX_RAND_INT_VAL) + 1) / (float)(MAX_RAND_INT_VAL + 1);
+            if (searchHypersphere) {
+                double[] vector = RandUtils.sampleHypersphereSurface(numMutableRules, hypersphereRadius);
+                for (int j = 0; j < numMutableRules; j++) {
+                    curConfig.config[j] = (float)Math.abs(vector[j]);
+                }
+            } else if (searchDirichlet) {
+                double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
+
+                dirichletSample = MathUtils.toUnit(dirichletSample);
+
+                for (int j = 0; j < numMutableRules; j++) {
+                    curConfig.config[j] = (float)dirichletSample[j];
+                }
+            } else {
+                for (int j = 0; j < numMutableRules; j++) {
+                    curConfig.config[j] = (RandUtils.nextInt(MAX_RAND_INT_VAL) + 1) / (float)(MAX_RAND_INT_VAL + 1);
+                }
             }
             configs.add(curConfig);
         }
@@ -317,11 +399,16 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     protected int getNextPoint(List<WeightConfig> configs, int iteration) {
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
-        for (int i = 0; i < configs.size(); i++) {
-            float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
-            if (bestConfig == -1 || curVal > curBestVal) {
-                curBestVal = curVal;
-                bestConfig = i;
+
+        if ((iteration == 0) && useProvidedWeight) {
+            bestConfig = PROVIDED_CONFIG_INDEX;
+        } else {
+            for (int i = 0; i < configs.size(); i++) {
+                float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
+                if (bestConfig == -1 || curVal > curBestVal) {
+                    curBestVal = curVal;
+                    bestConfig = i;
+                }
             }
         }
 

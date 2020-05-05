@@ -155,4 +155,83 @@ public final class MathUtils {
 
         return result;
     }
+
+    /**
+     * Given a vector in cartesian coordinates,
+     * return the vector in a log scale.
+     */
+    public static double[] toLogScale(double[] vector, double logBase) {
+        double[] logScaleVector = new double[vector.length];
+
+        for (int i = 0; i < vector.length; i++) {
+            logScaleVector[i] = Math.pow(logBase, vector[i]);
+        }
+
+        return logScaleVector;
+    }
+
+
+    /**
+     * Given a vector in cartesian coordinates,
+     * return the vector in a log scale of base e.
+     */
+    public static double[] toLogScale(double[] vector) {
+        return toLogScale(vector, Math.E);
+    }
+
+    /**
+     * Convert n-dimensional array to to unit length
+     * **/
+    public static double[] toUnit(double[] vector) {
+        return toMagnitude(vector, 1.0);
+    }
+
+    /**
+     * Convert n-dimensional array to to unit length
+     * **/
+    public static float[] toUnit(float[] vector) {
+        return toMagnitude(vector, 1.0);
+    }
+
+    /**
+     * Convert n-dimensional array to to magnitude length
+     * **/
+    public static double[] toMagnitude(double[] vector, double magnitude) {
+        double norm = 0.0;
+
+        double[] magnitudeVector = new double[vector.length];
+
+        for (int i = 0; i < vector.length; i++) {
+            norm = norm + Math.pow(vector[i], 2);
+        }
+
+        norm = Math.sqrt(norm);
+
+        for (int i = 0; i < vector.length; i++) {
+            magnitudeVector[i] = (vector[i] / (norm / magnitude));
+        }
+
+        return magnitudeVector;
+    }
+
+    /**
+     * Convert n-dimensional array to to magnitude length
+     * **/
+    public static float[] toMagnitude(float[] vector, double magnitude) {
+        double norm = 0.0;
+
+        float[] magnitudeVector = new float[vector.length];
+
+        for (int i = 0; i < vector.length; i++) {
+            norm = norm + Math.pow(vector[i], 2);
+        }
+
+        norm = Math.sqrt(norm);
+
+        for (int i = 0; i < vector.length; i++) {
+            magnitudeVector[i] = (float)(vector[i] / (norm / magnitude));
+        }
+
+        return magnitudeVector;
+    }
 }

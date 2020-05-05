@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.util;
 
+import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.linqs.psl.config.Options;
 
 import org.slf4j.Logger;
@@ -25,6 +26,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.math3.distribution.GammaDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.JDKRandomGenerator;
 
 /**
  * The canonical source of randomness for all PSL core code.
@@ -38,18 +42,37 @@ public final class RandUtils {
     private static final Logger log = LoggerFactory.getLogger(RandUtils.class);
 
     private static Random rng = null;
+    private static Random rng_gaussian = null;
+    private static RandomGenerator rng_gamma = null;
+
+    private static GammaDistribution gammaDist = null;
 
     // Static only.
     private RandUtils() {}
 
     private static synchronized void ensureRNG() {
-        if (rng != null) {
+        if (rng != null && rng_gaussian != null && rng_gamma != null) {
             return;
         }
 
-        long seed = Options.RANDOM_SEED.getInt();
-        log.info("Using random seed: " + seed);
-        rng = new Random(seed);
+        if (rng == null) {
+            long seed = Options.RANDOM_SEED.getInt();
+            log.info("Using random seed: " + seed);
+            rng = new Random(seed);
+        }
+
+        if (rng_gaussian == null) {
+            long seed = Options.RANDOM_SEED.getInt();
+            log.info("Using random seed: " + seed);
+            rng_gaussian = new Random(seed);
+        }
+
+        if (rng_gamma == null) {
+            long seed = Options.RANDOM_SEED.getInt();
+            log.info("Using random seed: " + seed);
+            rng_gamma = new JDKRandomGenerator();
+            rng_gamma.setSeed(seed);
+        }
     }
 
     public static synchronized void seed(int seed) {
@@ -176,4 +199,90 @@ public final class RandUtils {
             indexes[swapIndex] = indexes[i];
         }
     }
+
+    /**
+     * Sample from gridded points on the surface of a hypersphere with a radius 1.
+     * The grid is defined by
+     */
+    public static synchronized double[] sampleGriddedHypersphereSurface (int dimension, double gridStepSize) {
+        ensureRNG();
+
+        double[] vector = sampleHypersphereSurface(dimension, 1.0);
+
+        for (int i = 0; i < vector.length; i ++) {
+            vector[i] = Math.round(vector[i] / gridStepSize) * gridStepSize;
+        }
+
+        vector = MathUtils.toUnit(vector);
+
+        return vector;
+    }
+
+    /**
+     * Sample from the surface of a hypersphere with a radius of 1
+     */
+    public static synchronized double[] sampleUnitHypersphereSurface (int dimension) {
+        ensureRNG();
+
+        return sampleHypersphereSurface (dimension, 1.0);
+    }
+
+    /**
+     * Sample from the surface of a hypersphere with a certain radius
+     */
+    public static synchronized double[] sampleHypersphereSurface (int dimension, double radius) {
+        ensureRNG();
+
+        double[] vector = new double[dimension];
+
+        for (int i = 0; i < dimension; i++) {
+            // Returns Gaussian with mean = 0.0 and variance = 1.0
+            vector[i] = rng_gaussian.nextGaussian();
+        }
+
+        vector = MathUtils.toMagnitude(vector, radius);
+
+        return vector;
+    }
+
+    /**
+     * Sample from a dirichlet with the provided parameters
+     */
+    public static synchronized double[] sampleDirichlet (double[] alphas) {
+        ensureRNG();
+
+        double [] gammaSamples = new double[alphas.length];
+        double gammaSampleSum = 0;
+        double [] dirichletSample = new double[alphas.length];
+
+        for(int i = 0; i < alphas.length; i++){
+            gammaSamples[i] = sampleGamma(alphas[i],1);
+            gammaSampleSum = gammaSampleSum + gammaSamples[i];
+        }
+
+        for(int i = 0; i < alphas.length; i++){
+            dirichletSample[i] = gammaSamples[i] / gammaSampleSum ;
+        }
+
+        return dirichletSample;
+    }
+
+
+    /**
+     * Sample from a gamma with the provided parameters
+     */
+    public static synchronized double sampleGamma (double shape, double scale) {
+        ensureRNG();
+
+        if (gammaDist == null) {
+            gammaDist = new GammaDistribution(shape, scale);
+        }
+
+        if (gammaDist.getShape() != shape || gammaDist.getScale() != scale) {
+            gammaDist = new GammaDistribution(rng_gamma, shape, scale);
+        }
+
+        return gammaDist.sample(1)[0];
+    }
+
 }
