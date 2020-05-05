@@ -40,7 +40,6 @@ import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Reflection;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
