@@ -154,12 +154,12 @@ public class SimpleAcquaintancesTest extends CLITest {
     }
 
     @Test
-    public void testVizualization() {
+    public void testVisualization() {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
         List<String> additionalArgs = Arrays.asList(
-            "--" + CommandLineLoader.OPTION_VISUAL
+            "--" + CommandLineLoader.OPTION_VISUALIZATION
         );
 
         run(modelPath, dataPath, additionalArgs);
