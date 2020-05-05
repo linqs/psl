@@ -187,9 +187,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
             @Override
             public void work(int index, Constant[] row) {
-
                 GroundRule groundRule = ground(row, variableMap, finalAtomManager);
-
                 if (groundRule != null) {
                     finalGroundRuleStore.addGroundRule(groundRule);
                 }
