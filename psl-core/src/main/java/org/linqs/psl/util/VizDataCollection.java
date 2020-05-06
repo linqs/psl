@@ -29,23 +29,11 @@ public class VizDataCollection {
     private static Runtime runtime = null;
     private static VisualizationData vizData = null;
 
-    private JSONObject fullJSON;
-    private JSONObject truthMap;
-    private JSONObject rules;
-    private JSONObject groundRules;
-    private JSONObject groundAtoms;
-
     static {
         init();
     }
 
-    private VizDataCollection() {
-        fullJSON = new JSONObject();
-        truthMap = new JSONObject();
-        rules = new JSONObject();
-        groundRules = new JSONObject();
-        groundAtoms = new JSONObject();
-    }
+    private VizDataCollection() {}
 
     private static synchronized void init() {
         if (runtime != null) {
@@ -55,7 +43,7 @@ public class VizDataCollection {
         runtime = Runtime.getRuntime();
         runtime.addShutdownHook(new ShutdownHook());
     }
-    
+
     public static void outputJSON() {
         String[] keyNames = {"truthMap", "rules", "groundRules", "groundAtoms"};
         JSONObject fullJson = new JSONObject(vizData, keyNames);
