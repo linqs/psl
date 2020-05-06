@@ -26,7 +26,6 @@ import java.util.Map;
 
 
 public class VizDataCollection {
-  
     private static Runtime runtime = null;
     private static VisualizationData vizData = null;
 
@@ -35,7 +34,6 @@ public class VizDataCollection {
     private JSONObject rules;
     private JSONObject groundRules;
     private JSONObject groundAtoms;
-
 
     static {
         init();
@@ -57,16 +55,7 @@ public class VizDataCollection {
         runtime = Runtime.getRuntime();
         runtime.addShutdownHook(new ShutdownHook());
     }
-
-    // We want to make:
-    // A jsonObject filled with JSONArrays
-    // Will be organized into different JSON arrays that refer to specific modules, all in one object
-    //e.x.
-        // [
-        //     {predicate: Friends((bob,george), prediction: 0.00003, truth: 1}
-        //     {predicate: Friends((alice,george), prediction: 0.00003, truth: 1}
-        //     etc...
-        // ]
+    
     public static void outputJSON() {
         String[] keyNames = {"truthMap", "rules", "groundRules", "groundAtoms"};
         JSONObject fullJson = new JSONObject(vizData, keyNames);
