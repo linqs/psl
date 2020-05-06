@@ -616,6 +616,18 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             }
         }
 
+        // Ensure that there are RVAs.
+        boolean hasRVA = false;
+        for (int i = 0; i < rule.getOrderedAtoms().length; i++) {
+            if (rule.getOrderedAtoms()[i] instanceof RandomVariableAtom) {
+                hasRVA = true;
+            }
+        }
+
+        if (!hasRVA) {
+            return false;
+        }
+
         // This rule is not trivial, so also ensure that it does not have any PAM exceptions.
         if (resources.accessExceptionAtoms.size() != 0) {
             RuntimeException ex = new RuntimeException(String.format(
