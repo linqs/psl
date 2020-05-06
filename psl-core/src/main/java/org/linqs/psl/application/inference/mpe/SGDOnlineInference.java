@@ -47,15 +47,9 @@ public class SGDOnlineInference extends SGDStreamingInference {
     }
 
     /**
-     * Minimize the total weighted incompatibility of the atoms according to the rules,
-     * and optionally commit the updated atoms back to the database.
-     *
-     * All RandomVariableAtoms which the model might access must be persisted in the Database.
+     * TODO: For testing until client server interface setup
      */
-    @Override
-    public void inference(boolean commitAtoms, boolean reset) {
-        OnlineServerAction nextAction;
-
+    public void initialInference(boolean commitAtoms, boolean reset) {
         if (reset) {
             initializeAtoms();
 
@@ -73,6 +67,19 @@ public class SGDOnlineInference extends SGDStreamingInference {
         if (commitAtoms) {
             commit();
         }
+    }
+
+    /**
+     * Minimize the total weighted incompatibility of the atoms according to the rules,
+     * and optionally commit the updated atoms back to the database.
+     *
+     * All RandomVariableAtoms which the model might access must be persisted in the Database.
+     */
+    @Override
+    public void inference(boolean commitAtoms, boolean reset) {
+        initialInference(commitAtoms, reset);
+
+        OnlineServerAction nextAction;
 
         log.info("Waiting for next action from server");
         nextAction = server.getNextAction();

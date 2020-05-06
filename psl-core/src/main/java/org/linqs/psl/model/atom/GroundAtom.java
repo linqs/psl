@@ -55,6 +55,10 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         return value;
     }
 
+    public void setValue(float newValue) {
+         value = newValue;
+    }
+
     @Override
     public boolean isLinear() {
         return true;

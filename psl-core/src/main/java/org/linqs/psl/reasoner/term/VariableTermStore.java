@@ -44,9 +44,9 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public int getVariableIndex(V variable);
 
     /**
-     * Get the index that matches up to getObservedValues().
+     * Get the index that matches up to getVariableValues().
      */
-    public int getObservedIndex(ObservedAtom observedAtom);
+    public int getObservedIndex(ObservedAtom observation);
 
     /**
      * Get the variable for the given index.

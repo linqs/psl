@@ -53,6 +53,17 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
         this.observedIndex = observedIndex;
     }
 
+    public Hyperplane(E[] variables, float[] variableCoefficients, float constant, int variableIndex) {
+        this.variables = variables;
+        this.variableCoefficients = variableCoefficients;
+        this.constant = constant;
+        this.variableIndex = variableIndex;
+
+        this.observations = new ObservedAtom[1];
+        this.observedCoefficients = new float[1];
+        this.observedIndex = 0;
+    }
+
     public void addTerm(E variable, float coefficient) {
         variables[variableIndex] = variable;
         variableCoefficients[variableIndex] = coefficient;

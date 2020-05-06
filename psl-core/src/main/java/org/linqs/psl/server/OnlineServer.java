@@ -20,7 +20,7 @@ public class OnlineServer {
     public synchronized OnlineServerAction getNextAction() {
         // TODO: get next action from client for now just return the class variable clientNextAction
         // TODO: initially class
-        while (clientNextAction != null) {
+        while (clientNextAction == null) {
             continue;
         }
         return clientNextAction;

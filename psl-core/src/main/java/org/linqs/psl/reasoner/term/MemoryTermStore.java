@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.util.RandUtils;
@@ -46,6 +47,11 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
         if (store != null) {
             store.clear();
         }
+    }
+
+    @Override
+    public ObservedAtom createLocalObserved(ObservedAtom atom){
+        return null;
     }
 
     @Override

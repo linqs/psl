@@ -267,7 +267,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return atom;
     }
 
-    @Override
     public synchronized ObservedAtom createLocalObserved(ObservedAtom atom) {
         if (observations.containsKey(atom)) {
             return atom;

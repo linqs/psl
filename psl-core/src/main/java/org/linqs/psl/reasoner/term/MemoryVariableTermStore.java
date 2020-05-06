@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -59,6 +60,19 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     private int defaultSize;
 
     private Set<ModelPredicate> modelPredicates;
+
+    /**
+     * Get the index that matches up to getVariableValues().
+     */
+    @Override
+    public int getObservedIndex(ObservedAtom observation){
+        return -1;
+    }
+
+    @Override
+    public ObservedAtom createLocalObserved(ObservedAtom atom){
+        return null;
+    }
 
     public MemoryVariableTermStore() {
         shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();

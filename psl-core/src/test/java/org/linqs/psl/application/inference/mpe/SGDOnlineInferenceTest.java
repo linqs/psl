@@ -55,10 +55,8 @@ public class SGDOnlineInferenceTest extends InferenceTest {
     private void initBaselineModel() {
         // Define Predicates
         Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
-        predicatesInfo.put("Sim_Items", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
         predicatesInfo.put("Sim_Users", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
         predicatesInfo.put("Rating", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
-        predicatesInfo.put("Avg_User_Rating", new ConstantType[]{ConstantType.UniqueStringID});
 
         for (Map.Entry<String, ConstantType[]> predicateEntry : predicatesInfo.entrySet()) {
             StandardPredicate predicate = StandardPredicate.get(predicateEntry.getKey(), predicateEntry.getValue());
@@ -79,81 +77,36 @@ public class SGDOnlineInferenceTest extends InferenceTest {
                 1.0,
                 true));
 
-        // Rating(U, M1) && Sim_Items(M1, M2) && M1 != M2 => Rating(U, M2)
-        baselineRules.add(new WeightedLogicalRule(
-                new Implication(
-                        new Conjunction(
-                                new QueryAtom(baselinePredicates.get("Rating"), new Variable("A"), new Variable("M1")),
-                                new QueryAtom(baselinePredicates.get("Sim_Items"), new Variable("M1"), new Variable("M2")),
-                                new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("M1"), new Variable("M2"))
-                        ),
-                        new QueryAtom(baselinePredicates.get("Rating"), new Variable("A"), new Variable("M2"))
-                ),
-                1.0,
-                true));
-
-        // Avg_User_Rating(U) => Rating(U,I)
-        baselineRules.add(new WeightedLogicalRule(
-                new Implication(
-                        new Conjunction(
-                                new QueryAtom(baselinePredicates.get("Avg_User_Rating"), new Variable("A"))
-                        ),
-                        new QueryAtom(baselinePredicates.get("Rating"), new Variable("U"), new Variable("M"))
-                ),
-                1.0,
-                true));
-
         // Data
-        // Users: {Alice, Bob, Eddie}
-        // Movies: {Titanic, Avatar, Surfs Up}
 
         // Observed
         // Rating
         baselineObservations.put(baselinePredicates.get("Rating"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Titanic"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Alice", "Surfs Up"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Bob", "Titanic"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Bob", "Avatar"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Surfs Up"})
+                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Avatar"})
         )));
 
         // Sim_Users
         baselineObservations.put(baselinePredicates.get("Sim_Users"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
                 new TestModel.PredicateData(1.0, new Object[]{"Alice", "Bob"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Bob", "Alice"})
-        )));
-
-        // Sim_Items
-        baselineObservations.put(baselinePredicates.get("Sim_Items"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(1.0, new Object[]{"Avatar", "Titanic"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Titanic", "Avatar"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Surfs Up", "Avatar"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Avatar", "Surfs Up"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Titanic", "Surfs Up"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Surfs Up", "Titanic"})
-        )));
-
-        // Avg_User_Rating
-        baselineObservations.put(baselinePredicates.get("Avg_User_Rating"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(0.5, new Object[]{"Alice"}),
-                new TestModel.PredicateData(0.5, new Object[]{"Bob"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Eddie"})
+                new TestModel.PredicateData(1.0, new Object[]{"Bob", "Alice"}),
+                new TestModel.PredicateData(0.0, new Object[]{"Eddie", "Alice"}),
+                new TestModel.PredicateData(0.0, new Object[]{"Alice", "Eddie"}),
+                new TestModel.PredicateData(0.0, new Object[]{"Eddie", "Bob"}),
+                new TestModel.PredicateData(0.0, new Object[]{"Bob", "Eddie"})
         )));
 
         // Targets
         // Rating
         baselineTargets.put(baselinePredicates.get("Rating"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Avatar"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Bob", "Surfs Up"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Avatar"}))
-        ));
+                new TestModel.PredicateData(new Object[]{"Eddie", "Avatar"}),
+                new TestModel.PredicateData(new Object[]{"Bob", "Avatar"})
+        )));
 
         // Truths
         baselineTruths.put(baselinePredicates.get("Rating"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Avatar"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Bob", "Surfs Up"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Avatar"}))
-        ));
+                new TestModel.PredicateData(1.0, new Object[]{"Bob", "Avatar"}),
+                new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Avatar"})
+        )));
 
         modelInfo = TestModel.getModel(driver, baselinePredicates, baselineRules,
                 baselineObservations, baselineTargets, baselineTruths);
@@ -175,11 +128,10 @@ public class SGDOnlineInferenceTest extends InferenceTest {
 
         // Close the predicates we are using.
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-        toClose.add(modelInfo.predicates.get("Rating"));
 
         inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition, toClose, modelInfo.observationPartition);
 
-        SGDTermGenerator termGenerator = new SGDTermGenerator();
+        termGenerator = new SGDTermGenerator();
     }
 
     @Override
@@ -190,22 +142,26 @@ public class SGDOnlineInferenceTest extends InferenceTest {
     @Test
     public void testAddTerm(){
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        inference.initialInference(true, true);
 
         SGDStreamingTermStore termStore = (SGDStreamingTermStore)inference.getTermStore();
         AtomManager atomManager = inference.getAtomManager();
 
+        System.out.println(atomManager);
+
         // Create term to add
-        // Rating("Alice", "Titanic") && Sim_Users("Eddie", "Alice") => Rating("Eddie", "Titanic")
-        GeneralFunction newFTerm = new GeneralFunction(true, true, 1, 1);
+        // Rating("Alice", "Avatar") && Sim_Users("Eddie", "Alice") => Rating("Eddie", "Avatar")
+        GeneralFunction newFTerm = new GeneralFunction(true, true, 1, 2);
         // Might not work because we are creating new constants instead of grabbing existing instances
         RandomVariableAtom rvAtom = (RandomVariableAtom)atomManager.getAtom(Predicate.get("Rating"),
-                new UniqueStringID("Eddie"),  new UniqueStringID("Titanic"));
-        newFTerm.add(3.0f, rvAtom);
+                new UniqueStringID("Eddie"),  new UniqueStringID("Avatar"));
+        newFTerm.add(1.0f, rvAtom);
 
         ObservedAtom obsAtom_1 = (ObservedAtom) atomManager.getAtom(Predicate.get("Rating"),
-                new UniqueStringID("Alice"), new UniqueStringID("Titanic"));
+                new UniqueStringID("Alice"), new UniqueStringID("Avatar"));
         ObservedAtom obsAtom_2 = (ObservedAtom) atomManager.getAtom(Predicate.get("Sim_Users"),
-                new UniqueStringID("Eddie"), new UniqueStringID("Alice"));
+                new UniqueStringID("Alice"), new UniqueStringID("Eddie"));
+        obsAtom_2.setValue((float)1.0);
         newFTerm.add(-1.0f, obsAtom_1);
         newFTerm.add(-1.0f, obsAtom_2);
 
@@ -217,6 +173,8 @@ public class SGDOnlineInferenceTest extends InferenceTest {
 
         // Set newAction as next action for online inference application
         inference.server.setNextAction(newAction);
+
+        
     }
 
 }

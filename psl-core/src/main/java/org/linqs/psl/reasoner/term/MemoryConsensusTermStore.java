@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 
@@ -43,6 +44,11 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
      * The total number of all local variables (the sum of the sizes of each list in |localVariables|).
      */
     protected int numLocalVariables;
+
+    @Override
+    public ObservedAtom createLocalObserved(ObservedAtom atom){
+        return null;
+    }
 
     public MemoryConsensusTermStore() {
         this.store = new MemoryVariableTermStore<T, RandomVariableAtom>() {
