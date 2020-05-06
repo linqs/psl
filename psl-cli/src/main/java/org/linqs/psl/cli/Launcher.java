@@ -443,6 +443,7 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
             Options.CLI_VIZ.set(true);
+            VizDataCollection.outputPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_VISUALIZATION);
         }
 
         // Inference

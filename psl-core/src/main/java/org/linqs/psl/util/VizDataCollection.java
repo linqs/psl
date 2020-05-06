@@ -1,5 +1,6 @@
 package org.linqs.psl.util;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -13,6 +14,9 @@ import org.linqs.psl.model.term.Variable;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,6 +32,10 @@ import java.util.Map;
 public class VizDataCollection {
     private static Runtime runtime = null;
     private static VisualizationData vizData = null;
+
+    private static final Logger log = LoggerFactory.getLogger(VizDataCollection.class);
+
+    public static String outputPath = null;
 
     static {
         init();
@@ -48,12 +56,24 @@ public class VizDataCollection {
         String[] keyNames = {"truthMap", "rules", "groundRules", "groundAtoms"};
         JSONObject fullJson = new JSONObject(vizData, keyNames);
 
-        try (FileWriter file = new FileWriter("PSLVizData.json")) {
-            file.write(fullJson.toString(4));
-            file.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
+        PrintStream stream = System.out;
+        boolean closeStream = false;
+
+        if (outputPath != null) {
+            try {
+                stream = new PrintStream(outputPath);
+                closeStream = true;
+            } catch (IOException ex) {
+                log.error(String.format("Unable to open file (%s) for visualization data, using stdout instead.", outputPath), ex);
+            }
         }
+
+        stream.println(fullJson.toString(4));
+
+        if (closeStream) {
+            stream.close();
+        }
+
     }
 
     private static class ShutdownHook extends Thread {
@@ -83,22 +103,21 @@ public class VizDataCollection {
         vizData.truthMap.put(groundAtomID, truthVal);
     }
 
-     public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
-        for (Rule rule: rules)
-        {
-            String stringRuleId = Integer.toString(System.identityHashCode(rule));
-            int groundRuleCount = groundRuleStore.count( rule );
-            // Abstract Arithmetic Rules are not currently being added to the data collection
-            if ( vizData.rules.get(stringRuleId) == null ) {
-                HashMap<String, Object> newRuleElementItem = new HashMap<String, Object>();
-                newRuleElementItem.put("text", rule.getName());
-                vizData.rules.put(stringRuleId, newRuleElementItem);
-            }
-            Map<String, Object> ruleElement = vizData.rules.get(stringRuleId);
-            ruleElement.put("count", groundRuleCount);
-            ruleElement.put("weighted", rule.isWeighted());
+    public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
+    for (Rule rule: rules) {
+        String stringRuleId = Integer.toString(System.identityHashCode(rule));
+        int groundRuleCount = groundRuleStore.count( rule );
+        // Abstract Arithmetic Rules are not currently being added to the data collection
+        if ( vizData.rules.get(stringRuleId) == null ) {
+            HashMap<String, Object> newRuleElementItem = new HashMap<String, Object>();
+            newRuleElementItem.put("text", rule.getName());
+            vizData.rules.put(stringRuleId, newRuleElementItem);
         }
-     }
+        Map<String, Object> ruleElement = vizData.rules.get(stringRuleId);
+        ruleElement.put("count", groundRuleCount);
+        ruleElement.put("weighted", rule.isWeighted());
+        }
+    }
 
     public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
                             Map<Variable, Integer> variableMap,  Constant[] constantsList) {
