@@ -14,26 +14,28 @@ import org.linqs.psl.model.term.Variable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.io.File;
 import java.io.FileWriter;
-import java.util.HashMap;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashSet;
+
 
 public class VizDataCollection {
-
-    private static VizDataCollection vizData = null;
+  
     private static Runtime runtime = null;
+    private static VisualizationData vizData = null;
 
     private JSONObject fullJSON;
     private JSONObject truthMap;
+    private JSONObject rules;
+    private JSONObject groundRules;
+    private JSONObject groundAtoms;
 
-    JSONObject rules;
-    JSONObject groundRules;
-    JSONObject groundAtoms;
 
     static {
         init();
@@ -51,7 +53,7 @@ public class VizDataCollection {
         if (runtime != null) {
             return;
         }
-        vizData = new VizDataCollection();
+        vizData = new VisualizationData();
         runtime = Runtime.getRuntime();
         runtime.addShutdownHook(new ShutdownHook());
     }
@@ -66,13 +68,11 @@ public class VizDataCollection {
         //     etc...
         // ]
     public static void outputJSON() {
-        vizData.fullJSON.put("truthMap", vizData.truthMap);
-        vizData.fullJSON.put("rules", vizData.rules);
-        vizData.fullJSON.put("groundRules", vizData.groundRules);
-        vizData.fullJSON.put("groundAtoms", vizData.groundAtoms);
+        String[] keyNames = {"truthMap", "rules", "groundRules", "groundAtoms"};
+        JSONObject fullJson = new JSONObject(vizData, keyNames);
 
         try (FileWriter file = new FileWriter("PSLVizData.json")) {
-            file.write(vizData.fullJSON.toString(4));
+            file.write(fullJson.toString(4));
             file.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -84,6 +84,20 @@ public class VizDataCollection {
         public void run() {
             outputJSON();
         }
+    }
+
+    public static class VisualizationData {
+      public Map<String, Float> truthMap;
+      public Map<String, Map<String, Object>> rules;
+      public Map<String, Map<String, Object>> groundRules;
+      public Map<String, Map<String, Object>> groundAtoms;
+
+      public VisualizationData() {
+        truthMap = new HashMap<String, Float>();
+        rules = new HashMap<String, Map<String, Object>>();
+        groundRules = new HashMap<String, Map<String, Object>>();
+        groundAtoms = new HashMap<String, Map<String, Object>>();
+      }
     }
 
     // Takes in a prediction truth pair and adds it to our map
@@ -98,12 +112,12 @@ public class VizDataCollection {
             String stringRuleId = Integer.toString(System.identityHashCode(rule));
             int groundRuleCount = groundRuleStore.count( rule );
             // Abstract Arithmetic Rules are not currently being added to the data collection
-            if ( vizData.rules.isNull(stringRuleId) ) {
-                JSONObject newRuleElementItem = new JSONObject();
+            if ( vizData.rules.get(stringRuleId) == null ) {
+                HashMap<String, Object> newRuleElementItem = new HashMap<String, Object>();
                 newRuleElementItem.put("text", rule.getName());
                 vizData.rules.put(stringRuleId, newRuleElementItem);
             }
-            JSONObject ruleElement = vizData.rules.getJSONObject(stringRuleId);
+            Map<String, Object> ruleElement = vizData.rules.get(stringRuleId);
             ruleElement.put("count", groundRuleCount);
             ruleElement.put("weighted", rule.isWeighted());
         }
@@ -116,11 +130,11 @@ public class VizDataCollection {
         }
         // Adds a groundAtom element to RuleMap
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
-        HashSet<GroundAtom> atomSet = new HashSet<>(groundRule.getAtoms());
+        HashSet<GroundAtom> atomSet = new HashSet<GroundAtom>(groundRule.getAtoms());
         int atomCount = 0;
         for (GroundAtom a : atomSet) {
             atomHashList.add(System.identityHashCode(a));
-            JSONObject groundAtomElement = new JSONObject();
+            Map<String, Object> groundAtomElement = new HashMap<String, Object>();
             groundAtomElement.put("text", a.toString());
             groundAtomElement.put("prediction", a.getValue());
             vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)), groundAtomElement);
@@ -130,22 +144,22 @@ public class VizDataCollection {
         // Adds a rule element to RuleMap
         JSONObject rulesElement = new JSONObject();
         String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
-        JSONObject rulesElementItem = new JSONObject();
-        rulesElementItem.put("text", parentRule);
+        Map<String, Object> rulesElementItem = new HashMap<String, Object>();
+        rulesElementItem.put("text", parentRule.toString());
         vizData.rules.put(ruleStringID, rulesElementItem);
 
         // Adds a groundRule element to RuleMap
-        HashMap<String, String> varConstMap = new HashMap<>();
+        Map<String, String> varConstMap = new HashMap<String, String>();
         for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
             varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
         }
-        JSONObject groundRulesElement = new JSONObject();
+        Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         if (groundRule instanceof WeightedGroundRule) {
               WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
               groundRulesElement.put("disatisfaction", weightedGroundRule.getIncompatibility());
         }
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
-        JSONObject constants = new JSONObject();
+        Map<String, Object> constants = new HashMap<String, Object>();
         for (Map.Entry varConstElement : varConstMap.entrySet()) {
           String key = (String)varConstElement.getKey();
           String val = (String)varConstElement.getValue();
