@@ -134,7 +134,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * Construct a hyperplane from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
+    protected Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
         Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant(), sum.observedSize());
 
         for (int i = 0; i < sum.size(); i++) {

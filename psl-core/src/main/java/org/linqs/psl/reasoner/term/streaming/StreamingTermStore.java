@@ -316,6 +316,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
+    public HyperplaneTermGenerator<T, RandomVariableAtom> getTermGenerator(){
+        return termGenerator;
+    }
+
     public void ensureObservedCapacity(int capacity) {
         if (capacity < 0) {
             throw new IllegalArgumentException("Observed capacity must be non-negative. Got: " + capacity);

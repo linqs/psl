@@ -72,7 +72,7 @@ public abstract class InferenceApplication implements ModelApplication {
     protected TermGenerator termGenerator;
     protected PersistedAtomManager atomManager;
 
-    private boolean atomsCommitted;
+    protected boolean atomsCommitted;
 
     protected InferenceApplication(List<Rule> rules, Database db) {
         this(rules, db, Options.INFERENCE_RELAX.getBoolean());

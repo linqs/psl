@@ -20,8 +20,11 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
@@ -54,6 +57,26 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
         VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
         return new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight, learningRate);
+    }
+
+    public SGDObjectiveTerm createLossTerm(TermStore<SGDObjectiveTerm, RandomVariableAtom> baseTermStore,
+                                           boolean isHinge, boolean isSquared, float weight, Hyperplane<RandomVariableAtom> hyperplane) {
+        VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+        return new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight, learningRate);
+    }
+
+    /**
+     * Create a ReasonerTerm from the ground rule.
+     * Note that the term will NOT be added to the term store.
+     * The store is just needed for creating variables.
+     */
+    public SGDObjectiveTerm createTerm(GeneralFunction function, float weight, TermStore<SGDObjectiveTerm, RandomVariableAtom>  termStore) {
+        Hyperplane<RandomVariableAtom> hyperplane = processHyperplane(function, termStore);
+        if (hyperplane == null) {
+            return null;
+        }
+        // Non-negative functions have a hinge.
+        return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), weight, hyperplane);
     }
 
     @Override
