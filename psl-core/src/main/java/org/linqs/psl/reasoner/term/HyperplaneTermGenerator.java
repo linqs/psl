@@ -175,6 +175,11 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             }
         }
 
+        // This should be caught further up the chain, but we will check for full observed terms.
+        if (hyperplane.size() == 0) {
+            return null;
+        }
+
         return hyperplane;
     }
 
