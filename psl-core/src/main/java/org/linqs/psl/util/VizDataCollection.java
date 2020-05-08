@@ -68,6 +68,9 @@ public class VizDataCollection {
             }
         }
 
+        // Adding this string to our data file turns the json into a js variable
+        String jsHeader = "window.pslviz = window.pslviz || {} \nwindow.pslviz.data = ";
+        stream.println(jsHeader);
         stream.println(fullJson.toString(4));
 
         if (closeStream) {
