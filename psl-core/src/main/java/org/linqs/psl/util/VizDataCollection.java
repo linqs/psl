@@ -144,7 +144,7 @@ public class VizDataCollection {
         JSONObject rulesElement = new JSONObject();
         String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
         Map<String, Object> rulesElementItem = new HashMap<String, Object>();
-        rulesElementItem.put("text", parentRule.toString());
+        rulesElementItem.put("text", parentRule.getName());
         vizData.rules.put(ruleStringID, rulesElementItem);
 
         // Adds a groundRule element to RuleMap
