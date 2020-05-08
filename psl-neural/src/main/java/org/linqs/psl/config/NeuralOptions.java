@@ -21,6 +21,34 @@ package org.linqs.psl.config;
  * Additional options for the psl-neural module.
  */
 public class NeuralOptions {
+    public static final Option NEURAL_BIN_RANK_LOWER = new Option(
+        "neural.binarize.rank.lower",
+        0.0f,
+        "Trainning values for the neural net below this percentage ranking will be set to zero.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option NEURAL_BIN_RANK_UPPER = new Option(
+        "neural.binarize.rank.upper",
+        1.0f,
+        "Trainning values for the neural net above this percentage ranking will be set to one.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option NEURAL_BIN_THRESHOLD_LOWER = new Option(
+        "neural.binarize.threshold.lower",
+        0.0f,
+        "Trainning values for the neural net below this threshold will be set to zero.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option NEURAL_BIN_THRESHOLD_UPPER = new Option(
+        "neural.binarize.threshold.upper",
+        1.0f,
+        "Trainning values for the neural net above this threshold will be set to one.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option NEURAL_LEARNING_RATE = new Option(
         "neural.learningrate",
         0,
@@ -36,6 +64,10 @@ public class NeuralOptions {
     );
 
     static {
+        Options.addOption(NEURAL_BIN_RANK_LOWER);
+        Options.addOption(NEURAL_BIN_RANK_UPPER);
+        Options.addOption(NEURAL_BIN_THRESHOLD_LOWER);
+        Options.addOption(NEURAL_BIN_THRESHOLD_UPPER);
         Options.addOption(NEURAL_LEARNING_RATE);
         Options.addOption(NEURAL_LOSS_FUNCTION);
     }

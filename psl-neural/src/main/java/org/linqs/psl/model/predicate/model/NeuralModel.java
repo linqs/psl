@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -73,6 +74,14 @@ public class NeuralModel extends SupportingModel {
     private double newLearningRate;
     private String lossFunction;
 
+    private float lowerBinarizeRank;
+    private float upperBinarizeRank;
+    private boolean binarizeWithRank;
+
+    private float lowerBinarizeThreshold;
+    private float upperBinarizeThreshold;
+    private boolean binarizeWithThreshold;
+
     public NeuralModel() {
         features = null;
 
@@ -85,6 +94,14 @@ public class NeuralModel extends SupportingModel {
         batchSize = Options.MODEL_PREDICATE_BATCH_SIZE.getInt();
         newLearningRate = NeuralOptions.NEURAL_LEARNING_RATE.getDouble();
         lossFunction = NeuralOptions.NEURAL_LOSS_FUNCTION.getString();
+
+        lowerBinarizeRank = NeuralOptions.NEURAL_BIN_RANK_LOWER.getFloat();
+        upperBinarizeRank = NeuralOptions.NEURAL_BIN_RANK_UPPER.getFloat();
+        binarizeWithRank = (lowerBinarizeRank > 0.0f || upperBinarizeRank < 1.0f);
+
+        lowerBinarizeThreshold = NeuralOptions.NEURAL_BIN_THRESHOLD_LOWER.getFloat();
+        upperBinarizeThreshold = NeuralOptions.NEURAL_BIN_THRESHOLD_UPPER.getFloat();
+        binarizeWithThreshold = (lowerBinarizeThreshold > 0.0f || upperBinarizeThreshold < 1.0f);
     }
 
     @Override
@@ -144,11 +161,80 @@ public class NeuralModel extends SupportingModel {
         }
     }
 
+    private void thresholdBinarize() {
+        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
+            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
+                if (manualLabels[entityIndex][labelIndex] < lowerBinarizeThreshold) {
+                    manualLabels[entityIndex][labelIndex] = 0.0f;
+                }
+
+                if (manualLabels[entityIndex][labelIndex] > upperBinarizeThreshold) {
+                    manualLabels[entityIndex][labelIndex] = 1.0f;
+                }
+            }
+        }
+    }
+
+    private void rankBinarize() {
+        IndexSortable[] values = new IndexSortable[labelIndexMapping.size()];
+        for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
+            values[labelIndex] = new IndexSortable();
+        }
+
+        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
+            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
+                values[labelIndex].index = labelIndex;
+                values[labelIndex].value = manualLabels[entityIndex][labelIndex];
+            }
+
+            Arrays.sort(values);
+
+            for (int i = 0; i < values.length; i++) {
+                if (((float)(i + 1) / values.length) < lowerBinarizeRank) {
+                    manualLabels[entityIndex][values[i].index] = 0.0f;
+                }
+
+                if (((float)(i + 1) / values.length) > upperBinarizeRank) {
+                    manualLabels[entityIndex][values[i].index] = 1.0f;
+                }
+            }
+        }
+    }
+
+    private static class IndexSortable implements Comparable<IndexSortable> {
+        public int index;
+        public float value;
+
+        public IndexSortable() {
+            index = -1;
+            value = 0.0f;
+        }
+
+        @Override
+        public int compareTo(IndexSortable other) {
+            if (this.value < other.value) {
+                return -1;
+            } else if (this.value < other.value) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    }
+
     @Override
     public void fit() {
         log.trace("Fitting {}.", this);
 
         model.clear();
+
+        if (binarizeWithThreshold) {
+            thresholdBinarize();
+        }
+
+        if (binarizeWithRank) {
+            rankBinarize();
+        }
 
         INDArray labels = Nd4j.create(manualLabels);
 
