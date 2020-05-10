@@ -32,7 +32,7 @@ import java.util.Set;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
- * Note that the iterators given by this class are meant to be exhaustd (at least the first time).
+ * Note that the iterators given by this class are meant to be exhausted (at least the first time).
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */

@@ -17,9 +17,13 @@ public class OnlineServer {
         clientNextAction = null;
     }
 
+    public void parseClientCommand(){
+        //TODO: (Charles) Client can either provide
+    }
+
     public synchronized OnlineServerAction getNextAction() {
-        // TODO: get next action from client for now just return the class variable clientNextAction
-        // TODO: initially class
+        // TODO: (Charles)  get next action from client for now just return the class variable clientNextAction
+        // TODO: (Charles)  initially
         while (clientNextAction == null) {
             continue;
         }

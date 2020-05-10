@@ -10,8 +10,7 @@ public class UpdateObservation extends OnlineServerAction{
                              Predicate predicate, Constant... arguments) {
         super(providedTermStore);
 
-        // ToDo: (Charles) Get the atom that
-        this.atom = atom;
+        // ToDo: (Charles) Get the atom that uses the provided predicate and arguments
     }
 
     @Override

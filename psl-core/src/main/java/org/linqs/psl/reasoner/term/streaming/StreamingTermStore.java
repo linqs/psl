@@ -384,7 +384,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      * */
     public boolean updateTerm(T term){
         return false;
-    };
+    }
 
     @Override
     public T get(int index) {
