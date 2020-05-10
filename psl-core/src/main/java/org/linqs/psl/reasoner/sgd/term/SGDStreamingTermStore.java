@@ -75,7 +75,8 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         for (int obsIndex: obsIndices){
             if(atomsUpdatingThisRound.containsKey(obsIndex)){
                 rewrite = true;
-                term.updateObservedValue(obsIndex, atomsUpdatingThisRound.get(obsIndex));
+                term.updateConstant(getObservedValues());
+                break;
             }
         }
         return rewrite;
