@@ -17,12 +17,14 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Iterate over all the terms from the disk cache.
@@ -49,6 +51,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected T nextTerm;
 
     protected boolean shufflePage;
+
+    protected boolean rewrite_page;
 
     // When we are reading pages from disk (after the initial round),
     // this list will tell us the order to read them in.
@@ -95,6 +99,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         }
 
         closed = false;
+        rewrite_page = false;
 
         // Note that we cannot pre-fetch.
         nextTerm = null;
@@ -115,9 +120,16 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         }
 
         nextTerm = fetchNextTerm();
+
+        // check if there were no more pages, we are done.
         if (nextTerm == null) {
             close();
             return false;
+        }
+
+        // check if any observations in the term need updating
+        if (parentStore.updateTerm(nextTerm)){
+            rewrite_page = true;
         }
 
         return true;
@@ -145,10 +157,13 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * We will always settle outstanding pages before trying to get the next term.
      */
     private T fetchNextTerm() {
-        // The cache is exhaused, fill it up.
+        // The cache is exhausted, fill it up.
         if (nextCachedTermIndex >= termCache.size()) {
             // Flush all the volatile terms.
             flushCache();
+
+            // Clear the existing page cache.
+            termCache.clear();
 
             // Check if there is another page, and load it if it exists.
             if (!fetchPage()) {
@@ -169,9 +184,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * @return true if the next page was fetched and loaded (false when there are no more pages).
      */
     private boolean fetchPage() {
-        // Clear the existing page cache.
-        termCache.clear();
-
         currentPage++;
         nextCachedTermIndex = 0;
 
@@ -224,6 +236,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         // We will clear the termCache when we fetch a new page, not on flush.
         flushVolatileCache();
+        rewrite_page = false;
     }
 
     private void flushVolatileCache() {
@@ -231,10 +244,15 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         // no need to reallocate.
         volatileBuffer.clear();
 
-        int pageIndex = pageAccessOrder.get(currentPage).intValue();
+        int pageIndex = pageAccessOrder.get(currentPage);
         String volatilePagePath = parentStore.getVolatilePagePath(pageIndex);
+        String termPagePath = parentStore.getVolatilePagePath(pageIndex);
 
         writeVolatilePage(volatilePagePath);
+
+        if(rewrite_page){
+            writeFullPage(termPagePath, volatilePagePath);
+        }
     }
 
     @Override
@@ -260,4 +278,12 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * Unlike readPage, the child is responsible for undoing any shuffling via shuffleMap.
      */
     protected abstract void writeVolatilePage(String volatilePagePath);
+
+    /**
+     * Write a full page (including any volatile page that the child may use).
+     * This is responsible for creating/reallocating both the term buffer and volatile buffer.
+     */
+    protected void writeFullPage(String termPagePath, String volatilePagePath){
+
+    };
 }

@@ -22,12 +22,15 @@ import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
 public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm> {
+    public static final double OVERALLOCATION_RATIO = 1.25;
+
     public SGDStreamingCacheIterator(
             SGDStreamingTermStore parentStore, boolean readonly,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
@@ -73,5 +76,52 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
     @Override
     protected void writeVolatilePage(String volatilePagePath) {
         // SGD doesn't need write pages.
+    }
+
+    // TODO: (Charles) better design for this, since this was also implemented in initial round iterator
+    @Override
+    protected void writeFullPage(String termPagePath, String volatilePagePath) {
+        flushTermCache(termPagePath);
+
+        termCache.clear();
+
+        // SGD doesn't use a volatile buffer.
+        if (volatileBuffer == null) {
+            volatileBuffer = ByteBuffer.allocate(0);
+        }
+    }
+
+    private void flushTermCache(String termPagePath) {
+        // Count the exact size we will need to write.
+        int termsSize = 0;
+        for (SGDObjectiveTerm term : termCache) {
+            termsSize += term.fixedByteSize();
+        }
+
+        // Allocate an extra two ints for the number of terms and size of terms in that page.
+        int termBufferSize = termsSize + (Integer.SIZE / 8) * 2;
+
+        if (termBuffer == null || termBuffer.capacity() < termBufferSize) {
+            termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
+        }
+        termBuffer.clear();
+
+        // First put the size of the terms and number of terms.
+        termBuffer.putInt(termsSize);
+        termBuffer.putInt(termCache.size());
+
+        // Now put in all the terms.
+        for (SGDObjectiveTerm term : termCache) {
+            term.writeFixedValues(termBuffer);
+        }
+
+        try (FileOutputStream stream = new FileOutputStream(termPagePath)) {
+            stream.write(termBuffer.array(), 0, termBufferSize);
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to write term cache page: " + termPagePath, ex);
+        }
+
+        // Log io.
+        RuntimeStats.logDiskWrite(termBufferSize);
     }
 }

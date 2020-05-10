@@ -1,11 +1,10 @@
 package org.linqs.psl.server.actions;
 
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 public class Close extends OnlineServerAction{
 
-    public Close(SGDStreamingTermStore providedTermStore) {
+    public Close(StreamingTermStore providedTermStore) {
         super(providedTermStore);
     }
 

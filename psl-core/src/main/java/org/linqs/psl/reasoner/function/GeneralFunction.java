@@ -144,7 +144,9 @@ public class GeneralFunction implements FunctionTerm {
         return terms[index];
     }
 
-    public FunctionTerm getObservedTerm(int index) { return observedTerms[index]; }
+    public FunctionTerm getObservedTerm(int index) {
+        return observedTerms[index];
+    }
 
     @Override
     public float getValue() {

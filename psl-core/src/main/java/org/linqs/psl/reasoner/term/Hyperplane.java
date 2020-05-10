@@ -33,6 +33,7 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
 
     private ObservedAtom[] observations;
     private float[] observedCoefficients;
+    private float[] observedValues;
     private int observedIndex;
 
     @SuppressWarnings("unchecked")
@@ -50,7 +51,12 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
 
         this.observations = observations;
         this.observedCoefficients = observedCoefficients;
+        this.observedValues = new float[observedCoefficients.length];
         this.observedIndex = observedIndex;
+
+        for(int i = 0; i < observedIndex; i++){
+            observedValues[i] = observations[i].getValue();
+        }
     }
 
     public Hyperplane(E[] variables, float[] variableCoefficients, float constant, int variableIndex) {
@@ -73,6 +79,7 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
     public void addObservedTerm(ObservedAtom observed, float observedCoefficient) {
         observations[observedIndex] = observed;
         observedCoefficients[observedIndex] = observedCoefficient;
+        observedValues[observedIndex] = observed.getValue();
         observedIndex++;
     }
 
@@ -156,9 +163,14 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
         return observations;
     }
 
+    public float[] getObservedValues() {
+        return observedValues;
+    }
+
     public float[] getCoefficients() {
         return variableCoefficients;
     }
+
 
     public float[] getObservedCoefficients() {
         return observedCoefficients;

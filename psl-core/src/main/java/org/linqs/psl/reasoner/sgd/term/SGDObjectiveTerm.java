@@ -43,6 +43,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private short observedSize;
     private float[] observedCoefficients;
+    private float[] observedValues;
     private int[] observedIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
@@ -61,6 +62,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         observedSize = (short)hyperplane.observedSize();
         observedCoefficients = hyperplane.getObservedCoefficients();
+        observedValues= hyperplane.getObservedValues();
 
         variableIndexes = new int[size];
         RandomVariableAtom[] variables = hyperplane.getVariables();
@@ -73,6 +75,45 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         for (int i = 0; i < observedSize; i++) {
             observedIndexes[i] = termStore.getObservedIndex(observed[i]);
         }
+    }
+
+    /**
+     * @param obsIndex: index into the termstore observedAtoms array
+     * */
+    public void updateObservedValue(int obsIndex, float value){
+        int obsTermIndex = -1;
+        for(int i = 0; i < observedIndexes.length; i ++){
+            if(observedIndexes[i] == obsIndex){
+                obsTermIndex = i;
+                break;
+            }
+        }
+
+        assert(obsTermIndex != -1);
+
+        observedValues[obsTermIndex] = value;
+
+        recomputeConstant();
+    }
+
+    private void recomputeConstant(){
+        float recomputedConstant = 0;
+
+        for(int i = 0; i < observedIndexes.length; i ++){
+            recomputedConstant = recomputedConstant + observedCoefficients[i] * observedValues[i];
+        }
+
+        constant = recomputedConstant;
+    }
+
+    public int[] getObservedIndices(){
+        int[] obsIndices = new int[observedSize];
+
+        for(int i = 0; i < observedSize; i++){
+            obsIndices[i] = observedIndexes[i];
+        }
+
+        return obsIndices;
     }
 
     @Override

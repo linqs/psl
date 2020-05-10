@@ -140,7 +140,8 @@ public class SGDOnlineInferenceTest extends InferenceTest {
     }
 
     @Test
-    public void testAddTerm(){
+    public void testUpdateObservation(){
+        // TODO: update term
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         inference.initialInference(true, true);
 
@@ -173,8 +174,6 @@ public class SGDOnlineInferenceTest extends InferenceTest {
 
         // Set newAction as next action for online inference application
         inference.server.setNextAction(newAction);
-
-        
     }
 
 }

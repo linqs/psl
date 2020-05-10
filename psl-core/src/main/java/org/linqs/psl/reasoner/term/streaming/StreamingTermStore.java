@@ -86,6 +86,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     protected boolean warnRules;
 
+    protected Map<Integer, Float> atomsToUpdate;
+    protected Map<Integer, Float> atomsUpdatingThisRound;
+
     /**
      * The IO buffer for terms.
      * This buffer is only written on the first iteration,
@@ -248,7 +251,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
-        if (variables.containsKey(atom)) {
+        if(variables.containsKey(atom)){
             return atom;
         }
 
@@ -367,6 +370,22 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         newTermBuffer.add(term);
     }
 
+    /**
+     * Online Method
+     * */
+    public synchronized void updateObservationValue(ObservedAtom atom, float newValue){
+        // add the atom and newValue to the updates map for cache iterator
+        atomsToUpdate.put(observations.get(atom), newValue);
+    }
+
+    /**
+     * Online Method
+     * Cache iterator calls this method to determine if the term needs updating
+     * */
+    public boolean updateTerm(T term){
+        return false;
+    };
+
     @Override
     public T get(int index) {
         throw new UnsupportedOperationException();
@@ -412,8 +431,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     /**
      * A callback for the non-initial round iterator.
      */
-    public void cacheIterationComplete() {
+    public synchronized void cacheIterationComplete() {
         activeIterator = null;
+
+        // clear the updates for this round
+        atomsUpdatingThisRound.clear();
     }
 
     /**
@@ -436,7 +458,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public Iterator<T> iterator() {
+    public synchronized Iterator<T> iterator() {
         if (activeIterator != null) {
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
@@ -444,6 +466,12 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         if (initialRound) {
             activeIterator = getInitialRoundIterator();
         } else {
+            // update atomsUpdatingThisRound for the iterator and clear the atomsToUpdate
+            for (Map.Entry<Integer, Float>entry : atomsToUpdate.entrySet()) {
+                atomsUpdatingThisRound.put(entry.getKey(), entry.getValue());
+            }
+            atomsToUpdate.clear();
+
             activeIterator = getCacheIterator();
         }
 

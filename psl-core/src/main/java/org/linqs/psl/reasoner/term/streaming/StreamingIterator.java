@@ -31,7 +31,7 @@ import java.util.Iterator;
  * then the term we are about to return may be the last of its page.
  * This means that (pre)fetching the next term will flush the page.
  * So we will have written a stale value and
- * the retutned term will be converted into another one.
+ * the retuned term will be converted into another one.
  * To avoid this, we will never prefetch (have two terms at a time)
  * and we will fetch in hasNext().
  */

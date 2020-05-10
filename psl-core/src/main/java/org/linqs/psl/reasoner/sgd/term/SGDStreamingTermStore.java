@@ -55,7 +55,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     }
 
     @Override
-    protected StreamingIterator<SGDObjectiveTerm> getCacheIterator() {
+    protected synchronized StreamingIterator<SGDObjectiveTerm> getCacheIterator() {
         return new SGDStreamingCacheIterator(
                 this, false, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
@@ -66,5 +66,18 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         return new SGDStreamingCacheIterator(
                 this, true, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
+    }
+
+    @Override
+    public synchronized boolean updateTerm(SGDObjectiveTerm term){
+        boolean rewrite = false;
+        int [] obsIndices = term.getObservedIndices();
+        for (int obsIndex: obsIndices){
+            if(atomsUpdatingThisRound.containsKey(obsIndex)){
+                rewrite = true;
+                term.updateObservedValue(obsIndex, atomsUpdatingThisRound.get(obsIndex));
+            }
+        }
+        return rewrite;
     }
 }

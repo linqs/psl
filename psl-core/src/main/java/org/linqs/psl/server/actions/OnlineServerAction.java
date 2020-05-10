@@ -1,11 +1,11 @@
 package org.linqs.psl.server.actions;
 
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 public abstract class OnlineServerAction {
-    SGDStreamingTermStore termStore;
+    StreamingTermStore termStore;
 
-    public OnlineServerAction(SGDStreamingTermStore providedTermStore){
+    public OnlineServerAction(StreamingTermStore providedTermStore){
 
         termStore = providedTermStore;
 
