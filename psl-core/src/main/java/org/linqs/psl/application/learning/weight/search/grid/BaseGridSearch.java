@@ -256,24 +256,4 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * @return false if the search is to abort.
      */
     protected abstract boolean chooseNextLocation();
-
-    /**
-     * Given a configuration of angles, in radians, for the polar coordinate system, resolve the weights in
-     * the cartesian coordinate system
-     */
-    protected void hypersphereToCartesian(double[] radians, double[] weights) {
-        double carry = 1.0;
-        int i = 0;
-
-        log.trace("Radians: {}", radians);
-
-        while (i < mutableRules.size() - 1) {
-            weights[i] = carry * hypersphereRadius * Math.cos(radians[i]);
-            carry = carry * Math.sin(radians[i]);
-            i++;
-        }
-        weights[i] = carry * hypersphereRadius * Math.sin(radians[i - 1]);
-
-        log.trace("Converted Weights: {}", weights);
-    }
 }
