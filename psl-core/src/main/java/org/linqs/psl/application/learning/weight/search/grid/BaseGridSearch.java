@@ -183,6 +183,10 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
             // Check if we have explored this configuration before
             unitWeightVector = MathUtils.toUnit(weights);
+            // Round each weight to 5 decimal places
+            for(int i = 0; i < unitWeightVector.length; i ++){
+                unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000d) / 100000d;
+            }
             unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
             if (exploredConfigurations.containsKey(unitConfiguration)) {
                 log.debug("Location: {} \nalready explored via: {} \nSkipping", currentLocation,
