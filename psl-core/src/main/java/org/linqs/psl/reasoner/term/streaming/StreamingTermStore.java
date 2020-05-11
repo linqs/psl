@@ -381,6 +381,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public synchronized void updateObservationValue(ObservedAtom atom, float newValue){
         // add the atom and newValue to the updates map for cache iterator
         atomsToUpdate.put(observations.get(atom), newValue);
+
+        // update our observed values
+        observedValues[getObservedIndex(atom)] = newValue;
     }
 
     /**
