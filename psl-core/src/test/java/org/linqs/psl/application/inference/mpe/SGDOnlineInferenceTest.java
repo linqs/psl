@@ -35,6 +35,7 @@ import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.server.actions.AddTerm;
+import org.linqs.psl.server.actions.UpdateObservation;
 
 import java.util.*;
 
@@ -141,7 +142,6 @@ public class SGDOnlineInferenceTest extends InferenceTest {
 
     @Test
     public void testUpdateObservation(){
-        // TODO: update term
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         inference.initialInference(true, true);
 
@@ -150,30 +150,14 @@ public class SGDOnlineInferenceTest extends InferenceTest {
 
         System.out.println(atomManager);
 
-        // Create term to add
-        // Rating("Alice", "Avatar") && Sim_Users("Eddie", "Alice") => Rating("Eddie", "Avatar")
-        GeneralFunction newFTerm = new GeneralFunction(true, true, 1, 2);
-        // Might not work because we are creating new constants instead of grabbing existing instances
-        RandomVariableAtom rvAtom = (RandomVariableAtom)atomManager.getAtom(Predicate.get("Rating"),
-                new UniqueStringID("Eddie"),  new UniqueStringID("Avatar"));
-        newFTerm.add(1.0f, rvAtom);
-
-        ObservedAtom obsAtom_1 = (ObservedAtom) atomManager.getAtom(Predicate.get("Rating"),
-                new UniqueStringID("Alice"), new UniqueStringID("Avatar"));
-        ObservedAtom obsAtom_2 = (ObservedAtom) atomManager.getAtom(Predicate.get("Sim_Users"),
-                new UniqueStringID("Alice"), new UniqueStringID("Eddie"));
-        obsAtom_2.setValue((float)1.0);
-        newFTerm.add(-1.0f, obsAtom_1);
-        newFTerm.add(-1.0f, obsAtom_2);
-
-
-        SGDObjectiveTerm newTerm = termGenerator.createTerm(newFTerm, (float)1.0, termStore);
-
         // create new action
-        AddTerm newAction = new AddTerm(termStore, newTerm);
+        UpdateObservation newAction = new UpdateObservation(termStore, (float)1.0, Predicate.get("Sim_Users"),
+                new UniqueStringID("Alice"), new UniqueStringID("Eddie"));
 
         // Set newAction as next action for online inference application
         inference.server.setNextAction(newAction);
+
+        System.out.println("Hello");
     }
 
 }

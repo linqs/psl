@@ -21,9 +21,11 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -195,6 +197,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         termCache = new ArrayList<T>(pageSize);
         termPool = new ArrayList<T>(pageSize);
         shuffleMap = new int[pageSize];
+
+        atomsToUpdate = new HashMap<Integer, Float>();
+        atomsUpdatingThisRound = new HashMap<Integer, Float>();
 
         (new File(pageDir)).mkdirs();
     }
@@ -376,6 +381,15 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public synchronized void updateObservationValue(ObservedAtom atom, float newValue){
         // add the atom and newValue to the updates map for cache iterator
         atomsToUpdate.put(observations.get(atom), newValue);
+    }
+
+    /**
+     * Online Method
+     * */
+    public synchronized void updateObservationValue(Predicate predicate, Constant[] arguments, float newValue){
+        // add the atom and newValue to the updates map for cache iterator
+        ObservedAtom atom = (ObservedAtom)atomManager.getAtom(predicate, arguments);
+        updateObservationValue(atom, newValue);
     }
 
     /**
