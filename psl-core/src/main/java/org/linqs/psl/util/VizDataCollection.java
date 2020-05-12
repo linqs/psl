@@ -155,7 +155,7 @@ public class VizDataCollection {
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         if (groundRule instanceof WeightedGroundRule) {
               WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
-              groundRulesElement.put("disatisfaction", weightedGroundRule.getIncompatibility());
+              groundRulesElement.put("dissatisfaction", weightedGroundRule.getIncompatibility());
         }
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
         Map<String, Object> constants = new HashMap<String, Object>();
