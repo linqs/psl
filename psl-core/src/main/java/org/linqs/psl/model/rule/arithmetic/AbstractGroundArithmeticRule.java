@@ -18,6 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -86,6 +87,19 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
             this.coefficients = coefficients;
             this.atoms = atoms;
         }
+    }
+
+    public int getObservationCount(){
+        int obsCount = 0;
+        if(atoms == null){
+            return 0;
+        }
+        for(GroundAtom atom : atoms){
+            if(atom instanceof ObservedAtom){
+                obsCount ++;
+            }
+        }
+        return obsCount;
     }
 
     @Override

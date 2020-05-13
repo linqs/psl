@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -135,14 +136,14 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * Will return null if the term is trivial and should be abandoned.
      */
     protected Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
-        Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant(), sum.observedSize());
+        Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant());
 
         for (int i = 0; i < sum.size(); i++) {
             float coefficient = (float)sum.getCoefficient(i);
             FunctionTerm term = sum.getTerm(i);
 
-            if (term instanceof RandomVariableAtom) {
-                V variable = termStore.createLocalVariable((RandomVariableAtom)term);
+            if ((term instanceof RandomVariableAtom) || (term instanceof ObservedAtom)) {
+                V variable = termStore.createLocalVariable((GroundAtom)term);
 
                 // Check to see if we have seen this variable before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
