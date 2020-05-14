@@ -146,7 +146,7 @@ public class SGDReasoner extends Reasoner {
             objective += term.evaluate(variableValues);
         }
 
-        return objective / termStore.size();
+        return objective;
     }
 
     @Override
