@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.util.ArrayUtils;
 
 import java.lang.reflect.Array;
@@ -25,10 +24,10 @@ import java.lang.reflect.Array;
 /**
  * Information representing a raw hyperplane.
  */
-public class Hyperplane<E extends ReasonerLocalVariable> {
-    private E[] variables;
-    private float[] variableCoefficients;
-    private int variableIndex;
+public class Hyperplane<E extends ReasonerLocalAtom> {
+    private E[] terms;
+    private float[] coefficients;
+    private int index;
     private float constant;
 
     @SuppressWarnings("unchecked")
@@ -36,54 +35,54 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
         this((E[])Array.newInstance(localVariableClass, maxVariableSize), new float[maxVariableSize],0, constant);
     }
 
-    public Hyperplane(E[] variables, float[] variableCoefficients, int variableIndex, float constant) {
-        this.variables = variables;
-        this.variableCoefficients = variableCoefficients;
+    public Hyperplane(E[] terms, float[] coefficients, int index, float constant) {
+        this.terms = terms;
+        this.coefficients = coefficients;
         this.constant = constant;
-        this.variableIndex = variableIndex;
+        this.index = index;
     }
 
-    public Hyperplane(E[] variables, float[] variableCoefficients, float constant, int variableIndex) {
-        this.variables = variables;
-        this.variableCoefficients = variableCoefficients;
+    public Hyperplane(E[] terms, float[] coefficients, float constant, int index) {
+        this.terms = terms;
+        this.coefficients = coefficients;
         this.constant = constant;
-        this.variableIndex = variableIndex;
+        this.index = index;
     }
 
     public void addTerm(E variable, float coefficient) {
-        variables[variableIndex] = variable;
-        variableCoefficients[variableIndex] = coefficient;
-        variableIndex++;
+        terms[index] = variable;
+        coefficients[index] = coefficient;
+        index++;
     }
 
     public int size() {
-        return variableIndex;
+        return index;
     }
 
 
     public E getVariable(int index) {
-        if (index >= variableIndex) {
-            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + variableIndex + " exist.");
+        if (index >= this.index) {
+            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + this.index + " exist.");
         }
 
-        return variables[index];
+        return terms[index];
     }
 
 
     public float getCoefficient(int index) {
-        if (index >= variableIndex) {
-            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + variableIndex + " exist.");
+        if (index >= this.index) {
+            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + this.index + " exist.");
         }
 
-        return variableCoefficients[index];
+        return coefficients[index];
     }
 
     public void appendCoefficient(int index, float value) {
-        if (index >= variableIndex) {
-            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + variableIndex + " exist.");
+        if (index >= this.index) {
+            throw new IndexOutOfBoundsException("Tried to access variable coefficient at index " + index + ", but only " + this.index + " exist.");
         }
 
-        variableCoefficients[index] += value;
+        coefficients[index] += value;
     }
 
     public float getConstant() {
@@ -94,16 +93,16 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
         this.constant = constant;
     }
 
-    public int indexOfVariable(E needle) {
-        return ArrayUtils.indexOf(variables, variableIndex, needle);
+    public int indexOfTerm(E needle) {
+        return ArrayUtils.indexOf(terms, index, needle);
     }
 
-    public E[] getVariables() {
-        return variables;
+    public E[] getTerms() {
+        return terms;
     }
 
     public float[] getCoefficients() {
-        return variableCoefficients;
+        return coefficients;
     }
 
 }

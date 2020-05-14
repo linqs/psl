@@ -22,5 +22,5 @@ package org.linqs.psl.reasoner.term;
  * In the simple case, they are the same as the global variables (RVAs).
  * But, depending on the reasoner (like ADMM), they may have special properties.
  */
-public interface ReasonerLocalVariable {
+public interface ReasonerLocalVariable extends ReasonerLocalAtom {
 }

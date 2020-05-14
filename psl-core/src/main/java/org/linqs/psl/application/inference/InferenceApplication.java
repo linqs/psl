@@ -27,12 +27,8 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
@@ -73,6 +69,7 @@ public abstract class InferenceApplication implements ModelApplication {
     protected PersistedAtomManager atomManager;
 
     protected boolean atomsCommitted;
+    protected boolean online;
 
     protected InferenceApplication(List<Rule> rules, Database db) {
         this(rules, db, Options.INFERENCE_RELAX.getBoolean());
@@ -88,6 +85,7 @@ public abstract class InferenceApplication implements ModelApplication {
         this.relaxHardConstraints = relaxHardConstraints;
         this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getDouble();
         this.relaxationSquared = Options.INFERENCE_RELAX_SQUARED.getBoolean();
+        this.online = Options.ONLINE.getBoolean();
 
         initialize();
     }
@@ -97,7 +95,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * This will call into the abstract method completeInitialize().
      */
     protected void initialize() {
-        log.debug("Creating persisted atom mannager.");
+        log.debug("Creating persisted atom manager.");
         atomManager = createAtomManager(db);
         log.debug("Atom manager initialization complete.");
 
@@ -108,7 +106,9 @@ public abstract class InferenceApplication implements ModelApplication {
         groundRuleStore = createGroundRuleStore();
         termGenerator = createTermGenerator();
 
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
+        int atomCapacity = online? atomManager.getCachedRVACount():
+                atomManager.getCachedRVACount() + atomManager.getCachedOBSCount();
+        termStore.ensureAtomCapacity(atomCapacity);
 
         if (normalizeWeights) {
             normalizeWeights();

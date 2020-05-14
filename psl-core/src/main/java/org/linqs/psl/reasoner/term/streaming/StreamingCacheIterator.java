@@ -128,7 +128,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         }
 
         // check if any observations in the term need updating
-        if (parentStore.updateTerm(nextTerm)){
+        if (parentStore.updateAtom(nextTerm)){
             rewrite_page = true;
         }
 

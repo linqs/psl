@@ -18,17 +18,11 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
-import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
@@ -69,13 +63,13 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     }
 
     @Override
-    public synchronized boolean updateTerm(SGDObjectiveTerm term){
+    public synchronized boolean updateAtom(SGDObjectiveTerm term){
         boolean rewrite = false;
         int [] obsIndices = term.getObservedIndices();
         for (int obsIndex: obsIndices){
             if(atomsUpdatingThisRound.containsKey(obsIndex)){
                 rewrite = true;
-                term.updateConstant(getObservedValues());
+                term.updateConstant(getAtomValues());
                 break;
             }
         }

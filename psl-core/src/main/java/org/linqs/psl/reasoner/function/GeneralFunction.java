@@ -19,6 +19,8 @@ package org.linqs.psl.reasoner.function;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 
 /**
  * A general function that can handle various cases.
@@ -30,9 +32,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 public class GeneralFunction implements FunctionTerm {
     private final float[] coefficients;
     private final FunctionTerm[] terms;
-    private int variableSize;
-    private int observedSize;
-    private int totalCount;
+    private int termIndex;
 
     // All constants will get merged into this.
     private float constant;
@@ -49,14 +49,12 @@ public class GeneralFunction implements FunctionTerm {
 
     public GeneralFunction(boolean nonNegative, boolean squared, int rvaCount, int obsCount) {
         online = Options.ONLINE.getBoolean();
-        totalCount = online? rvaCount + obsCount: rvaCount;
+        int totalCount = online? rvaCount + obsCount: rvaCount;
         coefficients = new float[totalCount];
         terms = new FunctionTerm[totalCount];
-        variableSize = 0;
+        termIndex = 0;
         constant = 0.0f;
-
-        observedSize = 0;
-
+        
         this.nonNegative = nonNegative;
         this.squared = squared;
         constantTerms = true;
@@ -106,31 +104,25 @@ public class GeneralFunction implements FunctionTerm {
     public void add(float coefficient, FunctionTerm term) {
         // Merge constants.
         if (term.isConstant()) {
-            if(!online){
-                constant += (coefficient * term.getValue());
-            } else{
-                terms[totalCount - observedSize] = term;
-                coefficients[totalCount - observedSize] = coefficient;
-                observedSize++;
+            constant += (coefficient * term.getValue());
+        }
+
+        if ((term instanceof RandomVariableAtom) || ((term instanceof ObservedAtom) && online)) {
+
+            if (termIndex == terms.length) {
+                throw new IllegalStateException(
+                        "More than the max terms added to the function. Max: " + terms.length);
             }
-            return;
+            terms[termIndex] = term;
+            coefficients[termIndex] = coefficient;
+            termIndex++;
         }
-
-        if (variableSize == terms.length) {
-            throw new IllegalStateException(
-                    "More than the max terms added to the function. Max: " + terms.length);
-        }
-
-        terms[variableSize] = term;
-        coefficients[variableSize] = coefficient;
-        variableSize++;
-
         constantTerms = constantTerms && term.isConstant();
         linearTerms = linearTerms && term.isLinear();
     }
 
     public int size() {
-        return variableSize;
+        return termIndex;
     }
 
     public float getCoefficient(int index) {
@@ -145,7 +137,7 @@ public class GeneralFunction implements FunctionTerm {
     public float getValue() {
         float val = constant;
 
-        for (int i = 0; i < variableSize; i++) {
+        for (int i = 0; i < termIndex; i++) {
             val += terms[i].getValue() * coefficients[i];
         }
 
@@ -167,7 +159,7 @@ public class GeneralFunction implements FunctionTerm {
     public float getValue(float[] values) {
         float val = constant;
 
-        for (int i = 0; i < variableSize; i++) {
+        for (int i = 0; i < termIndex; i++) {
             val += coefficients[i] * values[i];
         }
 
@@ -190,7 +182,7 @@ public class GeneralFunction implements FunctionTerm {
         float val = constant;
 
         // Use numeric for loops instead of iterators in high traffic code.
-        for (int i = 0; i < variableSize; i++) {
+        for (int i = 0; i < termIndex; i++) {
             FunctionTerm term = terms[i];
             float coefficient = coefficients[i];
 
@@ -221,7 +213,7 @@ public class GeneralFunction implements FunctionTerm {
 
         string.append(constant);
 
-        for (int i = 0; i < variableSize; i++) {
+        for (int i = 0; i < termIndex; i++) {
             FunctionTerm term = terms[i];
             float coefficient = coefficients[i];
 

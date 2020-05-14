@@ -19,17 +19,15 @@ package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
@@ -49,24 +47,21 @@ import java.util.Map;
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
  * Variables are kept in memory, but terms are kept on disk.
  */
-public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, RandomVariableAtom> {
+public abstract class StreamingTermStore<T extends ReasonerTerm> implements TermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
-    public static final int INITIAL_PATH_CACHE_SIZE = 100;
-    public static final int INITIAL_NEW_TERM_BUFFER_SIZE = 1000;
+    private static final int INITIAL_PATH_CACHE_SIZE = 100;
+    private static final int INITIAL_NEW_TERM_BUFFER_SIZE = 1000;
 
     protected List<WeightedRule> rules;
     protected AtomManager atomManager;
 
     // Keep track of variable and observation indexes.
-    protected Map<RandomVariableAtom, Integer> variables;
-    protected Map<ObservedAtom, Integer> observations;
+    protected Map<GroundAtom, Integer> atomIndexMap;
 
     // Matching arrays for variables and observations values and atoms.
-    private float[] variableValues;
-    private RandomVariableAtom[] variableAtoms;
-    private float[] observedValues;
-    private ObservedAtom[] observedAtoms;
+    private float[] atomValues;
+    private GroundAtom[] atoms;
 
     // Buffer to hold new terms
     protected List<T> newTermBuffer;
@@ -79,7 +74,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected int seenTermCount;
     protected int numPages;
 
-    protected HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator;
+    protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
 
     protected int pageSize;
     protected String pageDir;
@@ -125,8 +120,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      */
     protected int[] shuffleMap;
 
+    protected boolean online;
+
     public StreamingTermStore(List<Rule> rules, AtomManager atomManager,
-            HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator) {
+            HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
+        online = Options.ONLINE.getBoolean();
         pageSize = Options.STREAMING_TS_PAGE_SIZE.getInt();
         pageDir = Options.STREAMING_TS_PAGE_LOCATION.getString();
         shufflePage = Options.STREAMING_TS_SHUFFLE_PAGE.getBoolean();
@@ -175,8 +173,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
-        ensureVariableCapacity(atomManager.getCachedRVACount());
-        ensureObservedCapacity(atomManager.getCachedOBSCount());
+
+        int atomCapacity = online? atomManager.getCachedRVACount():
+                atomManager.getCachedRVACount() + atomManager.getCachedOBSCount();
+        ensureAtomCapacity(atomCapacity);
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
@@ -208,152 +208,96 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return !initialRound;
     }
 
-    public int getNumVariables() {
-        return variables.size();
+    public Iterable<GroundAtom> getAtoms() {
+        return atomIndexMap.keySet();
     }
 
-    public Iterable<RandomVariableAtom> getVariables() {
-        return variables.keySet();
+    public float[] getAtomValues() {
+        return atomValues;
     }
 
-    public Iterable<ObservedAtom> getObservations() {
-        return observations.keySet();
+    public float getAtomValue(int index) {
+        return atomValues[index];
     }
 
-    @Override
-    public float[] getVariableValues() {
-        return variableValues;
+    /**
+     * Online Method
+     * Cache iterator calls this method to determine if the term needs updating
+     * */
+    public boolean updateAtom(T term){
+        return false;
     }
 
-    public float[] getObservedValues() {
-        return observedValues;
+    public int getAtomIndex(GroundAtom atom) {
+        return atomIndexMap.get(atom);
     }
 
-    @Override
-    public float getVariableValue(int index) {
-        return variableValues[index];
-    }
-
-    public float getObservedValue(int index) {
-        return observedValues[index];
-    }
-
-    @Override
-    public int getVariableIndex(RandomVariableAtom variable) {
-        return variables.get(variable).intValue();
-    }
-
-    public int getObservedIndex(ObservedAtom observed) {
-        return observations.get(observed).intValue();
-    }
-
-    @Override
     public void syncAtoms() {
-        for (int i = 0; i < variables.size(); i++) {
-            variableAtoms[i].setValue(variableValues[i]);
+        // iterates over all the atoms since we are keeping the observed atoms and rv atoms in the same data structures
+        for (int i = 0; i < atomIndexMap.size(); i++) {
+            atoms[i].setValue(atomValues[i]);
         }
     }
 
     @Override
-    public synchronized RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
-        if(variables.containsKey(atom)){
+    public synchronized GroundAtom createLocalAtom(GroundAtom atom) {
+        if (atomIndexMap.containsKey(atom)) {
             return atom;
         }
 
         // Got a new variable.
 
-        if (variables.size() >= variableAtoms.length) {
-            ensureVariableCapacity(variables.size() * 2);
+        if (atomIndexMap.size() >= atoms.length) {
+            ensureTermCapacity(atomIndexMap.size() * 2);
         }
 
-        int index = variables.size();
+        int index = atomIndexMap.size();
 
-        variables.put(atom, index);
-        variableValues[index] = atom.getValue();
-        variableAtoms[index] = atom;
+        atomIndexMap.put(atom, index);
+        atomValues[index] = atom.getValue();
+        atoms[index] = atom;
 
         return atom;
     }
 
-    public synchronized ObservedAtom createLocalObserved(ObservedAtom atom) {
-        if (observations.containsKey(atom)) {
-            return atom;
-        }
-
-        // Got a new variable.
-
-        if (observations.size() >= observedAtoms.length) {
-            ensureObservedCapacity(observations.size() * 2);
-        }
-
-        int index = observations.size();
-
-        observations.put(atom, index);
-        observedValues[index] = atom.getValue();
-        observedAtoms[index] = atom;
-
-        return atom;
+    @Override
+    public void ensureTermCapacity(int capacity) {
+        throw new UnsupportedOperationException();
     }
 
-    public void ensureVariableCapacity(int capacity) {
+    @Override
+    public void ensureAtomCapacity(int capacity) {
         if (capacity < 0) {
             throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
 
-        if (variables == null || variables.size() == 0) {
+        if (atomIndexMap == null || atomIndexMap.size() == 0) {
             // If there are no variables, then (re-)allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
-            variables = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
+            atomIndexMap = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
 
-            variableValues = new float[capacity];
-            variableAtoms = new RandomVariableAtom[capacity];
-        } else if (variables.size() < capacity) {
+            atomValues = new float[capacity];
+            atoms = new GroundAtom[capacity];
+        } else if (atomIndexMap.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
-            if (capacity < variables.size() * 2) {
-                capacity = variables.size() * 2;
+            if (capacity < atomIndexMap.size() * 2) {
+                capacity = atomIndexMap.size() * 2;
             }
 
             // Reallocate and copy over variables.
-            Map<RandomVariableAtom, Integer> newVariables = new HashMap<RandomVariableAtom, Integer>((int)Math.ceil(capacity / 0.75));
-            newVariables.putAll(variables);
-            variables = newVariables;
+            Map<GroundAtom, Integer> newVariables = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
+            newVariables.putAll(atomIndexMap);
+            atomIndexMap = newVariables;
 
-            variableValues = Arrays.copyOf(variableValues, capacity);
-            variableAtoms = Arrays.copyOf(variableAtoms, capacity);
+            atomValues = Arrays.copyOf(atomValues, capacity);
+            atoms = Arrays.copyOf(atoms, capacity);
         }
     }
 
-    public HyperplaneTermGenerator<T, RandomVariableAtom> getTermGenerator(){
+    public HyperplaneTermGenerator<T, GroundAtom> getTermGenerator(){
         return termGenerator;
     }
 
-    public void ensureObservedCapacity(int capacity) {
-        if (capacity < 0) {
-            throw new IllegalArgumentException("Observed capacity must be non-negative. Got: " + capacity);
-        }
-
-        if (observations == null || observations.size() == 0) {
-            // If there are no variables, then (re-)allocate the variable storage.
-            // The default load factor for Java HashSets is 0.75.
-            observations = new HashMap<ObservedAtom, Integer>((int)Math.ceil(capacity / 0.75));
-
-            observedValues = new float[capacity];
-            observedAtoms = new ObservedAtom[capacity];
-        } else if (observations.size() < capacity) {
-            // Don't bother with small reallocations, if we are reallocating make a lot of room.
-            if (capacity < observations.size() * 2) {
-                capacity = observations.size() * 2;
-            }
-
-            // Reallocate and copy over variables.
-            Map<ObservedAtom, Integer> newObservations = new HashMap<>((int)Math.ceil(capacity / 0.75));
-            newObservations.putAll(observations);
-            observations = newObservations;
-
-            observedValues = Arrays.copyOf(observedValues, capacity);
-            observedAtoms = Arrays.copyOf(observedAtoms, capacity);
-        }
-    }
 
     public void rewrite(String termPagePath, List<T> newPageTerms) {
         // ToDo Implement rewriting of newTermPage
@@ -378,38 +322,25 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     /**
      * Online Method
      * */
-    public synchronized void updateObservationValue(ObservedAtom atom, float newValue){
+    public synchronized void updateValue(GroundAtom atom, float newValue){
         // add the atom and newValue to the updates map for cache iterator
-        atomsToUpdate.put(observations.get(atom), newValue);
+        atomsToUpdate.put(atomIndexMap.get(atom), newValue);
 
         // update our observed values
-        observedValues[getObservedIndex(atom)] = newValue;
+        atomValues[getAtomIndex(atom)] = newValue;
     }
 
     /**
      * Online Method
      * */
-    public synchronized void updateObservationValue(Predicate predicate, Constant[] arguments, float newValue){
+    public synchronized void updateValue(Predicate predicate, Constant[] arguments, float newValue){
         // add the atom and newValue to the updates map for cache iterator
-        ObservedAtom atom = (ObservedAtom)atomManager.getAtom(predicate, arguments);
-        updateObservationValue(atom, newValue);
-    }
-
-    /**
-     * Online Method
-     * Cache iterator calls this method to determine if the term needs updating
-     * */
-    public boolean updateTerm(T term){
-        return false;
+        GroundAtom atom = atomManager.getAtom(predicate, arguments);
+        updateValue(atom, newValue);
     }
 
     @Override
     public T get(int index) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void ensureCapacity(int capacity) {
         throw new UnsupportedOperationException();
     }
 
@@ -505,8 +436,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             activeIterator = null;
         }
 
-        if (variables != null) {
-            variables.clear();
+        if (atomIndexMap != null) {
+            atomIndexMap.clear();
         }
 
         if (termCache != null) {
@@ -522,8 +453,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void reset() {
-        for (int i = 0; i < variables.size(); i++) {
-            variableValues[i] = variableAtoms[i].getValue();
+        for (int i = 0; i < atomIndexMap.size(); i++) {
+            atomValues[i] = atoms[i].getValue();
         }
     }
 
@@ -531,8 +462,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public void close() {
         clear();
 
-        if (variables != null) {
-            variables = null;
+        if (atomIndexMap != null) {
+            atomIndexMap = null;
         }
 
         if (termBuffer != null) {

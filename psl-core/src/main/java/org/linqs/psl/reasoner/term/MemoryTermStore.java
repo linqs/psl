@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -26,7 +27,7 @@ import org.linqs.psl.util.RandUtils;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, RandomVariableAtom> {
+public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, GroundAtom> {
     private ArrayList<T> store;
 
     public MemoryTermStore() {
@@ -47,11 +48,6 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
         if (store != null) {
             store.clear();
         }
-    }
-
-    @Override
-    public ObservedAtom createLocalObserved(ObservedAtom atom){
-        return null;
     }
 
     @Override
@@ -85,7 +81,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
+    public void ensureTermCapacity(int capacity) {
         assert(capacity >= 0);
 
         if (capacity == 0) {
@@ -106,12 +102,12 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
-    public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
+    public GroundAtom createLocalAtom(GroundAtom atom) {
         return atom;
     }
 
     @Override
-    public void ensureVariableCapacity(int capacity) {
+    public void ensureAtomCapacity(int capacity) {
     }
 
     public void shuffle() {

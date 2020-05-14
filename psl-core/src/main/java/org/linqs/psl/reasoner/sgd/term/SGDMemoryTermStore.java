@@ -29,12 +29,4 @@ public class SGDMemoryTermStore extends MemoryVariableTermStore<SGDObjectiveTerm
     protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
         return atom;
     }
-
-    /**
-     * Create a observed local to a specific term.
-     */
-    @Override
-    public ObservedAtom createLocalObserved(ObservedAtom atom){
-        return null;
-    }
 }

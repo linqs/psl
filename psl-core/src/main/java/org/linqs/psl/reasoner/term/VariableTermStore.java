@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 
 /**
  * An interface for term stores that can handle some variable operations.
@@ -44,14 +45,11 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public int getVariableIndex(V variable);
 
     /**
-     * Get the index that matches up to getVariableValues().
-     */
-    public int getObservedIndex(ObservedAtom observation);
-
-    /**
      * Get the variable for the given index.
      */
     public float getVariableValue(int index);
+
+    public V createLocalVariable(RandomVariableAtom atom);
 
     /**
      * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().

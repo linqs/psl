@@ -18,23 +18,18 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,25 +56,12 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     private Set<ModelPredicate> modelPredicates;
 
-    /**
-     * Get the index that matches up to getVariableValues().
-     */
-    @Override
-    public int getObservedIndex(ObservedAtom observation){
-        return -1;
-    }
-
-    @Override
-    public ObservedAtom createLocalObserved(ObservedAtom atom){
-        return null;
-    }
-
     public MemoryVariableTermStore() {
         shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();
         defaultSize = Options.MEMORY_VTS_DEFAULT_SIZE.getInt();
 
         store = new MemoryTermStore<T>();
-        ensureVariableCapacity(defaultSize);
+        ensureAtomCapacity(defaultSize);
 
         modelPredicates = new HashSet<ModelPredicate>();
     }
@@ -117,6 +99,16 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
+    public synchronized V createLocalAtom(GroundAtom atom) {
+        if (atom instanceof RandomVariableAtom){
+            return createLocalVariable((RandomVariableAtom) atom) ;
+        } else {
+            // Memory variable termstore does not keep track of observations
+            return null;
+        }
+    }
+
+    @Override
     public synchronized V createLocalVariable(RandomVariableAtom atom) {
         V variable = convertAtomToVariable(atom);
 
@@ -127,14 +119,14 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         // Got a new variable.
 
         if (variables.size() >= variableAtoms.length) {
-            ensureVariableCapacity(variables.size() * 2);
+            ensureAtomCapacity(variables.size() * 2);
         }
 
         int index = variables.size();
 
         variables.put(variable, index);
         variableValues[index] = atom.getValue();
-        variableAtoms[index] = atom;
+        variableAtoms[index] = (RandomVariableAtom)atom;
 
         if (atom.getPredicate() instanceof ModelPredicate) {
             modelPredicates.add((ModelPredicate)atom.getPredicate());
@@ -147,7 +139,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
      * Make sure we allocate the right amount of memory for global variables.
      */
     @Override
-    public void ensureVariableCapacity(int capacity) {
+    public void ensureAtomCapacity(int capacity) {
         if (capacity < 0) {
             throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
@@ -300,8 +292,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
-        store.ensureCapacity(capacity);
+    public void ensureTermCapacity(int capacity) {
+        store.ensureTermCapacity(capacity);
     }
 
     @Override

@@ -15,20 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.term;
-
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
+package org.linqs.psl.reasoner.term;
 
 /**
- * An in-memory TermStore specifically for DCD terms.
+ * Local atoms are the atoms in reasoner terms.
+ * In the simple case, they are the same as the global atoms RVAs and Observed Atoms.
  */
-public class DCDMemoryTermStore extends MemoryVariableTermStore<DCDObjectiveTerm, RandomVariableAtom> {
-
-    @Override
-    protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
-        return atom;
-    }
-
+public interface ReasonerLocalAtom {
+    public float getValue();
 }

@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term.streaming;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -42,7 +43,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
     public static final double OVERALLOCATION_RATIO = 1.25;
 
     protected StreamingTermStore<T> parentStore;
-    protected HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator;
+    protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
     protected AtomManager atomManager;
 
     protected List<WeightedRule> rules;
@@ -73,7 +74,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
 
     public StreamingInitialRoundIterator(
             StreamingTermStore<T> parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator,
+            AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {

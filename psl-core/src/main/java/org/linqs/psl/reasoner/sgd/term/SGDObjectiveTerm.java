@@ -17,14 +17,14 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -39,16 +39,16 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private short size;
     private float[] coefficients;
-    public int[] variableIndexes;
+    public int[] termIndexes;
 
     private short observedSize;
     private float[] observedCoefficients;
     private int[] observedIndexes;
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-            boolean squared, boolean hinge,
-            Hyperplane<RandomVariableAtom> hyperplane,
-            float weight, float learningRate) {
+    public SGDObjectiveTerm(TermStore<SGDObjectiveTerm, GroundAtom> termStore,
+                            boolean squared, boolean hinge,
+                            Hyperplane<GroundAtom> hyperplane,
+                            float weight, float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
 
@@ -59,19 +59,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
-        observedSize = (short)hyperplane.observedSize();
-        observedCoefficients = hyperplane.getObservedCoefficients();
-
-        variableIndexes = new int[size];
-        RandomVariableAtom[] variables = hyperplane.getVariables();
+        termIndexes = new int[size];
+        GroundAtom[] terms = hyperplane.getTerms();
         for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getVariableIndex(variables[i]);
-        }
-
-        observedIndexes = new int[observedSize];
-        ObservedAtom[] observed = hyperplane.getObservations();
-        for (int i = 0; i < observedSize; i++) {
-            observedIndexes[i] = termStore.getObservedIndex(observed[i]);
+            termIndexes[i] = termStore.getAtomIndex(terms[i]);
         }
     }
 
@@ -156,7 +147,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[variableIndexes[i]];
+            value += coefficients[i] * variableValues[termIndexes[i]];
         }
 
         return value - constant;
@@ -196,7 +187,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(variableIndexes[i]);
+            fixedBuffer.putInt(termIndexes[i]);
         }
 
         for (int i = 0; i < observedSize; i++) {
@@ -220,12 +211,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
             coefficients = new float[size];
-            variableIndexes = new int[size];
+            termIndexes = new int[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            variableIndexes[i] = fixedBuffer.getInt();
+            termIndexes[i] = fixedBuffer.getInt();
         }
 
         if (observedCoefficients.length < observedSize) {
@@ -264,11 +255,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
             if (termStore == null) {
                 builder.append(" * <index:");
-                builder.append(variableIndexes[i]);
+                builder.append(termIndexes[i]);
                 builder.append(">)");
             } else {
                 builder.append(" * ");
-                builder.append(termStore.getVariableValue(variableIndexes[i]));
+                builder.append(termStore.getVariableValue(termIndexes[i]));
                 builder.append(")");
             }
 

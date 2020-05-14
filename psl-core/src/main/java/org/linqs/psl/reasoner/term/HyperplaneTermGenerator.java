@@ -20,8 +20,6 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -42,7 +40,7 @@ import java.util.Set;
 /**
  * A base term generator for terms that come from hyperplanes.
  */
-public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
+public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalAtom> implements TermGenerator<T, V> {
     private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
     private boolean invertNegativeWeight;
@@ -54,7 +52,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     @Override
     public int generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore) {
         int initialSize = termStore.size();
-        termStore.ensureCapacity(initialSize + ruleStore.size());
+        termStore.ensureTermCapacity(initialSize + ruleStore.size());
 
         Set<WeightedRule> rules = new HashSet<WeightedRule>();
         for (GroundRule rule : ruleStore.getGroundRules()) {
@@ -142,54 +140,34 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             float coefficient = (float)sum.getCoefficient(i);
             FunctionTerm term = sum.getTerm(i);
 
-            if ((term instanceof RandomVariableAtom) || (term instanceof ObservedAtom)) {
-                V variable = termStore.createLocalVariable((GroundAtom)term);
+            if (term instanceof GroundAtom) {
+                V localTerm = termStore.createLocalAtom((GroundAtom)term);
 
-                // Check to see if we have seen this variable before in this hyperplane.
+                // Check to see if we have seen this localTerm before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
                 // variables per hyperplane.
-                int localIndex = hyperplane.indexOfVariable(variable);
+                int localIndex = hyperplane.indexOfTerm(localTerm);
                 if (localIndex != -1) {
                     // If this function came from a logical rule
-                    // and the sign of the current coefficient and the coefficient of this variable do not match,
+                    // and the sign of the current coefficient and the coefficient of this localTerm do not match,
                     // then this term is trivial.
                     // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
-                    // A mismatch in signs for the same variable means that a ground atom appeared twice,
+                    // A mismatch in signs for the same localTerm means that a ground atom appeared twice,
                     // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
                     if (sum.isNonNegative() && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), coefficient)) {
                         return null;
                     }
 
-                    // If the local variable already exists, just add to its coefficient.
+                    // If the local localTerm already exists, just add to its coefficient.
                     hyperplane.appendCoefficient(localIndex, coefficient);
                 } else {
-                    hyperplane.addTerm(variable, coefficient);
+                    hyperplane.addTerm(localTerm, coefficient);
                 }
-            } else if (term.isConstant()) {
+            }
+
+            if (term.isConstant()) {
                 // Subtracts because hyperplane is stored as coeffs^T * x = constant.
                 hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
-            } else {
-                throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
-            }
-        }
-
-        // Add observed terms to the onlineHyperplane
-        for (int i = 0; i < sum.observedSize(); i++) {
-            float observedCoefficient = (float) sum.getObservedCoefficient(i);
-            FunctionTerm term = sum.getObservedTerm(i);
-            if (term instanceof ObservedAtom) {
-                ObservedAtom observed = termStore.createLocalObserved((ObservedAtom) term);
-
-                int localIndex = hyperplane.indexOfObserved(observed);
-                if (localIndex != -1) {
-                    if (sum.isNonNegative() && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), observedCoefficient)) {
-                        return null;
-                    }
-
-                    hyperplane.appendObservedCoefficient(localIndex, observedCoefficient);
-                } else {
-                    hyperplane.addObservedTerm((ObservedAtom) observed, observedCoefficient);
-                }
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
             }

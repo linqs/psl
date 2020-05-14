@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 
@@ -45,11 +45,6 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
      */
     protected int numLocalVariables;
 
-    @Override
-    public ObservedAtom createLocalObserved(ObservedAtom atom){
-        return null;
-    }
-
     public MemoryConsensusTermStore() {
         this.store = new MemoryVariableTermStore<T, RandomVariableAtom>() {
             protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
@@ -62,23 +57,28 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public synchronized V createLocalVariable(RandomVariableAtom atom) {
-        numLocalVariables++;
+    public synchronized V createLocalAtom(GroundAtom atom) {
+        if(atom instanceof RandomVariableAtom) {
+            numLocalVariables++;
 
-        store.createLocalVariable(atom);
-        int consensusId = store.getVariableIndex(atom);
+            store.createLocalAtom(atom);
+            int consensusId = store.getVariableIndex((RandomVariableAtom)atom);
 
-        // The underlying store should not give us an index that is more than one larger than the current highest.
-        assert(consensusId <= localVariables.size());
+            // The underlying store should not give us an index that is more than one larger than the current highest.
+            assert (consensusId <= localVariables.size());
 
-        if (consensusId == localVariables.size()) {
-            localVariables.add(new ArrayList<V>());
+            if (consensusId == localVariables.size()) {
+                localVariables.add(new ArrayList<V>());
+            }
+
+            V localVariable = createLocalVariableInternal(consensusId, (float) atom.getValue());
+            localVariables.get(consensusId).add(localVariable);
+
+            return localVariable;
+        } else {
+            // MemoryConsensusTermStore does not keep track of observed atoms
+            return null;
         }
-
-        V localVariable = createLocalVariableInternal(consensusId, (float)atom.getValue());
-        localVariables.get(consensusId).add(localVariable);
-
-        return localVariable;
     }
 
     public int getNumLocalVariables() {
@@ -158,13 +158,13 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
-        store.ensureCapacity(capacity);
+    public void ensureTermCapacity(int capacity) {
+        store.ensureTermCapacity(capacity);
     }
 
     @Override
-    public void ensureVariableCapacity(int capacity) {
-        store.ensureVariableCapacity(capacity);
+    public void ensureAtomCapacity(int capacity) {
+        store.ensureAtomCapacity(capacity);
         ((ArrayList)localVariables).ensureCapacity(capacity);
     }
 

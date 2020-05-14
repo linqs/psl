@@ -1,6 +1,5 @@
 package org.linqs.psl.server.actions;
 
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
@@ -22,7 +21,7 @@ public class UpdateObservation extends OnlineServerAction{
 
     @Override
     public void executeAction() {
-        termStore.updateObservationValue(predicate, arguments, newValue);
+        termStore.updateValue(predicate, arguments, newValue);
     }
 
     @Override
