@@ -18,15 +18,14 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A TermGenerator for DCD objective terms.
  */
-public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, RandomVariableAtom> {
+public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(DCDTermGenerator.class);
 
     private float c;
@@ -44,14 +43,14 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     }
 
     @Override
-    public Class<RandomVariableAtom> getLocalVariableType() {
-        return RandomVariableAtom.class;
+    public Class<GroundAtom> getLocalVariableType() {
+        return GroundAtom.class;
     }
 
     @Override
-    public DCDObjectiveTerm createLossTerm(TermStore <DCDObjectiveTerm, RandomVariableAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
-        VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+    public DCDObjectiveTerm createLossTerm(TermStore <DCDObjectiveTerm, GroundAtom> baseTermStore,
+            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
+        AtomTermStore<DCDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
         if (isHinge && isSquared) {
@@ -68,8 +67,8 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     }
 
     @Override
-    public DCDObjectiveTerm createLinearConstraintTerm(TermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
-            GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane, FunctionComparator comparator) {
+    public DCDObjectiveTerm createLinearConstraintTerm(TermStore<DCDObjectiveTerm, GroundAtom> termStore,
+            GroundRule groundRule, Hyperplane<GroundAtom> hyperplane, FunctionComparator comparator) {
         log.warn("DCD does not support hard constraints, i.e. " + groundRule);
         return null;
     }

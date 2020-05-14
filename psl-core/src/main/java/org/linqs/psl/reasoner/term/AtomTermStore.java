@@ -17,42 +17,46 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
+
+import java.util.Iterator;
 
 /**
- * An interface for term stores that can handle some variable operations.
+ * An interface for term stores that can handle some atom operations.
  */
-public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends TermStore<T, V> {
-    public int getNumVariables();
-
-    public Iterable<V> getVariables();
+public interface AtomTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
 
     /**
-     * Is the term store loaded, and can it give an accurate term and variable count.
+     * Create a atom local to a specific reasoner term.
      */
-    public boolean isLoaded();
+    public V createLocalAtom(GroundAtom atom);
+
+    /**
+     * Get the index that matches up to getAtomValues().
+     */
+    public int getAtomIndex(GroundAtom atom);
 
     /**
      * Get the truth values for variable atoms.
      * Changing a value in this array and calling syncAtoms() will change the actual atom's value.
      */
-    public float[] getVariableValues();
-
-    /**
-     * Get the index that matches up to getVariableValues().
-     */
-    public int getVariableIndex(V variable);
+    public float[] getAtomValues();
 
     /**
      * Get the variable for the given index.
      */
-    public float getVariableValue(int index);
-
-    public V createLocalVariable(RandomVariableAtom atom);
+    public float getAtomValue(int index);
 
     /**
-     * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().
+     * Get an iterator over the terms in the store that does not write to disk.
      */
-    public void syncVariables();
+    public Iterator<T> noWriteIterator();
+
+    boolean isLoaded();
+
+    void syncAtoms();
+
+    int getNumAtoms();
+
+    GroundAtom[] getAtoms();
 }

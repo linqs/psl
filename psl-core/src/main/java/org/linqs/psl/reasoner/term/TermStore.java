@@ -60,6 +60,9 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> 
      */
     public void initForOptimization();
 
+    /**
+    * Getter for terms
+    */
     public T get(int index);
 
     public int size();
@@ -83,7 +86,6 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> 
      * Create a atom local to a specific reasoner term.
      */
     public V createLocalAtom(GroundAtom atom);
-
 
     /**
      * Get an iterator over the terms in the store that does not write to disk.

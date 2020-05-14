@@ -19,8 +19,6 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.util.RandUtils;
 
@@ -92,6 +90,11 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     }
 
     @Override
+    public void ensureAtomCapacity(int capacity) {
+
+    }
+
+    @Override
     public Iterator<T> iterator() {
         return store.iterator();
     }
@@ -104,10 +107,6 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     @Override
     public GroundAtom createLocalAtom(GroundAtom atom) {
         return atom;
-    }
-
-    @Override
-    public void ensureAtomCapacity(int capacity) {
     }
 
     public void shuffle() {

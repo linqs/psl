@@ -25,7 +25,7 @@ import java.lang.reflect.Array;
  * Information representing a raw hyperplane.
  */
 public class Hyperplane<E extends ReasonerLocalAtom> {
-    private E[] terms;
+    private E[] atoms;
     private float[] coefficients;
     private int index;
     private float constant;
@@ -35,22 +35,22 @@ public class Hyperplane<E extends ReasonerLocalAtom> {
         this((E[])Array.newInstance(localVariableClass, maxVariableSize), new float[maxVariableSize],0, constant);
     }
 
-    public Hyperplane(E[] terms, float[] coefficients, int index, float constant) {
-        this.terms = terms;
+    public Hyperplane(E[] atoms, float[] coefficients, int index, float constant) {
+        this.atoms = atoms;
         this.coefficients = coefficients;
         this.constant = constant;
         this.index = index;
     }
 
-    public Hyperplane(E[] terms, float[] coefficients, float constant, int index) {
-        this.terms = terms;
+    public Hyperplane(E[] atoms, float[] coefficients, float constant, int index) {
+        this.atoms = atoms;
         this.coefficients = coefficients;
         this.constant = constant;
         this.index = index;
     }
 
-    public void addTerm(E variable, float coefficient) {
-        terms[index] = variable;
+    public void addAtom(E atom, float coefficient) {
+        atoms[index] = atom;
         coefficients[index] = coefficient;
         index++;
     }
@@ -60,12 +60,12 @@ public class Hyperplane<E extends ReasonerLocalAtom> {
     }
 
 
-    public E getVariable(int index) {
+    public E getAtom(int index) {
         if (index >= this.index) {
-            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + this.index + " exist.");
+            throw new IndexOutOfBoundsException("Tried to access atom at index " + index + ", but only " + this.index + " exist.");
         }
 
-        return terms[index];
+        return atoms[index];
     }
 
 
@@ -94,11 +94,11 @@ public class Hyperplane<E extends ReasonerLocalAtom> {
     }
 
     public int indexOfTerm(E needle) {
-        return ArrayUtils.indexOf(terms, index, needle);
+        return ArrayUtils.indexOf(atoms, index, needle);
     }
 
-    public E[] getTerms() {
-        return terms;
+    public E[] getAtoms() {
+        return atoms;
     }
 
     public float[] getCoefficients() {

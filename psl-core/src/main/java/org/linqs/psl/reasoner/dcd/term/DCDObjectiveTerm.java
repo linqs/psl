@@ -17,10 +17,10 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
@@ -38,22 +38,22 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
     private short size;
     private float[] coefficients;
-    private int[] variableIndexes;
+    private int[] indices;
 
-    public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
-            boolean squared,
-            Hyperplane<RandomVariableAtom> hyperplane,
-            float weight, float c) {
+    public DCDObjectiveTerm(AtomTermStore<DCDObjectiveTerm, GroundAtom> termStore,
+                            boolean squared,
+                            Hyperplane<GroundAtom> hyperplane,
+                            float weight, float c) {
         this.squared = squared;
 
         size = (short)hyperplane.size();
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
-        variableIndexes = new int[size];
-        RandomVariableAtom[] variables = hyperplane.getTerms();
+        indices = new int[size];
+        GroundAtom[] atoms = hyperplane.getAtoms();
         for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getVariableIndex(variables[i]);
+            indices[i] = termStore.getAtomIndex(atoms[i]);
         }
 
         adjustedWeight = weight * c;
@@ -75,7 +75,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[variableIndexes[i]];
+            value += coefficients[i] * variableValues[indices[i]];
         }
 
         value -= constant;
@@ -109,7 +109,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            val += variableValues[variableIndexes[i]] * coefficients[i];
+            val += variableValues[indices[i]] * coefficients[i];
         }
 
         return constant - val;
@@ -132,11 +132,11 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float pa = lagrange;
         lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
-            float val = variableValues[variableIndexes[i]] - ((lagrange - pa) * coefficients[i]);
+            float val = variableValues[indices[i]] - ((lagrange - pa) * coefficients[i]);
             if (truncateEveryStep) {
                 val = Math.max(0.0f, Math.min(1.0f, val));
             }
-            variableValues[variableIndexes[i]] = val;
+            variableValues[indices[i]] = val;
         }
     }
 
@@ -169,7 +169,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(variableIndexes[i]);
+            fixedBuffer.putInt(indices[i]);
         }
     }
 
@@ -186,12 +186,12 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         // Make sure that there is enough room for all these variableIndexes.
         if (coefficients.length < size) {
             coefficients = new float[size];
-            variableIndexes = new int[size];
+            indices = new int[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            variableIndexes[i] = fixedBuffer.getInt();
+            indices[i] = fixedBuffer.getInt();
         }
 
         lagrange = volatileBuffer.getFloat();
@@ -210,7 +210,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
             builder.append("(");
             builder.append(coefficients[i]);
             builder.append(" * ");
-            builder.append(variableIndexes[i]);
+            builder.append(indices[i]);
             builder.append(")");
 
             if (i != size - 1) {

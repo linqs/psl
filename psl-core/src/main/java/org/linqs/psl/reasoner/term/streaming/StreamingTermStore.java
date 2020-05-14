@@ -25,9 +25,9 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ import java.util.Map;
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
  * Variables are kept in memory, but terms are kept on disk.
  */
-public abstract class StreamingTermStore<T extends ReasonerTerm> implements TermStore<T, GroundAtom> {
+public abstract class StreamingTermStore<T extends ReasonerTerm> implements AtomTermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     private static final int INITIAL_PATH_CACHE_SIZE = 100;
@@ -208,14 +208,17 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Term
         return !initialRound;
     }
 
-    public Iterable<GroundAtom> getAtoms() {
-        return atomIndexMap.keySet();
+    @Override
+    public GroundAtom[] getAtoms() {
+        return atoms;
     }
 
+    @Override
     public float[] getAtomValues() {
         return atomValues;
     }
 
+    @Override
     public float getAtomValue(int index) {
         return atomValues[index];
     }
@@ -228,8 +231,14 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Term
         return false;
     }
 
+    @Override
     public int getAtomIndex(GroundAtom atom) {
         return atomIndexMap.get(atom);
+    }
+
+    @Override
+    public int getNumAtoms() {
+        return atomIndexMap.size();
     }
 
     public void syncAtoms() {

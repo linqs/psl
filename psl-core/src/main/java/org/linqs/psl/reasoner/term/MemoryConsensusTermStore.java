@@ -98,7 +98,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public void syncAtoms() {
-        store.syncAtoms();
+        store.syncVariables();
     }
 
     @Override
@@ -160,12 +160,6 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     @Override
     public void ensureTermCapacity(int capacity) {
         store.ensureTermCapacity(capacity);
-    }
-
-    @Override
-    public void ensureAtomCapacity(int capacity) {
-        store.ensureAtomCapacity(capacity);
-        ((ArrayList)localVariables).ensureCapacity(capacity);
     }
 
     @Override

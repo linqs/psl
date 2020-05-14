@@ -18,9 +18,11 @@
 package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
+import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
@@ -51,12 +53,12 @@ public class SGDReasoner extends Reasoner {
 
     @Override
     public void optimize(TermStore baseTermStore) {
-        if (!(baseTermStore instanceof VariableTermStore)) {
-            throw new IllegalArgumentException("SGDReasoner requires a VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
+        if (!(baseTermStore instanceof AtomTermStore)) {
+            throw new IllegalArgumentException("SGDReasoner requires a AtomTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
 
         @SuppressWarnings("unchecked")
-        VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+        AtomTermStore<SGDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
 
         termStore.initForOptimization();
 
@@ -76,13 +78,14 @@ public class SGDReasoner extends Reasoner {
             // Keep track of the mean movement of the random variables.
             float movement = 0.0f;
 
-            float[] variableValues = termStore.getVariableValues();
+            GroundAtom[] atoms = termStore.getAtoms();
+            float[] atomValues = termStore.getAtomValues();
             for (SGDObjectiveTerm term : termStore) {
-                movement += term.minimize(iteration, variableValues);
+                movement += term.minimize(iteration, atoms, atomValues);
             }
 
-            if (variableValues.length != 0) {
-                movement /= variableValues.length;
+            if (atoms.length != 0) {
+                movement /= atoms.length;
             }
 
             long end = System.currentTimeMillis();
@@ -108,7 +111,7 @@ public class SGDReasoner extends Reasoner {
 
         log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
                 iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumAtoms(), termStore.size());
     }
 
     private boolean breakOptimization(int iteration, float objective, float oldObjective, float movement) {
@@ -130,7 +133,7 @@ public class SGDReasoner extends Reasoner {
         return false;
     }
 
-    public float computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    public float computeObjective(AtomTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         float objective = 0.0f;
 
         // If possible, use a readonly iterator.
@@ -141,7 +144,7 @@ public class SGDReasoner extends Reasoner {
             termIterator = termStore.iterator();
         }
 
-        float[] variableValues = termStore.getVariableValues();
+        float[] variableValues = termStore.getAtomValues();
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate(variableValues);
         }

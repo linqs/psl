@@ -106,7 +106,7 @@ public class DCDReasoner extends Reasoner {
             }
         }
 
-        termStore.syncAtoms();
+        termStore.syncVariables();
 
         log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
                 iteration - 1, objective, totalTime);

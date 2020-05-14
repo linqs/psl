@@ -161,7 +161,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                     // If the local localTerm already exists, just add to its coefficient.
                     hyperplane.appendCoefficient(localIndex, coefficient);
                 } else {
-                    hyperplane.addTerm(localTerm, coefficient);
+                    hyperplane.addAtom(localTerm, coefficient);
                 }
             }
 
