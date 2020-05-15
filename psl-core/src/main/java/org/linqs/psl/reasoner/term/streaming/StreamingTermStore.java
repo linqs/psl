@@ -174,8 +174,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
 
-        int atomCapacity = online? atomManager.getCachedRVACount():
-                atomManager.getCachedRVACount() + atomManager.getCachedOBSCount();
+        int atomCapacity = online ? atomManager.getCachedRVACount() + atomManager.getCachedOBSCount() :
+                atomManager.getCachedRVACount();
         ensureAtomCapacity(atomCapacity);
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
@@ -257,7 +257,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         // Got a new variable.
 
         if (atomIndexMap.size() >= atoms.length) {
-            ensureTermCapacity(atomIndexMap.size() * 2);
+            ensureAtomCapacity(atomIndexMap.size() * 2);
         }
 
         int index = atomIndexMap.size();

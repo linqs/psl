@@ -19,18 +19,11 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.GeneralFunction;
-import org.linqs.psl.reasoner.sgd.SGDReasoner;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,26 +49,8 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     public SGDObjectiveTerm createLossTerm(TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return new SGDObjectiveTerm(baseTermStore, isSquared, isHinge, hyperplane, weight, learningRate);
-    }
-
-    public SGDObjectiveTerm createLossTerm(TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
-                                           boolean isHinge, boolean isSquared, float weight, Hyperplane<GroundAtom> hyperplane) {
-        return new SGDObjectiveTerm(baseTermStore, isSquared, isHinge, hyperplane, weight, learningRate);
-    }
-
-    /**
-     * Create a ReasonerTerm from the ground rule.
-     * Note that the term will NOT be added to the term store.
-     * The store is just needed for creating variables.
-     */
-    public SGDObjectiveTerm createTerm(GeneralFunction function, float weight, TermStore<SGDObjectiveTerm, GroundAtom>  termStore) {
-        Hyperplane<GroundAtom> hyperplane = processHyperplane(function, termStore);
-        if (hyperplane == null) {
-            return null;
-        }
-        // Non-negative functions have a hinge.
-        return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), weight, hyperplane);
+        AtomTermStore<SGDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
+        return new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight, learningRate);
     }
 
     @Override

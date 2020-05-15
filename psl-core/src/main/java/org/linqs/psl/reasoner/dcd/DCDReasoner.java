@@ -18,9 +18,11 @@
 package org.linqs.psl.reasoner.dcd;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
+import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
@@ -50,25 +52,26 @@ public class DCDReasoner extends Reasoner {
 
     @Override
     public void optimize(TermStore baseTermStore) {
-        if (!(baseTermStore instanceof VariableTermStore)) {
-            throw new IllegalArgumentException("DCDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
+        if (!(baseTermStore instanceof AtomTermStore)) {
+            throw new IllegalArgumentException("DCDReasoner requires an AtomTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
 
         @SuppressWarnings("unchecked")
-        VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+        AtomTermStore<DCDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
 
         termStore.initForOptimization();
 
         // This must be called after the term store has to correct variable capacity.
         // A reallocation can cause this array to become out-of-date.
-        float[] variableValues = termStore.getVariableValues();
+        float[] values = termStore.getAtomValues();
+        GroundAtom[] atoms = termStore.getAtoms();
 
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
         if (printInitialObj && log.isTraceEnabled()) {
-            objective = computeObjective(termStore, variableValues);
-            log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0, 0);
+            objective = computeObjective(termStore, values);
+            log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimization Time: {}", 0, objective, 0, 0);
         }
 
         int iteration = 1;
@@ -77,12 +80,12 @@ public class DCDReasoner extends Reasoner {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {
-                term.minimize(truncateEveryStep, variableValues);
+                term.minimize(truncateEveryStep, atoms, values);
             }
 
             // If we are truncating every step, then the variables are already in valid state.
             if (!truncateEveryStep) {
-                for (RandomVariableAtom variable : termStore.getVariables()) {
+                for (GroundAtom variable : termStore.getAtoms()) {
                     variable.setValue(Math.max(Math.min(variable.getValue(), 1.0f), 0.0f));
                 }
             }
@@ -90,11 +93,11 @@ public class DCDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
 
             oldObjective = objective;
-            objective = computeObjective(termStore, variableValues);
+            objective = computeObjective(termStore, values);
             totalTime += end - start;
 
             if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimiztion Time: {}",
+                log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
                         iteration, objective, (end - start), totalTime);
             }
 
@@ -106,11 +109,11 @@ public class DCDReasoner extends Reasoner {
             }
         }
 
-        termStore.syncVariables();
+        termStore.syncAtoms();
 
-        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
+        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimization Time: {}",
                 iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+        log.debug("Optimized with {} atoms and {} terms.", termStore.getNumAtoms(), termStore.size());
     }
 
     private boolean breakOptimization(int iteration, float objective, float oldObjective) {
@@ -127,7 +130,7 @@ public class DCDReasoner extends Reasoner {
         return false;
     }
 
-    private float computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
+    private float computeObjective(AtomTermStore<DCDObjectiveTerm, GroundAtom> termStore, float[] variableValues) {
         float objective = 0.0f;
         int termCount = 0;
 

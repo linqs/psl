@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -90,13 +91,13 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(boolean truncateEveryStep, float[] variableValues) {
+    public void minimize(boolean truncateEveryStep, GroundAtom[] atoms, float[] values) {
         if (squared) {
-            float gradient = computeGradient(variableValues);
+            float gradient = computeGradient(atoms, values);
             gradient += lagrange / (2.0f * adjustedWeight);
-            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, variableValues);
+            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, atoms, values);
         } else {
-            minimize(truncateEveryStep, computeGradient(variableValues), adjustedWeight, variableValues);
+            minimize(truncateEveryStep, computeGradient(atoms, values), adjustedWeight, atoms, values);
         }
     }
 
@@ -105,17 +106,19 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    private float computeGradient(float[] variableValues) {
+    private float computeGradient(GroundAtom[] atoms, float[] values) {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            val += variableValues[indices[i]] * coefficients[i];
+            if(atoms[indices[i]] instanceof RandomVariableAtom){
+                val += values[indices[i]] * coefficients[i];
+            }
         }
 
         return constant - val;
     }
 
-    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] variableValues) {
+    private void minimize(boolean truncateEveryStep, float gradient, float lim, GroundAtom[] atoms, float[] values) {
         float pg = gradient;
         if (MathUtils.isZero(lagrange)) {
             pg = Math.min(0.0f, gradient);
@@ -132,11 +135,13 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float pa = lagrange;
         lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
-            float val = variableValues[indices[i]] - ((lagrange - pa) * coefficients[i]);
-            if (truncateEveryStep) {
-                val = Math.max(0.0f, Math.min(1.0f, val));
+            if(atoms[indices[i]] instanceof RandomVariableAtom){
+                float val = values[indices[i]] - ((lagrange - pa) * coefficients[i]);
+                if (truncateEveryStep) {
+                    val = Math.max(0.0f, Math.min(1.0f, val));
+                }
+                values[indices[i]] = val;
             }
-            variableValues[indices[i]] = val;
         }
     }
 

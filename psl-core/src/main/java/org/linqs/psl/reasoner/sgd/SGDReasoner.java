@@ -145,8 +145,9 @@ public class SGDReasoner extends Reasoner {
         }
 
         float[] variableValues = termStore.getAtomValues();
+        GroundAtom[] atoms = termStore.getAtoms();
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate(variableValues);
+            objective += term.evaluate(atoms, variableValues);
         }
 
         return objective / termStore.size();

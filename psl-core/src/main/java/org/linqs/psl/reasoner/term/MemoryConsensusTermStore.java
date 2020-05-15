@@ -175,4 +175,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     protected abstract V createLocalVariableInternal(int consensusIndex, float value);
 
     protected abstract void resetLocalVariables();
+
+    @Override
+    public void ensureAtomCapacity(int capacity) { }
 }

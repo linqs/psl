@@ -65,11 +65,11 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     @Override
     public synchronized boolean updateAtom(SGDObjectiveTerm term){
         boolean rewrite = false;
-        int [] obsIndices = term.getObservedIndices();
-        for (int obsIndex: obsIndices){
-            if(atomsUpdatingThisRound.containsKey(obsIndex)){
+        int[] indices = term.getIndices();
+        for (int index: indices){
+            if(atomsUpdatingThisRound.containsKey(index)){
                 rewrite = true;
-                term.updateConstant(getAtomValues());
+                term.updateConstant(getAtoms(), getAtomValues());
                 break;
             }
         }

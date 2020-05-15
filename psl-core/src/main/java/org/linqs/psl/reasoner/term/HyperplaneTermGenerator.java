@@ -133,7 +133,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * Construct a hyperplane from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    protected Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
+    private Hyperplane<V> processHyperplane(GeneralFunction sum, TermStore<T, V> termStore) {
         Hyperplane<V> hyperplane = new Hyperplane<V>(getLocalVariableType(), sum.size(), -1.0f * (float)sum.getConstant());
 
         for (int i = 0; i < sum.size(); i++) {
@@ -163,11 +163,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                 } else {
                     hyperplane.addAtom(localTerm, coefficient);
                 }
-            }
 
-            if (term.isConstant()) {
-                // Subtracts because hyperplane is stored as coeffs^T * x = constant.
-                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
             }

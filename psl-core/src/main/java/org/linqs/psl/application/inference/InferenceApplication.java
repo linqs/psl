@@ -106,8 +106,8 @@ public abstract class InferenceApplication implements ModelApplication {
         groundRuleStore = createGroundRuleStore();
         termGenerator = createTermGenerator();
 
-        int atomCapacity = online? atomManager.getCachedRVACount():
-                atomManager.getCachedRVACount() + atomManager.getCachedOBSCount();
+        int atomCapacity = online ? atomManager.getCachedRVACount() + atomManager.getCachedOBSCount():
+                atomManager.getCachedRVACount();
         termStore.ensureAtomCapacity(atomCapacity);
 
         if (normalizeWeights) {

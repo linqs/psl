@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.InferenceTest;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.atom.AtomManager;
@@ -65,7 +66,7 @@ public class SGDOnlineInferenceTest extends InferenceTest {
         }
 
         // Define Rules
-        // Rating(U1, M) && Sim_Users(U1, U2) && A != B => Rating(U2, M)
+        // Rating(U1, M) && Sim_Users(U1, U2) => Rating(U2, M)
         baselineRules.add(new WeightedLogicalRule(
                 new Implication(
                         new Conjunction(
@@ -90,8 +91,8 @@ public class SGDOnlineInferenceTest extends InferenceTest {
         baselineObservations.put(baselinePredicates.get("Sim_Users"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
                 new TestModel.PredicateData(1.0, new Object[]{"Alice", "Bob"}),
                 new TestModel.PredicateData(1.0, new Object[]{"Bob", "Alice"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Eddie", "Alice"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Alice", "Eddie"}),
+                new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Alice"}),
+                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Eddie"}),
                 new TestModel.PredicateData(0.0, new Object[]{"Eddie", "Bob"}),
                 new TestModel.PredicateData(0.0, new Object[]{"Bob", "Eddie"})
         )));
@@ -124,6 +125,8 @@ public class SGDOnlineInferenceTest extends InferenceTest {
             modelInfo.dataStore.close();
             modelInfo = null;
         }
+
+        Options.ONLINE.set(true);
         
         initBaselineModel();
 
@@ -148,16 +151,14 @@ public class SGDOnlineInferenceTest extends InferenceTest {
         SGDStreamingTermStore termStore = (SGDStreamingTermStore)inference.getTermStore();
         AtomManager atomManager = inference.getAtomManager();
 
-        System.out.println(atomManager);
-
         // create new action
-        UpdateObservation newAction = new UpdateObservation(termStore, (float)1.0, Predicate.get("Sim_Users"),
+        UpdateObservation newAction = new UpdateObservation(termStore, (float)0.0, Predicate.get("Sim_Users"),
                 new UniqueStringID("Alice"), new UniqueStringID("Eddie"));
 
         // Set newAction as next action for online inference application
         inference.server.setNextAction(newAction);
 
-        System.out.println("Hello");
+        inference.inference();
     }
 
 }

@@ -1,5 +1,6 @@
 package org.linqs.psl.server;
 
+import org.linqs.psl.server.actions.Close;
 import org.linqs.psl.server.actions.OnlineServerAction;
 
 public class OnlineServer {
@@ -14,7 +15,7 @@ public class OnlineServer {
     }
 
     public synchronized void clearNextAction() {
-        clientNextAction = null;
+        clientNextAction = new Close(null);
     }
 
     public void parseClientCommand(){

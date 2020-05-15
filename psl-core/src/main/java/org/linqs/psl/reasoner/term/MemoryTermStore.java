@@ -90,9 +90,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     }
 
     @Override
-    public void ensureAtomCapacity(int capacity) {
-
-    }
+    public void ensureAtomCapacity(int capacity) { }
 
     @Override
     public Iterator<T> iterator() {
