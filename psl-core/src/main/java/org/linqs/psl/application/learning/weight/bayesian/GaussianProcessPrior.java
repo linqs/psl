@@ -84,7 +84,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         earlyStopping = Options.WLA_GPP_EARLY_STOPPING.getBoolean();
         useProvidedWeight = Options.WLA_GPP_USE_PROVIDED_WEIGHT.getBoolean();
 
-        initialWeightValue = Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat();
+        initialWeightValue = evaluator.isHigherRepBetter()? Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat()
+                : -Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat();
         initialStdValue = Options.WLA_GPP_INITIAL_WEIGHT_STD.getFloat();
 
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());

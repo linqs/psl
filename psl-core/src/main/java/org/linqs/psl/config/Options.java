@@ -873,13 +873,13 @@ public class Options {
     );
 
     public static final Option WLA_SEARCH_DIRICHLET = new Option(
-            "search.hypersphere",
+            "search.dirichlet",
             true,
             "Whether or not to perform weight learning in the polar coordinate system."
     );
 
     public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(
-            "basegridsearch.hypersphereradius",
+            "search.dirichletalpha",
             0.05,
             "The radius of the hypersphere that is being optimized over."
     );
