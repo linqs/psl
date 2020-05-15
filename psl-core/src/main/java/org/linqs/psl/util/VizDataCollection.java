@@ -64,7 +64,8 @@ public class VizDataCollection {
                 stream = new PrintStream(outputPath);
                 closeStream = true;
             } catch (IOException ex) {
-                log.error(String.format("Unable to open file (%s) for visualization data, using stdout instead.", outputPath), ex);
+                log.error(String.format("Unable to open file (%s) for visualization data," + 
+                    "using stdout instead.", outputPath), ex);
             }
         }
 
@@ -107,23 +108,23 @@ public class VizDataCollection {
     }
 
     public static void groundingsPerRule(List<Rule> rules, GroundRuleStore groundRuleStore) {
-    for (Rule rule: rules) {
-        String stringRuleId = Integer.toString(System.identityHashCode(rule));
-        int groundRuleCount = groundRuleStore.count( rule );
-        // Abstract Arithmetic Rules are not currently being added to the data collection
-        if ( vizData.rules.get(stringRuleId) == null ) {
-            HashMap<String, Object> newRuleElementItem = new HashMap<String, Object>();
-            newRuleElementItem.put("text", rule.getName());
-            vizData.rules.put(stringRuleId, newRuleElementItem);
-        }
-        Map<String, Object> ruleElement = vizData.rules.get(stringRuleId);
-        ruleElement.put("count", groundRuleCount);
-        ruleElement.put("weighted", rule.isWeighted());
+        for (Rule rule: rules) {
+            String stringRuleId = Integer.toString(System.identityHashCode(rule));
+            int groundRuleCount = groundRuleStore.count( rule );
+            // Abstract Arithmetic Rules are not currently being added to the data collection
+            if ( vizData.rules.get(stringRuleId) == null ) {
+                HashMap<String, Object> newRuleElementItem = new HashMap<String, Object>();
+                newRuleElementItem.put("text", rule.getName());
+                vizData.rules.put(stringRuleId, newRuleElementItem);
+            }
+            Map<String, Object> ruleElement = vizData.rules.get(stringRuleId);
+            ruleElement.put("count", groundRuleCount);
+            ruleElement.put("weighted", rule.isWeighted());
         }
     }
 
     public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
-                            Map<Variable, Integer> variableMap,  Constant[] constantsList) {
+            Map<Variable, Integer> variableMap,  Constant[] constantsList) {
         if (groundRule == null) {
             return;
         }
@@ -136,7 +137,8 @@ public class VizDataCollection {
             Map<String, Object> groundAtomElement = new HashMap<String, Object>();
             groundAtomElement.put("text", a.toString());
             groundAtomElement.put("prediction", a.getValue());
-            vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)), groundAtomElement);
+            vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)),
+                groundAtomElement);
             atomCount++;
         }
 
@@ -150,7 +152,8 @@ public class VizDataCollection {
         // Adds a groundRule element to RuleMap
         Map<String, String> varConstMap = new HashMap<String, String>();
         for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
-            varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
+            varConstMap.put(entry.getKey().toString(),
+                constantsList[entry.getValue()].rawToString());
         }
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         if (groundRule instanceof WeightedGroundRule) {
