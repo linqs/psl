@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
@@ -27,14 +28,9 @@ import java.util.Iterator;
 public interface AtomTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
 
     /**
-     * Create a atom local to a specific reasoner term.
-     */
-    public V createLocalAtom(GroundAtom atom);
-
-    /**
      * Get the index that matches up to getAtomValues().
      */
-    public int getAtomIndex(GroundAtom atom);
+    public int getAtomIndex(V atom);
 
     /**
      * Get the truth values for variable atoms.
@@ -47,10 +43,6 @@ public interface AtomTermStore<T extends ReasonerTerm, V extends ReasonerLocalAt
      */
     public float getAtomValue(int index);
 
-    /**
-     * Get an iterator over the terms in the store that does not write to disk.
-     */
-    public Iterator<T> noWriteIterator();
 
     boolean isLoaded();
 
@@ -58,5 +50,5 @@ public interface AtomTermStore<T extends ReasonerTerm, V extends ReasonerLocalAt
 
     int getNumAtoms();
 
-    GroundAtom[] getAtoms();
+    ArrayList<V> getAtoms();
 }

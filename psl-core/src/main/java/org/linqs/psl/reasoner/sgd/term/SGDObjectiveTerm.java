@@ -25,6 +25,7 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -63,11 +64,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void updateConstant(GroundAtom[] atoms, float[] values){
+    public void updateConstant(ArrayList<GroundAtom> atoms, float[] values){
         float recomputedConstant = 0;
 
         for(int i = 0; i < size; i ++){
-            if(atoms[indices[i]] instanceof ObservedAtom) {
+            if(atoms.get(indices[i]) instanceof ObservedAtom) {
                 recomputedConstant = recomputedConstant + coefficients[i] * values[indices[i]];
             }
         }
@@ -85,7 +86,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    public float evaluate(GroundAtom[] atoms, float[] atomValues) {
+    public float evaluate(ArrayList<GroundAtom> atoms, float[] atomValues) {
         float dot = dot(atoms, atomValues);
 
         if (squared && hinge) {
@@ -106,11 +107,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(int iteration, GroundAtom[] atoms, float[] atomValues) {
+    public float minimize(int iteration, ArrayList<GroundAtom> atoms, float[] atomValues) {
         float movement = 0.0f;
 
         for (int i = 0 ; i < size; i++) {
-            if(atoms[indices[i]] instanceof RandomVariableAtom){
+            if(atoms.get(indices[i]) instanceof RandomVariableAtom){
                 float dot = dot(atoms, atomValues);
                 float gradient = computeGradient(iteration, i, dot);
                 float gradientStep = gradient * (learningRate / iteration);
@@ -136,11 +137,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return weight * coefficients[varId];
     }
 
-    private float dot(GroundAtom[] atoms, float[] atomValues) {
+    private float dot(ArrayList<GroundAtom> atoms, float[] atomValues) {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            if(atoms[indices[i]] instanceof RandomVariableAtom) {
+            if(atoms.get(indices[i]) instanceof RandomVariableAtom) {
                 value += coefficients[i] * atomValues[indices[i]];
             }
         }

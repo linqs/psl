@@ -25,6 +25,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 /**
  * A term in the objective to be optimized by a DCDReasoner.
@@ -91,7 +92,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(boolean truncateEveryStep, GroundAtom[] atoms, float[] values) {
+    public void minimize(boolean truncateEveryStep, ArrayList<GroundAtom> atoms, float[] values) {
         if (squared) {
             float gradient = computeGradient(atoms, values);
             gradient += lagrange / (2.0f * adjustedWeight);
@@ -106,11 +107,11 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    private float computeGradient(GroundAtom[] atoms, float[] values) {
+    private float computeGradient(ArrayList<GroundAtom> atoms, float[] values) {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            if(atoms[indices[i]] instanceof RandomVariableAtom){
+            if(atoms.get(indices[i]) instanceof RandomVariableAtom){
                 val += values[indices[i]] * coefficients[i];
             }
         }
@@ -118,7 +119,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return constant - val;
     }
 
-    private void minimize(boolean truncateEveryStep, float gradient, float lim, GroundAtom[] atoms, float[] values) {
+    private void minimize(boolean truncateEveryStep, float gradient, float lim, ArrayList<GroundAtom> atoms, float[] values) {
         float pg = gradient;
         if (MathUtils.isZero(lagrange)) {
             pg = Math.min(0.0f, gradient);
@@ -135,7 +136,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float pa = lagrange;
         lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
-            if(atoms[indices[i]] instanceof RandomVariableAtom){
+            if(atoms.get(indices[i]) instanceof RandomVariableAtom){
                 float val = values[indices[i]] - ((lagrange - pa) * coefficients[i]);
                 if (truncateEveryStep) {
                     val = Math.max(0.0f, Math.min(1.0f, val));

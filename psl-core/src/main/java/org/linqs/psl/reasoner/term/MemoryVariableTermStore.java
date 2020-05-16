@@ -26,18 +26,13 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A general TermStore that handles terms and variables all in memory.
  * Variables are stored in an array along with their values.
  */
-public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements VariableTermStore<T, V> {
+public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements AtomTermStore<T, V> {
     private static final Logger log = LoggerFactory.getLogger(MemoryVariableTermStore.class);
 
     // Keep an internal store to hold the terms while this class focuses on variables.
@@ -45,6 +40,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     // Keep track of variable indexes.
     private Map<V, Integer> variables;
+    private ArrayList<V> variableArrayList;
 
     // Matching arrays for variables values and atoms.
     // A -1 will be stored if we need to go to the atom for the value.
@@ -67,29 +63,29 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public int getVariableIndex(V variable) {
+    public int getAtomIndex(V variable) {
         return variables.get(variable).intValue();
     }
 
     @Override
-    public float getVariableValue(int index) {
+    public float getAtomValue(int index) {
         return variableValues[index];
     }
 
     @Override
-    public float[] getVariableValues() {
+    public float[] getAtomValues() {
         return variableValues;
     }
 
     @Override
-    public void syncVariables() {
+    public void syncAtoms() {
         for (int i = 0; i < variables.size(); i++) {
             variableAtoms[i].setValue(variableValues[i]);
         }
     }
 
     @Override
-    public int getNumVariables() {
+    public int getNumAtoms() {
         return variables.size();
     }
 
@@ -101,15 +97,14 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     @Override
     public synchronized V createLocalAtom(GroundAtom atom) {
         if (atom instanceof RandomVariableAtom){
-            return createLocalVariable((RandomVariableAtom) atom) ;
+            return createLocalAtom((RandomVariableAtom) atom) ;
         } else {
             // Memory variable termstore does not keep track of observations
             return null;
         }
     }
 
-    @Override
-    public synchronized V createLocalVariable(RandomVariableAtom atom) {
+    private synchronized V createLocalAtom(RandomVariableAtom atom) {
         V variable = convertAtomToVariable(atom);
 
         if (variables.containsKey(variable)) {
@@ -117,7 +112,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         // Got a new variable.
-
         if (variables.size() >= variableAtoms.length) {
             ensureAtomCapacity(variables.size() * 2);
         }
@@ -125,6 +119,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         int index = variables.size();
 
         variables.put(variable, index);
+        variableArrayList.add(index, variable);
         variableValues[index] = atom.getValue();
         variableAtoms[index] = (RandomVariableAtom)atom;
 
@@ -155,6 +150,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
             variableValues = new float[capacity];
             variableAtoms = new RandomVariableAtom[capacity];
+            variableArrayList = new ArrayList<V>(capacity);
         } else if (variables.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
             if (capacity < variables.size() * 2) {
@@ -172,8 +168,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public Iterable<V> getVariables() {
-        return variables.keySet();
+    public ArrayList<V> getAtoms() {
+        return variableArrayList;
     }
 
     @Override

@@ -62,7 +62,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
             numLocalVariables++;
 
             store.createLocalAtom(atom);
-            int consensusId = store.getVariableIndex((RandomVariableAtom)atom);
+            int consensusId = store.getAtomIndex((RandomVariableAtom)atom);
 
             // The underlying store should not give us an index that is more than one larger than the current highest.
             assert (consensusId <= localVariables.size());
@@ -86,7 +86,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public int getNumConsensusVariables() {
-        return store.getNumVariables();
+        return store.getNumAtoms();
     }
 
     public List<V> getLocalVariables(int consensusId) {
@@ -94,11 +94,11 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public float[] getConsensusValues() {
-        return store.getVariableValues();
+        return store.getAtomValues();
     }
 
     public void syncAtoms() {
-        store.syncVariables();
+        store.syncAtoms();
     }
 
     @Override
@@ -177,5 +177,8 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     protected abstract void resetLocalVariables();
 
     @Override
-    public void ensureAtomCapacity(int capacity) { }
+    public void ensureAtomCapacity(int capacity) {
+        store.ensureAtomCapacity(capacity);
+        ((ArrayList)localVariables).ensureCapacity(capacity);
+    }
 }

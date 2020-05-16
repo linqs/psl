@@ -60,8 +60,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     protected Map<GroundAtom, Integer> atomIndexMap;
 
     // Matching arrays for variables and observations values and atoms.
-    private float[] atomValues;
-    private GroundAtom[] atoms;
+    protected float[] atomValues;
+    protected ArrayList<GroundAtom> atoms;
 
     // Buffer to hold new terms
     protected List<T> newTermBuffer;
@@ -209,7 +209,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     }
 
     @Override
-    public GroundAtom[] getAtoms() {
+    public ArrayList<GroundAtom> getAtoms() {
         return atoms;
     }
 
@@ -244,7 +244,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     public void syncAtoms() {
         // iterates over all the atoms since we are keeping the observed atoms and rv atoms in the same data structures
         for (int i = 0; i < atomIndexMap.size(); i++) {
-            atoms[i].setValue(atomValues[i]);
+            atoms.get(i).setValue(atomValues[i]);
         }
     }
 
@@ -256,7 +256,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
 
         // Got a new variable.
 
-        if (atomIndexMap.size() >= atoms.length) {
+        if (atomIndexMap.size() >= atoms.size()) {
             ensureAtomCapacity(atomIndexMap.size() * 2);
         }
 
@@ -264,7 +264,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
 
         atomIndexMap.put(atom, index);
         atomValues[index] = atom.getValue();
-        atoms[index] = atom;
+        atoms.add(index, atom);
 
         return atom;
     }
@@ -286,7 +286,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
             atomIndexMap = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
 
             atomValues = new float[capacity];
-            atoms = new GroundAtom[capacity];
+            atoms = new ArrayList<GroundAtom>(capacity);
         } else if (atomIndexMap.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
             if (capacity < atomIndexMap.size() * 2) {
@@ -299,7 +299,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
             atomIndexMap = newVariables;
 
             atomValues = Arrays.copyOf(atomValues, capacity);
-            atoms = Arrays.copyOf(atoms, capacity);
         }
     }
 
@@ -463,7 +462,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     @Override
     public void reset() {
         for (int i = 0; i < atomIndexMap.size(); i++) {
-            atomValues[i] = atoms[i].getValue();
+            atomValues[i] = atoms.get(i).getValue();
         }
     }
 

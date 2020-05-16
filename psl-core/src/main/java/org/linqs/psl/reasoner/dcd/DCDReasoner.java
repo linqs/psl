@@ -19,18 +19,17 @@ package org.linqs.psl.reasoner.dcd;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
@@ -64,7 +63,7 @@ public class DCDReasoner extends Reasoner {
         // This must be called after the term store has to correct variable capacity.
         // A reallocation can cause this array to become out-of-date.
         float[] values = termStore.getAtomValues();
-        GroundAtom[] atoms = termStore.getAtoms();
+        ArrayList<GroundAtom> atoms = (ArrayList<GroundAtom>)termStore.getAtoms();
 
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;

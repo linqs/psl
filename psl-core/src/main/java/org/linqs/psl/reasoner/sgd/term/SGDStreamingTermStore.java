@@ -18,10 +18,12 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -69,7 +71,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         for (int index: indices){
             if(atomsUpdatingThisRound.containsKey(index)){
                 rewrite = true;
-                term.updateConstant(getAtoms(), getAtomValues());
+                term.updateConstant((ArrayList<GroundAtom>)getAtoms(), getAtomValues());
                 break;
             }
         }

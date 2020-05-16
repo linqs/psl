@@ -19,18 +19,17 @@ package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
@@ -78,14 +77,14 @@ public class SGDReasoner extends Reasoner {
             // Keep track of the mean movement of the random variables.
             float movement = 0.0f;
 
-            GroundAtom[] atoms = termStore.getAtoms();
+            ArrayList<GroundAtom> atoms = termStore.getAtoms();
             float[] atomValues = termStore.getAtomValues();
             for (SGDObjectiveTerm term : termStore) {
                 movement += term.minimize(iteration, atoms, atomValues);
             }
 
-            if (atoms.length != 0) {
-                movement /= atoms.length;
+            if (atomValues.length != 0) {
+                movement /= atomValues.length;
             }
 
             long end = System.currentTimeMillis();
@@ -145,7 +144,7 @@ public class SGDReasoner extends Reasoner {
         }
 
         float[] variableValues = termStore.getAtomValues();
-        GroundAtom[] atoms = termStore.getAtoms();
+        ArrayList<GroundAtom> atoms = (ArrayList<GroundAtom>)termStore.getAtoms();
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate(atoms, variableValues);
         }
