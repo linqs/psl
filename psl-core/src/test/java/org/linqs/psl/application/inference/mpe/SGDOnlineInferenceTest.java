@@ -40,11 +40,11 @@ import org.linqs.psl.server.actions.UpdateObservation;
 
 import java.util.*;
 
-public class SGDOnlineInferenceTest extends InferenceTest {
+public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
     private Database inferDB;
     private SGDTermGenerator termGenerator;
-    private DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
+    private DatabaseDriver driver = DatabaseTestUtil.getH2Driver();
     private Map<String, StandardPredicate> baselinePredicates = new HashMap<>();
     private List<Rule> baselineRules = new ArrayList<Rule>();
     private Map<StandardPredicate, List<TestModel.PredicateData>> baselineObservations = new HashMap<>();
@@ -138,7 +138,6 @@ public class SGDOnlineInferenceTest extends InferenceTest {
         termGenerator = new SGDTermGenerator();
     }
 
-    @Override
     protected InferenceApplication getInference(List<Rule> rules, Database db) {
         return new SGDOnlineInference(rules, db);
     }
@@ -157,7 +156,6 @@ public class SGDOnlineInferenceTest extends InferenceTest {
 
         // Set newAction as next action for online inference application
         inference.server.setNextAction(newAction);
-
         inference.inference();
     }
 

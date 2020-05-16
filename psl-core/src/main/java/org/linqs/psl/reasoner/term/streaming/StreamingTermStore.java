@@ -255,9 +255,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         }
 
         // Got a new variable.
-
         if (atomIndexMap.size() >= atoms.size()) {
-            ensureAtomCapacity(atomIndexMap.size() * 2);
+            ensureAtomCapacity(atomIndexMap.size() * 2 + 1);
         }
 
         int index = atomIndexMap.size();

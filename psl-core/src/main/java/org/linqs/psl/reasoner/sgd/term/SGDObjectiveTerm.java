@@ -111,6 +111,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float movement = 0.0f;
 
         for (int i = 0 ; i < size; i++) {
+            if(i >= atoms.size()){
+                break;
+            }
+
             if(atoms.get(indices[i]) instanceof RandomVariableAtom){
                 float dot = dot(atoms, atomValues);
                 float gradient = computeGradient(iteration, i, dot);

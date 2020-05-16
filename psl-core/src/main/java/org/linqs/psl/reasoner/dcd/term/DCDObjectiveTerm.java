@@ -111,6 +111,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
+            if(atoms.size() <= i){
+                break;
+            }
+
             if(atoms.get(indices[i]) instanceof RandomVariableAtom){
                 val += values[indices[i]] * coefficients[i];
             }
@@ -136,6 +140,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float pa = lagrange;
         lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
+            if(atoms.size() <= i){
+                break;
+            }
+
             if(atoms.get(indices[i]) instanceof RandomVariableAtom){
                 float val = values[indices[i]] - ((lagrange - pa) * coefficients[i]);
                 if (truncateEveryStep) {
