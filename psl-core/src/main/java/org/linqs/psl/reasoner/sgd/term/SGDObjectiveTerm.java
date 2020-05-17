@@ -92,7 +92,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         for (int i = 0 ; i < size; i++) {
             float dot = dot(variableValues);
-            float gradient = computeGradient(iteration, i, dot);
+            float gradient = computeGradient(i, dot);
             float gradientStep = gradient * (learningRate / iteration);
 
             float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[i] - gradientStep));
@@ -103,7 +103,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return movement;
     }
 
-    private float computeGradient(int iteration, int varId, float dot) {
+    private float computeGradient(int varId, float dot) {
         if (hinge && dot <= 0.0f) {
             return 0.0f;
         }

@@ -144,7 +144,7 @@ public class DCDReasoner extends Reasoner {
             termCount++;
         }
 
-        return objective / termCount;
+        return objective;
     }
 
     @Override
