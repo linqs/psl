@@ -429,6 +429,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public void iterationComplete() {
     }
 
+    @Override
+    public void variablesExternallyUpdated() {
+    }
+
     /**
      * Check if this term store supports this rule.
      * @return true if the rule is supported.

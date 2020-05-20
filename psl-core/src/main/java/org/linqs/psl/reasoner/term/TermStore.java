@@ -88,6 +88,11 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
     public V createLocalVariable(RandomVariableAtom atom);
 
     /**
+     * Notify the term store that the variables have been updated through a process external to standard optimization.
+     */
+    public void variablesExternallyUpdated();
+
+    /**
      * Get an iterator over the terms in the store that does not write to disk.
      */
     public Iterator<T> noWriteIterator();

@@ -163,6 +163,11 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
+    public void variablesExternallyUpdated() {
+        store.variablesExternallyUpdated();
+    }
+
+    @Override
     public Iterator<T> iterator() {
         return store.iterator();
     }
