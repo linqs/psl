@@ -49,6 +49,13 @@ public class NeuralOptions {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option NEURAL_NORMALIZE_LABELS = new Option(
+        "neural.normalize",
+        false,
+        "Normalize the labels before fitting so that the minimum label is zero and the sum of the labels is 1.0."
+        + " This is applied before any binarization."
+    );
+
     public static final Option NEURAL_LEARNING_RATE = new Option(
         "neural.learningrate",
         0,

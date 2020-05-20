@@ -82,6 +82,8 @@ public class NeuralModel extends SupportingModel {
     private float upperBinarizeThreshold;
     private boolean binarizeWithThreshold;
 
+    private boolean normalizeLabels;
+
     public NeuralModel() {
         features = null;
 
@@ -102,6 +104,8 @@ public class NeuralModel extends SupportingModel {
         lowerBinarizeThreshold = NeuralOptions.NEURAL_BIN_THRESHOLD_LOWER.getFloat();
         upperBinarizeThreshold = NeuralOptions.NEURAL_BIN_THRESHOLD_UPPER.getFloat();
         binarizeWithThreshold = (lowerBinarizeThreshold > 0.0f || upperBinarizeThreshold < 1.0f);
+
+        normalizeLabels = NeuralOptions.NEURAL_NORMALIZE_LABELS.getBoolean();
     }
 
     @Override
@@ -228,6 +232,14 @@ public class NeuralModel extends SupportingModel {
 
         model.clear();
 
+        if (normalizeLabels) {
+            normalizeLabels();
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("Mean label range: " + computeMeanLabelRange());
+        }
+
         if (binarizeWithThreshold) {
             thresholdBinarize();
         }
@@ -252,6 +264,60 @@ public class NeuralModel extends SupportingModel {
         model.fit(data, epochs);
 
         log.trace("Done fitting {}.", this);
+    }
+
+    private void normalizeLabels() {
+        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
+            // Start with a small number to avoid any division issues.
+            float sum = 1.0e-7f;
+            float min = 0.0f;
+
+            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
+                float value = manualLabels[entityIndex][labelIndex];
+                sum += value;
+
+                if (labelIndex == 0 || value < min) {
+                    min = value;
+                }
+            }
+
+            // Adjust the sum to retroactively subtract the min from all values.
+            sum -= min * labelIndexMapping.size();
+
+            // Adjust every value so the new sum will be one.
+            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
+                manualLabels[entityIndex][labelIndex] = Math.min(1.0f, Math.max(0.0f, (manualLabels[entityIndex][labelIndex] - min) / sum));
+            }
+        }
+    }
+
+    private double computeMeanLabelRange() {
+        double meanRange = 0.0;
+
+        if (entityIndexMapping.size() == 0) {
+            return -1.0;
+        }
+
+        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
+            float min = 0.0f;
+            float max = 0.0f;
+
+            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
+                float value = manualLabels[entityIndex][labelIndex];
+
+                if (labelIndex == 0 || value < min) {
+                    min = value;
+                }
+
+                if (labelIndex == 0 || value > max) {
+                    max = value;
+                }
+            }
+
+            meanRange += (max - min);
+        }
+
+        return meanRange / entityIndexMapping.size();
     }
 
     private void loadModel(String path) {
