@@ -205,6 +205,11 @@ public class ADMMReasoner extends Reasoner {
             return true;
         }
 
+        // Run through the maximum number of iterations.
+        if (runFullIterations) {
+            return false;
+        }
+
         // Don't break if there are violated constraints.
         if (objective != null && objective.violatedConstraints > 0) {
             return false;

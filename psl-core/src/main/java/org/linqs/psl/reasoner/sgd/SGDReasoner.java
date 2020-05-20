@@ -117,6 +117,11 @@ public class SGDReasoner extends Reasoner {
             return true;
         }
 
+        // Run through the maximum number of iterations.
+        if (runFullIterations) {
+            return false;
+        }
+
         // Do not break if there is too much movement.
         if (watchMovement && movement > movementThreshold) {
             return false;

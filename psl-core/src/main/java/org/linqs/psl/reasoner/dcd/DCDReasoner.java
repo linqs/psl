@@ -119,6 +119,11 @@ public class DCDReasoner extends Reasoner {
             return true;
         }
 
+        // Run through the maximum number of iterations.
+        if (runFullIterations) {
+            return false;
+        }
+
         // Break if the objective has not changed.
         if (objectiveBreak && MathUtils.equals(objective, oldObjective, tolerance)) {
             return true;
