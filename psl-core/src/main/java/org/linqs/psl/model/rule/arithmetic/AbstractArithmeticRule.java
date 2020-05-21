@@ -314,12 +314,12 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     @Override
-    public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public long groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
         if (!validatedByAtomManager) {
             validateForGrounding(atomManager);
         }
 
-        int groundCount = 0;
+        long groundCount = 0;
         if (!hasSummation()) {
             groundCount = groundAllNonSummationRule(atomManager, groundRuleStore);
         } else {
@@ -330,7 +330,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         return groundCount;
     }
 
-    private int groundAllNonSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    private long groundAllNonSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
         GroundingResources resources = getGroundingResources(expression);
 
         ResultList results = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false));
@@ -340,7 +340,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             groundSingleNonSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
         }
 
-        int count = resources.groundRules.size();
+        long count = resources.groundRules.size();
         for (GroundRule groundRule : resources.groundRules) {
             groundRuleStore.addGroundRule(groundRule);
         }
@@ -392,7 +392,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     /**
      * Ground by first expanding summation atoms into normal ones and then calling the non-summation grounding.
      */
-    private int groundAllSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    private long groundAllSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
         if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
             throw new IllegalArgumentException("Can only ground summation arithmetic rules with a relational database.");
         }
@@ -414,7 +414,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             groundSingleSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
         }
 
-        int count = resources.groundRules.size();
+        long count = resources.groundRules.size();
         for (GroundRule groundRule : resources.groundRules) {
             groundRuleStore.addGroundRule(groundRule);
         }

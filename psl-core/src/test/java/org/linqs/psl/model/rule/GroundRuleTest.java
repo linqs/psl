@@ -349,7 +349,7 @@ public class GroundRuleTest {
         // Ensure that the grounding only predicate is not contributing to the value (incompatibility) of the rule.
         for (GroundRule groundRule : store.getGroundRules(rule)) {
             // All should gave the value of 1.0: Both Nice values are 1,0, and the Friends starts at 1.0 (with -1 coefficient).
-            assertEquals(1.0, ((WeightedGroundRule)groundRule).getIncompatibility(), EPSILON);
+            assertEquals(1.0f, ((WeightedGroundRule)groundRule).getIncompatibility(), EPSILON);
         }
 
         // Nice(A) + Nice(B) + (A != B) <= Friends(A, B)

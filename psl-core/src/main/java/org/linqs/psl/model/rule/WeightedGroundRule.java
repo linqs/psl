@@ -44,7 +44,7 @@ public interface WeightedGroundRule extends GroundRule {
      * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms.
      * Incompatibility is always non-negative.
      */
-    public double getIncompatibility();
+    public float getIncompatibility();
 
     /**
      * Returns the incompatibility of the truth values of this GroundRule's GroundAtoms given
@@ -52,5 +52,5 @@ public interface WeightedGroundRule extends GroundRule {
      * This method should only be used by callers that really know what they are doing.
      * Incompatibility is always non-negative.
      */
-    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue);
+    public float getIncompatibility(GroundAtom replacementAtom, float replacementValue);
 }

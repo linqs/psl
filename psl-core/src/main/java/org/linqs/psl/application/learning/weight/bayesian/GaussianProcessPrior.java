@@ -31,7 +31,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private boolean randomConfigsOnly;
     private boolean earlyStopping;
 
-    private float minConfigVal;
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernel kernel;
     private GaussianProcessKernel.Space space;
@@ -55,8 +54,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         initialStdValue = Options.WLA_GPP_INITIAL_WEIGHT_STD.getFloat();
 
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
-
-        minConfigVal = 1.0f / MAX_RAND_INT_VAL;
     }
 
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
@@ -99,7 +96,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         List<Float> exploredFnVal = new ArrayList<Float>();
 
         WeightConfig bestConfig = null;
-        float bestVal = 0.0f;
+        double bestVal = 0.0;
         boolean allStdSmall = false;
 
         int iteration = 0;
@@ -110,7 +107,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             exploredConfigs.add(config);
             configs.remove(nextPoint);
 
-            float fnVal = getFunctionValue(config);
+            float fnVal = (float)getFunctionValue(config);
             exploredFnVal.add(fnVal);
             config.valueAndStd.value = fnVal;
             config.valueAndStd.std = 0.0f;
@@ -189,10 +186,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
 
         @Override
-        public void work(int index, WeightConfig item) {
-            ValueAndStd valAndStd = predictFnValAndStd(configs.get(index).config, exploredConfigs, xyStdData,
+        public void work(long index, WeightConfig item) {
+            ValueAndStd valAndStd = predictFnValAndStd(configs.get((int)index).config, exploredConfigs, xyStdData,
                     kernelBuffer1, kernelBuffer2, kernelMatrixShell1, kernelMatrixShell2, xyStdMatrixShell, mulBuffer);
-            configs.get(index).valueAndStd = valAndStd;
+            configs.get((int)index).valueAndStd = valAndStd;
         }
     }
 
@@ -306,11 +303,11 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     // Get metric value like accuracy.
-    protected float getFunctionValue(WeightConfig config) {
+    protected double getFunctionValue(WeightConfig config) {
         setWeights(config);
         computeMPEState();
         evaluator.compute(trainingMap);
-        return (float)evaluator.getNormalizedRepMetric();
+        return evaluator.getNormalizedRepMetric();
     }
 
     // Exploration strategy

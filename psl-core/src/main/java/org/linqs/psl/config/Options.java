@@ -662,6 +662,12 @@ public class Options {
         + " Has no effect if logging is not set to TRACE."
     );
 
+    public static final Option REASONER_RUN_FULL_ITERATIONS = new Option(
+        "reasoner.runfulliterations",
+        false,
+        "Ignore all other stopping criteria and run until the maximum number of iterations."
+    );
+
     public static final Option REASONER_TOLERANCE = new Option(
         "reasoner.tolerance",
         1e-5f,

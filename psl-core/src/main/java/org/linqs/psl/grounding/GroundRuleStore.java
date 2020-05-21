@@ -99,10 +99,10 @@ public interface GroundRuleStore {
     /**
      * @return the number of GroundRules in this store
      */
-    public int size();
+    public long size();
 
     /**
      * @return the number of GroundRules for a specific rule in this store
      */
-    public int count(Rule rule);
+    public long count(Rule rule);
 }
