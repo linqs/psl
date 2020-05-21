@@ -72,8 +72,8 @@ public class ADMMReasoner extends Reasoner {
         maxIterations = Options.ADMM_MAX_ITER.getInt();
         stepSize = Options.ADMM_STEP_SIZE.getFloat();
         computePeriod = Options.ADMM_COMPUTE_PERIOD.getInt();
-        epsilonAbs = Options.ADMM_EPSILON_ABS.getFloat();
-        epsilonRel = Options.ADMM_EPSILON_REL.getFloat();
+        epsilonAbs = Options.ADMM_EPSILON_ABS.getDouble();
+        epsilonRel = Options.ADMM_EPSILON_REL.getDouble();
     }
 
     public double getEpsilonRel() {

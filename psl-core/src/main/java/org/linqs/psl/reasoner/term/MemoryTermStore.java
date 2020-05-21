@@ -29,7 +29,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     private ArrayList<T> store;
 
     public MemoryTermStore() {
-        this(Options.MEMORY_TS_INITIAL_SIZE.getInt());
+        this(Options.MEMORY_TS_INITIAL_SIZE.getLong());
     }
 
     public MemoryTermStore(long initialSize) {
