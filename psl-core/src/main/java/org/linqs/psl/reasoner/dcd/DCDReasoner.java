@@ -63,8 +63,8 @@ public class DCDReasoner extends Reasoner {
         // A reallocation can cause this array to become out-of-date.
         float[] variableValues = termStore.getVariableValues();
 
-        float objective = -1.0f;
-        float oldObjective = Float.POSITIVE_INFINITY;
+        double objective = -1.0;
+        double oldObjective = Double.POSITIVE_INFINITY;
 
         if (printInitialObj && log.isTraceEnabled()) {
             objective = computeObjective(termStore, variableValues);
@@ -113,7 +113,7 @@ public class DCDReasoner extends Reasoner {
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
     }
 
-    private boolean breakOptimization(int iteration, float objective, float oldObjective) {
+    private boolean breakOptimization(int iteration, double objective, double oldObjective) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
@@ -132,9 +132,8 @@ public class DCDReasoner extends Reasoner {
         return false;
     }
 
-    private float computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
-        float objective = 0.0f;
-        int termCount = 0;
+    private double computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
+        double objective = 0.0;
 
         // If possible, use a readonly iterator.
         Iterator<DCDObjectiveTerm> termIterator = null;
@@ -146,7 +145,6 @@ public class DCDReasoner extends Reasoner {
 
         for (DCDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate(variableValues) / c;
-            termCount++;
         }
 
         return objective;

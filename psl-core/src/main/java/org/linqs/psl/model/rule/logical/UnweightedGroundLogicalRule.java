@@ -42,7 +42,7 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
     }
 
     @Override
-    public double getInfeasibility() {
+    public float getInfeasibility() {
         return dissatisfaction.getValue();
     }
 

@@ -54,8 +54,8 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public int generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore) {
-        int initialSize = termStore.size();
+    public long generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore) {
+        long initialSize = termStore.size();
         termStore.ensureCapacity(initialSize + ruleStore.size());
 
         Set<WeightedRule> rules = new HashSet<WeightedRule>();
@@ -73,7 +73,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
 
         Parallel.foreach(ruleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
             @Override
-            public void work(int index, GroundRule rule) {
+            public void work(long index, GroundRule rule) {
                 boolean negativeWeight =
                         rule instanceof WeightedGroundRule
                         && ((WeightedGroundRule)rule).getWeight() < 0.0;

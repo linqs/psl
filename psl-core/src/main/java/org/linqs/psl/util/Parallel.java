@@ -102,7 +102,7 @@ public final class Parallel {
      * Inclusive with start, exclusive with end.
      * The caller is trusted to provide appropriate numbers.
      */
-    public synchronized static RunTimings count(int start, int end, int increment, Worker<Integer> baseWorker) {
+    public synchronized static RunTimings count(long start, long end, long increment, Worker<Long> baseWorker) {
         initWorkers(baseWorker);
         RunTimings timings = countInternal(start, end, increment);
         cleanupWorkers();
@@ -113,24 +113,24 @@ public final class Parallel {
     /**
      * Convenience count() that increments by 1.
      */
-    public static RunTimings count(int start, int end, Worker<Integer> baseWorker) {
+    public static RunTimings count(long start, long end, Worker<Long> baseWorker) {
         return count(start, end, 1, baseWorker);
     }
 
     /**
      * Convenience count() that starts at 0 and increments by 1.
      */
-    public static RunTimings count(int end, Worker<Integer> baseWorker) {
+    public static RunTimings count(long end, Worker<Long> baseWorker) {
         return count(0, end, 1, baseWorker);
     }
 
-    private static RunTimings countInternal(int start, int end, int increment) {
+    private static RunTimings countInternal(long start, long end, long increment) {
         long iterations = 0;
         long parentWaitTimeMS = 0;
         long workerWaitTimeMS = 0;
         long workerWorkTimeMS = 0;
 
-        for (int i = start; i < end; i += increment) {
+        for (long i = start; i < end; i += increment) {
             Worker<?> worker = null;
             try {
                 // Will block if no workers are ready.
@@ -147,9 +147,9 @@ public final class Parallel {
             }
 
             @SuppressWarnings("unchecked")
-            Worker<Integer> intWorker = (Worker<Integer>)worker;
-            intWorker.setWork(i, new Integer(i));
-            pool.execute(intWorker);
+            Worker<Long> typedWorker = (Worker<Long>)worker;
+            typedWorker.setWork(i, Long.valueOf(i));
+            pool.execute(typedWorker);
         }
 
         for (int i = 0; i < numThreads; i++) {
@@ -193,7 +193,7 @@ public final class Parallel {
         long workerWaitTimeMS = 0;
         long workerWorkTimeMS = 0;
 
-        int count = 0;
+        long count = 0;
         for (T job : work) {
             Worker<?> worker = null;
             try {
@@ -331,7 +331,7 @@ public final class Parallel {
     public static abstract class Worker<T> implements Runnable, Cloneable {
         protected int id;
 
-        private int index;
+        private long index;
         private long waitTimeMS;
         private long workTimeMS;
         private T item;
@@ -413,7 +413,7 @@ public final class Parallel {
             }
         }
 
-        public final void setWork(int index, T item) {
+        public final void setWork(long index, T item) {
             this.index = index;
             this.item = item;
         }
@@ -422,7 +422,7 @@ public final class Parallel {
          * Do the actual work.
          * The index is the item's index in the collection.
          */
-        public abstract void work(int index, T item);
+        public abstract void work(long index, T item);
     }
 
     private static class DaemonThreadFactory implements ThreadFactory {

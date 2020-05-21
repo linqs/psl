@@ -77,7 +77,7 @@ public class RDBMSResultList implements ResultList {
     }
 
     @Override
-    public int size() {
+    public long size() {
         return results.size();
     }
 

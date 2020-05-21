@@ -145,12 +145,12 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void completeInitialize() {
         log.info("Grounding out model.");
-        int groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
+        long groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
         log.info("Grounding complete.");
 
         log.debug("Initializing objective terms for {} ground rules.", groundCount);
         @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+        long termCount = termGenerator.generateTerms(groundRuleStore, termStore);
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
     }
 

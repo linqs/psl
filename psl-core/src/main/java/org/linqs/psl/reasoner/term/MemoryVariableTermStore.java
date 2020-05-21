@@ -282,17 +282,17 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public T get(int index) {
+    public T get(long index) {
         return store.get(index);
     }
 
     @Override
-    public int size() {
+    public long size() {
         return store.size();
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
+    public void ensureCapacity(long capacity) {
         store.ensureCapacity(capacity);
     }
 
