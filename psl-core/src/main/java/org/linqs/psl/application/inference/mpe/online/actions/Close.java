@@ -1,8 +1,8 @@
-package org.linqs.psl.server.actions;
+package org.linqs.psl.application.inference.mpe.online.actions;
 
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-public class Close extends OnlineServerAction{
+public class Close extends OnlineAction{
 
     public Close(StreamingTermStore providedTermStore) {
         super(providedTermStore);

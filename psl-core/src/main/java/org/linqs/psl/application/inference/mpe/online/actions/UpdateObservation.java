@@ -1,10 +1,10 @@
-package org.linqs.psl.server.actions;
+package org.linqs.psl.application.inference.mpe.online.actions;
 
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-public class UpdateObservation extends OnlineServerAction{
+public class UpdateObservation extends OnlineAction{
 
     Predicate predicate;
     Constant[] arguments;

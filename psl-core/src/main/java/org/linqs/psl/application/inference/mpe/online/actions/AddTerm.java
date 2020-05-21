@@ -1,9 +1,9 @@
-package org.linqs.psl.server.actions;
+package org.linqs.psl.application.inference.mpe.online.actions;
 
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
 
-public class AddTerm extends OnlineServerAction{
+public class AddTerm extends OnlineAction{
     SGDObjectiveTerm termToAdd;
 
     public AddTerm(SGDStreamingTermStore providedTermStore, SGDObjectiveTerm newTerm) {

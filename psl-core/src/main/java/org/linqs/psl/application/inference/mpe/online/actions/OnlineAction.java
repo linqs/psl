@@ -1,11 +1,11 @@
-package org.linqs.psl.server.actions;
+package org.linqs.psl.application.inference.mpe.online.actions;
 
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-public abstract class OnlineServerAction {
+public abstract class OnlineAction {
     StreamingTermStore termStore;
 
-    public OnlineServerAction(StreamingTermStore providedTermStore){
+    public OnlineAction(StreamingTermStore providedTermStore){
 
         termStore = providedTermStore;
 
