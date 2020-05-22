@@ -69,7 +69,7 @@ public class VizDataCollection {
             }
         }
 
-        // Pring the JSON to stream
+        // Print the JSON to stream
         stream.println(fullJson.toString(4));
 
         if (closeStream) {
