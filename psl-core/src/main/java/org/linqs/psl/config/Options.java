@@ -52,6 +52,12 @@ public class Options {
             "Whether we are running in online mode or not"
     );
 
+    public static final Option ONLINE_READ_PARTITION = new Option(
+            "onlineatommanager.read",
+            0,
+            "Partition to add new observations to."
+    );
+
     public static final Option ADMM_COMPUTE_PERIOD = new Option(
         "admmreasoner.computeperiod",
         50,
