@@ -64,14 +64,12 @@ public class VizDataCollection {
                 stream = new PrintStream(outputPath);
                 closeStream = true;
             } catch (IOException ex) {
-                log.error(String.format("Unable to open file (%s) for visualization data," + 
+                log.error(String.format("Unable to open file (%s) for visualization data," +
                     "using stdout instead.", outputPath), ex);
             }
         }
 
-        // Adding this string to our data file turns the json into a js variable
-        String jsHeader = "window.pslviz = window.pslviz || {} \nwindow.pslviz.data = ";
-        stream.println(jsHeader);
+        // Pring the JSON to stream
         stream.println(fullJson.toString(4));
 
         if (closeStream) {
