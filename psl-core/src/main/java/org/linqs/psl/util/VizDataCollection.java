@@ -121,8 +121,8 @@ public class VizDataCollection {
         }
     }
 
-    public static void ruleMapInsertElement(AbstractLogicalRule parentRule, GroundRule groundRule,
-            Map<Variable, Integer> variableMap,  Constant[] constantsList) {
+    public static synchronized void ruleMapInsertElement(AbstractLogicalRule parentRule,
+            GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
         if (groundRule == null) {
             return;
         }
