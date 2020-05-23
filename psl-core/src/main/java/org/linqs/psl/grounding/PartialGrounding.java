@@ -178,6 +178,34 @@ public class PartialGrounding {
         }
     }
 
+    public static ArrayList<GroundRule> onlineSimpleGround(Rule rule, Set<Predicate> onlinePredicates, AtomManager atomManager) {
+        Database db = atomManager.getDatabase();
+        if (!rule.supportsGroundingQueryRewriting()) {
+            throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
+        }
+
+        Formula formula = rule.getRewritableGroundingFormula(atomManager);
+        ResultList groundingResults = getOnlineGroundingResults(formula, onlinePredicates, db);
+        if (groundingResults == null) {
+            return null;
+        }
+
+        log.trace(String.format("Simple online grounding on rule: [%s], formula: [%s]", rule, formula));
+
+        List<GroundRule> groundRules = new ArrayList<GroundRule>();
+        ArrayList<GroundRule> groundedRules = new ArrayList<GroundRule>();
+        for (int i = 0; i < groundingResults.size(); i++) {
+            groundRules.clear();
+            rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), atomManager, groundRules);
+            for (GroundRule groundRule : groundRules) {
+                if (groundRule != null) {
+                    groundedRules.add(groundRule);
+                }
+            }
+        }
+        return groundedRules;
+    }
+
     private static ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates,
                                                       Database db) {
         List<Atom> lazyTargets = new ArrayList<Atom>();
@@ -198,6 +226,28 @@ public class PartialGrounding {
 
         // Do the grounding query for this rule.
         return lazyGround(formula, lazyTargets, db);
+    }
+
+    private static ResultList getOnlineGroundingResults(Formula formula, Set<Predicate> lazyPredicates,
+                                                      Database db) {
+        List<Atom> onlineTargets = new ArrayList<Atom>();
+
+        // For every mention of a online predicate in this rule, we will need to get the grounding query
+        // with that specific predicate mention being the online target.
+        for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
+            if (!lazyPredicates.contains(atom.getPredicate())) {
+                continue;
+            }
+
+            onlineTargets.add(atom);
+        }
+
+        if (onlineTargets.size() == 0) {
+            return null;
+        }
+
+        // Do the grounding query for this rule.
+        return lazyGround(formula, onlineTargets, db);
     }
 
     private static ResultList lazyGround(Formula formula, List<Atom> lazyTargets, Database db) {

@@ -32,9 +32,16 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Term;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
+import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
+import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,9 +111,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
         return Collections.unmodifiableSet(onlineAtoms);
     }
 
-    public int activateAtoms(List<Rule> rules) {
+    public void activateAtoms(List<Rule> rules, SGDStreamingTermStore termStore) {
         if (onlineAtoms.size() == 0) {
-            return 0;
+            return;
         }
 
         // Also ensure that the activated atoms are now considered "persisted" by the atom manager.
@@ -118,25 +125,20 @@ public class OnlineAtomManager extends PersistedAtomManager {
         // and the rules associated with those predicates.
         Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(onlineAtoms);
         Set<Rule> onlineRules = PartialGrounding.getOnlineRules(rules, onlinePredicates);
+        //TODO(connor) This could run into memeory issues.
+        ArrayList<GroundRule> totalGroundRules = new ArrayList<GroundRule>();
 
-        for (Rule lazyRule : lazyRules) {
-            // We will deal with these rules after we move the lazy atoms to the write partition.
-            if (lazyRule.supportsGroundingQueryRewriting()) {
-                PartialGrounding.lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore, this);
+        //TODO(connor) Currently ignoring arithmetic rules. Why do these need a full regrounding?
+        for (Rule onlineRule : onlineRules) {
+            if (onlineRule.supportsGroundingQueryRewriting()) {
+                totalGroundRules.addAll(PartialGrounding.onlineSimpleGround(onlineRule, onlinePredicates, this));
             }
         }
 
-        // Move all the new atoms out of the lazy partition and into the write partition.
-        for (StandardPredicate lazyPredicate : lazyPredicates) {
-            db.moveToWritePartition(lazyPredicate, Partition.LAZY_PARTITION_ID);
-        }
-
-        // Since complex aritmetic rules require a full regound, we need to do them
-        // after we move the atoms to the write partition.
-        for (Rule lazyRule : lazyRules) {
-            if (!lazyRule.supportsGroundingQueryRewriting()) {
-                PartialGrounding.lazyComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore, this);
-            }
+        SGDTermGenerator termGenerator = new SGDTermGenerator();
+        for (GroundRule groundRule : totalGroundRules) {
+            SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
+            termStore.add(newTerm);
         }
     }
 }
