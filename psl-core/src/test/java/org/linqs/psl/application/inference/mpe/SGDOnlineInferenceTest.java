@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.online.actions.AddAtom;
 import org.linqs.psl.application.inference.online.actions.Close;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.actions.UpdateObservation;
@@ -146,11 +147,49 @@ public class SGDOnlineInferenceTest {
         inference.server.enqueue(updateObservation);
         inference.server.enqueue(closeAction);
 
-        // Set newAction as next action for online inference application
+        // Run Inference
         inference.inference();
         Predicate predicate = Predicate.get(updateObservation.getPredicateName());
         GroundAtom atom = inference.getAtomManager().getAtom(predicate, updateObservation.getArguments());
         assertEquals(((StreamingTermStore)inference.getTermStore()).getAtomValue(
                 ((StreamingTermStore)inference.getTermStore()).getAtomIndex(atom)), 0.0, 0.01);
+    }
+
+    @Test
+    public void testAddAtoms(){
+        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        String[] tokenized_command;
+        String command;
+
+        // create new action
+        command = "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0";
+        tokenized_command = command.split("\t");
+        AddAtom addAtom1 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
+        addAtom1.initAction(tokenized_command);
+
+        command = "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0";
+        tokenized_command = command.split("\t");
+        AddAtom addAtom2 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
+        addAtom2.initAction(tokenized_command);
+
+        command = "AddAtom\tWrite\tRating\tConnor\tAvatar\t0.5";
+        tokenized_command = command.split("\t");
+        AddAtom addAtom3 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
+        addAtom3.initAction(tokenized_command);
+
+        // create close action
+        tokenized_command = "Close".split("\t");
+        Close closeAction = (Close)OnlineAction.getOnlineAction(tokenized_command[0]);
+        closeAction.initAction(tokenized_command);
+
+        // add actions to queue
+        inference.server.enqueue(addAtom1);
+        inference.server.enqueue(addAtom2);
+        inference.server.enqueue(addAtom3);
+        inference.server.enqueue(closeAction);
+
+        // Run Inference
+        inference.inference();
+        System.out.println("Done");
     }
 }

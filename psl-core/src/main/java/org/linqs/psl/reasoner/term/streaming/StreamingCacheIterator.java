@@ -207,8 +207,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         if (currentPage == numPages - 1 && !parentStore.newTermBuffer.isEmpty()) {
             // Todo handle new term buffer overflow
             termCache.addAll(parentStore.newTermBuffer);
-            parentStore.rewrite(termPagePath, termCache);
-            parentStore.newTermBuffer.clear();
+            //parentStore.rewrite(termPagePath, termCache);
+            rewrite_page = true;
         }
 
         if (shufflePage) {
@@ -252,6 +252,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         if(rewrite_page){
             writeFullPage(termPagePath, volatilePagePath);
+            parentStore.newTermBuffer.clear();
         }
     }
 

@@ -64,6 +64,12 @@ public class Options {
             "host and connect to server using localhost"
     );
 
+    public static final Option ONLINE_READ_PARTITION = new Option(
+            "onlineatommanager.read",
+            0,
+            "Partition to add new observations to."
+    );
+
     public static final Option ADMM_COMPUTE_PERIOD = new Option(
         "admmreasoner.computeperiod",
         50,

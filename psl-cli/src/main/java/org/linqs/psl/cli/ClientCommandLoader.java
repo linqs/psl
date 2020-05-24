@@ -31,7 +31,7 @@ public class ClientCommandLoader {
     private static final Logger log = LoggerFactory.getLogger(ClientCommandLoader.class);
 
     public static OnlineAction parseClientCommand(String clientCommand) throws RuntimeException{
-        // Format: ActionName   Predicate(Optional)   Arguments(Optional)   Value(Optional)
+        // Format: ActionName   ActionSpecificArgs...
         log.trace("Parsing: " + clientCommand);
 
         // tokenize

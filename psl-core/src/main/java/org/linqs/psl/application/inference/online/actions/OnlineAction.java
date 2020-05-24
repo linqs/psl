@@ -29,7 +29,7 @@ public abstract class OnlineAction implements Serializable {
         String className = Reflection.resolveClassName(input);
         log.trace("ClassName: " + className);
         if(className == null){
-            throw new IllegalArgumentException("Could not find class: ");
+            throw new IllegalArgumentException("Could not find class: " + input);
         }
         Class<? extends OnlineAction> classObject = null;
         try {

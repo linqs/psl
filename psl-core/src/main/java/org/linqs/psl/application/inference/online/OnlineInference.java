@@ -20,10 +20,14 @@ package org.linqs.psl.application.inference.online;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.application.inference.online.actions.Close;
+import org.linqs.psl.application.inference.online.actions.AddAtom;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
+import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +90,11 @@ public abstract class OnlineInference extends InferenceApplication {
     @Override
     protected abstract OnlineTermStore createTermStore();
 
+    @Override
+    protected OnlineAtomManager createAtomManager(Database db) {
+        return new OnlineAtomManager(db);
+    }
+
     private void startServer() {
         try {
             server = new OnlineServer<OnlineAction>();
@@ -97,18 +106,45 @@ public abstract class OnlineInference extends InferenceApplication {
         }
     }
 
-    protected void executeAction(OnlineAction nextAction) {
+    protected void executeAction(OnlineAction nextAction) throws IllegalArgumentException {
         switch (nextAction.getName()) {
             case "UpdateObservation":
                 doUpdateObservation((UpdateObservation)nextAction);
+                break;
+            case "AddAtom":
+                doAddAtom((AddAtom)nextAction);
                 break;
             case "Close":
                 doClose((Close)nextAction);
                 break;
             default:
-                log.info("Action: " + nextAction.getName() + "Not Supported.");
+                throw new IllegalArgumentException("Action: " + nextAction.getName() + "Not Supported.");
         }
     }
+
+    protected void doAddAtom(AddAtom nextAction) throws IllegalArgumentException {
+        // Resolve Predicate
+        Predicate registeredPredicate = Predicate.get(nextAction.getPredicateName());
+        if (registeredPredicate == null) {
+            throw new IllegalArgumentException("Predicate is not registered: " + nextAction.getPredicateName());
+        }
+
+        // Dispatch adding atom to term store based on partition
+        switch (nextAction.getPartitionName()) {
+            case "READ":
+                ((OnlineAtomManager)atomManager).addObservedAtom(registeredPredicate, nextAction.getValue(), nextAction.getArguments());
+                break;
+            case "WRITE":
+                ((OnlineAtomManager)atomManager).addRandomVariableAtom((StandardPredicate) registeredPredicate, nextAction.getValue(), nextAction.getArguments());
+                break;
+            default:
+                throw new IllegalArgumentException("Add Atom Partition: " + nextAction.getPartitionName() + "Not Supported");
+
+        }
+
+        ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
+    }
+
 
     protected void doUpdateObservation(UpdateObservation nextAction) throws IllegalArgumentException {
         // Resolve Predicate
@@ -118,7 +154,8 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         ((OnlineTermStore)termStore).updateValue(registeredPredicate, nextAction.getArguments(), nextAction.getValue());
-        //TODO: (Charles & Connor) Do we want to optimize here? Execute action design is a good place for system optimizations.
+        //TODO: (Charles & Connor) Do we want to optimize here?
+        // Execute action design is a good place for system optimizations.
         reasoner.optimize(termStore);
     }
 
@@ -128,7 +165,8 @@ public abstract class OnlineInference extends InferenceApplication {
 
     /**
      * Minimize the total weighted incompatibility of the atoms according to the rules,
-     * TODO: (Charles) By overriding internal inference rather than inference() we are not committing the random variable atom values to the data base after updates
+     * TODO: (Charles) By overriding internal inference rather than inference() we are not committing the random
+     *  variable atom values to the data base after updates
      */
     @Override
     public void internalInference() {
@@ -142,7 +180,13 @@ public abstract class OnlineInference extends InferenceApplication {
                 nextAction = (OnlineAction) server.dequeClientInput();
                 log.info("Got next action from client. Executing");
 
-                executeAction(nextAction);
+                try {
+                    executeAction(nextAction);
+                } catch (IllegalArgumentException e) {
+                    log.info("Error throw while executing action.");
+                    log.info(e.getMessage());
+                    log.info(e.toString());
+                }
                 log.info("Executed Action.");
             } while (!close);
         } catch (InterruptedException ignored) {

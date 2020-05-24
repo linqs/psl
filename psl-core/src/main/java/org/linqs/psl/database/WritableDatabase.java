@@ -65,6 +65,13 @@ public interface WritableDatabase {
     public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
 
     /**
+     * A form of commit() that allows the caller to choose the specific partition
+     * the atoms are comitted to.
+     * Should only be used if you REALLY know what you are doing.
+     */
+    public void commit(Iterable<GroundAtom> atoms, int partitionId, int tmp);
+
+    /**
      * Move all ground atoms of a predicate/partition combination into
      * the write partition.
      * Be careful not to call this while the database is in use.

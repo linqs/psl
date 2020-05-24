@@ -27,7 +27,8 @@ import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.database.atom.OnlineAtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 
 import java.util.List;
 
