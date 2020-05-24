@@ -336,8 +336,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
             // update atom values
             atomValues[getAtomIndex(atom)] = newValue;
         } else {
-            // TODO: (Charles)
-            // atom may have only been involved in trivial ground rules
+            // TODO: (Charles) atom may have only been involved in trivial ground rules
         }
     }
 

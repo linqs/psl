@@ -49,6 +49,7 @@ public abstract class OnlineInference extends InferenceApplication {
     protected OnlineInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         super(rules, db, relaxHardConstraints);
         startServer();
+        close = false;
     }
 
     /**
@@ -117,6 +118,7 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         ((OnlineTermStore)termStore).updateValue(registeredPredicate, nextAction.getArguments(), nextAction.getValue());
+        //TODO: (Charles & Connor) Do we want to optimize here? Execute action design is a good place for system optimizations.
         reasoner.optimize(termStore);
     }
 

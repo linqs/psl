@@ -153,5 +153,4 @@ public class SGDOnlineInferenceTest {
         assertEquals(((StreamingTermStore)inference.getTermStore()).getAtomValue(
                 ((StreamingTermStore)inference.getTermStore()).getAtomIndex(atom)), 0.0, 0.01);
     }
-
 }

@@ -56,6 +56,7 @@ public class OnlineServer<T> extends Thread{
             e.printStackTrace();
         } finally {
             try {
+                // TODO: (Charles) Make sure ServerClientThreads are cleaned up here as well
                 server.close();
             } catch (IOException e) {
                 log.debug(e.getMessage());
