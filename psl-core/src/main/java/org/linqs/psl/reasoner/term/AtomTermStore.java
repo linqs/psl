@@ -17,10 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.GroundAtom;
-
 import java.util.ArrayList;
-import java.util.Iterator;
 
 /**
  * An interface for term stores that can handle some atom operations.

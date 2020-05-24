@@ -45,10 +45,10 @@ public class GeneralFunction implements FunctionTerm {
     private boolean nonNegative;
     private boolean squared;
 
-    private boolean online;
+    private static boolean online = Options.ONLINE.getBoolean();
 
     public GeneralFunction(boolean nonNegative, boolean squared, int rvaCount, int obsCount) {
-        online = Options.ONLINE.getBoolean();
+        // TODO: (Charles) "Online" Maybe should not be here.
         int totalCount = online? rvaCount + obsCount: rvaCount;
         coefficients = new float[totalCount];
         terms = new FunctionTerm[totalCount];

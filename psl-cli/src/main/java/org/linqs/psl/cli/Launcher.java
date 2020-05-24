@@ -19,7 +19,6 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -55,17 +54,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
 
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Launches PSL from the command line.
@@ -349,7 +340,7 @@ public class Launcher {
         Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
 
         for (StandardPredicate targetPredicate : openPredicates) {
-            // Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
+            // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
             if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
                 log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
                 continue;
@@ -363,6 +354,17 @@ public class Launcher {
             predictionDatabase.close();
         }
         truthDatabase.close();
+    }
+
+    private void runOnlineClient(Model model, DataStore dataStore) {
+        log.info("Starting Online PSL Client.");
+
+        OnlineClient onlineClient = new OnlineClient();
+        try {
+            onlineClient.run();
+        } catch (IOException e) {
+            log.info(e.getMessage());
+        }
     }
 
     private Model loadModel(DataStore dataStore) {
@@ -388,6 +390,7 @@ public class Launcher {
 
     private void run() {
         log.info("Running PSL CLI Version {}", Version.getFull());
+        // Init DataStore
         DataStore dataStore = initDataStore();
 
         // Load data
@@ -396,27 +399,32 @@ public class Launcher {
         // Load model
         Model model = loadModel(dataStore);
 
-        // Inference
-        Database evalDB = null;
-        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
-            evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
-        } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
-            learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
+        // Run Client Interface for Online PSL
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)){
+            runOnlineClient(model, dataStore);
         } else {
-            throw new IllegalArgumentException("No valid operation provided.");
-        }
-
-        // Evaluation
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-            for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-                evaluation(dataStore, evalDB, closedPredicates, evaluator);
+            // Inference
+            Database evalDB = null;
+            if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
+                evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
+            } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
+                learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
+            } else {
+                throw new IllegalArgumentException("No valid operation provided.");
             }
 
-            log.info("Evaluation complete.");
-        }
+            // Evaluation
+            if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+                for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
+                    evaluation(dataStore, evalDB, closedPredicates, evaluator);
+                }
 
-        if (evalDB != null) {
-            evalDB.close();
+                log.info("Evaluation complete.");
+            }
+
+            if (evalDB != null) {
+                evalDB.close();
+            }
         }
 
         dataStore.close();
@@ -443,7 +451,9 @@ public class Launcher {
             return false;
         }
 
-        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) && (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN))) {
+        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) &&
+                (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) &&
+                (!givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
             helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;

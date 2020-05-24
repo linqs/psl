@@ -66,7 +66,7 @@ public class SGDReasoner extends Reasoner {
 
         if (printInitialObj && log.isTraceEnabled()) {
             objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0.0f, 0, 0);
+            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}", 0, objective, 0.0f, 0, 0);
         }
 
         int iteration = 1;
@@ -94,7 +94,7 @@ public class SGDReasoner extends Reasoner {
             totalTime += end - start;
 
             if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}",
+                log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
                         iteration, objective, movement, (end - start), totalTime);
             }
 
@@ -108,7 +108,7 @@ public class SGDReasoner extends Reasoner {
 
         termStore.syncAtoms();
 
-        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
+        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimization Time: {}",
                 iteration - 1, objective, totalTime);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumAtoms(), termStore.size());
     }

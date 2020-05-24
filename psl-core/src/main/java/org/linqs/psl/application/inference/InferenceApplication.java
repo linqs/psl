@@ -69,7 +69,6 @@ public abstract class InferenceApplication implements ModelApplication {
     protected PersistedAtomManager atomManager;
 
     protected boolean atomsCommitted;
-    protected boolean online;
 
     protected InferenceApplication(List<Rule> rules, Database db) {
         this(rules, db, Options.INFERENCE_RELAX.getBoolean());
@@ -85,7 +84,6 @@ public abstract class InferenceApplication implements ModelApplication {
         this.relaxHardConstraints = relaxHardConstraints;
         this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getDouble();
         this.relaxationSquared = Options.INFERENCE_RELAX_SQUARED.getBoolean();
-        this.online = Options.ONLINE.getBoolean();
 
         initialize();
     }
@@ -106,8 +104,7 @@ public abstract class InferenceApplication implements ModelApplication {
         groundRuleStore = createGroundRuleStore();
         termGenerator = createTermGenerator();
 
-        int atomCapacity = online ? atomManager.getCachedRVACount() + atomManager.getCachedOBSCount():
-                atomManager.getCachedRVACount();
+        int atomCapacity = atomManager.getCachedRVACount();
         termStore.ensureAtomCapacity(atomCapacity);
 
         if (normalizeWeights) {
@@ -350,7 +347,7 @@ public abstract class InferenceApplication implements ModelApplication {
         try {
             constructor = classObject.getConstructor(List.class, Database.class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No sutible constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
+            throw new IllegalArgumentException("No suitable constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
         }
 
         InferenceApplication inferenceApplication = null;

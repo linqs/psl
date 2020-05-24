@@ -15,15 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.mpe.online;
+package org.linqs.psl.application.inference.mpe;
 
-import org.linqs.psl.application.inference.mpe.online.OnlineInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -32,7 +34,7 @@ import java.util.List;
 /**
  * Use streaming grounding and inference with an SGD reasoner.
  */
-public class SGDOnlineInference extends OnlineInference {
+public class SGDOnlineInference extends MPEOnlineInference {
     public SGDOnlineInference(List<Rule> rules, Database db) {
         super(rules, db);
     }
@@ -43,7 +45,7 @@ public class SGDOnlineInference extends OnlineInference {
     }
 
     @Override
-    protected TermStore createTermStore() {
+    protected OnlineTermStore<SGDObjectiveTerm, GroundAtom> createTermStore() {
         return new SGDStreamingTermStore(rules, atomManager);
     }
 

@@ -4,12 +4,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.mpe.online.SGDOnlineInference;
+import org.linqs.psl.application.inference.online.actions.Close;
+import org.linqs.psl.application.inference.online.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
-import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
@@ -19,18 +21,16 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
-import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
-import org.linqs.psl.application.inference.mpe.online.actions.UpdateObservation;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
     private Database inferDB;
-    private SGDTermGenerator termGenerator;
     private DatabaseDriver driver = DatabaseTestUtil.getH2Driver();
     private Map<String, StandardPredicate> baselinePredicates = new HashMap<>();
     private List<Rule> baselineRules = new ArrayList<Rule>();
@@ -121,8 +121,6 @@ public class SGDOnlineInferenceTest {
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 
         inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition, toClose, modelInfo.observationPartition);
-
-        termGenerator = new SGDTermGenerator();
     }
 
     protected InferenceApplication getInference(List<Rule> rules, Database db) {
@@ -132,18 +130,28 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testUpdateObservation(){
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
-        inference.initialInference(true, true);
-
-        SGDStreamingTermStore termStore = (SGDStreamingTermStore)inference.getTermStore();
-        AtomManager atomManager = inference.getAtomManager();
 
         // create new action
-        UpdateObservation newAction = new UpdateObservation(termStore, (float)0.0, Predicate.get("Sim_Users"),
-                new UniqueStringID("Alice"), new UniqueStringID("Eddie"));
+        String command = "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0";
+        String[] tokenized_command = command.split("\t");
+        UpdateObservation updateObservation = (UpdateObservation)OnlineAction.getOnlineAction(tokenized_command[0]);
+        updateObservation.initAction(tokenized_command);
+
+        // create close action
+        tokenized_command = "Close".split("\t");
+        Close closeAction = (Close)OnlineAction.getOnlineAction(tokenized_command[0]);
+        closeAction.initAction(tokenized_command);
+
+        // add actions to queue
+        inference.server.enqueue(updateObservation);
+        inference.server.enqueue(closeAction);
 
         // Set newAction as next action for online inference application
-        inference.server.setNextAction(newAction);
         inference.inference();
+        Predicate predicate = Predicate.get(updateObservation.getPredicateName());
+        GroundAtom atom = inference.getAtomManager().getAtom(predicate, updateObservation.getArguments());
+        assertEquals(((StreamingTermStore)inference.getTermStore()).getAtomValue(
+                ((StreamingTermStore)inference.getTermStore()).getAtomIndex(atom)), 0.0, 0.01);
     }
 
 }

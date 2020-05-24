@@ -27,6 +27,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.SystemUtils;
 
@@ -47,7 +48,7 @@ import java.util.Map;
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
  * Variables are kept in memory, but terms are kept on disk.
  */
-public abstract class StreamingTermStore<T extends ReasonerTerm> implements AtomTermStore<T, GroundAtom> {
+public abstract class StreamingTermStore<T extends ReasonerTerm> implements AtomTermStore<T, GroundAtom>, OnlineTermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     private static final int INITIAL_PATH_CACHE_SIZE = 100;
@@ -227,7 +228,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
      * Online Method
      * Cache iterator calls this method to determine if the term needs updating
      * */
-    public boolean updateAtom(T term){
+    @Override
+    public boolean updateAtom(T term) {
         return false;
     }
 
@@ -301,11 +303,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         }
     }
 
-    public HyperplaneTermGenerator<T, GroundAtom> getTermGenerator(){
-        return termGenerator;
-    }
-
-
     public void rewrite(String termPagePath, List<T> newPageTerms) {
         // ToDo Implement rewriting of newTermPage
     }
@@ -320,6 +317,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         this.add(term);
     }
 
+    @Override
     public void add(T term) {
         //Currently a hack, newTermBuffer should be handled dynamically
         seenTermCount = seenTermCount + 1;
@@ -329,17 +327,24 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     /**
      * Online Method
      * */
+    @Override
     public synchronized void updateValue(GroundAtom atom, float newValue){
-        // add the atom and newValue to the updates map for cache iterator
-        atomsToUpdate.put(atomIndexMap.get(atom), newValue);
+        if (atomIndexMap.containsKey(atom)) {
+            // add the atom and newValue to the updates map for cache iterator
+            atomsToUpdate.put(atomIndexMap.get(atom), newValue);
 
-        // update our observed values
-        atomValues[getAtomIndex(atom)] = newValue;
+            // update atom values
+            atomValues[getAtomIndex(atom)] = newValue;
+        } else {
+            // TODO: (Charles)
+            // atom may have only been involved in trivial ground rules
+        }
     }
 
     /**
      * Online Method
      * */
+    @Override
     public synchronized void updateValue(Predicate predicate, Constant[] arguments, float newValue){
         // add the atom and newValue to the updates map for cache iterator
         GroundAtom atom = atomManager.getAtom(predicate, arguments);

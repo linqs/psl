@@ -15,20 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.term;
+package org.linqs.psl.reasoner.term;
 
-import java.io.Serializable;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.term.Constant;
 
 /**
- * An element in the universe over which a PSL program is grounded.
+ * An interface for term stores that can handle some atom operations.
  */
-public abstract class Constant implements Term, Serializable {
-    public String toString() {
-        return "'" + rawToString() + "'";
-    }
+public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
 
-    /**
-     * Get a string representation of the internal constant value.
-     */
-    public abstract String rawToString();
+    public void updateValue(GroundAtom atom, float newValue);
+
+    public void updateValue(Predicate predicate, Constant[] arguments, float newValue);
+
+    public boolean updateAtom(T term);
+
+    public void add(T term);
 }
