@@ -60,6 +60,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
      */
     private final Set<GroundAtom> onlineAtoms;
     private final Set<RandomVariableAtom> rvAtoms;
+    private final Set<ObservedAtom> obAtoms;
     private final int readPartition;
 
     public OnlineAtomManager(Database db) {
@@ -71,6 +72,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
 
         onlineAtoms = new HashSet<GroundAtom>();
         rvAtoms = new HashSet<RandomVariableAtom>();
+        obAtoms = new HashSet<ObservedAtom>();
         readPartition = Options.ONLINE_READ_PARTITION.getInt();
     }
 
@@ -87,6 +89,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
         inserter.insertValue(value, arguments);
 
         onlineAtoms.add(atom);
+        obAtoms.add((ObservedAtom) atom);
     }
 
     public synchronized void addRandomVariableAtom(StandardPredicate predicate, Float value, Constant... arguments) {
@@ -116,8 +119,11 @@ public class OnlineAtomManager extends PersistedAtomManager {
             return;
         }
 
+        //TODO(connor) Flush Lazy Partition.
+        db.commit(onlineAtoms, Partition.LAZY_PARTITION_ID, 0);
+
         // Also ensure that the activated atoms are now considered "persisted" by the atom manager.
-        addToPersistedCache(rvAtoms);
+        // addToPersistedCache(rvAtoms);
 
         // Now, we need to do a partial regrounding with the activated atoms.
 
@@ -131,7 +137,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
         //TODO(connor) Currently ignoring arithmetic rules. Why do these need a full regrounding?
         for (Rule onlineRule : onlineRules) {
             if (onlineRule.supportsGroundingQueryRewriting()) {
-                totalGroundRules.addAll(PartialGrounding.onlineSimpleGround(onlineRule, onlinePredicates, this));
+                ArrayList onlineRuleGroundings = PartialGrounding.onlineSimpleGround(onlineRule, onlinePredicates, this);
+                totalGroundRules.addAll(onlineRuleGroundings);
             }
         }
 

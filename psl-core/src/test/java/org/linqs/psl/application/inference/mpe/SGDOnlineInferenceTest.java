@@ -9,6 +9,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -35,7 +36,9 @@ import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
 import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.server.actions.AddAtom;
 import org.linqs.psl.server.actions.AddTerm;
+import org.linqs.psl.server.actions.Close;
 import org.linqs.psl.server.actions.UpdateObservation;
 
 import java.util.*;
@@ -157,6 +160,30 @@ public class SGDOnlineInferenceTest {
         // Set newAction as next action for online inference application
         inference.server.setNextAction(newAction);
         inference.inference();
+    }
+
+    @Test
+    public void testAddAtoms(){
+        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        inference.initialInference(true, true);
+
+        SGDStreamingTermStore termStore = (SGDStreamingTermStore)inference.getTermStore();
+        OnlineAtomManager onlineAtomManager = (OnlineAtomManager)inference.getAtomManager();
+
+        AddAtom newAction = new AddAtom(termStore, onlineAtomManager, baselineRules);
+        newAction.addObservedAtom(Predicate.get("Sim_Users"), (float)1.0,
+                new UniqueStringID("Connor"), new UniqueStringID("Alice"));
+
+        newAction.addObservedAtom(Predicate.get("Sim_Users"), (float)1.0,
+                new UniqueStringID("Alice"), new UniqueStringID("Connor"));
+
+        newAction.addRandomVariableAtom((StandardPredicate) Predicate.get("Rating"), (float)0.5,
+                new UniqueStringID("Connor"), new UniqueStringID("Avatar"));
+
+        // Set newAction as next action for online inference application
+        inference.server.setNextAction(newAction);
+        inference.inference();
+        System.out.println("Done");
     }
 
 }

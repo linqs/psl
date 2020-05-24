@@ -17,15 +17,10 @@
  */
 package org.linqs.psl.application.inference.mpe;
 
-import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.database.atom.OnlineAtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.sgd.SGDReasoner;
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
-import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.server.OnlineServer;
 import org.linqs.psl.server.actions.OnlineServerAction;
 import org.slf4j.Logger;
@@ -44,6 +39,11 @@ public class SGDOnlineInference extends SGDStreamingInference {
     public SGDOnlineInference(List<Rule> rules, Database db) {
         super(rules, db);
         server = new OnlineServer();
+    }
+
+    @Override
+    protected PersistedAtomManager createAtomManager(Database db) {
+        return new OnlineAtomManager(db);
     }
 
     /**
