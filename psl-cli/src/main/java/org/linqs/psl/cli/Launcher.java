@@ -207,6 +207,8 @@ public class Launcher {
         // Output the results.
         outputResults(database, dataStore, closedPredicates);
 
+        log.info("Results Written to Output");
+
         return database;
     }
 
@@ -428,6 +430,8 @@ public class Launcher {
         }
 
         dataStore.close();
+
+        log.info("Run Complete");
     }
 
     private static boolean isCommandLineValid(CommandLine givenOptions) {
@@ -485,5 +489,6 @@ public class Launcher {
                 System.exit(1);
             }
         }
+        log.info("Main Complete");
     }
 }

@@ -58,6 +58,12 @@ public class Options {
             "The port number for the online server"
     );
 
+    public static final Option ONLINE_MAX_CLIENTS = new Option(
+            "inference.onlinemaxclients",
+            50,
+            "The max number of online clients"
+    );
+
     public static final Option ONLINE_HOST_NAME = new Option(
             "inference.onlinehostname",
             "127.0.0.1",
