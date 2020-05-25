@@ -25,14 +25,17 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
+import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -135,14 +138,22 @@ public abstract class OnlineInference extends InferenceApplication {
                 ((OnlineAtomManager)atomManager).addObservedAtom(registeredPredicate, nextAction.getValue(), nextAction.getArguments());
                 break;
             case "WRITE":
-                ((OnlineAtomManager)atomManager).addRandomVariableAtom((StandardPredicate) registeredPredicate, nextAction.getValue(), nextAction.getArguments());
+                ((OnlineAtomManager)atomManager).addRandomVariableAtom((StandardPredicate) registeredPredicate, nextAction.getArguments());
                 break;
             default:
                 throw new IllegalArgumentException("Add Atom Partition: " + nextAction.getPartitionName() + "Not Supported");
 
         }
 
-        ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
+        ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
+
+        SGDTermGenerator termGenerator = new SGDTermGenerator();
+        for (GroundRule groundRule : groundRules) {
+            SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
+            ((OnlineTermStore)termStore).addTerm(newTerm);
+        }
+
+        reasoner.optimize(termStore);
     }
 
 

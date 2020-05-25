@@ -233,7 +233,7 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void commit(Iterable<GroundAtom> atoms, int partitionId, int tmp) {
+    public void commitGroundAtoms(Iterable<GroundAtom> atoms, int partitionId) {
         if (closed) {
             throw new IllegalStateException("Cannot commit on a closed database.");
         }

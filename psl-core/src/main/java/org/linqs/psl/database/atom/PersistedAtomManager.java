@@ -172,6 +172,13 @@ public class PersistedAtomManager extends AtomManager {
         }
     }
 
+    protected void addToPersistedCache(RandomVariableAtom atom) {
+        if (!atom.getPersisted()) {
+            atom.setPersisted(true);
+            persistedAtomCount++;
+        }
+    }
+
     @Override
     public void reportAccessException(RuntimeException ex, GroundAtom offendingAtom) {
         if (throwOnIllegalAccess) {

@@ -69,7 +69,7 @@ public interface WritableDatabase {
      * the atoms are comitted to.
      * Should only be used if you REALLY know what you are doing.
      */
-    public void commit(Iterable<GroundAtom> atoms, int partitionId, int tmp);
+    public void commitGroundAtoms(Iterable<GroundAtom> atoms, int partitionId);
 
     /**
      * Move all ground atoms of a predicate/partition combination into

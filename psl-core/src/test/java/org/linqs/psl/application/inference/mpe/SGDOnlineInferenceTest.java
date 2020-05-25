@@ -172,7 +172,7 @@ public class SGDOnlineInferenceTest {
         AddAtom addAtom2 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
         addAtom2.initAction(tokenized_command);
 
-        command = "AddAtom\tWrite\tRating\tConnor\tAvatar\t0.5";
+        command = "AddAtom\tWrite\tRating\tConnor\tAvatar";
         tokenized_command = command.split("\t");
         AddAtom addAtom3 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
         addAtom3.initAction(tokenized_command);

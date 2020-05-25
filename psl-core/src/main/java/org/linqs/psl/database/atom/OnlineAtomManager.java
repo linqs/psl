@@ -33,8 +33,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,12 +47,12 @@ import java.util.*;
 public class OnlineAtomManager extends PersistedAtomManager {
     private static final Logger log = LoggerFactory.getLogger(OnlineAtomManager.class);
 
+    private static final float DEFAULT_UNOBSERVED_VALUE = 0.0f;
+
     /**
      * All the ground atoms that have been seen, but not instantiated.
      */
     private final Set<GroundAtom> onlineAtoms;
-    private final Set<RandomVariableAtom> rvAtoms;
-    private final Set<ObservedAtom> obAtoms;
     private final int readPartition;
 
     public OnlineAtomManager(Database db) {
@@ -65,8 +63,6 @@ public class OnlineAtomManager extends PersistedAtomManager {
         }
 
         onlineAtoms = new HashSet<GroundAtom>();
-        rvAtoms = new HashSet<RandomVariableAtom>();
-        obAtoms = new HashSet<ObservedAtom>();
         readPartition = Options.ONLINE_READ_PARTITION.getInt();
     }
 
@@ -75,28 +71,40 @@ public class OnlineAtomManager extends PersistedAtomManager {
     //TODO(connor) Why do atoms need to be added to a LazyPartition first?
     public synchronized void addObservedAtom(Predicate predicate, Float value, Constant... arguments) {
         ObservedAtom atom = new ObservedAtom(predicate, arguments, value);
-        PredicateInfo predicateInfo = new PredicateInfo(predicate);
-        Partition partition = db.getReadPartitions().get(readPartition);
-        RDBMSDataStore dataStore = (RDBMSDataStore)db.getDataStore();
-
-        RDBMSInserter inserter = new RDBMSInserter(dataStore, predicateInfo, partition);
-        inserter.insertValue(value, arguments);
-
         onlineAtoms.add(atom);
-        obAtoms.add((ObservedAtom) atom);
     }
 
-    public synchronized void addRandomVariableAtom(StandardPredicate predicate, Float value, Constant... arguments) {
-        RandomVariableAtom atom = new RandomVariableAtom(predicate, arguments, value);
-        PredicateInfo predicateInfo = new PredicateInfo(predicate);
-        Partition partition = db.getWritePartition();
+    public synchronized void addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
+        RandomVariableAtom atom = new RandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
+        onlineAtoms.add(atom);
+    }
+
+    public void insertNewAtoms() {
         RDBMSDataStore dataStore = (RDBMSDataStore)db.getDataStore();
 
-        RDBMSInserter inserter = new RDBMSInserter(dataStore, predicateInfo, partition);
-        inserter.insertValue(value, arguments);
+        for (GroundAtom atom : onlineAtoms) {
+            Predicate predicate = atom.getPredicate();
+            PredicateInfo predicateInfo = new PredicateInfo(predicate);
+            Constant[] arguments = atom.getArguments();
+            Float value = atom.getValue();
 
-        onlineAtoms.add(atom);
-        rvAtoms.add((RandomVariableAtom)atom);
+            if (atom instanceof ObservedAtom) {
+                Partition partition = db.getReadPartitions().get(readPartition);
+
+                RDBMSInserter inserter = new RDBMSInserter(dataStore, predicateInfo, partition);
+                inserter.insertValue(value, arguments);
+            } else if (atom instanceof RandomVariableAtom) {
+                Partition partition = db.getWritePartition();
+
+                RDBMSInserter inserter = new RDBMSInserter(dataStore, predicateInfo, partition);
+                inserter.insert(arguments);
+
+                addToPersistedCache((RandomVariableAtom)atom);
+            } else {
+                throw new IllegalStateException(String.format(
+                        "Found a ground atom (%s) that is neither observed or a target.",  atom));
+            }
+        }
     }
 
     @Override
@@ -108,21 +116,14 @@ public class OnlineAtomManager extends PersistedAtomManager {
         return Collections.unmodifiableSet(onlineAtoms);
     }
 
-    public void activateAtoms(List<Rule> rules, OnlineTermStore termStore) {
+    public ArrayList<GroundRule> activateAtoms(List<Rule> rules, OnlineTermStore termStore) {
         if (onlineAtoms.size() == 0) {
-            return;
+            return new ArrayList<GroundRule>();
         }
 
         //TODO(connor) Flush Lazy Partition.
-        db.commit(onlineAtoms, Partition.LAZY_PARTITION_ID, 0);
+        db.commitGroundAtoms(onlineAtoms, Partition.LAZY_PARTITION_ID);
 
-        // Also ensure that the activated atoms are now considered "persisted" by the atom manager.
-        // addToPersistedCache(rvAtoms);
-
-        // Now, we need to do a partial regrounding with the activated atoms.
-
-        // Collect the specific predicates that are targets in this online batch
-        // and the rules associated with those predicates.
         Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(onlineAtoms);
         Set<Rule> onlineRules = PartialGrounding.getOnlineRules(rules, onlinePredicates);
         //TODO(connor) This could run into memeory issues.
@@ -136,10 +137,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
             }
         }
 
-        SGDTermGenerator termGenerator = new SGDTermGenerator();
-        for (GroundRule groundRule : totalGroundRules) {
-            SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
-            termStore.add(newTerm);
-        }
+        insertNewAtoms();
+        onlineAtoms.clear();
+
+        return totalGroundRules;
     }
 }

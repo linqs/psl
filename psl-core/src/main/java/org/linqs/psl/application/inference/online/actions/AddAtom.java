@@ -43,15 +43,18 @@ public class AddAtom extends OnlineAction{
     public void initAction(String[] tokenized_command) throws IllegalArgumentException {
         // Format: AddAtom PartitionName PredicateName Arguments Value(Optional)
         Predicate registeredPredicate = null;
+        int argumentLength = 0;
         for (int i = 1; i < tokenized_command.length; i++) {
             if (i == 1) {
                 // Partition Name Field:
                 switch (tokenized_command[i].toUpperCase()) {
                     case "READ":
                         partitionName = "READ";
+                        argumentLength = 4;
                         break;
                     case "WRITE":
                         partitionName = "WRITE";
+                        argumentLength = 3;
                         break;
                     default:
                         throw new IllegalArgumentException("Illegal Partition Name: " + tokenized_command[i]);
@@ -60,7 +63,7 @@ public class AddAtom extends OnlineAction{
                 // Predicate Field: Ensure predicate is registered in data store
                 registeredPredicate = resolvePredicate(tokenized_command[i]);
                 predicateName = registeredPredicate.getName();
-                if (tokenized_command.length < registeredPredicate.getArity() + 4) {
+                if (tokenized_command.length < registeredPredicate.getArity() + argumentLength) {
                     throw new IllegalArgumentException("Not enough arguments provided for updating Predicate: " +
                             tokenized_command[i] + " With arity: " + registeredPredicate.getArity());
                 }

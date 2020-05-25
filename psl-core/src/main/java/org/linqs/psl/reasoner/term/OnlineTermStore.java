@@ -32,5 +32,5 @@ public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocal
 
     public boolean updateAtom(T term);
 
-    public void add(T term);
+    public void addTerm(T term);
 }

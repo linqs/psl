@@ -303,10 +303,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         }
     }
 
-    public void rewrite(String termPagePath, List<T> newPageTerms) {
-        // ToDo Implement rewriting of newTermPage
-    }
-
     @Override
     public int size() {
         return seenTermCount;
@@ -314,12 +310,15 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
 
     @Override
     public void add(GroundRule rule, T term) {
-        this.add(term);
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Online Method
+     * */
     @Override
-    public void add(T term) {
-        //Currently a hack, newTermBuffer should be handled dynamically
+    public synchronized void addTerm(T term) {
+        //TODO (Connor) Handled adding terms dynamically
         seenTermCount = seenTermCount + 1;
         newTermBuffer.add(term);
     }
