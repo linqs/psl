@@ -52,7 +52,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     private static final int INITIAL_PATH_CACHE_SIZE = 100;
-    private static final int INITIAL_NEW_TERM_BUFFER_SIZE = 1000;
 
     protected List<WeightedRule> rules;
     protected AtomManager atomManager;
@@ -181,7 +180,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
-        newTermBuffer = new ArrayList<T>(INITIAL_NEW_TERM_BUFFER_SIZE);
+        //TODO (Connor) Change arraylist to iterator (memory issues)
+        newTermBuffer = new ArrayList<T>();
 
         initialRound = true;
         activeIterator = null;
@@ -318,7 +318,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
      * */
     @Override
     public synchronized void addTerm(T term) {
-        //TODO (Connor) Handled adding terms dynamically
         seenTermCount = seenTermCount + 1;
         newTermBuffer.add(term);
     }
