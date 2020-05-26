@@ -121,6 +121,18 @@ public class VizDataCollection {
         }
     }
 
+    public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
+        for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
+            String strGroundRuleId = Integer.toString(System.identityHashCode(groundRule));
+            // TODO: Abstract Arithmetic Rules
+            if (groundRule instanceof WeightedGroundRule) {
+                Map<String, Object> groundRuleObj = vizData.groundRules.get(strGroundRuleId);
+                WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
+                groundRuleObj.put("dissatisfaction", weightedGroundRule.getIncompatibility());
+            }
+        }
+    }
+    // TODO: collect Arithmetic Logical Ground Rules
     public static synchronized void ruleMapInsertElement(AbstractLogicalRule parentRule,
             GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
         if (groundRule == null) {
@@ -154,10 +166,6 @@ public class VizDataCollection {
                 constantsList[entry.getValue()].rawToString());
         }
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
-        if (groundRule instanceof WeightedGroundRule) {
-              WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
-              groundRulesElement.put("dissatisfaction", weightedGroundRule.getIncompatibility());
-        }
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
         Map<String, Object> constants = new HashMap<String, Object>();
         for (Map.Entry varConstElement : varConstMap.entrySet()) {
