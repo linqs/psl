@@ -192,8 +192,7 @@ public class SGDOnlineInferenceTest {
         inference.inference();
         Predicate predicate = Predicate.get(addAtom3.getPredicateName());
         GroundAtom atom = inference.getAtomManager().getAtom(predicate, addAtom3.getArguments());
-        float value = ((StreamingTermStore)inference.getTermStore()).getAtomValue(((StreamingTermStore)inference.getTermStore()).getAtomIndex(atom));
-
-        System.out.println(value);
+        assertEquals(((StreamingTermStore)inference.getTermStore()).getAtomValue(
+                ((StreamingTermStore)inference.getTermStore()).getAtomIndex(atom)), 1.0, 0.01);
     }
 }
