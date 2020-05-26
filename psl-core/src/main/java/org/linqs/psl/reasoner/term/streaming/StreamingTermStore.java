@@ -205,8 +205,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         (new File(pageDir)).mkdirs();
     }
 
-    public boolean isLoaded() {
-        return !initialRound;
+    public boolean writeIterator() {
+        return initialRound || online;
     }
 
     @Override

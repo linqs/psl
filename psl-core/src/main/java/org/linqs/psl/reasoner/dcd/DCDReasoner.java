@@ -135,10 +135,10 @@ public class DCDReasoner extends Reasoner {
 
         // If possible, use a readonly iterator.
         Iterator<DCDObjectiveTerm> termIterator = null;
-        if (termStore.isLoaded()) {
-            termIterator = termStore.noWriteIterator();
-        } else {
+        if (termStore.writeIterator()) {
             termIterator = termStore.iterator();
+        } else {
+            termIterator = termStore.noWriteIterator();
         }
 
         for (DCDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {

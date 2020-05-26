@@ -137,10 +137,10 @@ public class SGDReasoner extends Reasoner {
 
         // If possible, use a readonly iterator.
         Iterator<SGDObjectiveTerm> termIterator = null;
-        if (termStore.isLoaded()) {
-            termIterator = termStore.noWriteIterator();
-        } else {
+        if (termStore.writeIterator()) {
             termIterator = termStore.iterator();
+        } else {
+            termIterator = termStore.noWriteIterator();
         }
 
         float[] variableValues = termStore.getAtomValues();

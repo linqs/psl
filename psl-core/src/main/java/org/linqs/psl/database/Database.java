@@ -289,6 +289,10 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         return parentDataStore;
     }
 
+    public AtomCache getCache(){
+        return cache;
+    }
+
     public List<Partition> getReadPartitions() {
         return Collections.unmodifiableList(readPartitions);
     }

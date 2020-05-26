@@ -294,12 +294,12 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
+    public void moveToPartition(Predicate predicate, int oldPartitionId, int newPartitionID) {
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, writeID);
+            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, newPartitionID);
         ) {
             statement.executeUpdate();
         } catch (SQLException ex) {

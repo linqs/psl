@@ -190,6 +190,10 @@ public class SGDOnlineInferenceTest {
 
         // Run Inference
         inference.inference();
-        System.out.println("Done");
+        Predicate predicate = Predicate.get(addAtom3.getPredicateName());
+        GroundAtom atom = inference.getAtomManager().getAtom(predicate, addAtom3.getArguments());
+        float value = ((StreamingTermStore)inference.getTermStore()).getAtomValue(((StreamingTermStore)inference.getTermStore()).getAtomIndex(atom));
+
+        System.out.println(value);
     }
 }

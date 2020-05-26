@@ -253,13 +253,13 @@ public class PartialGrounding {
         return groundedRules;
     }
 
-    private static ResultList getOnlineGroundingResults(Formula formula, Set<Predicate> lazyPredicates, Database db) {
+    private static ResultList getOnlineGroundingResults(Formula formula, Set<Predicate> onlinePredicates, Database db) {
         List<Atom> onlineTargets = new ArrayList<Atom>();
 
         // For every mention of a online predicate in this rule, we will need to get the grounding query
         // with that specific predicate mention being the online target.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            if (!lazyPredicates.contains(atom.getPredicate())) {
+            if (!onlinePredicates.contains(atom.getPredicate())) {
                 continue;
             }
 

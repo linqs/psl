@@ -25,7 +25,8 @@ public class Partition {
      * of the database).
      * Note that no valid partition is actaully allowed to have negative values.
      */
-    public static final int LAZY_PARTITION_ID = -1;
+    public static final int SPECIAL_WRITE_ID = -1;
+    public static final int SPECIAL_READ_ID = -2;
 
     private final int id;
     private final String name;
