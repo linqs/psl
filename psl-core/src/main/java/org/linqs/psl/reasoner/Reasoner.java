@@ -44,10 +44,10 @@ public abstract class Reasoner {
     }
 
     /**
-     * Minimizes the total weighted incompatibility of the terms in the provided
-     * TermStore.
+     * Minimizes the total weighted incompatibility of the terms in the provided TermStore.
+     * @return the objective the reasoner uses.
      */
-    public abstract void optimize(TermStore termStore);
+    public abstract double optimize(TermStore termStore);
 
     /**
      * Releases all resources acquired by this Reasoner.

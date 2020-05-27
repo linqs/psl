@@ -65,11 +65,12 @@ public class LazyMPEInference extends MPEInference {
     }
 
     @Override
-    protected void internalInference() {
+    protected double internalInference() {
         LazyAtomManager lazyAtomManager = (LazyAtomManager)atomManager;
         // Performs rounds of inference until the ground model stops growing.
         int rounds = 0;
         int numActivated = 0;
+        double objective = 0.0;
 
         do {
             rounds++;
@@ -85,11 +86,13 @@ public class LazyMPEInference extends MPEInference {
             log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
             log.info("Beginning inference round {}.", rounds);
-            reasoner.optimize(termStore);
+            objective = reasoner.optimize(termStore);
             log.info("Inference round {} complete.", rounds);
 
             numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);
             log.debug("Completed round {} and activated {} atoms.", rounds, numActivated);
         } while (numActivated > 0 && rounds < maxRounds);
+
+        return objective;
     }
 }

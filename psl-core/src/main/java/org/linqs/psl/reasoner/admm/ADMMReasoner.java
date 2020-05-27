@@ -101,7 +101,7 @@ public class ADMMReasoner extends Reasoner {
     }
 
     @Override
-    public void optimize(TermStore baseTermStore) {
+    public double optimize(TermStore baseTermStore) {
         if (!(baseTermStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -197,6 +197,8 @@ public class ADMMReasoner extends Reasoner {
 
         // Sync the consensus values back to the atoms.
         termStore.syncAtoms();
+
+        return objective.objective;
     }
 
     private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {
