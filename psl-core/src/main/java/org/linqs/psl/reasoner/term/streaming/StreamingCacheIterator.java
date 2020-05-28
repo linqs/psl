@@ -17,14 +17,12 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Iterate over all the terms from the disk cache.
@@ -200,14 +198,43 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         // Note that the termBuffer should be at maximum size from the initial round.
         termBuffer.clear();
         volatileBuffer.clear();
-
         readPage(termPagePath, volatilePagePath);
 
         // Add new Terms at the end of the last page
-        if (currentPage == numPages - 1 && !parentStore.newTermBuffer.isEmpty()) {
-            // Todo handle new term buffer overflow
-            termCache.addAll(parentStore.newTermBuffer);
-            rewrite_page = true;
+        if (termPagePath == parentStore.getTermPagePath(numPages - 1) && !parentStore.newTermBuffer.isEmpty()) {
+            // Fill the last page as much as possible and rewrite it.
+            while (parentStore.termCache.size() < parentStore.pageSize && parentStore.newTermBuffer.size() > 0) {
+                // Add values to the termpool until full.
+                if (termPagePath == parentStore.getTermPagePath(0)) {
+                    parentStore.termPool.add(parentStore.newTermBuffer.peek());
+                    termPool.add(parentStore.newTermBuffer.peek());
+                }
+
+                termCache.add(parentStore.newTermBuffer.remove());
+            }
+
+            writeFullPage(termPagePath, volatilePagePath);
+
+            // If there are terms left over write them to a new page.
+            if (parentStore.newTermBuffer.size() > 0) {
+                while (parentStore.termCache.size() < parentStore.pageSize && parentStore.newTermBuffer.size() > 0) {
+                    termCache.add(parentStore.newTermBuffer.remove());
+                }
+
+                // Increase the number of pages to both the iterator and parent store.
+                parentStore.numPages++;
+                numPages++;
+
+                // Create a new term page path and new volatile page path.
+                String newTermPagePath = parentStore.getTermPagePath(numPages - 1);
+                String newVolatilePagePath = parentStore.getVolatilePagePath(numPages - 1);
+                writeFullPage(newTermPagePath, newVolatilePagePath);
+                pageAccessOrder.add(numPages - 1);
+            }
+
+            termBuffer.clear();
+            volatileBuffer.clear();
+            readPage(termPagePath, volatilePagePath);
         }
 
         if (shufflePage) {
@@ -218,7 +245,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
             RandUtils.pairedShuffleIndexes(termCache, shuffleMap);
         }
-
         return true;
     }
 
@@ -251,7 +277,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         if(rewrite_page){
             writeFullPage(termPagePath, volatilePagePath);
-            parentStore.newTermBuffer.clear();
         }
     }
 
@@ -284,6 +309,5 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * This is responsible for creating/reallocating both the term buffer and volatile buffer.
      */
     protected void writeFullPage(String termPagePath, String volatilePagePath){
-
     };
 }

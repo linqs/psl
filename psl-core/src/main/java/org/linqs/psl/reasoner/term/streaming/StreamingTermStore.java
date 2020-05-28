@@ -37,12 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
@@ -64,7 +59,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     protected ArrayList<GroundAtom> atoms;
 
     // Buffer to hold new terms
-    protected List<T> newTermBuffer;
+    protected Queue<T> newTermBuffer;
 
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
@@ -181,7 +176,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         //TODO (Connor) Change arraylist to iterator (memory issues)
-        newTermBuffer = new ArrayList<T>();
+        newTermBuffer = new LinkedList<T>();
 
         initialRound = true;
         activeIterator = null;
@@ -320,6 +315,50 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     public synchronized void addTerm(T term) {
         seenTermCount = seenTermCount + 1;
         newTermBuffer.add(term);
+
+        if (newTermBuffer.size() >= pageSize){
+            int pageIndex = numPages - 1;
+            StreamingCacheIterator iterator = (StreamingCacheIterator)getCacheIterator();
+
+            String termPagePath = getTermPagePath(pageIndex);
+            String volatilePagePath = getVolatilePagePath(pageIndex);
+
+            iterator.termBuffer.clear();
+            iterator.volatileBuffer.clear();
+            iterator.readPage(termPagePath, volatilePagePath);
+
+            // Fill the last page as much as possible and rewrite it.
+            while (termCache.size() < pageSize && newTermBuffer.size() > 0) {
+                // Add values to the termpool until full.
+                if (termPagePath == getTermPagePath(0)) {
+                    termPool.add(newTermBuffer.peek());
+                }
+
+                termCache.add(newTermBuffer.remove());
+            }
+
+            iterator.writeFullPage(termPagePath, volatilePagePath);
+
+            // If there are terms left over write them to a new page.
+            if (newTermBuffer.size() > 0) {
+                while (termCache.size() < pageSize && newTermBuffer.size() > 0) {
+                    termCache.add(newTermBuffer.remove());
+                }
+
+                // Increase the number of pages to both the iterator and parent store.
+                iterator.numPages++;
+                numPages++;
+
+                // Create a new term page path and new volatile page path.
+                String newTermPagePath = getTermPagePath(numPages - 1);
+                String newVolatilePagePath = getVolatilePagePath(numPages - 1);
+                iterator.writeFullPage(newTermPagePath, newVolatilePagePath);
+            }
+
+            iterator.termBuffer.clear();
+            iterator.volatileBuffer.clear();
+            iterator.readPage(termPagePath, volatilePagePath);
+        }
     }
 
     /**
@@ -522,4 +561,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
      * Get an iterator that will not write to disk.
      */
     protected abstract StreamingIterator<T> getNoWriteIterator();
+
+    public void setTermBuffer(ByteBuffer buffer){
+        termBuffer = buffer;
+    }
 }

@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.util.RuntimeStats;
 
@@ -26,7 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 
 public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm> {
     public static final double OVERALLOCATION_RATIO = 1.25;
@@ -103,6 +101,7 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
 
         if (termBuffer == null || termBuffer.capacity() < termBufferSize) {
             termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
+            parentStore.setTermBuffer(ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO)));
         }
         termBuffer.clear();
 

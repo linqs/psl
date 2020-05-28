@@ -187,12 +187,16 @@ public class SGDOnlineInferenceTest {
 
     @Test
     public void testPageRewriting(){
-        Options.STREAMING_TS_PAGE_SIZE.set(2);
+        Options.STREAMING_TS_PAGE_SIZE.set(4);
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
                 "AddAtom\tWrite\tRating\tConnor\tAvatar",
+                "AddAtom\tRead\tSim_Users\tConnor\tBob\t1.0",
+                "AddAtom\tRead\tSim_Users\tBob\tConnor\t1.0",
+                "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
+                "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
                 "Close"));
 
         queueCommands(inference, commands);
