@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
@@ -26,11 +25,18 @@ import org.linqs.psl.model.term.Constant;
  */
 public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
 
-    public void updateValue(GroundAtom atom, float newValue);
+    public void addObservedAtom(Predicate predicate, Constant[] arguments, float newValue);
 
-    public void updateValue(Predicate predicate, Constant[] arguments, float newValue);
+    public void addRandomVariableAtom(Predicate predicate, Constant[] arguments);
 
-    public boolean updateAtom(T term);
+    public void deleteAtom(Predicate predicate, Constant[] arguments);
+
+    public void updateAtom(Predicate predicate, Constant[] arguments, float newValue);
 
     public void addTerm(T term);
+
+    public boolean deletedTerm(T term);
+
+    public boolean updateTerm(T term);
+
 }

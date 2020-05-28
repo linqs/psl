@@ -26,7 +26,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.

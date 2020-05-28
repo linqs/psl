@@ -63,7 +63,6 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
 
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
-
         for (int i = 0; i < numTerms; i++) {
             SGDObjectiveTerm term = termPool.get(i);
             term.read(termBuffer, volatileBuffer);
@@ -101,7 +100,6 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
 
         if (termBuffer == null || termBuffer.capacity() < termBufferSize) {
             termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
-            parentStore.setTermBuffer(ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO)));
         }
         termBuffer.clear();
 

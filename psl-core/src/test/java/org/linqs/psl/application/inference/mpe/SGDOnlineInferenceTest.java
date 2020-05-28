@@ -4,10 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.online.actions.AddAtom;
-import org.linqs.psl.application.inference.online.actions.Close;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -20,12 +17,10 @@ import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.*;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
+import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 import java.util.*;
@@ -142,15 +137,19 @@ public class SGDOnlineInferenceTest {
         }
     }
 
-    private float getAtomValue(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
+    private GroundAtom getAtom(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
         Constant[] arguments = new Constant[argumentStrings.length];
         for (int i = 0; i < arguments.length; i++) {
             arguments[i] = new UniqueStringID(argumentStrings[i]);
         }
 
         Predicate predicate = Predicate.get(predicateName);
+        return inference.getAtomManager().getAtom(predicate, arguments);
+    }
+
+    private float getAtomValue(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
         StreamingTermStore termstore = (StreamingTermStore)inference.getTermStore();
-        GroundAtom atom = inference.getAtomManager().getAtom(predicate, arguments);
+        GroundAtom atom = getAtom(inference, predicateName, argumentStrings);
 
         return termstore.getAtomValue(termstore.getAtomIndex(atom));
     }
@@ -204,5 +203,30 @@ public class SGDOnlineInferenceTest {
 
         float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
         assertEquals(atomValue, 1.0, 0.01);
+    }
+
+    @Test
+    public void testAtomDeleting(){
+        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
+                "Close"));
+
+        queueCommands(inference, commands);
+
+        int numTerms = 0;
+        AtomTermStore<SGDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
+        for (SGDObjectiveTerm term : termStore) {
+            numTerms++;
+        }
+        assertEquals(numTerms, 2.0, 0.01);
+
+        inference.inference();
+
+        numTerms = 0;
+        for (SGDObjectiveTerm term : termStore) {
+            numTerms++;
+        }
+        assertEquals(numTerms, 1.0, 0.01);
     }
 }
