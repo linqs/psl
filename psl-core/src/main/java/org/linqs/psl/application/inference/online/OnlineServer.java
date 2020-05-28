@@ -50,7 +50,6 @@ public class OnlineServer<T> extends Thread{
         }
 
         log.info("Started Server at port: " + server.getLocalPort() + " and IP: + " + server.getInetAddress());
-        log.info("Started Server at port: " + server.getLocalPort());
 
         this.queue = new LinkedBlockingQueue<T>();
         this.threads = new HashSet<>();
@@ -64,12 +63,11 @@ public class OnlineServer<T> extends Thread{
 
     private void close() {
         try {
-            log.info("Closing Server");
             server.close();
         } catch (IOException e) {
             log.debug(e.getMessage());
         } finally {
-            log.info("Interrupting Child Threads");
+            log.trace("Interrupting Child Threads");
             for(ServerClientThread childThread : threads){
                 childThread.close();
             }
@@ -87,7 +85,7 @@ public class OnlineServer<T> extends Thread{
     }
 
     void removeThread(ServerClientThread sct) {
-        log.info("Client Disconnected. Removing Thread.");
+        log.trace("Client Disconnected. Removing Thread.");
         threads.remove(sct);
         connections--;
         if (waiting) {
@@ -104,8 +102,8 @@ public class OnlineServer<T> extends Thread{
                     try {
                         client = connectClient();
                     } catch (IOException e) {
-                        log.info("Exception Connecting to Client");
-                        log.info(e.getMessage());
+                        log.debug("Exception Connecting to Client");
+                        log.debug(e.getMessage());
                         break;
                     }
                     addThread(client);
@@ -116,7 +114,6 @@ public class OnlineServer<T> extends Thread{
             } catch (InterruptedException e) {
                 log.info("Server Interrupted");
                 log.info(e.getMessage());
-                interrupt();
             }
         }
         log.info("Server Complete");

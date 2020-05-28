@@ -107,6 +107,8 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void executeAction(OnlineAction nextAction) throws IllegalArgumentException {
+        // TODO: (Charles)
+        //  switch or if else on classtypes
         switch (nextAction.getName()) {
             case "UpdateObservation":
                 doUpdateObservation((UpdateObservation)nextAction);
@@ -178,20 +180,23 @@ public abstract class OnlineInference extends InferenceApplication {
             do {
                 log.info("Waiting for next action from client");
                 nextAction = (OnlineAction) server.dequeClientInput();
-                log.info("Got next action from client. Executing");
+                log.info("Got next action from client. Executing: " + nextAction.getName());
 
                 try {
                     executeAction(nextAction);
+                    log.info("Executed Action: " + nextAction.getName());
                 } catch (IllegalArgumentException e) {
                     log.info("Error throw while executing action.");
                     log.info(e.getMessage());
                     log.info(e.toString());
                 }
-                log.info("Executed Action.");
             } while (!close);
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException e) {
+            log.info("Internal Inference Interrupted");
+            log.info(e.getMessage());
+        } finally {
+            server.closeServer();
         }
 
-        server.closeServer();
     }
 }
