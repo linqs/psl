@@ -6,7 +6,7 @@ import org.linqs.psl.model.term.ConstantType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AddAtom extends OnlineAction{
+public class DeleteAtom extends OnlineAction{
 
     private String predicateName;
     private String partitionName;
@@ -14,7 +14,7 @@ public class AddAtom extends OnlineAction{
     private float newValue;
     private static final Logger log = LoggerFactory.getLogger(UpdateObservation.class);
 
-    public AddAtom() {
+    public DeleteAtom() {
         this.newValue = (float)0.5;
     }
 
@@ -36,7 +36,7 @@ public class AddAtom extends OnlineAction{
 
     @Override
     public String getName() {
-        return "AddAtom";
+        return "DeleteAtom";
     }
 
     @Override
@@ -46,19 +46,7 @@ public class AddAtom extends OnlineAction{
         int argumentLength = 0;
         for (int i = 1; i < tokenized_command.length; i++) {
             if (i == 1) {
-                // Partition Name Field:
-                switch (tokenized_command[i].toUpperCase()) {
-                    case "READ":
-                        partitionName = "READ";
-                        argumentLength = 4;
-                        break;
-                    case "WRITE":
-                        partitionName = "WRITE";
-                        argumentLength = 3;
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Illegal Partition Name: " + tokenized_command[i]);
-                }
+                argumentLength = 3;
             } else if (i == 2){
                 // Predicate Field: Ensure predicate is registered in data store
                 registeredPredicate = resolvePredicate(tokenized_command[i]);

@@ -35,7 +35,6 @@ import org.linqs.psl.model.term.Variable;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
-import com.healthmarketscience.sqlbuilder.FunctionCall;
 import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 
@@ -130,7 +129,7 @@ public class Formula2SQL {
         partitions.add(database.getWritePartition().getID());
 
         if (lazyTarget != null) {
-            partitions.add(Partition.LAZY_PARTITION_ID);
+            partitions.add(Partition.SPECIAL_WRITE_ID);
         }
     }
 
@@ -275,7 +274,7 @@ public class Formula2SQL {
         // Most atoms get to choose from anywhere, lazy atoms can only come from the lazy partition.
         CustomSql partitionColumn = new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME);
         if (atom == lazyTarget) {
-            query.addCondition(BinaryCondition.equalTo(partitionColumn, Partition.LAZY_PARTITION_ID));
+            query.addCondition(BinaryCondition.lessThan(partitionColumn, 0));
         } else {
             query.addCondition(new InCondition(partitionColumn, partitions));
         }

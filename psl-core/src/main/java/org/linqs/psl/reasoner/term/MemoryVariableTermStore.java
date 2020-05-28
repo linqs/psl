@@ -90,8 +90,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public boolean isLoaded() {
-        return true;
+    public boolean writeIterator() {
+        return false;
     }
 
     @Override

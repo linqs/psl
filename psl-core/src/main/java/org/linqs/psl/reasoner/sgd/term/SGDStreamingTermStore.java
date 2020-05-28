@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
@@ -65,16 +66,35 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     }
 
     @Override
-    public synchronized boolean updateAtom(SGDObjectiveTerm term){
-        boolean rewrite = false;
+    public synchronized void addTerm(SGDObjectiveTerm term) {
+        seenTermCount = seenTermCount + 1;
+        newTermBuffer.add(term);
+
+        if (newTermBuffer.size() >= pageSize){
+            rewriteLastPage((StreamingCacheIterator)getCacheIterator());
+        }
+    }
+
+    @Override
+    public boolean deletedTerm(SGDObjectiveTerm term){
         int[] indices = term.getIndices();
-        for (int index: indices){
-            if(atomsUpdatingThisRound.containsKey(index)){
-                rewrite = true;
-                term.updateConstant((ArrayList<GroundAtom>)getAtoms(), getAtomValues());
-                break;
+        for (int index: indices) {
+            if(deletedAtoms[index]){
+                return true;
             }
         }
-        return rewrite;
+        return false;
+    }
+
+    @Override
+    public synchronized boolean updateTerm(SGDObjectiveTerm term){
+        int[] indices = term.getIndices();
+        for (int index: indices) {
+            if(atomsUpdatingThisRound.containsKey(index)){
+                term.updateConstant((ArrayList<GroundAtom>)getAtoms(), getAtomValues());
+                return true;
+            }
+        }
+        return false;
     }
 }

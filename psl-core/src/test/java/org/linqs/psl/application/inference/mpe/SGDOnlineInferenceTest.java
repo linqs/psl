@@ -4,10 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.online.actions.AddAtom;
-import org.linqs.psl.application.inference.online.actions.Close;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -21,8 +18,9 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.*;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
+import org.linqs.psl.reasoner.term.AtomTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 import java.util.*;
@@ -128,68 +126,107 @@ public class SGDOnlineInferenceTest {
         return new SGDOnlineInference(rules, db);
     }
 
+    private void queueCommands(SGDOnlineInference inference, ArrayList<String> commands){
+        String[] tokenized_command;
+
+        for(String command : commands) {
+            tokenized_command = command.split("\t");
+            OnlineAction action = OnlineAction.getOnlineAction(tokenized_command[0]);
+            action.initAction(tokenized_command);
+            inference.server.enqueue(action);
+        }
+    }
+
+    private GroundAtom getAtom(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
+        Constant[] arguments = new Constant[argumentStrings.length];
+        for (int i = 0; i < arguments.length; i++) {
+            arguments[i] = new UniqueStringID(argumentStrings[i]);
+        }
+
+        Predicate predicate = Predicate.get(predicateName);
+        return inference.getAtomManager().getAtom(predicate, arguments);
+    }
+
+    private float getAtomValue(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
+        StreamingTermStore termstore = (StreamingTermStore)inference.getTermStore();
+        GroundAtom atom = getAtom(inference, predicateName, argumentStrings);
+
+        return termstore.getAtomValue(termstore.getAtomIndex(atom));
+    }
+
     @Test
     public void testUpdateObservation(){
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0",
+                "Close"));
 
-        // create new action
-        String command = "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0";
-        String[] tokenized_command = command.split("\t");
-        UpdateObservation updateObservation = (UpdateObservation)OnlineAction.getOnlineAction(tokenized_command[0]);
-        updateObservation.initAction(tokenized_command);
-
-        // create close action
-        tokenized_command = "Close".split("\t");
-        Close closeAction = (Close)OnlineAction.getOnlineAction(tokenized_command[0]);
-        closeAction.initAction(tokenized_command);
-
-        // add actions to queue
-        inference.server.enqueue(updateObservation);
-        inference.server.enqueue(closeAction);
-
-        // Run Inference
+        queueCommands(inference, commands);
         inference.inference();
-        Predicate predicate = Predicate.get(updateObservation.getPredicateName());
-        GroundAtom atom = inference.getAtomManager().getAtom(predicate, updateObservation.getArguments());
-        assertEquals(((StreamingTermStore)inference.getTermStore()).getAtomValue(
-                ((StreamingTermStore)inference.getTermStore()).getAtomIndex(atom)), 0.0, 0.01);
+
+        float atomValue = getAtomValue(inference, "Sim_Users", new String[]{"Alice", "Eddie"});
+        assertEquals(atomValue, 0.0, 0.01);
     }
 
     @Test
     public void testAddAtoms(){
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
-        String[] tokenized_command;
-        String command;
+        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
+                "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
+                "AddAtom\tWrite\tRating\tConnor\tAvatar",
+                "Close"));
 
-        // create new action
-        command = "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0";
-        tokenized_command = command.split("\t");
-        AddAtom addAtom1 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
-        addAtom1.initAction(tokenized_command);
-
-        command = "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0";
-        tokenized_command = command.split("\t");
-        AddAtom addAtom2 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
-        addAtom2.initAction(tokenized_command);
-
-        command = "AddAtom\tWrite\tRating\tConnor\tAvatar\t0.5";
-        tokenized_command = command.split("\t");
-        AddAtom addAtom3 = (AddAtom)OnlineAction.getOnlineAction(tokenized_command[0]);
-        addAtom3.initAction(tokenized_command);
-
-        // create close action
-        tokenized_command = "Close".split("\t");
-        Close closeAction = (Close)OnlineAction.getOnlineAction(tokenized_command[0]);
-        closeAction.initAction(tokenized_command);
-
-        // add actions to queue
-        inference.server.enqueue(addAtom1);
-        inference.server.enqueue(addAtom2);
-        inference.server.enqueue(addAtom3);
-        inference.server.enqueue(closeAction);
-
-        // Run Inference
+        queueCommands(inference, commands);
         inference.inference();
-        System.out.println("Done");
+
+        float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
+        assertEquals(atomValue, 1.0, 0.01);
+    }
+
+    @Test
+    public void testPageRewriting(){
+        Options.STREAMING_TS_PAGE_SIZE.set(4);
+        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
+                "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
+                "AddAtom\tWrite\tRating\tConnor\tAvatar",
+                "AddAtom\tRead\tSim_Users\tConnor\tBob\t1.0",
+                "AddAtom\tRead\tSim_Users\tBob\tConnor\t1.0",
+                "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
+                "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
+                "Close"));
+
+        queueCommands(inference, commands);
+        inference.inference();
+
+        float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
+        assertEquals(atomValue, 1.0, 0.01);
+    }
+
+    @Test
+    public void testAtomDeleting(){
+        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
+                "Close"));
+
+        queueCommands(inference, commands);
+
+        int numTerms = 0;
+        AtomTermStore<SGDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
+        for (SGDObjectiveTerm term : termStore) {
+            numTerms++;
+        }
+        assertEquals(numTerms, 2.0, 0.01);
+
+        inference.inference();
+
+        numTerms = 0;
+        for (SGDObjectiveTerm term : termStore) {
+            numTerms++;
+        }
+        assertEquals(numTerms, 1.0, 0.01);
     }
 }

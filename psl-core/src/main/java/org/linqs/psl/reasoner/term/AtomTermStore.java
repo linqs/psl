@@ -41,7 +41,7 @@ public interface AtomTermStore<T extends ReasonerTerm, V extends ReasonerLocalAt
     public float getAtomValue(int index);
 
 
-    boolean isLoaded();
+    boolean writeIterator();
 
     void syncAtoms();
 

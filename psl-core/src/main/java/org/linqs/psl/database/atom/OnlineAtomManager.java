@@ -25,6 +25,7 @@ import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.RDBMSInserter;
 import org.linqs.psl.grounding.PartialGrounding;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -33,8 +34,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,12 +48,13 @@ import java.util.*;
 public class OnlineAtomManager extends PersistedAtomManager {
     private static final Logger log = LoggerFactory.getLogger(OnlineAtomManager.class);
 
+    private static final float DEFAULT_UNOBSERVED_VALUE = 1.0f;
+
     /**
      * All the ground atoms that have been seen, but not instantiated.
      */
-    private final Set<GroundAtom> onlineAtoms;
-    private final Set<RandomVariableAtom> rvAtoms;
-    private final Set<ObservedAtom> obAtoms;
+    private final Set<GroundAtom> obAtoms;
+    private final Set<GroundAtom> rvAtoms;
     private final int readPartition;
 
     public OnlineAtomManager(Database db) {
@@ -64,39 +64,26 @@ public class OnlineAtomManager extends PersistedAtomManager {
             throw new IllegalArgumentException("OnlineAtomManagers require RDBMSDatabase.");
         }
 
-        onlineAtoms = new HashSet<GroundAtom>();
-        rvAtoms = new HashSet<RandomVariableAtom>();
-        obAtoms = new HashSet<ObservedAtom>();
+        obAtoms = new HashSet<GroundAtom>();
+        rvAtoms = new HashSet<GroundAtom>();
         readPartition = Options.ONLINE_READ_PARTITION.getInt();
     }
 
     //TODO(connor) Check to see if atom exists in the database, throw error if it does
     //TODO(connor) Should there be an activation like lazyatommanager?
-    //TODO(connor) Why do atoms need to be added to a LazyPartition first?
     public synchronized void addObservedAtom(Predicate predicate, Float value, Constant... arguments) {
-        ObservedAtom atom = new ObservedAtom(predicate, arguments, value);
-        PredicateInfo predicateInfo = new PredicateInfo(predicate);
-        Partition partition = db.getReadPartitions().get(readPartition);
-        RDBMSDataStore dataStore = (RDBMSDataStore)db.getDataStore();
+        AtomCache cache = db.getCache();
+        ObservedAtom atom = cache.instantiateObservedAtom(predicate, arguments, value);
 
-        RDBMSInserter inserter = new RDBMSInserter(dataStore, predicateInfo, partition);
-        inserter.insertValue(value, arguments);
-
-        onlineAtoms.add(atom);
-        obAtoms.add((ObservedAtom) atom);
+        obAtoms.add(atom);
     }
 
-    public synchronized void addRandomVariableAtom(StandardPredicate predicate, Float value, Constant... arguments) {
-        RandomVariableAtom atom = new RandomVariableAtom(predicate, arguments, value);
-        PredicateInfo predicateInfo = new PredicateInfo(predicate);
-        Partition partition = db.getWritePartition();
-        RDBMSDataStore dataStore = (RDBMSDataStore)db.getDataStore();
+    public synchronized void addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
+        AtomCache cache = db.getCache();
+        RandomVariableAtom atom = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
+        atom.setPersisted(true);
 
-        RDBMSInserter inserter = new RDBMSInserter(dataStore, predicateInfo, partition);
-        inserter.insertValue(value, arguments);
-
-        onlineAtoms.add(atom);
-        rvAtoms.add((RandomVariableAtom)atom);
+        rvAtoms.add(atom);
     }
 
     @Override
@@ -104,31 +91,27 @@ public class OnlineAtomManager extends PersistedAtomManager {
         // OnlineAtomManger does not have access exceptions.
     }
 
-    public Set<GroundAtom> getOnlineAtoms() {
-        return Collections.unmodifiableSet(onlineAtoms);
-    }
-
-    public void activateAtoms(List<Rule> rules, OnlineTermStore termStore) {
-        if (onlineAtoms.size() == 0) {
-            return;
+    public ArrayList<GroundRule> activateAtoms(List<Rule> rules, OnlineTermStore termStore) {
+        if (obAtoms.size() == 0 && rvAtoms.size() == 0) {
+            return new ArrayList<GroundRule>();
         }
+        Set<GroundAtom> newObAtoms = new HashSet<>(obAtoms);
+        Set<GroundAtom> newRvAtoms = new HashSet<>(rvAtoms);
+        Set<GroundAtom> newAtoms = new HashSet<>(obAtoms);
+        newAtoms.addAll(rvAtoms);
+        obAtoms.clear();
+        rvAtoms.clear();
 
-        //TODO(connor) Flush Lazy Partition.
-        db.commit(onlineAtoms, Partition.LAZY_PARTITION_ID, 0);
+        // TODO(connor): This could run into memory issues.
+        // HACK(connor): Generalize commit for groundAtoms.
+        db.commitGroundAtoms(newObAtoms, Partition.SPECIAL_WRITE_ID);
+        db.commitGroundAtoms(newRvAtoms, Partition.SPECIAL_READ_ID);
 
-        // Also ensure that the activated atoms are now considered "persisted" by the atom manager.
-        // addToPersistedCache(rvAtoms);
-
-        // Now, we need to do a partial regrounding with the activated atoms.
-
-        // Collect the specific predicates that are targets in this online batch
-        // and the rules associated with those predicates.
-        Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(onlineAtoms);
+        Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(newAtoms);
         Set<Rule> onlineRules = PartialGrounding.getOnlineRules(rules, onlinePredicates);
-        //TODO(connor) This could run into memeory issues.
         ArrayList<GroundRule> totalGroundRules = new ArrayList<GroundRule>();
 
-        //TODO(connor) Currently ignoring arithmetic rules. Why do these need a full regrounding?
+        // TODO(connor): Currently ignoring arithmetic rules. Why do these need a full regrounding?
         for (Rule onlineRule : onlineRules) {
             if (onlineRule.supportsGroundingQueryRewriting()) {
                 ArrayList onlineRuleGroundings = PartialGrounding.onlineSimpleGround(onlineRule, onlinePredicates, this);
@@ -136,10 +119,11 @@ public class OnlineAtomManager extends PersistedAtomManager {
             }
         }
 
-        SGDTermGenerator termGenerator = new SGDTermGenerator();
-        for (GroundRule groundRule : totalGroundRules) {
-            SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
-            termStore.add(newTerm);
+        for (Predicate onlinePredicate : onlinePredicates) {
+            db.moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID, db.getWritePartition().getID());
+            db.moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID, db.getReadPartitions().get(readPartition).getID());
         }
+
+        return totalGroundRules;
     }
 }

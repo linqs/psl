@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.util.RuntimeStats;
 
@@ -26,7 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 
 public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm> {
     public static final double OVERALLOCATION_RATIO = 1.25;
@@ -65,7 +63,6 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
 
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
-
         for (int i = 0; i < numTerms; i++) {
             SGDObjectiveTerm term = termPool.get(i);
             term.read(termBuffer, volatileBuffer);

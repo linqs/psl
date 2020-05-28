@@ -20,37 +20,24 @@ package org.linqs.psl.database.atom;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.PartialGrounding;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.model.term.VariableTypeMap;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
-import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 
-import com.healthmarketscience.sqlbuilder.SelectQuery;
-import com.healthmarketscience.sqlbuilder.SetOperationQuery;
-import com.healthmarketscience.sqlbuilder.UnionQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -168,7 +155,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
     private void activate(Set<RandomVariableAtom> toActivate, List<Rule> rules, GroundRuleStore groundRuleStore) {
         // First commit the atoms to the database.
-        db.commit(toActivate, Partition.LAZY_PARTITION_ID);
+        db.commit(toActivate, Partition.SPECIAL_WRITE_ID);
 
         // Also ensure that the activated atoms are now considered "persisted" by the atom manager.
         addToPersistedCache(toActivate);
@@ -189,7 +176,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         // Move all the new atoms out of the lazy partition and into the write partition.
         for (StandardPredicate lazyPredicate : lazyPredicates) {
-            db.moveToWritePartition(lazyPredicate, Partition.LAZY_PARTITION_ID);
+            db.moveToPartition(lazyPredicate, Partition.SPECIAL_WRITE_ID, db.getWritePartition().getID());
         }
 
         // Since complex aritmetic rules require a full regound, we need to do them

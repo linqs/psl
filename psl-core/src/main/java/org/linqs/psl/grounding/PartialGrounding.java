@@ -57,7 +57,6 @@ public class PartialGrounding {
     // Static only.
     private PartialGrounding() {}
 
-
     public static Set<StandardPredicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
         Set<StandardPredicate> lazyPredicates = new HashSet<StandardPredicate>();
         for (Atom atom : toActivate) {
@@ -66,14 +65,6 @@ public class PartialGrounding {
             }
         }
         return lazyPredicates;
-    }
-
-    public static Set<Predicate> getOnlinePredicates(Set<GroundAtom> onlineAtoms) {
-        Set<Predicate> onlinePredicates = new HashSet<Predicate>();
-        for (Atom atom : onlineAtoms) {
-            onlinePredicates.add(atom.getPredicate());
-        }
-        return onlinePredicates;
     }
 
     public static Set<Rule> getLazyRules(List<Rule> rules, Set<StandardPredicate> lazyPredicates) {
@@ -104,36 +95,6 @@ public class PartialGrounding {
         }
 
         return lazyRules;
-    }
-
-    public static Set<Rule> getOnlineRules(List<Rule> rules, Set<Predicate> onlinePredicates) {
-        Set<Rule> onlineRules = new HashSet<Rule>();
-
-        for (Rule rule : rules) {
-            if (rule instanceof AbstractLogicalRule) {
-                // Note that we check for atoms not in the base formula, but in the
-                // query formula for the DNF because negated atoms will not
-                // be considered.
-                for (Atom atom : ((AbstractLogicalRule)rule).getNegatedDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
-                    if (onlinePredicates.contains(atom.getPredicate())) {
-                        onlineRules.add(rule);
-                        break;
-                    }
-                }
-            } else if (rule instanceof AbstractArithmeticRule) {
-                // Note that we do not bother checking the filters since those predicates must be closed.
-                for (Predicate predicate : ((AbstractArithmeticRule)rule).getBodyPredicates()) {
-                    if (onlinePredicates.contains(predicate)) {
-                        onlineRules.add(rule);
-                        break;
-                    }
-                }
-            } else {
-                throw new IllegalStateException("Unknown rule type: " + rule.getClass().getName());
-            }
-        }
-
-        return onlineRules;
     }
 
     /**
@@ -178,6 +139,92 @@ public class PartialGrounding {
         }
     }
 
+    private static ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates,
+                                                      Database db) {
+        List<Atom> lazyTargets = new ArrayList<Atom>();
+
+        // For every mention of a lazy predicate in this rule, we will need to get the grounding query
+        // with that specific predicate mention being the lazy target.
+        for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
+            if (!lazyPredicates.contains(atom.getPredicate())) {
+                continue;
+            }
+
+            lazyTargets.add(atom);
+        }
+
+        if (lazyTargets.size() == 0) {
+            return null;
+        }
+
+        // Do the grounding query for this rule.
+        return lazyGround(formula, lazyTargets, db);
+    }
+
+    private static ResultList lazyGround(Formula formula, List<Atom> lazyTargets, Database db) {
+        if (lazyTargets.size() == 0) {
+            throw new IllegalArgumentException();
+        }
+
+        RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
+
+        List<SelectQuery> queries = new ArrayList<SelectQuery>();
+
+        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+        Map<Variable, Integer> projectionMap = null;
+
+        for (Atom lazyTarget : lazyTargets) {
+            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, lazyTarget);
+            queries.add(sqler.getQuery(formula));
+
+            if (projectionMap == null) {
+                projectionMap = sqler.getProjectionMap();
+            }
+        }
+
+        // This fallbacks to a normal SELECT when there is only one.
+        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
+        return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
+    }
+
+    public static Set<Predicate> getOnlinePredicates(Set<GroundAtom> onlineAtoms) {
+        Set<Predicate> onlinePredicates = new HashSet<Predicate>();
+        for (Atom atom : onlineAtoms) {
+            onlinePredicates.add(atom.getPredicate());
+        }
+        return onlinePredicates;
+    }
+
+    public static Set<Rule> getOnlineRules(List<Rule> rules, Set<Predicate> onlinePredicates) {
+        Set<Rule> onlineRules = new HashSet<Rule>();
+
+        for (Rule rule : rules) {
+            if (rule instanceof AbstractLogicalRule) {
+                // Note that we check for atoms not in the base formula, but in the
+                // query formula for the DNF because negated atoms will not
+                // be considered.
+                for (Atom atom : ((AbstractLogicalRule)rule).getNegatedDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
+                    if (onlinePredicates.contains(atom.getPredicate())) {
+                        onlineRules.add(rule);
+                        break;
+                    }
+                }
+            } else if (rule instanceof AbstractArithmeticRule) {
+                // Note that we do not bother checking the filters since those predicates must be closed.
+                for (Predicate predicate : ((AbstractArithmeticRule)rule).getBodyPredicates()) {
+                    if (onlinePredicates.contains(predicate)) {
+                        onlineRules.add(rule);
+                        break;
+                    }
+                }
+            } else {
+                throw new IllegalStateException("Unknown rule type: " + rule.getClass().getName());
+            }
+        }
+
+        return onlineRules;
+    }
+
     public static ArrayList<GroundRule> onlineSimpleGround(Rule rule, Set<Predicate> onlinePredicates, AtomManager atomManager) {
         Database db = atomManager.getDatabase();
         if (!rule.supportsGroundingQueryRewriting()) {
@@ -206,36 +253,13 @@ public class PartialGrounding {
         return groundedRules;
     }
 
-    private static ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates,
-                                                      Database db) {
-        List<Atom> lazyTargets = new ArrayList<Atom>();
-
-        // For every mention of a lazy predicate in this rule, we will need to get the grounding query
-        // with that specific predicate mention being the lazy target.
-        for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            if (!lazyPredicates.contains(atom.getPredicate())) {
-                continue;
-            }
-
-            lazyTargets.add(atom);
-        }
-
-        if (lazyTargets.size() == 0) {
-            return null;
-        }
-
-        // Do the grounding query for this rule.
-        return lazyGround(formula, lazyTargets, db);
-    }
-
-    private static ResultList getOnlineGroundingResults(Formula formula, Set<Predicate> lazyPredicates,
-                                                      Database db) {
+    private static ResultList getOnlineGroundingResults(Formula formula, Set<Predicate> onlinePredicates, Database db) {
         List<Atom> onlineTargets = new ArrayList<Atom>();
 
         // For every mention of a online predicate in this rule, we will need to get the grounding query
         // with that specific predicate mention being the online target.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            if (!lazyPredicates.contains(atom.getPredicate())) {
+            if (!onlinePredicates.contains(atom.getPredicate())) {
                 continue;
             }
 
@@ -248,32 +272,6 @@ public class PartialGrounding {
 
         // Do the grounding query for this rule.
         return lazyGround(formula, onlineTargets, db);
-    }
-
-    private static ResultList lazyGround(Formula formula, List<Atom> lazyTargets, Database db) {
-        if (lazyTargets.size() == 0) {
-            throw new IllegalArgumentException();
-        }
-
-        RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
-
-        List<SelectQuery> queries = new ArrayList<SelectQuery>();
-
-        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-        Map<Variable, Integer> projectionMap = null;
-
-        for (Atom lazyTarget : lazyTargets) {
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, lazyTarget);
-            queries.add(sqler.getQuery(formula));
-
-            if (projectionMap == null) {
-                projectionMap = sqler.getProjectionMap();
-            }
-        }
-
-        // This fallbacks to a normal SELECT when there is only one.
-        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
-        return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
     }
 }
 

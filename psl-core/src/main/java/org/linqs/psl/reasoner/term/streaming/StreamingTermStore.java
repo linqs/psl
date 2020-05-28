@@ -19,8 +19,10 @@ package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -37,12 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
@@ -52,7 +49,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     private static final int INITIAL_PATH_CACHE_SIZE = 100;
-    private static final int INITIAL_NEW_TERM_BUFFER_SIZE = 1000;
 
     protected List<WeightedRule> rules;
     protected AtomManager atomManager;
@@ -62,10 +58,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
 
     // Matching arrays for variables and observations values and atoms.
     protected float[] atomValues;
+    protected boolean[] deletedAtoms;
     protected ArrayList<GroundAtom> atoms;
 
     // Buffer to hold new terms
-    protected List<T> newTermBuffer;
+    protected Queue<T> newTermBuffer;
 
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
@@ -181,7 +178,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
-        newTermBuffer = new ArrayList<T>(INITIAL_NEW_TERM_BUFFER_SIZE);
+        //TODO (Connor) Change arraylist to iterator (memory issues)
+        newTermBuffer = new LinkedList<T>();
 
         initialRound = true;
         activeIterator = null;
@@ -205,8 +203,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         (new File(pageDir)).mkdirs();
     }
 
-    public boolean isLoaded() {
-        return !initialRound;
+    public boolean writeIterator() {
+        return initialRound || online;
     }
 
     @Override
@@ -222,15 +220,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
     @Override
     public float getAtomValue(int index) {
         return atomValues[index];
-    }
-
-    /**
-     * Online Method
-     * Cache iterator calls this method to determine if the term needs updating
-     * */
-    @Override
-    public boolean updateAtom(T term) {
-        return false;
     }
 
     @Override
@@ -287,6 +276,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
             atomIndexMap = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
 
             atomValues = new float[capacity];
+            deletedAtoms = new boolean[capacity];
             atoms = new ArrayList<GroundAtom>(capacity);
         } else if (atomIndexMap.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
@@ -300,11 +290,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
             atomIndexMap = newVariables;
 
             atomValues = Arrays.copyOf(atomValues, capacity);
+            deletedAtoms = Arrays.copyOf(deletedAtoms, capacity);
         }
-    }
-
-    public void rewrite(String termPagePath, List<T> newPageTerms) {
-        // ToDo Implement rewriting of newTermPage
     }
 
     @Override
@@ -314,21 +301,44 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
 
     @Override
     public void add(GroundRule rule, T term) {
-        this.add(term);
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void add(T term) {
-        //Currently a hack, newTermBuffer should be handled dynamically
-        seenTermCount = seenTermCount + 1;
-        newTermBuffer.add(term);
+    public synchronized void addTerm(T term) { return; }
+
+    @Override
+    public boolean deletedTerm(T term) { return false; }
+
+    @Override
+    public boolean updateTerm(T term) {
+        return false;
     }
 
-    /**
-     * Online Method
-     * */
     @Override
-    public synchronized void updateValue(GroundAtom atom, float newValue){
+    public void addObservedAtom(Predicate predicate, Constant[] arguments, float newValue) {
+        ((OnlineAtomManager)atomManager).addObservedAtom(predicate, newValue, arguments);
+    }
+
+    @Override
+    public void addRandomVariableAtom(Predicate predicate, Constant[] arguments) {
+        ((OnlineAtomManager)atomManager).addRandomVariableAtom((StandardPredicate) predicate, arguments);
+    }
+
+    @Override
+    public void deleteAtom(Predicate predicate, Constant[] arguments) {
+        // add the atom and newValue to the updates map for cache iterator
+        GroundAtom atom = atomManager.getAtom(predicate, arguments);
+        if (atomIndexMap.containsKey(atom)) {
+            deletedAtoms[getAtomIndex(atom)] = true;
+        }
+    }
+
+    @Override
+    public synchronized void updateAtom(Predicate predicate, Constant[] arguments, float newValue){
+        // add the atom and newValue to the updates map for cache iterator
+        GroundAtom atom = atomManager.getAtom(predicate, arguments);
+
         if (atomIndexMap.containsKey(atom)) {
             // add the atom and newValue to the updates map for cache iterator
             atomsToUpdate.put(atomIndexMap.get(atom), newValue);
@@ -340,14 +350,36 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Atom
         }
     }
 
-    /**
-     * Online Method
-     * */
-    @Override
-    public synchronized void updateValue(Predicate predicate, Constant[] arguments, float newValue){
-        // add the atom and newValue to the updates map for cache iterator
-        GroundAtom atom = atomManager.getAtom(predicate, arguments);
-        updateValue(atom, newValue);
+    public void rewriteLastPage(StreamingCacheIterator iterator) {
+        termBuffer.clear();
+        volatileBuffer.clear();
+        termCache.clear();
+
+        iterator.readPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
+
+        // Fill the last page and rewrite it.
+        while (termCache.size() < pageSize && newTermBuffer.size() > 0) {
+            if (getTermPagePath(numPages - 1) == getTermPagePath(0)) {
+                termPool.add(newTermBuffer.peek());
+            }
+            termCache.add(newTermBuffer.remove());
+        }
+
+        iterator.writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
+        termBuffer = iterator.termBuffer;
+
+        // If terms left over, then write them to a new page.
+        if (newTermBuffer.size() > 0) {
+            numPages++;
+            termCache.clear();
+
+            while (newTermBuffer.size() > 0) {
+                termCache.add(newTermBuffer.remove());
+            }
+            iterator.pageAccessOrder.add(numPages - 1);
+            iterator.writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
+            termBuffer = iterator.termBuffer;
+        }
     }
 
     @Override
