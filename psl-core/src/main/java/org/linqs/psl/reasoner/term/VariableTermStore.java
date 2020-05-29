@@ -17,35 +17,43 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.GroundAtom;
+
 import java.util.ArrayList;
 
 /**
  * An interface for term stores that can handle some atom operations.
  */
-public interface AtomTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
+public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
+    int getNumVariables();
+
+    public Iterable<V> getVariables();
 
     /**
-     * Get the index that matches up to getAtomValues().
+     * Is the term store loaded, and can it give an accurate term and variable count.
      */
-    public int getAtomIndex(V atom);
+    public boolean isLoaded();
 
     /**
      * Get the truth values for variable atoms.
      * Changing a value in this array and calling syncAtoms() will change the actual atom's value.
      */
-    public float[] getAtomValues();
+    public float[] getVariableValues();
+
+    /**
+     * Get the index that matches up to getAtomValues().
+     */
+    public int getVariableIndex(V atom);
 
     /**
      * Get the variable for the given index.
      */
-    public float getAtomValue(int index);
+    public float getVariableValue(int index);
 
+    /**
+     * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().
+     */
+    public void syncAtoms();
 
-    boolean writeIterator();
-
-    void syncAtoms();
-
-    int getNumAtoms();
-
-    ArrayList<V> getAtoms();
+    public GroundAtom[] getVariableAtoms();
 }

@@ -18,12 +18,9 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.*;
 
@@ -50,7 +47,7 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     @Override
     public DCDObjectiveTerm createLossTerm(TermStore <DCDObjectiveTerm, GroundAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
-        AtomTermStore<DCDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
+        VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
         if (isHinge && isSquared) {

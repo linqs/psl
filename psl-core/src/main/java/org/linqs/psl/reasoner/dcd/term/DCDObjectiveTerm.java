@@ -18,14 +18,13 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.term.AtomTermStore;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 
 /**
  * A term in the objective to be optimized by a DCDReasoner.
@@ -42,7 +41,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] indices;
 
-    public DCDObjectiveTerm(AtomTermStore<DCDObjectiveTerm, GroundAtom> termStore,
+    public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore,
                             boolean squared,
                             Hyperplane<GroundAtom> hyperplane,
                             float weight, float c) {
@@ -55,7 +54,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         indices = new int[size];
         GroundAtom[] atoms = hyperplane.getAtoms();
         for (int i = 0; i < size; i++) {
-            indices[i] = termStore.getAtomIndex(atoms[i]);
+            indices[i] = termStore.getVariableIndex(atoms[i]);
         }
 
         adjustedWeight = weight * c;
@@ -92,13 +91,13 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(boolean truncateEveryStep, ArrayList<GroundAtom> atoms, float[] values) {
+    public void minimize(boolean truncateEveryStep, float[] values, GroundAtom[] variableAtoms) {
         if (squared) {
-            float gradient = computeGradient(atoms, values);
+            float gradient = computeGradient(values);
             gradient += lagrange / (2.0f * adjustedWeight);
-            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, atoms, values);
+            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, values, variableAtoms);
         } else {
-            minimize(truncateEveryStep, computeGradient(atoms, values), adjustedWeight, atoms, values);
+            minimize(truncateEveryStep, computeGradient(values), adjustedWeight, values, variableAtoms);
         }
     }
 
@@ -107,23 +106,17 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    private float computeGradient(ArrayList<GroundAtom> atoms, float[] values) {
+    private float computeGradient(float[] values) {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            if(atoms.size() <= i){
-                break;
-            }
-
-            if(atoms.get(indices[i]) instanceof RandomVariableAtom){
-                val += values[indices[i]] * coefficients[i];
-            }
+            val += values[indices[i]] * coefficients[i];
         }
 
         return constant - val;
     }
 
-    private void minimize(boolean truncateEveryStep, float gradient, float lim, ArrayList<GroundAtom> atoms, float[] values) {
+    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] values, GroundAtom[] variableAtoms) {
         float pg = gradient;
         if (MathUtils.isZero(lagrange)) {
             pg = Math.min(0.0f, gradient);
@@ -140,17 +133,15 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float pa = lagrange;
         lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
-            if(atoms.size() <= i){
-                break;
+            if (variableAtoms[indices[i]] instanceof ObservedAtom) {
+                continue;
             }
 
-            if(atoms.get(indices[i]) instanceof RandomVariableAtom){
-                float val = values[indices[i]] - ((lagrange - pa) * coefficients[i]);
-                if (truncateEveryStep) {
-                    val = Math.max(0.0f, Math.min(1.0f, val));
-                }
-                values[indices[i]] = val;
+            float val = values[indices[i]] - ((lagrange - pa) * coefficients[i]);
+            if (truncateEveryStep) {
+                val = Math.max(0.0f, Math.min(1.0f, val));
             }
+            values[indices[i]] = val;
         }
     }
 

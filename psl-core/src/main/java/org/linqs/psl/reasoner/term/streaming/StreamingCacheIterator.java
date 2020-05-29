@@ -50,8 +50,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
     protected boolean shufflePage;
 
-    protected boolean rewrite_page;
-
     // When we are reading pages from disk (after the initial round),
     // this list will tell us the order to read them in.
     // This may get shuffled depending on configuration.
@@ -97,7 +95,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         }
 
         closed = false;
-        rewrite_page = false;
 
         // Note that we cannot pre-fetch.
         nextTerm = null;
@@ -133,11 +130,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         if (nextTerm == null) {
             close();
             return false;
-        }
-
-        // check if any observations in the term need updating
-        if (parentStore.updateTerm(nextTerm)){
-            rewrite_page = true;
         }
 
         return true;
@@ -243,7 +235,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         // We will clear the termCache when we fetch a new page, not on flush.
         flushVolatileCache();
-        rewrite_page = false;
     }
 
     private void flushVolatileCache() {
@@ -256,10 +247,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         String termPagePath = parentStore.getVolatilePagePath(pageIndex);
 
         writeVolatilePage(volatilePagePath);
-
-        if(rewrite_page){
-            writeFullPage(termPagePath, volatilePagePath);
-        }
     }
 
     @Override

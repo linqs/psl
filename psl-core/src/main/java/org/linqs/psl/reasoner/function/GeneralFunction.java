@@ -103,7 +103,7 @@ public class GeneralFunction implements FunctionTerm {
      */
     public void add(float coefficient, FunctionTerm term) {
         // Merge constants.
-        if (term.isConstant()) {
+        if (term.isConstant() && !online) {
             constant += (coefficient * term.getValue());
         }
 

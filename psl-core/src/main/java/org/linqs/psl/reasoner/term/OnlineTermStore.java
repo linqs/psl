@@ -25,9 +25,7 @@ import org.linqs.psl.model.term.Constant;
  */
 public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
 
-    public void addObservedAtom(Predicate predicate, Constant[] arguments, float newValue);
-
-    public void addRandomVariableAtom(Predicate predicate, Constant[] arguments);
+    public void addAtom(Predicate predicate, Constant[] arguments, float newValue, boolean readPartition);
 
     public void deleteAtom(Predicate predicate, Constant[] arguments);
 

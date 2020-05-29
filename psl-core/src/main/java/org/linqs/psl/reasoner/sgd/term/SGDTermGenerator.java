@@ -22,7 +22,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.reasoner.term.*;
 
 import org.slf4j.Logger;
@@ -49,7 +48,7 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     public SGDObjectiveTerm createLossTerm(TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        AtomTermStore<SGDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
+        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
         return new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight, learningRate);
     }
 

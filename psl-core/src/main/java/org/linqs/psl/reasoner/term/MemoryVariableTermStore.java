@@ -32,7 +32,7 @@ import java.util.*;
  * A general TermStore that handles terms and variables all in memory.
  * Variables are stored in an array along with their values.
  */
-public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements AtomTermStore<T, V> {
+public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements VariableTermStore<T, V> {
     private static final Logger log = LoggerFactory.getLogger(MemoryVariableTermStore.class);
 
     // Keep an internal store to hold the terms while this class focuses on variables.
@@ -40,7 +40,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     // Keep track of variable indexes.
     private Map<V, Integer> variables;
-    private ArrayList<V> variableArrayList;
 
     // Matching arrays for variables values and atoms.
     // A -1 will be stored if we need to go to the atom for the value.
@@ -57,24 +56,29 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         defaultSize = Options.MEMORY_VTS_DEFAULT_SIZE.getInt();
 
         store = new MemoryTermStore<T>();
-        ensureAtomCapacity(defaultSize);
+        ensureVariableCapacity(defaultSize);
 
         modelPredicates = new HashSet<ModelPredicate>();
     }
 
     @Override
-    public int getAtomIndex(V variable) {
+    public int getVariableIndex(V variable) {
         return variables.get(variable).intValue();
     }
 
     @Override
-    public float getAtomValue(int index) {
+    public float getVariableValue(int index) {
         return variableValues[index];
     }
 
     @Override
-    public float[] getAtomValues() {
+    public float[] getVariableValues() {
         return variableValues;
+    }
+
+    @Override
+    public GroundAtom[] getVariableAtoms(){
+        return variableAtoms;
     }
 
     @Override
@@ -85,17 +89,17 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public int getNumAtoms() {
+    public int getNumVariables() {
         return variables.size();
     }
 
     @Override
-    public boolean writeIterator() {
-        return false;
+    public boolean isLoaded() {
+        return true;
     }
 
     @Override
-    public synchronized V createLocalAtom(GroundAtom atom) {
+    public synchronized V createLocalVariable(GroundAtom atom) {
         if (atom instanceof RandomVariableAtom){
             return createLocalAtom((RandomVariableAtom) atom) ;
         } else {
@@ -113,13 +117,12 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         // Got a new variable.
         if (variables.size() >= variableAtoms.length) {
-            ensureAtomCapacity(variables.size() * 2);
+            ensureVariableCapacity(variables.size() * 2);
         }
 
         int index = variables.size();
 
         variables.put(variable, index);
-        variableArrayList.add(index, variable);
         variableValues[index] = atom.getValue();
         variableAtoms[index] = (RandomVariableAtom)atom;
 
@@ -134,7 +137,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
      * Make sure we allocate the right amount of memory for global variables.
      */
     @Override
-    public void ensureAtomCapacity(int capacity) {
+    public void ensureVariableCapacity(int capacity) {
         if (capacity < 0) {
             throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
@@ -150,7 +153,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
             variableValues = new float[capacity];
             variableAtoms = new RandomVariableAtom[capacity];
-            variableArrayList = new ArrayList<V>(capacity);
         } else if (variables.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
             if (capacity < variables.size() * 2) {
@@ -168,8 +170,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public ArrayList<V> getAtoms() {
-        return variableArrayList;
+    public Iterable<V> getVariables() {
+        return variables.keySet();
     }
 
     @Override
@@ -288,8 +290,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void ensureTermCapacity(int capacity) {
-        store.ensureTermCapacity(capacity);
+    public void ensureCapacity(int capacity) {
+        store.ensureCapacity(capacity);
     }
 
     @Override
