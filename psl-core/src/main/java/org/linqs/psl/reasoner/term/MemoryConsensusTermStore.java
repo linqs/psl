@@ -57,12 +57,12 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public synchronized V createLocalAtom(GroundAtom atom) {
+    public synchronized V createLocalVariable(GroundAtom atom) {
         if(atom instanceof RandomVariableAtom) {
             numLocalVariables++;
 
-            store.createLocalAtom(atom);
-            int consensusId = store.getAtomIndex((RandomVariableAtom)atom);
+            store.createLocalVariable(atom);
+            int consensusId = store.getVariableIndex((RandomVariableAtom)atom);
 
             // The underlying store should not give us an index that is more than one larger than the current highest.
             assert (consensusId <= localVariables.size());
@@ -86,7 +86,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public int getNumConsensusVariables() {
-        return store.getNumAtoms();
+        return store.getNumVariables();
     }
 
     public List<V> getLocalVariables(int consensusId) {
@@ -94,7 +94,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public float[] getConsensusValues() {
-        return store.getAtomValues();
+        return store.getVariableValues();
     }
 
     public void syncAtoms() {
@@ -158,8 +158,8 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public void ensureTermCapacity(int capacity) {
-        store.ensureTermCapacity(capacity);
+    public void ensureCapacity(int capacity) {
+        store.ensureCapacity(capacity);
     }
 
     @Override
@@ -177,8 +177,8 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     protected abstract void resetLocalVariables();
 
     @Override
-    public void ensureAtomCapacity(int capacity) {
-        store.ensureAtomCapacity(capacity);
+    public void ensureVariableCapacity(int capacity) {
+        store.ensureVariableCapacity(capacity);
         ((ArrayList)localVariables).ensureCapacity(capacity);
     }
 }

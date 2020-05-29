@@ -79,7 +79,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     }
 
     @Override
-    public void ensureTermCapacity(int capacity) {
+    public void ensureCapacity(int capacity) {
         assert(capacity >= 0);
 
         if (capacity == 0) {
@@ -90,7 +90,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     }
 
     @Override
-    public void ensureAtomCapacity(int capacity) { }
+    public void ensureVariableCapacity(int capacity) { }
 
     @Override
     public Iterator<T> iterator() {
@@ -103,7 +103,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     }
 
     @Override
-    public GroundAtom createLocalAtom(GroundAtom atom) {
+    public GroundAtom createLocalVariable(GroundAtom atom) {
         return atom;
     }
 

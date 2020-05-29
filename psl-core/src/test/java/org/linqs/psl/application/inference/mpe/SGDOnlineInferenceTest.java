@@ -20,7 +20,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.*;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.term.AtomTermStore;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 import java.util.*;
@@ -151,7 +151,7 @@ public class SGDOnlineInferenceTest {
         StreamingTermStore termstore = (StreamingTermStore)inference.getTermStore();
         GroundAtom atom = getAtom(inference, predicateName, argumentStrings);
 
-        return termstore.getAtomValue(termstore.getAtomIndex(atom));
+        return termstore.getVariableValue(termstore.getVariableIndex(atom));
     }
 
     @Test
@@ -159,6 +159,7 @@ public class SGDOnlineInferenceTest {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0",
+                "QueryAll",
                 "Close"));
 
         queueCommands(inference, commands);
@@ -175,10 +176,16 @@ public class SGDOnlineInferenceTest {
                 "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
                 "AddAtom\tWrite\tRating\tConnor\tAvatar",
+                "QueryAll",
                 "Close"));
 
         queueCommands(inference, commands);
         inference.inference();
+
+        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
+        for (SGDObjectiveTerm term : termStore) {
+            System.out.println(term);
+        }
 
         float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
         assertEquals(atomValue, 1.0, 0.01);
@@ -196,6 +203,7 @@ public class SGDOnlineInferenceTest {
                 "AddAtom\tRead\tSim_Users\tBob\tConnor\t1.0",
                 "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
                 "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
+                "QueryAll",
                 "Close"));
 
         queueCommands(inference, commands);
@@ -210,12 +218,13 @@ public class SGDOnlineInferenceTest {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
+                "QueryAll",
                 "Close"));
 
         queueCommands(inference, commands);
 
         int numTerms = 0;
-        AtomTermStore<SGDObjectiveTerm, GroundAtom> termStore = (AtomTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
+        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
         for (SGDObjectiveTerm term : termStore) {
             numTerms++;
         }
@@ -228,5 +237,36 @@ public class SGDOnlineInferenceTest {
             numTerms++;
         }
         assertEquals(numTerms, 1.0, 0.01);
+    }
+
+    @Test
+    public void testChangeAtomPartition(){
+        Options.STREAMING_TS_PAGE_SIZE.set(4);
+        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
+                "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
+                "AddAtom\tWrite\tRating\tConnor\tAvatar",
+                "AddAtom\tRead\tSim_Users\tConnor\tBob\t1.0",
+                "AddAtom\tRead\tSim_Users\tBob\tConnor\t1.0",
+                "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
+                "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
+                "QueryAll",
+                "Close"));
+
+        queueCommands(inference, commands);
+        inference.inference();
+
+        float atomValue = getAtomValue(inference, "Rating", new String[]{"Alice", "Surfs Up"});
+        assertEquals(atomValue, 1.0, 0.01);
+
+        commands = new ArrayList<String>(Arrays.asList(
+                "AddAtom\tRead\tRating\tAlice\tSurfs Up\t0.0",
+                "Close"));
+
+        queueCommands(inference, commands);
+        inference.inference();
+        atomValue = getAtomValue(inference, "Rating", new String[]{"Alice", "Surfs Up"});
+        assertEquals(atomValue, 0.0, 0.01);
     }
 }

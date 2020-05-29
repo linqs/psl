@@ -52,7 +52,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     @Override
     public int generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore) {
         int initialSize = termStore.size();
-        termStore.ensureTermCapacity(initialSize + ruleStore.size());
+        termStore.ensureCapacity(initialSize + ruleStore.size());
 
         Set<WeightedRule> rules = new HashSet<WeightedRule>();
         for (GroundRule rule : ruleStore.getGroundRules()) {
@@ -141,7 +141,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             FunctionTerm term = sum.getTerm(i);
 
             if (term instanceof GroundAtom) {
-                V localTerm = termStore.createLocalAtom((GroundAtom)term);
+                V localTerm = termStore.createLocalVariable((GroundAtom)term);
 
                 // Check to see if we have seen this localTerm before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
@@ -163,7 +163,6 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                 } else {
                     hyperplane.addAtom(localTerm, coefficient);
                 }
-
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
             }

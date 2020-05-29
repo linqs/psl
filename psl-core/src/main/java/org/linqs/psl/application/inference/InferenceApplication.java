@@ -105,7 +105,7 @@ public abstract class InferenceApplication implements ModelApplication {
         termGenerator = createTermGenerator();
 
         int atomCapacity = atomManager.getCachedRVACount();
-        termStore.ensureAtomCapacity(atomCapacity);
+        termStore.ensureVariableCapacity(atomCapacity);
 
         if (normalizeWeights) {
             normalizeWeights();

@@ -73,7 +73,7 @@ public abstract class OnlineInference extends InferenceApplication {
         termGenerator = createTermGenerator();
 
         int atomCapacity = atomManager.getCachedRVACount() + atomManager.getCachedOBSCount();
-        termStore.ensureAtomCapacity(atomCapacity);
+        termStore.ensureVariableCapacity(atomCapacity);
 
         if (normalizeWeights) {
             normalizeWeights();
@@ -116,6 +116,9 @@ public abstract class OnlineInference extends InferenceApplication {
             case "DeleteAtom":
                 doDeleteAtom((DeleteAtom)nextAction);
                 break;
+            case "QueryAll":
+                doQueryAll((QueryAll)nextAction);
+                break;
             case "Close":
                 doClose((Close)nextAction);
                 break;
@@ -133,10 +136,10 @@ public abstract class OnlineInference extends InferenceApplication {
 
         switch (nextAction.getPartitionName()) {
             case "READ":
-                ((OnlineTermStore)termStore).addObservedAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue());
+                ((OnlineTermStore)termStore).addAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue(), true);
                 break;
             case "WRITE":
-                ((OnlineTermStore)termStore).addRandomVariableAtom(registeredPredicate, nextAction.getArguments());
+                ((OnlineTermStore)termStore).addAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue(), false);
                 break;
             default:
                 throw new IllegalArgumentException("Add Atom Partition: " + nextAction.getPartitionName() + "Not Supported");
@@ -150,8 +153,6 @@ public abstract class OnlineInference extends InferenceApplication {
             SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
             ((OnlineTermStore)termStore).addTerm(newTerm);
         }
-
-        reasoner.optimize(termStore);
     }
 
     protected void doDeleteAtom(DeleteAtom nextAction) throws IllegalArgumentException {
@@ -162,7 +163,6 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, nextAction.getArguments());
-        reasoner.optimize(termStore);
     }
 
 
@@ -174,11 +174,14 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         ((OnlineTermStore)termStore).updateAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue());
-        reasoner.optimize(termStore);
     }
 
     protected void doClose(Close nextAction) {
         close = true;
+    }
+
+    protected void doQueryAll(QueryAll nextAction) {
+        reasoner.optimize(termStore);
     }
 
     /**

@@ -72,7 +72,7 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> 
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      */
-    public void ensureTermCapacity(int capacity);
+    public void ensureCapacity(int capacity);
 
     /**
      * Ensure that the underlying structures can have the required atom capacity.
@@ -80,12 +80,12 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> 
      * This is best called on an empty store so it can prepare.
      * Not all term stores will even manage variables.
      */
-    public void ensureAtomCapacity(int capacity);
+    public void ensureVariableCapacity(int capacity);
 
     /**
      * Create a atom local to a specific reasoner term.
      */
-    public V createLocalAtom(GroundAtom atom);
+    public V createLocalVariable(GroundAtom atom);
 
     /**
      * Get an iterator over the terms in the store that does not write to disk.
