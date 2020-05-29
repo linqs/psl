@@ -181,6 +181,7 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doQueryAll(QueryAll nextAction) {
+        ((OnlineTermStore)termStore).rewriteLastPage();
         reasoner.optimize(termStore);
     }
 
