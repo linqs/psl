@@ -152,8 +152,6 @@ public abstract class OnlineInference extends InferenceApplication {
             SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
             ((OnlineTermStore)termStore).addTerm(newTerm);
         }
-
-        reasoner.optimize(termStore);
     }
 
     protected void doDeleteAtom(DeleteAtom nextAction) throws IllegalArgumentException {
@@ -164,7 +162,6 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, nextAction.getArguments());
-        reasoner.optimize(termStore);
     }
 
 
@@ -176,7 +173,6 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         ((OnlineTermStore)termStore).updateAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue());
-        reasoner.optimize(termStore);
     }
 
     protected void doClose(Close nextAction) {
@@ -203,8 +199,8 @@ public abstract class OnlineInference extends InferenceApplication {
                 try {
                     executeAction(nextAction);
                     log.info("Executed Action: " + nextAction.getName());
-                } catch (IllegalArgumentException e) {
-                    log.info("Error throw while executing action.");
+                } catch (IllegalArgumentException | IllegalStateException e) {
+                    log.info("Error thrown while executing action.");
                     log.info(e.getMessage());
                     log.info(e.toString());
                 }

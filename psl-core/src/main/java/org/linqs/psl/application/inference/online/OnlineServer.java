@@ -4,12 +4,12 @@ import org.linqs.psl.config.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,19 +59,6 @@ public class OnlineServer<T> extends Thread{
         Socket client = server.accept();
         log.info("Client Connected");
         return client;
-    }
-
-    private void close() {
-        try {
-            server.close();
-        } catch (IOException e) {
-            log.debug(e.getMessage());
-        } finally {
-            log.trace("Interrupting Child Threads");
-            for(ServerClientThread childThread : threads){
-                childThread.close();
-            }
-        }
     }
 
     private void addThread(Socket client) {
@@ -129,7 +116,16 @@ public class OnlineServer<T> extends Thread{
 
     public void closeServer() {
         log.info("Closing Server");
-        close();
+        try {
+            server.close();
+        } catch (IOException e) {
+            log.debug(e.getMessage());
+        } finally {
+            log.trace("Interrupting Child Threads");
+            for(ServerClientThread childThread : threads){
+                childThread.close();
+            }
+        }
         log.info("Server Closed");
     }
 
@@ -148,6 +144,7 @@ public class OnlineServer<T> extends Thread{
         }
 
         public void close(){
+            log.trace("Interrupting thread.");
             interrupt();
 
             try {
@@ -165,11 +162,17 @@ public class OnlineServer<T> extends Thread{
             while (client.isConnected() && !isInterrupted()) {
                 try {
                     newCommand = (T) inStream.readObject();
-                    log.info("Received new action from client: ");
+                    log.info("Received new action from client: " + newCommand.toString());
                     enqueue(newCommand);
+                    log.info("Action from client queued");
+                } catch (EOFException e) {
+                    log.debug("Client Disconnected");
+                    log.debug(e.getMessage());
+                    break;
                 } catch (IOException e) {
                     log.debug("Error reading object from client");
                     log.debug(e.getMessage());
+                    log.debug(Arrays.toString(e.getStackTrace()));
                 } catch (ClassNotFoundException e) {
                     log.debug("Error casting object serialized by client");
                     log.debug(e.getMessage());
@@ -180,6 +183,7 @@ public class OnlineServer<T> extends Thread{
                 }
             }
 
+            close();
             log.info("Thread Completed");
         }
     }
