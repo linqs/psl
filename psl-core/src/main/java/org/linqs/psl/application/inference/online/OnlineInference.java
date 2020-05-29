@@ -21,18 +21,25 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.actions.*;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Use streaming grounding and inference with an SGD reasoner.
@@ -118,14 +125,14 @@ public abstract class OnlineInference extends InferenceApplication {
             case "DeleteAtom":
                 doDeleteAtom((DeleteAtom)nextAction);
                 break;
-            case "QueryAll":
-                doQueryAll((QueryAll)nextAction);
+            case "WriteInferredPredicates":
+                doWriteInferredPredicates((WriteInferredPredicates)nextAction);
                 break;
             case "Close":
                 doClose((Close)nextAction);
                 break;
             default:
-                throw new IllegalArgumentException("Action: " + nextAction.getName() + "Not Supported.");
+                throw new IllegalArgumentException("Action: " + nextAction.getClass().getName() + " Not Supported.");
         }
     }
 
@@ -182,8 +189,52 @@ public abstract class OnlineInference extends InferenceApplication {
         close = true;
     }
 
-    protected void doQueryAll(QueryAll nextAction) {
+    protected void doWriteInferredPredicates(WriteInferredPredicates nextAction) {
+        // Ensure we are in optimal state
         reasoner.optimize(termStore);
+
+        // TODO: (Charles) Duplicated code fragment from launcher. Think about design.
+        // Set of open predicates
+        Set<StandardPredicate> openPredicates = db.getDataStore().getRegisteredPredicates();
+
+        // Write to provided file name and location
+        String outputDirectoryPath = nextAction.getOutputDirectoryPath();
+        if (outputDirectoryPath == null) {
+            for (StandardPredicate openPredicate : openPredicates) {
+                for (GroundAtom atom : db.getAllGroundRandomVariableAtoms(openPredicate)) {
+                    System.out.println(atom.toString() + " = " + atom.getValue());
+                }
+            }
+        } else {
+            File outputDirectory = new File(nextAction.getOutputDirectoryPath());
+
+            // mkdir -p
+            outputDirectory.mkdirs();
+
+            for (StandardPredicate openPredicate : openPredicates) {
+                try {
+                    FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
+                    StringBuilder row = new StringBuilder();
+
+                    for (GroundAtom atom : db.getAllGroundRandomVariableAtoms(openPredicate)) {
+                        row.setLength(0);
+
+                        for (Constant term : atom.getArguments()) {
+                            row.append(term.rawToString());
+                            row.append("\t");
+                        }
+                        row.append(Double.toString(atom.getValue()));
+                        row.append("\n");
+
+                        predFileWriter.write(row.toString());
+                    }
+
+                    predFileWriter.close();
+                } catch (IOException ex) {
+                    log.error("Exception writing predicate {}", openPredicate);
+                }
+            }
+        }
     }
 
     /**
@@ -206,9 +257,11 @@ public abstract class OnlineInference extends InferenceApplication {
                 try {
                     executeAction(nextAction);
                     log.info("Executed Action: " + nextAction.getName());
-                } catch (IllegalArgumentException | IllegalStateException e) {
+                    //IllegalArgumentException | IllegalStateException
+                } catch (Exception e) {
                     log.info("Error thrown while executing action.");
                     log.info(e.getMessage());
+                    log.info(Arrays.toString(e.getStackTrace()));
                     log.info(e.toString());
                 }
             } while (!close);
@@ -218,6 +271,5 @@ public abstract class OnlineInference extends InferenceApplication {
         } finally {
             server.closeServer();
         }
-
     }
 }
