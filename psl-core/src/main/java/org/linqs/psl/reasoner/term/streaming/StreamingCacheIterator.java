@@ -17,9 +17,13 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
+import org.linqs.psl.util.RuntimeStats;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -201,15 +205,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         termBuffer.clear();
         volatileBuffer.clear();
         readPage(termPagePath, volatilePagePath);
-
-        // Add new Terms at the end of the last page
-        if (termPagePath == parentStore.getTermPagePath(numPages - 1) && !parentStore.newTermBuffer.isEmpty()) {
-            parentStore.rewriteLastPage(this);
-
-            termBuffer.clear();
-            volatileBuffer.clear();
-            readPage(termPagePath, volatilePagePath);
-        }
 
         if (shufflePage) {
             // Remember that the shuffle map may be larger than the term cache (for not full pages).

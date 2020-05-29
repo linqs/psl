@@ -191,6 +191,7 @@ public abstract class OnlineInference extends InferenceApplication {
 
     protected void doWriteInferredPredicates(WriteInferredPredicates nextAction) {
         // Ensure we are in optimal state
+        ((OnlineTermStore)termStore).rewriteLastPage();
         reasoner.optimize(termStore);
 
         // TODO: (Charles) Duplicated code fragment from launcher. Think about design.
