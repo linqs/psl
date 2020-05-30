@@ -130,6 +130,7 @@ public class Formula2SQL {
 
         if (lazyTarget != null) {
             partitions.add(Partition.SPECIAL_WRITE_ID);
+            partitions.add(Partition.SPECIAL_READ_ID);
         }
     }
 

@@ -159,7 +159,7 @@ public class SGDOnlineInferenceTest {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0",
-                "QueryAll",
+                "WriteInferredPredicates",
                 "Close"));
 
         queueCommands(inference, commands);
@@ -173,19 +173,15 @@ public class SGDOnlineInferenceTest {
     public void testAddAtoms(){
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
                 "AddAtom\tWrite\tRating\tConnor\tAvatar",
-                "QueryAll",
+                "WriteInferredPredicates",
                 "Close"));
 
         queueCommands(inference, commands);
         inference.inference();
 
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
-        for (SGDObjectiveTerm term : termStore) {
-            System.out.println(term);
-        }
 
         float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
         assertEquals(atomValue, 1.0, 0.01);
@@ -203,7 +199,7 @@ public class SGDOnlineInferenceTest {
                 "AddAtom\tRead\tSim_Users\tBob\tConnor\t1.0",
                 "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
                 "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
-                "QueryAll",
+                "WriteInferredPredicates",
                 "Close"));
 
         queueCommands(inference, commands);
@@ -218,9 +214,10 @@ public class SGDOnlineInferenceTest {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
-                "QueryAll",
+                "AddAtom\tRead\tSim_Users\tAlice\tEddie\t1.0",
+                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
+                "WriteInferredPredicates",
                 "Close"));
-
         queueCommands(inference, commands);
 
         int numTerms = 0;
@@ -234,6 +231,7 @@ public class SGDOnlineInferenceTest {
 
         numTerms = 0;
         for (SGDObjectiveTerm term : termStore) {
+            System.out.println(term);
             numTerms++;
         }
         assertEquals(numTerms, 1.0, 0.01);
@@ -252,7 +250,7 @@ public class SGDOnlineInferenceTest {
                 "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
                 "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
                 "AddAtom\tRead\tRating\tAlice\tAvatar\t0.5",
-                "QueryAll",
+                "WriteInferredPredicates",
                 "Close"));
 
         queueCommands(inference, commands);
