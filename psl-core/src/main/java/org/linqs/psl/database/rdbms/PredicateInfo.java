@@ -417,7 +417,7 @@ public class PredicateInfo {
         QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
 
         // Only delete in the write partition.
-        delete.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
+        delete.addCondition(BinaryCondition.greaterThanOrEq(new CustomSql(PARTITION_COLUMN_NAME), 0));
 
         // Set placeholders for the arguments.
         for (String colName : argCols) {

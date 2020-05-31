@@ -104,8 +104,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
 
         // TODO(connor): This could run into memory issues.
         // HACK(connor): Generalize commit for groundAtoms.
-        db.commitGroundAtoms(newObAtoms, Partition.SPECIAL_WRITE_ID);
-        db.commitGroundAtoms(newRvAtoms, Partition.SPECIAL_READ_ID);
+        db.commitGroundAtoms(newObAtoms, Partition.SPECIAL_READ_ID);
+        db.commitGroundAtoms(newRvAtoms, Partition.SPECIAL_WRITE_ID);
 
         Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(newAtoms);
         Set<Rule> onlineRules = PartialGrounding.getOnlineRules(rules, onlinePredicates);

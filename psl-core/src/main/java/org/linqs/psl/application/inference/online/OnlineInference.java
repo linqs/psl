@@ -256,18 +256,12 @@ public abstract class OnlineInference extends InferenceApplication {
                 nextAction = (OnlineAction) server.dequeClientInput();
                 log.info("Got next action from client. Executing: " + nextAction.getName());
 
-                try {
-                    executeAction(nextAction);
-                    log.info("Executed Action: " + nextAction.getName());
-                    //IllegalArgumentException | IllegalStateException
-                } catch (Exception e) {
-                    log.info("Error thrown while executing action.");
-                    log.info(e.getMessage());
-                    log.info(Arrays.toString(e.getStackTrace()));
-                    log.info(e.toString());
-                }
+                executeAction(nextAction);
+                log.info("Executed Action: " + nextAction.getName());
+                //IllegalArgumentException | IllegalStateException
             } while (!close);
         } catch (InterruptedException e) {
+            // TODO(charles): Should shut down on interrupt.
             log.info("Internal Inference Interrupted");
             log.info(e.getMessage());
         } finally {

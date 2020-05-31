@@ -64,6 +64,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     // Matching arrays for variables and observations values and atoms.
     private float[] variableValues;
+    // TODO (connor): Change variableAtoms to boolean array.
     private GroundAtom[] variableAtoms;
     private boolean[] deletedAtoms;
     private int variableIndex;
@@ -353,7 +354,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
 
         if (atomManager.getDatabase().hasCachedAtom(new QueryAtom(predicate, arguments))) {
-            atomManager.getDatabase().getCache().removeCachedAtom(new QueryAtom(predicate, arguments));
+            atomManager.getDatabase().deleteAtom(atom);
         }
     }
 
@@ -377,7 +378,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         termCache.clear();
 
         readPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
-
         while (true) {
             while (termCache.size() < pageSize && newTermBuffer.size() > 0) {
                 if (numPages == 1) {
