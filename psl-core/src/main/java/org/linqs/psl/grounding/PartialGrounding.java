@@ -243,7 +243,8 @@ public class PartialGrounding {
         ArrayList<GroundRule> groundedRules = new ArrayList<GroundRule>();
         for (int i = 0; i < groundingResults.size(); i++) {
             groundRules.clear();
-            rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), atomManager, groundRules);
+            Constant[] constants = groundingResults.get(i);
+            rule.ground(constants, groundingResults.getVariableMap(), atomManager, groundRules);
             for (GroundRule groundRule : groundRules) {
                 if (groundRule != null) {
                     groundedRules.add(groundRule);

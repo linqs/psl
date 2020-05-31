@@ -154,14 +154,6 @@ public abstract class OnlineInference extends InferenceApplication {
                 throw new IllegalArgumentException("Add Atom Partition: " + nextAction.getPartitionName() + "Not Supported");
 
         }
-
-        ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
-
-        SGDTermGenerator termGenerator = new SGDTermGenerator();
-        for (GroundRule groundRule : groundRules) {
-            SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
-            ((OnlineTermStore)termStore).addTerm(newTerm);
-        }
     }
 
     protected void doDeleteAtom(DeleteAtom nextAction) throws IllegalArgumentException {
@@ -190,6 +182,15 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates nextAction) {
+        // Activate the atoms that were added Partial grounding
+        ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
+
+        SGDTermGenerator termGenerator = new SGDTermGenerator();
+        for (GroundRule groundRule : groundRules) {
+            SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
+            ((OnlineTermStore)termStore).addTerm(newTerm);
+        }
+
         // Ensure we are in optimal state
         ((OnlineTermStore)termStore).rewriteLastPage();
         reasoner.optimize(termStore);
