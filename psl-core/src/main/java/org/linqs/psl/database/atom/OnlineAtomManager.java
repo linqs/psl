@@ -25,10 +25,7 @@ import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.RDBMSInserter;
 import org.linqs.psl.grounding.PartialGrounding;
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.*;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -55,6 +52,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
      */
     private final Set<GroundAtom> obAtoms;
     private final Set<GroundAtom> rvAtoms;
+    public final Set<GroundAtom> newAtoms;
     private final int readPartition;
 
     public OnlineAtomManager(Database db) {
@@ -66,6 +64,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
 
         obAtoms = new HashSet<GroundAtom>();
         rvAtoms = new HashSet<GroundAtom>();
+        newAtoms = new HashSet<GroundAtom>();
         readPartition = Options.ONLINE_READ_PARTITION.getInt();
     }
 
@@ -76,6 +75,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
         ObservedAtom atom = cache.instantiateObservedAtom(predicate, arguments, value);
 
         obAtoms.add(atom);
+        newAtoms.add(atom);
     }
 
     public synchronized void addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
@@ -84,6 +84,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
         atom.setPersisted(true);
 
         rvAtoms.add(atom);
+        newAtoms.add(atom);
     }
 
     @Override
@@ -92,20 +93,14 @@ public class OnlineAtomManager extends PersistedAtomManager {
     }
 
     public ArrayList<GroundRule> activateAtoms(List<Rule> rules, OnlineTermStore termStore) {
-        if (obAtoms.size() == 0 && rvAtoms.size() == 0) {
+        if (newAtoms.size() == 0) {
             return new ArrayList<GroundRule>();
         }
-        Set<GroundAtom> newObAtoms = new HashSet<>(obAtoms);
-        Set<GroundAtom> newRvAtoms = new HashSet<>(rvAtoms);
-        Set<GroundAtom> newAtoms = new HashSet<>(obAtoms);
-        newAtoms.addAll(rvAtoms);
-        obAtoms.clear();
-        rvAtoms.clear();
 
         // TODO(connor): This could run into memory issues.
         // HACK(connor): Generalize commit for groundAtoms.
-        db.commitGroundAtoms(newObAtoms, Partition.SPECIAL_READ_ID);
-        db.commitGroundAtoms(newRvAtoms, Partition.SPECIAL_WRITE_ID);
+        db.commitGroundAtoms(obAtoms, db.getReadPartitions().get(readPartition).getID());
+        db.commitGroundAtoms(rvAtoms, db.getWritePartition().getID());
 
         Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(newAtoms);
         Set<Rule> onlineRules = PartialGrounding.getOnlineRules(rules, onlinePredicates);
@@ -119,10 +114,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
             }
         }
 
-        for (Predicate onlinePredicate : onlinePredicates) {
-            db.moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID, db.getWritePartition().getID());
-            db.moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID, db.getReadPartitions().get(readPartition).getID());
-        }
+        obAtoms.clear();
+        rvAtoms.clear();
+        newAtoms.clear();
 
         return totalGroundRules;
     }
