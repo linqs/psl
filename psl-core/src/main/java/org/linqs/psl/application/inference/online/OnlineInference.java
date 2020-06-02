@@ -183,12 +183,17 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates nextAction) {
-        // Activate the atoms that were added Partial grounding
+        // Activate the atoms that are added by Partial grounding
         ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
 
+        // TODO: (Charles) This should not be specific to SGD
         SGDTermGenerator termGenerator = new SGDTermGenerator();
         for (GroundRule groundRule : groundRules) {
             SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
+            if (newTerm == null) {
+                log.debug("New Term Null");
+                log.debug(groundRule.toString());
+            }
             ((OnlineTermStore)termStore).addTerm(newTerm);
         }
 

@@ -385,6 +385,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
                 }
                 termCache.add(newTermBuffer.remove());
             }
+            // TODO: (Charles) Unnecessary if no new terms added to page
             writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
 
             if (newTermBuffer.size() <= 0) {

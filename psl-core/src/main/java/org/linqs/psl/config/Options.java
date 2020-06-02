@@ -54,7 +54,7 @@ public class Options {
 
     public static final Option ONLINE_PORT_NUMBER = new Option(
             "inference.onlineportnumber",
-            8888,
+            8889,
             "The port number for the online server"
     );
 
