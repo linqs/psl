@@ -105,6 +105,7 @@ public abstract class OnlineInference extends InferenceApplication {
         try {
             server = new OnlineServer<OnlineAction>();
             server.start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> server.closeServer()));
         } catch (IOException e) {
             log.info("Failed to start server");
             close();
@@ -252,16 +253,20 @@ public abstract class OnlineInference extends InferenceApplication {
         OnlineAction nextAction;
         try {
             do {
-                log.info("Waiting for next action from client");
-                nextAction = (OnlineAction) server.dequeClientInput();
-                log.info("Got next action from client. Executing: " + nextAction.getName());
+                try {
+                    log.info("Waiting for next action from client");
+                    nextAction = (OnlineAction) server.dequeClientInput();
+                    log.info("Got next action from client. Executing: " + nextAction.getName());
 
-                executeAction(nextAction);
-                log.info("Executed Action: " + nextAction.getName());
-                //IllegalArgumentException | IllegalStateException
+                    executeAction(nextAction);
+                    log.info("Executed Action: " + nextAction.getName());
+                } catch (IllegalArgumentException | IllegalStateException e) {
+                    log.info("Exception when executing action.");
+                    log.info(e.getMessage());
+                    log.debug(Arrays.toString(e.getStackTrace()));
+                }
             } while (!close);
         } catch (InterruptedException e) {
-            // TODO(charles): Should shut down on interrupt.
             log.info("Internal Inference Interrupted");
             log.info(e.getMessage());
         } finally {
