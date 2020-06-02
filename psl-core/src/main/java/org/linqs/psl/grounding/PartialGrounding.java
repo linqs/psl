@@ -20,13 +20,10 @@ package org.linqs.psl.grounding;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.SetOperationQuery;
 import com.healthmarketscience.sqlbuilder.UnionQuery;
-import org.linqs.psl.config.Options;
 import org.linqs.psl.database.*;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.LazyAtomManager;
+import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
-import org.linqs.psl.database.rdbms.QueryRewriter;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
@@ -39,10 +36,8 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
-import org.linqs.psl.util.Parallel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,7 +241,12 @@ public class PartialGrounding {
             rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), atomManager, groundRules);
             for (GroundRule groundRule : groundRules) {
                 if (groundRule != null) {
-                    groundedRules.add(groundRule);
+                    for (GroundAtom atom : groundRule.getAtoms()) {
+                        if (((OnlineAtomManager)atomManager).newAtoms.contains(atom)) {
+                            groundedRules.add(groundRule);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -259,10 +259,7 @@ public class PartialGrounding {
         // For every mention of a online predicate in this rule, we will need to get the grounding query
         // with that specific predicate mention being the online target.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            if (!onlinePredicates.contains(atom.getPredicate())) {
-                continue;
-            }
-
+            // TODO(connor) : Changed code here, should be handled properly
             onlineTargets.add(atom);
         }
 
@@ -271,7 +268,33 @@ public class PartialGrounding {
         }
 
         // Do the grounding query for this rule.
-        return lazyGround(formula, onlineTargets, db);
+        return partialGround(formula, onlineTargets, db);
+    }
+
+    private static ResultList partialGround(Formula formula, List<Atom> onlineTargets, Database db) {
+        if (onlineTargets.size() == 0) {
+            throw new IllegalArgumentException();
+        }
+
+        RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
+
+        List<SelectQuery> queries = new ArrayList<SelectQuery>();
+
+        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+        Map<Variable, Integer> projectionMap = null;
+
+        for (Atom lazyTarget : onlineTargets) {
+            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, lazyTarget);
+            queries.add(sqler.getQuery(formula));
+
+            if (projectionMap == null) {
+                projectionMap = sqler.getProjectionMap();
+            }
+        }
+
+        // This fallbacks to a normal SELECT when there is only one.
+        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
+        return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
     }
 }
 
