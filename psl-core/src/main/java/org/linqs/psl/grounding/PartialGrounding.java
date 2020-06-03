@@ -283,13 +283,11 @@ public class PartialGrounding {
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Map<Variable, Integer> projectionMap = null;
 
-        for (Atom lazyTarget : onlineTargets) {
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, lazyTarget);
-            queries.add(sqler.getQuery(formula));
+        Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, null);
+        queries.add(sqler.getQuery(formula));
 
-            if (projectionMap == null) {
-                projectionMap = sqler.getProjectionMap();
-            }
+        if (projectionMap == null) {
+            projectionMap = sqler.getProjectionMap();
         }
 
         // This fallbacks to a normal SELECT when there is only one.
