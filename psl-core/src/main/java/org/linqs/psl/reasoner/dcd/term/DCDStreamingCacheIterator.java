@@ -78,11 +78,6 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
     }
 
     @Override
-    protected void writeFullPage(String termPagePath, String volatilePagePath){
-
-    }
-
-    @Override
     protected void writeVolatilePage(String volatilePagePath) {
         int volatileBufferSize = (Float.SIZE / 8) * termCache.size();
 

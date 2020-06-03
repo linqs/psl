@@ -75,19 +75,6 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
         // SGD doesn't need write pages.
     }
 
-    // TODO: (Charles) better design for this, since this was also implemented in initial round iterator
-    @Override
-    protected void writeFullPage(String termPagePath, String volatilePagePath) {
-        flushTermCache(termPagePath);
-
-        termCache.clear();
-
-        // SGD doesn't use a volatile buffer.
-        if (volatileBuffer == null) {
-            volatileBuffer = ByteBuffer.allocate(0);
-        }
-    }
-
     private void flushTermCache(String termPagePath) {
         // Count the exact size we will need to write.
         int termsSize = 0;

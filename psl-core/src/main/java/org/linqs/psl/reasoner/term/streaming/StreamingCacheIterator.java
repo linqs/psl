@@ -267,10 +267,4 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * The child is responsible for all IO, but shuffling will be handled by the parent.
      */
     protected abstract void readPage(String termPagePath, String volatilePagePath);
-
-    /**
-     * Write a full page (including any volatile page that the child may use).
-     * This is responsible for creating/reallocating both the term buffer and volatile buffer.
-     */
-    protected abstract void writeFullPage(String termPagePath, String volatilePagePath);
 }

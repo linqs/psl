@@ -93,6 +93,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
     }
 
     public ArrayList<GroundRule> activateAtoms(List<Rule> rules, OnlineTermStore termStore) {
+        log.trace("Activating " + newAtoms.size() + " new atoms");
+
         if (newAtoms.size() == 0) {
             return new ArrayList<GroundRule>();
         }

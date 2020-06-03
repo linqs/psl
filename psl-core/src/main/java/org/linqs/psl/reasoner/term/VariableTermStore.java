@@ -35,7 +35,7 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public boolean isLoaded();
 
     /**
-     * Get the truth values for variable atoms.
+     * Get the values for variable atoms.
      * Changing a value in this array and calling syncAtoms() will change the actual atom's value.
      */
     public float[] getVariableValues();
@@ -56,4 +56,5 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public void syncAtoms();
 
     public GroundAtom[] getVariableAtoms();
+
 }

@@ -82,6 +82,9 @@ public class SGDReasoner extends Reasoner {
                 movement += term.minimize(iteration, variableValues, variableAtoms);
             }
 
+            // TODO(Charles): If in online mode then "variable values" contains the observed atoms as well.
+            //    This means that this movement calculation differs depending on the termstore.
+            //    This shouldn't be the case.
             if (variableValues.length != 0) {
                 movement /= variableValues.length;
             }

@@ -301,6 +301,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
+    //TODO(Charles): seenTermCount is not updated for deleted terms at this point so seenTermCount includes
+    // the number of deleted terms
     @Override
     public int size() {
         return seenTermCount;
@@ -384,8 +386,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
                     termPool.add(newTermBuffer.peek());
                 }
                 termCache.add(newTermBuffer.remove());
+                seenTermCount++;
             }
-            // TODO: (Charles) Unnecessary if no new terms added to page
+            // TODO: (Charles) Unnecessary if no new terms added to page. rare but worth a check
             writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
 
             if (newTermBuffer.size() <= 0) {
