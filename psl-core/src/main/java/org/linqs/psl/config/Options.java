@@ -265,6 +265,12 @@ public class Options {
         "Whether the current build of PSL was made in a dirty git repository."
     );
 
+    public static final Option WLA_GPP_ACQUISITION = new Option(
+            "gpp.acquisition",
+            "UCB",
+            null
+    );
+
     public static final Option WLA_GPP_EARLY_STOPPING = new Option(
         "gpp.earlyStopping",
         true,
@@ -340,18 +346,6 @@ public class Options {
         "gridsearch.weights",
         "0.001:0.01:0.1:1:10",
         "A comma-separated list of possible weights. These weights should be in some sorted order."
-    );
-
-    public static final Option WLA_GS_POSSIBLE_ANGLES = new Option(
-            "gridsearch.angles",
-            "0.0001:0.3926:0.7854:1.1781:1.5708",
-            "A comma-separated list of possible weights. These weights should be in some sorted order."
-    );
-
-    public static final Option WLA_HB_POSSIBLE_ANGLES = new Option(
-            "gridsearch.angles",
-            "0.0001:0.3926:0.7854:1.1781:1.5708",
-            "A comma-separated list of possible weights. These weights should be in some sorted order."
     );
 
     public static final Option GROUNDING_REWRITE_QUERY = new Option(

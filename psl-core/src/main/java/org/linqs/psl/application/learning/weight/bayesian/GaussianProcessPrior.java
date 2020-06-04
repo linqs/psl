@@ -1,6 +1,8 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.bayesian.AcquisitionFunctions.AcquisitionFunction;
+import org.linqs.psl.application.learning.weight.bayesian.AcquisitionFunctions.AcquisitionFunctionsStore;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
@@ -69,9 +71,11 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     protected double[] dirichletAlphas;
 
     /**
-     * Whether to usethe provided weight configuration as the first point for exploration
+     * Whether to use the provided weight configuration as the first point for exploration
      * */
     private boolean useProvidedWeight;
+
+    private AcquisitionFunction acquisitionFunction;
 
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
@@ -102,6 +106,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         for (int i = 0; i < mutableRules.size(); i ++) {
             dirichletAlphas[i] = dirichletAlpha;
         }
+
+        acquisitionFunction = AcquisitionFunctionsStore.getAcquisitionFunction(
+                Options.WLA_GPP_ACQUISITION.getString().toUpperCase());
 
         log.debug("searchHypersphere: {}", searchHypersphere);
     }
@@ -151,7 +158,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         int iteration = 0;
         while (iteration < maxIterations && configs.size() > 0 && !(earlyStopping && allStdSmall)) {
-            int nextPoint = getNextPoint(configs, iteration);
+            int nextPoint = acquisitionFunction.getNextPoint(configs, iteration);
             WeightConfig config = configs.get(nextPoint);
 
             exploredConfigs.add(config);
@@ -396,29 +403,29 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return (float)evaluator.getNormalizedRepMetric();
     }
 
-    // Exploration strategy
-    protected int getNextPoint(List<WeightConfig> configs, int iteration) {
-        int bestConfig = -1;
-        float curBestVal = -Float.MAX_VALUE;
+//    // Exploration strategy
+//    protected int getNextPoint(List<WeightConfig> configs, int iteration) {
+//        int bestConfig = -1;
+//        float curBestVal = -Float.MAX_VALUE;
+//
+//        if ((iteration == 0) && useProvidedWeight) {
+//            bestConfig = PROVIDED_CONFIG_INDEX;
+//        } else {
+//            for (int i = 0; i < configs.size(); i++) {
+//                float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
+//                if (bestConfig == -1 || curVal > curBestVal) {
+//                    curBestVal = curVal;
+//                    bestConfig = i;
+//                }
+//            }
+//        }
+//
+//        return bestConfig;
+//    }
 
-        if ((iteration == 0) && useProvidedWeight) {
-            bestConfig = PROVIDED_CONFIG_INDEX;
-        } else {
-            for (int i = 0; i < configs.size(); i++) {
-                float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
-                if (bestConfig == -1 || curVal > curBestVal) {
-                    curBestVal = curVal;
-                    bestConfig = i;
-                }
-            }
-        }
-
-        return bestConfig;
-    }
-
-    protected class ValueAndStd {
-        float value;
-        float std;
+    public class ValueAndStd {
+        public float value;
+        public float std;
 
         public ValueAndStd() {
             this(initialWeightValue, initialStdValue);
@@ -430,7 +437,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
     }
 
-    protected class WeightConfig {
+    public class WeightConfig {
         public float[] config;
         public ValueAndStd valueAndStd;
 
