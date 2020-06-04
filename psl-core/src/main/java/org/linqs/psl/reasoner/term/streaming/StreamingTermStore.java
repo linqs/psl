@@ -22,6 +22,7 @@ import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -68,6 +69,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     private GroundAtom[] variableAtoms;
     private boolean[] deletedAtoms;
     private int variableIndex;
+    private int numRandomVariables;
 
     // Buffer to hold new terms
     protected Queue<T> newTermBuffer;
@@ -212,7 +214,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public int getNumVariables() {
-        return variables.size();
+        return numRandomVariables;
     }
 
     @Override
@@ -267,6 +269,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         variableAtoms[variableIndex] = atom;
         variableIndex++;
 
+        if (atom instanceof RandomVariableAtom) {
+            numRandomVariables++;
+        }
         return atom;
     }
 
@@ -350,6 +355,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         GroundAtom atom = atomManager.getAtom(predicate, arguments);
         if (variables.containsKey(atom)) {
             deletedAtoms[getVariableIndex(atom)] = true;
+            if (atom instanceof RandomVariableAtom) {
+                numRandomVariables--;
+            }
             variables.remove(atom);
         }
 
