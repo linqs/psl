@@ -306,7 +306,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
-    //TODO(Charles): seenTermCount is not updated for deleted terms at this point so seenTermCount includes
+    // TODO(Charles): seenTermCount is not updated for deleted terms at this point so seenTermCount includes
     // the number of deleted terms
     @Override
     public int size() {

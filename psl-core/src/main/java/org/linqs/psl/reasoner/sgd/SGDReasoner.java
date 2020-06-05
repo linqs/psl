@@ -86,7 +86,7 @@ public class SGDReasoner extends Reasoner {
             //    This means that this movement calculation differs depending on the termstore.
             //    This shouldn't be the case.
             if (variableValues.length != 0) {
-                movement /= variableValues.length;
+                movement /= termStore.getNumVariables();
             }
 
             long end = System.currentTimeMillis();
@@ -146,11 +146,13 @@ public class SGDReasoner extends Reasoner {
         }
 
         float[] variableValues = termStore.getVariableValues();
+        int term_count = 0;
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate(variableValues);
+            term_count += 1;
         }
 
-        return objective / termStore.size();
+        return objective / term_count;
     }
 
     @Override
