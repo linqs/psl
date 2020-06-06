@@ -110,7 +110,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         acquisitionFunction = AcquisitionFunctionsStore.getAcquisitionFunction(
                 Options.WLA_GPP_ACQUISITION.getString().toUpperCase());
 
-        log.debug("searchHypersphere: {}", searchHypersphere);
     }
 
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
@@ -403,25 +402,25 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return (float)evaluator.getNormalizedRepMetric();
     }
 
-//    // Exploration strategy
-//    protected int getNextPoint(List<WeightConfig> configs, int iteration) {
-//        int bestConfig = -1;
-//        float curBestVal = -Float.MAX_VALUE;
-//
-//        if ((iteration == 0) && useProvidedWeight) {
-//            bestConfig = PROVIDED_CONFIG_INDEX;
-//        } else {
-//            for (int i = 0; i < configs.size(); i++) {
-//                float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
-//                if (bestConfig == -1 || curVal > curBestVal) {
-//                    curBestVal = curVal;
-//                    bestConfig = i;
-//                }
-//            }
-//        }
-//
-//        return bestConfig;
-//    }
+    // Exploration strategy
+    protected int getNextPoint(List<WeightConfig> configs, int iteration) {
+        int bestConfig = -1;
+        float curBestVal = -Float.MAX_VALUE;
+
+        if ((iteration == 0) && useProvidedWeight) {
+            bestConfig = PROVIDED_CONFIG_INDEX;
+        } else {
+            for (int i = 0; i < configs.size(); i++) {
+                float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
+                if (bestConfig == -1 || curVal > curBestVal) {
+                    curBestVal = curVal;
+                    bestConfig = i;
+                }
+            }
+        }
+
+        return bestConfig;
+    }
 
     public class ValueAndStd {
         public float value;
