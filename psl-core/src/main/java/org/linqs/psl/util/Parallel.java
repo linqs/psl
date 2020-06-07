@@ -248,6 +248,8 @@ public final class Parallel {
             return;
         }
 
+        getNumThreads();
+
         // We can use an unbounded queue (no initial size given) since the parent
         // thread is disciplined when giving out work.
         workerQueue = new LinkedBlockingQueue<Worker<?>>();
