@@ -111,6 +111,15 @@ public class Option {
     }
 
     /**
+     * Clear the value (in the Config) for this Option.
+     * This will remove any previously set valuem
+     * but not remove any defaults.
+     */
+    public void clear() {
+        Config.clearProperty(name);
+    }
+
+    /**
      * Fetch the Option's configuration value from the Config class.
      * This is the most general get method, one with a specific type should generally be used.
      * This is the only provided get method that does not use a default.

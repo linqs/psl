@@ -27,12 +27,8 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
@@ -149,20 +145,20 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void completeInitialize() {
         log.info("Grounding out model.");
-        int groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
+        long groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
         log.info("Grounding complete.");
 
         log.debug("Initializing objective terms for {} ground rules.", groundCount);
         @SuppressWarnings("unchecked")
-        int termCount = termGenerator.generateTerms(groundRuleStore, termStore);
+        long termCount = termGenerator.generateTerms(groundRuleStore, termStore);
         log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
     }
 
     /**
      * Alias for inference() with committing atoms.
      */
-    public void inference() {
-        inference(true, false);
+    public double inference() {
+        return inference(true, false);
     }
 
     /**
@@ -170,8 +166,10 @@ public abstract class InferenceApplication implements ModelApplication {
      * and optionally commit the updated atoms back to the database.
      *
      * All RandomVariableAtoms which the model might access must be persisted in the Database.
+     *
+     * @return the final objective of the reasoner.
      */
-    public void inference(boolean commitAtoms, boolean reset) {
+    public double inference(boolean commitAtoms, boolean reset) {
         if (reset) {
             initializeAtoms();
 
@@ -181,7 +179,7 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         log.info("Beginning inference.");
-        internalInference();
+        double objective = internalInference();
         log.info("Inference complete.");
         atomsCommitted = false;
 
@@ -189,13 +187,17 @@ public abstract class InferenceApplication implements ModelApplication {
         if (commitAtoms) {
             commit();
         }
+
+        return objective;
     }
 
     /**
      * The implementation of the full inference by each class.
+     *
+     * @return the final objective of the reasoner.
      */
-    protected void internalInference() {
-        reasoner.optimize(termStore);
+    protected double internalInference() {
+        return reasoner.optimize(termStore);
     }
 
     public Reasoner getReasoner() {

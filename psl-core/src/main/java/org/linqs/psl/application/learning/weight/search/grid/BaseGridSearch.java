@@ -100,7 +100,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
     @Override
     protected void doLearn() {
-        double bestObjective = -1;
+        double bestObjective = -1.0;
         double[] bestWeights = new double[mutableRules.size()];
 
         double[] weights = new double[mutableRules.size()];

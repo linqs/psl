@@ -131,16 +131,16 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         }
 
         @Override
-        public float getFunctionValue(WeightConfig config) {
+        public double getFunctionValue(WeightConfig config) {
             if (config.config[0] == 1.0 && config.config[1] == 1.0 && config.config[2] == 1.0) {
-                return 0.5f;
+                return 0.5;
             }
 
             if (config.config[0] == 0.0 && config.config[1] == 1.0 && config.config[2] == 1.0) {
-                return 0.6f;
+                return 0.6;
             }
 
-            return 0.3f;
+            return 0.3;
         }
     }
 }

@@ -58,7 +58,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
 
-    protected int termCount;
+    protected long termCount;
 
     // The iteratble is kept around for cleanup.
     protected QueryResultIterable queryIterable;

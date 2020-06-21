@@ -129,6 +129,11 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         return variable;
     }
 
+    @Override
+    public void variablesExternallyUpdated() {
+        store.variablesExternallyUpdated();
+    }
+
     /**
      * Make sure we allocate the right amount of memory for global variables.
      */
@@ -249,6 +254,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         log.trace("Batch update of {} model atoms. RMSE: {}", count, rmse);
+        variablesExternallyUpdated();
     }
 
     private void fitModelAtoms() {
@@ -276,17 +282,17 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public T get(int index) {
+    public T get(long index) {
         return store.get(index);
     }
 
     @Override
-    public int size() {
+    public long size() {
         return store.size();
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
+    public void ensureCapacity(long capacity) {
         store.ensureCapacity(capacity);
     }
 

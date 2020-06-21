@@ -36,8 +36,6 @@ public class GroundRules {
      *
      * @param groundRules  the GroundCompatibilityRules
      * @return the total weighted incompatibility
-     * @see WeightedGroundRule#getIncompatibility()
-     * @see WeightedGroundRule#getWeight()
      */
     public static double getTotalWeightedIncompatibility(Iterable<WeightedGroundRule> groundRules) {
         double totalInc = 0.0;

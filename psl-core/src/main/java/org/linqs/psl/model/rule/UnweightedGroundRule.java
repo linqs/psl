@@ -38,5 +38,5 @@ public interface UnweightedGroundRule extends GroundRule {
      *
      * @return the infeasibility of the current truth values
      */
-    public double getInfeasibility();
+    public float getInfeasibility();
 }

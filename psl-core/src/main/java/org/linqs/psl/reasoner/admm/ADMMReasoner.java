@@ -49,59 +49,59 @@ public class ADMMReasoner extends Reasoner {
      */
     private final float stepSize;
 
-    private float epsilonRel;
-    private float epsilonAbs;
+    private double epsilonRel;
+    private double epsilonAbs;
 
-    private float primalRes;
-    private float epsilonPrimal;
-    private float dualRes;
-    private float epsilonDual;
+    private double primalRes;
+    private double epsilonPrimal;
+    private double dualRes;
+    private double epsilonDual;
 
-    private float AxNorm;
-    private float AyNorm;
-    private float BzNorm;
-    private float lagrangePenalty;
-    private float augmentedLagrangePenalty;
+    private double AxNorm;
+    private double AyNorm;
+    private double BzNorm;
+    private double lagrangePenalty;
+    private double augmentedLagrangePenalty;
 
     private int maxIterations;
 
-    private int termBlockSize;
-    private int variableBlockSize;
+    private long termBlockSize;
+    private long variableBlockSize;
 
     public ADMMReasoner() {
         maxIterations = Options.ADMM_MAX_ITER.getInt();
         stepSize = Options.ADMM_STEP_SIZE.getFloat();
         computePeriod = Options.ADMM_COMPUTE_PERIOD.getInt();
-        epsilonAbs = Options.ADMM_EPSILON_ABS.getFloat();
-        epsilonRel = Options.ADMM_EPSILON_REL.getFloat();
+        epsilonAbs = Options.ADMM_EPSILON_ABS.getDouble();
+        epsilonRel = Options.ADMM_EPSILON_REL.getDouble();
     }
 
-    public float getEpsilonRel() {
+    public double getEpsilonRel() {
         return epsilonRel;
     }
 
-    public void setEpsilonRel(float epsilonRel) {
+    public void setEpsilonRel(double epsilonRel) {
         this.epsilonRel = epsilonRel;
     }
 
-    public float getEpsilonAbs() {
+    public double getEpsilonAbs() {
         return epsilonAbs;
     }
 
-    public void setEpsilonAbs(float epsilonAbs) {
+    public void setEpsilonAbs(double epsilonAbs) {
         this.epsilonAbs = epsilonAbs;
     }
 
-    public float getLagrangianPenalty() {
+    public double getLagrangianPenalty() {
         return this.lagrangePenalty;
     }
 
-    public float getAugmentedLagrangianPenalty() {
+    public double getAugmentedLagrangianPenalty() {
         return this.augmentedLagrangePenalty;
     }
 
     @Override
-    public void optimize(TermStore baseTermStore) {
+    public double optimize(TermStore baseTermStore) {
         if (!(baseTermStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -109,7 +109,7 @@ public class ADMMReasoner extends Reasoner {
 
         termStore.initForOptimization();
 
-        int numTerms = termStore.size();
+        long numTerms = termStore.size();
         int numVariables = termStore.getNumConsensusVariables();
 
         log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
@@ -117,11 +117,11 @@ public class ADMMReasoner extends Reasoner {
         termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
         variableBlockSize = numVariables / (Parallel.getNumThreads() * 4) + 1;
 
-        int numTermBlocks = (int)Math.ceil(numTerms / (float)termBlockSize);
-        int numVariableBlocks = (int)Math.ceil(numVariables / (float)variableBlockSize);
+        long numTermBlocks = (long)Math.ceil(numTerms / (double)termBlockSize);
+        long numVariableBlocks = (long)Math.ceil(numVariables / (double)variableBlockSize);
 
         // Performs inference.
-        float epsilonAbsTerm = (float)(Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs);
+        double epsilonAbsTerm = Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs;
 
         ObjectiveResult objective = null;
         ObjectiveResult oldObjective = null;
@@ -150,11 +150,11 @@ public class ADMMReasoner extends Reasoner {
             // Compute new consensus values and residuals.
             Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize));
 
-            primalRes = (float)Math.sqrt(primalRes);
-            dualRes = (float)(stepSize * Math.sqrt(dualRes));
+            primalRes = Math.sqrt(primalRes);
+            dualRes = stepSize * Math.sqrt(dualRes);
 
-            epsilonPrimal = (float)(epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm)));
-            epsilonDual = (float)(epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm));
+            epsilonPrimal = epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm));
+            epsilonDual = epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm);
 
             if (iteration % computePeriod == 0) {
                 if (!objectiveBreak) {
@@ -197,12 +197,19 @@ public class ADMMReasoner extends Reasoner {
 
         // Sync the consensus values back to the atoms.
         termStore.syncAtoms();
+
+        return objective.objective;
     }
 
     private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
+        }
+
+        // Run through the maximum number of iterations.
+        if (runFullIterations) {
+            return false;
         }
 
         // Don't break if there are violated constraints.
@@ -228,8 +235,8 @@ public class ADMMReasoner extends Reasoner {
     }
 
     private ObjectiveResult computeObjective(ADMMTermStore termStore, boolean logViolatedConstraints) {
-        float objective = 0.0f;
-        int violatedConstraints = 0;
+        double objective = 0.0f;
+        long violatedConstraints = 0;
         float[] consensusValues = termStore.getConsensusValues();
 
         for (ADMMObjectiveTerm term : termStore) {
@@ -250,9 +257,9 @@ public class ADMMReasoner extends Reasoner {
     }
 
     private synchronized void updateIterationVariables(
-            float primalRes, float dualRes,
-            float AxNorm, float BzNorm, float AyNorm,
-            float lagrangePenalty, float augmentedLagrangePenalty) {
+            double primalRes, double dualRes,
+            double AxNorm, double BzNorm, double AyNorm,
+            double lagrangePenalty, double augmentedLagrangePenalty) {
         this.primalRes += primalRes;
         this.dualRes += dualRes;
         this.AxNorm += AxNorm;
@@ -262,12 +269,12 @@ public class ADMMReasoner extends Reasoner {
         this.augmentedLagrangePenalty += augmentedLagrangePenalty;
     }
 
-    private class TermWorker extends Parallel.Worker<Integer> {
+    private class TermWorker extends Parallel.Worker<Long> {
         private final ADMMTermStore termStore;
-        private final int blockSize;
+        private final long blockSize;
         private final float[] consensusValues;
 
-        public TermWorker(ADMMTermStore termStore, int blockSize) {
+        public TermWorker(ADMMTermStore termStore, long blockSize) {
             super();
 
             this.termStore = termStore;
@@ -280,12 +287,12 @@ public class ADMMReasoner extends Reasoner {
         }
 
         @Override
-        public void work(int blockIndex, Integer ignore) {
-            int numTerms = termStore.size();
+        public void work(long blockIndex, Long ignore) {
+            long numTerms = termStore.size();
 
             // Minimize each local function (wrt the local variable copies).
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
-                int termIndex = blockIndex * blockSize + innerBlockIndex;
+                long termIndex = blockIndex * blockSize + innerBlockIndex;
 
                 if (termIndex >= numTerms) {
                     break;
@@ -297,12 +304,12 @@ public class ADMMReasoner extends Reasoner {
         }
     }
 
-    private class VariableWorker extends Parallel.Worker<Integer> {
+    private class VariableWorker extends Parallel.Worker<Long> {
         private final ADMMTermStore termStore;
-        private final int blockSize;
+        private final long blockSize;
         private final float[] consensusValues;
 
-        public VariableWorker(ADMMTermStore termStore, int blockSize) {
+        public VariableWorker(ADMMTermStore termStore, long blockSize) {
             super();
 
             this.termStore = termStore;
@@ -315,27 +322,27 @@ public class ADMMReasoner extends Reasoner {
         }
 
         @Override
-        public void work(int blockIndex, Integer ignore) {
+        public void work(long blockIndex, Long ignore) {
             int numVariables = termStore.getNumConsensusVariables();
 
-            float primalResInc = 0.0f;
-            float dualResInc = 0.0f;
-            float AxNormInc = 0.0f;
-            float BzNormInc = 0.0f;
-            float AyNormInc = 0.0f;
-            float lagrangePenaltyInc = 0.0f;
-            float augmentedLagrangePenaltyInc = 0.0f;
+            double primalResInc = 0.0f;
+            double dualResInc = 0.0f;
+            double AxNormInc = 0.0f;
+            double BzNormInc = 0.0f;
+            double AyNormInc = 0.0f;
+            double lagrangePenaltyInc = 0.0f;
+            double augmentedLagrangePenaltyInc = 0.0f;
 
             // Instead of dividing up the work ahead of time,
             // get one job at a time so the threads will have more even workloads.
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
-                int variableIndex = blockIndex * blockSize + innerBlockIndex;
+                int variableIndex = (int)(blockIndex * blockSize + innerBlockIndex);
 
                 if (variableIndex >= numVariables) {
                     break;
                 }
 
-                float total = 0.0f;
+                double total = 0.0f;
                 int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
 
                 // First pass computes newConsensusValue and dual residual fom all local copies.
@@ -347,7 +354,7 @@ public class ADMMReasoner extends Reasoner {
                     AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
                 }
 
-                float newConsensusValue = total / numLocalVariables;
+                float newConsensusValue = (float)(total / numLocalVariables);
                 newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
 
                 float diff = consensusValues[variableIndex] - newConsensusValue;
@@ -376,10 +383,10 @@ public class ADMMReasoner extends Reasoner {
     }
 
     private static class ObjectiveResult {
-        public final float objective;
-        public final int violatedConstraints;
+        public final double objective;
+        public final long violatedConstraints;
 
-        public ObjectiveResult(float objective, int violatedConstraints) {
+        public ObjectiveResult(double objective, long violatedConstraints) {
             this.objective = objective;
             this.violatedConstraints = violatedConstraints;
         }

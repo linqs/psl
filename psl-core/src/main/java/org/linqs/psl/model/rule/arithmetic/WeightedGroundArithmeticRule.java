@@ -88,12 +88,12 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     @Override
-    public double getIncompatibility() {
+    public float getIncompatibility() {
         return getIncompatibility(null, 0.0f);
     }
 
     @Override
-    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+    public float getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
         float sum = 0.0f;
         for (int i = 0; i < coefficients.length; i++) {
             // Skip any grounding only predicates.
@@ -110,10 +110,10 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
         sum -= constant;
 
         if (FunctionComparator.GTE.equals(comparator)) {
-            sum *= -1;
+            sum *= -1.0f;
         }
 
-        return (isSquared()) ? Math.pow(Math.max(sum, 0.0f), 2) : Math.max(sum, 0.0f);
+        return (float)((isSquared()) ? Math.pow(Math.max(sum, 0.0f), 2) : Math.max(sum, 0.0f));
     }
 
     @Override

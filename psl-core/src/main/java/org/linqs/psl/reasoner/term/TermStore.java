@@ -63,16 +63,16 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
      */
     public void initForOptimization();
 
-    public T get(int index);
+    public T get(long index);
 
-    public int size();
+    public long size();
 
     /**
      * Ensure that the underlying stuctures can have the required term capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      */
-    public void ensureCapacity(int capacity);
+    public void ensureCapacity(long capacity);
 
     /**
      * Ensure that the underlying stuctures can have the required variable capacity.
@@ -86,6 +86,11 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
      * Create a variable local to a specific term.
      */
     public V createLocalVariable(RandomVariableAtom atom);
+
+    /**
+     * Notify the term store that the variables have been updated through a process external to standard optimization.
+     */
+    public void variablesExternallyUpdated();
 
     /**
      * Get an iterator over the terms in the store that does not write to disk.

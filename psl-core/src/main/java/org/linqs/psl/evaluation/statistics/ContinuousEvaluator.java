@@ -113,6 +113,7 @@ public class ContinuousEvaluator extends Evaluator {
 
     @Override
     public String getAllStats() {
-        return String.format("MAE: %f, MSE: %f", mae(), mse());
+        double mse = mse();
+        return String.format("MAE: %f, MSE: %f, RMSE: %f", mae(), mse, Math.sqrt(mse));
     }
 }

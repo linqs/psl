@@ -52,7 +52,7 @@ public class Grounding {
      * Ground all the given rules.
      * @return the number of ground rules generated.
      */
-    public static int groundAll(Model model, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public static long groundAll(Model model, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         return groundAll(model.getRules(), atomManager, groundRuleStore);
     }
 
@@ -61,8 +61,8 @@ public class Grounding {
      * Callers should prefer groundAll() to this since it will perform a more efficient grounding.
      * @return the number of ground rules generated.
      */
-    public static int groundAllSerial(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        int groundCount = 0;
+    public static long groundAllSerial(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        long groundCount = 0;
         for (Rule rule : rules) {
             groundCount += rule.groundAll(atomManager, groundRuleStore);
         }
@@ -74,7 +74,7 @@ public class Grounding {
      * Ground all the given rules.
      * @return the number of ground rules generated.
      */
-    public static int groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public static long groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         boolean rewrite = Options.GROUNDING_REWRITE_QUERY.getBoolean();
         boolean serial = Options.GROUNDING_SERIAL.getBoolean();
 
@@ -110,7 +110,7 @@ public class Grounding {
             queries.get(query).add(rule);
         }
 
-        int initialSize = groundRuleStore.size();
+        long initialSize = groundRuleStore.size();
 
         // First perform all the rewritten querties.
         for (Map.Entry<Formula, List<Rule>> entry : queries.entrySet()) {
@@ -134,7 +134,7 @@ public class Grounding {
         return groundRuleStore.size() - initialSize;
     }
 
-    private static int groundParallel(Formula query, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    private static long groundParallel(Formula query, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), query);
         for (Rule rule : rules) {
             log.trace("    " + rule);
@@ -144,10 +144,10 @@ public class Grounding {
         // We do not want to throw too early because the ground rule may turn out to be trivial in the end.
         boolean oldAccessExceptionState = atomManager.enableAccessExceptions(false);
 
-        int initialCount = groundRuleStore.size();
+        long initialCount = groundRuleStore.size();
         QueryResultIterable queryResults = atomManager.executeGroundingQuery(query);
         Parallel.RunTimings timings = Parallel.foreach(queryResults, new GroundWorker(atomManager, groundRuleStore, queryResults.getVariableMap(), rules));
-        int groundCount = groundRuleStore.size() - initialCount;
+        long groundCount = groundRuleStore.size() - initialCount;
 
         atomManager.enableAccessExceptions(oldAccessExceptionState);
 
@@ -178,7 +178,7 @@ public class Grounding {
         }
 
         @Override
-        public void work(int index, Constant[] row) {
+        public void work(long index, Constant[] row) {
             for (Rule rule : rules) {
                 rule.ground(row, variableMap, atomManager, groundRules);
 
