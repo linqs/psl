@@ -22,8 +22,6 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -31,7 +29,6 @@ import java.util.List;
  * A grid search that just randomly samples from a continuous grid [0, 1).
  */
 public class ContinuousRandomGridSearch extends BaseGridSearch {
-    private static final Logger log = LoggerFactory.getLogger(ContinuousRandomGridSearch.class);
 
     private WeightSampler weightSampler;
 
