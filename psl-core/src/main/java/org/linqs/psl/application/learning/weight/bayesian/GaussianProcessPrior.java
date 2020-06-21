@@ -1,8 +1,6 @@
 package org.linqs.psl.application.learning.weight.bayesian;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.bayesian.AcquisitionFunctions.AcquisitionFunction;
-import org.linqs.psl.application.learning.weight.bayesian.AcquisitionFunctions.AcquisitionFunctionsStore;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
@@ -34,7 +32,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private boolean randomConfigsOnly;
     private boolean earlyStopping;
 
-    private float minConfigVal;
     private FloatMatrix knownDataStdInv;
     private GaussianProcessKernel kernel;
     private GaussianProcessKernel.Space space;
@@ -60,8 +57,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
      */
     private boolean useProvidedWeight;
 
-    private AcquisitionFunction acquisitionFunction;
-
     public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
     }
@@ -82,8 +77,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
-        minConfigVal = 1.0f / MAX_RAND_INT_VAL;
-
         searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
         double dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
         dirichletAlphas = new double[mutableRules.size()];
@@ -91,9 +84,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         for (int i = 0; i < mutableRules.size(); i ++) {
             dirichletAlphas[i] = dirichletAlpha;
         }
-
-        acquisitionFunction = AcquisitionFunctionsStore.getAcquisitionFunction(
-                Options.WLA_GPP_ACQUISITION.getString().toUpperCase());
 
     }
 
@@ -138,7 +128,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         int iteration = 0;
         while (iteration < maxIterations && configs.size() > 0 && !(earlyStopping && allStdSmall)) {
-            int nextPoint = acquisitionFunction.getNextPoint(configs, iteration);
+            int nextPoint = getNextPoint(configs, iteration);
             WeightConfig config = configs.get(nextPoint);
 
             exploredConfigs.add(config);
@@ -395,7 +385,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         return bestConfig;
     }
 
-    public class ValueAndStd {
+    protected class ValueAndStd {
         public float value;
         public float std;
 
@@ -409,7 +399,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
     }
 
-    public class WeightConfig {
+    protected class WeightConfig {
         public float[] config;
         public ValueAndStd valueAndStd;
 

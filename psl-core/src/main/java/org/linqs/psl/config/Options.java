@@ -265,12 +265,6 @@ public class Options {
         "Whether the current build of PSL was made in a dirty git repository."
     );
 
-    public static final Option WLA_GPP_ACQUISITION = new Option(
-            "gpp.acquisition",
-            "UCB",
-            null
-    );
-
     public static final Option WLA_GPP_EARLY_STOPPING = new Option(
         "gpp.earlyStopping",
         true,
