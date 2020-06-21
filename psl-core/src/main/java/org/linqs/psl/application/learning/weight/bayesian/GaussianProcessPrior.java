@@ -26,7 +26,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
-    private static final int PROVIDED_CONFIG_INDEX = 0;
+    public static final int PROVIDED_CONFIG_INDEX = 0;
 
     private int maxIterations;
     private int maxConfigs;
@@ -46,37 +46,25 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private float initialStdValue;
 
     /**
-     * The radius of the sphere that is being optimized over
-     * */
-    private double hypersphereRadius;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
-    private boolean searchHypersphere;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
+     * Whether we will be performing search over the probability simplex
+     */
     protected boolean searchDirichlet;
 
     /**
-     * Whether we will be performing search over hypersphere
-     * */
-    protected double dirichletAlpha;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
+     * The dirichlet distribution alpha parameters
+     */
     protected double[] dirichletAlphas;
 
     /**
      * Whether to use the provided weight configuration as the first point for exploration
-     * */
+     */
     private boolean useProvidedWeight;
 
     private AcquisitionFunction acquisitionFunction;
 
+    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
+    }
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
@@ -96,11 +84,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         minConfigVal = 1.0f / MAX_RAND_INT_VAL;
 
-        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
-        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
-
         searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
-        dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
+        double dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
         dirichletAlphas = new double[mutableRules.size()];
 
         for (int i = 0; i < mutableRules.size(); i ++) {
@@ -110,10 +95,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         acquisitionFunction = AcquisitionFunctionsStore.getAcquisitionFunction(
                 Options.WLA_GPP_ACQUISITION.getString().toUpperCase());
 
-    }
-
-    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
     }
 
     private void reset() {
@@ -270,26 +251,22 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs) / numMutableRules);
 
-        // Create config for provided weight configuration in model file
+        // Create initial configuration for weights in the user provided model file.
         WeightConfig initialConfig = new WeightConfig(new float[numMutableRules]);
         for (int j = 0; j < numMutableRules; j++) {
             initialConfig.config[j] = (float) mutableRules.get(j).getWeight();
         }
-        if (searchHypersphere) {
+
+        if (searchDirichlet) {
             initialConfig.config = MathUtils.toUnit(initialConfig.config);
         }
 
         // If systematic generation of points will lead to not a reasonable exploration of space,
         // then just pick random points in space and hope it is better than being systematic.
-
         if (randomConfigsOnly) {
             log.debug("Generating random configs.");
             configs = getRandomConfigs();
-            if (useProvidedWeight) {
-                configs.add(PROVIDED_CONFIG_INDEX, initialConfig);
-            }
         } else {
-
             if (numPerSplit < 5) {
                 log.warn("Note not picking random points and large number of rules will yield bad exploration.");
             }
@@ -319,6 +296,11 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                 }
             }
         }
+
+        if (useProvidedWeight) {
+            configs.add(PROVIDED_CONFIG_INDEX, initialConfig);
+        }
+
         return configs;
     }
 
@@ -326,22 +308,11 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = new ArrayList<WeightConfig>();
 
-        if (searchHypersphere) {
-            log.debug("Generating random points from hypersphere");
-        } else if (searchDirichlet) {
-            log.debug("Generating random points from dirichlet");
-        } else {
-            log.debug("Generating random points from hypercube");
-        }
-
         for (int i = 0; i < maxConfigs; i++) {
             WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
-            if (searchHypersphere) {
-                double[] vector = RandUtils.sampleHypersphereSurface(numMutableRules, hypersphereRadius);
-                for (int j = 0; j < numMutableRules; j++) {
-                    curConfig.config[j] = (float)Math.abs(vector[j]);
-                }
-            } else if (searchDirichlet) {
+            if (searchDirichlet) {
+                log.debug("Generating random points from dirichlet");
+
                 double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
 
                 dirichletSample = MathUtils.toUnit(dirichletSample);
@@ -350,6 +321,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
                     curConfig.config[j] = (float)dirichletSample[j];
                 }
             } else {
+                log.debug("Generating random points from hypercube");
+
                 for (int j = 0; j < numMutableRules; j++) {
                     curConfig.config[j] = (RandUtils.nextInt(MAX_RAND_INT_VAL) + 1) / (float)(MAX_RAND_INT_VAL + 1);
                 }

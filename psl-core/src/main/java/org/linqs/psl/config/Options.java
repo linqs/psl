@@ -280,7 +280,7 @@ public class Options {
     public static final Option WLA_GPP_USE_PROVIDED_WEIGHT = new Option(
         "gpp.useProvidedWeight",
         true,
-        null
+        "Whether the weight in the user provided model file should be used in the "
     );
 
     public static final Option WLA_GPP_EXPLORATION = new Option(
@@ -399,14 +399,6 @@ public class Options {
         4,
         "The proportion of configs that survive each round in a brancket.",
         Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_HB_HYPERSPHERE_MEAN_ANGLE = new Option(
-            "hyperband.meanAngle",
-            Math.PI / 4,
-            "If search over hypershpere, the mean of the Gaussian from which an angle will be " +
-                    "sampled in the hypersphere coordinate system.",
-            Option.FLAG_POSITIVE
     );
 
     public static final Option HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS = new Option(
@@ -650,13 +642,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_RGS_HYPERSPHERE_STEP_SIZE = new Option(
-        "randomgridsearch.hyperspherestepsize",
-        0.25,
-        "The step size of the grid",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
         "rankingevaluator.representative",
         RankingEvaluator.RepresentativeMetric.AUROC.toString(),
@@ -852,18 +837,6 @@ public class Options {
         "The evaluator to use during weight learning."
         + " Not all weight learning methods will use the evaluator for decision making,"
         + " but even those will typically output an evaluator score each iteration."
-    );
-
-    public static final Option WLA_SEARCH_HYPERSPHERE = new Option(
-            "search.hypersphere",
-            false,
-            "Whether or not to perform weight learning in the polar coordinate system."
-    );
-
-    public static final Option WLA_SEARCH_HYPERSPHERE_RADIUS = new Option(
-            "basegridsearch.hypersphereradius",
-            1.0,
-            "The radius of the hypersphere that is being optimized over."
     );
 
     public static final Option WLA_SEARCH_DIRICHLET = new Option(

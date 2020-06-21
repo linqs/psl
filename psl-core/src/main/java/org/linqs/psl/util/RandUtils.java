@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.util;
 
-import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.linqs.psl.config.Options;
 
 import org.slf4j.Logger;
