@@ -46,10 +46,10 @@ public class GridSearch extends BaseGridSearch {
         super(rules, rvDB, observedDB);
 
         possibleWeights = StringUtils.splitDouble(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
-
         if (possibleWeights.length == 0) {
             throw new IllegalArgumentException("No weights provided for grid search.");
         }
+
         maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
 
         numLocations = maxNumLocations;
@@ -59,6 +59,7 @@ public class GridSearch extends BaseGridSearch {
     @Override
     protected void getWeights(double[] weights) {
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+        assert(indexes.length == mutableRules.size());
 
         for (int i = 0; i < mutableRules.size(); i++) {
             weights[i] = possibleWeights[indexes[i]];
@@ -74,6 +75,7 @@ public class GridSearch extends BaseGridSearch {
         }
 
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+        assert(indexes.length == mutableRules.size());
 
         // Start at the last weight and move it.
         // If it rolls over, move the one above it.

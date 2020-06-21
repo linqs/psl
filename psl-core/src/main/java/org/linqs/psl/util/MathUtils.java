@@ -157,25 +157,24 @@ public final class MathUtils {
     }
 
     /**
-     * Convert n-dimensional array to to unit length
+     * Scale n-dimensional double array to unit vector.
      */
     public static void toUnit(double[] vector) {
         toMagnitude(vector, 1.0);
     }
 
     /**
-     * Convert n-dimensional array to to unit length
+     * Scale n-dimensional float array to unit vector.
      */
     public static void toUnit(float[] vector) {
         toMagnitude(vector, 1.0);
     }
 
     /**
-     * Convert n-dimensional array to to magnitude length
+     * Scale n-dimensional double array to vector with the specified magnitude.
      */
     public static void toMagnitude(double[] vector, double magnitude) {
         double norm = 0.0;
-
         for (int i = 0; i < vector.length; i++) {
             norm += Math.pow(vector[i], 2);
         }
@@ -188,11 +187,10 @@ public final class MathUtils {
     }
 
     /**
-     * Convert n-dimensional array to to magnitude length
+     * Scale n-dimensional float array to vector with the specified magnitude.
      */
     public static void toMagnitude(float[] vector, double magnitude) {
         double norm = 0.0;
-
         for (int i = 0; i < vector.length; i++) {
             norm += Math.pow(vector[i], 2);
         }

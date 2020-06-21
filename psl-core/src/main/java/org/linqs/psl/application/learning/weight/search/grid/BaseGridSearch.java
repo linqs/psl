@@ -18,14 +18,12 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-
 import org.linqs.psl.util.MathUtils;
-
 import org.linqs.psl.util.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +92,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         numLocations = maxNumLocations;
 
         objectives = new HashMap<String, Double>();
-
         exploredConfigurations = new HashMap<String, String>();
     }
 
@@ -102,9 +99,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected void doLearn() {
         double bestObjective = -1.0;
         double[] bestWeights = new double[mutableRules.size()];
-
         double[] weights = new double[mutableRules.size()];
-
         double[] unitWeightVector = new double[mutableRules.size()];
 
         String unitConfiguration;
@@ -120,11 +115,11 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             // Set the weights for the current round.
             getWeights(weights);
 
-            // Check if we have explored this configuration before
+            // Check if we have explored this configuration before.
             System.arraycopy(weights, 0, unitWeightVector, 0, weights.length);
             MathUtils.toUnit(unitWeightVector);
 
-            // Round each weight to 5 decimal places
+            // Round each weight to 5 decimal places.
             for(int i = 0; i < unitWeightVector.length; i ++){
                 unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000d) / 100000d;
             }

@@ -22,17 +22,12 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.util.RandUtils;
-import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
@@ -73,7 +68,6 @@ public class Hyperband extends WeightLearningApplication {
         survival = Options.WLA_HB_SURVIVAL.getInt();
         numBrackets = Options.WLA_HB_NUM_BRACKETS.getInt();
         baseBracketSize = Options.WLA_HB_BRACKET_SIZE.getInt();
-
     }
 
     @Override

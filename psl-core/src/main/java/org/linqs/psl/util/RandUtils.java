@@ -208,10 +208,8 @@ public final class RandUtils {
     public static synchronized GammaDistribution getNextGammaSampler(double shape, double scale) {
         ensureRNG();
 
-        RandomGenerator rng_gamma;
-        long seed = nextLong();
-        rng_gamma = new JDKRandomGenerator();
-        rng_gamma.setSeed(seed);
+        RandomGenerator rng_gamma = new JDKRandomGenerator();
+        rng_gamma.setSeed(nextLong());
 
         return new GammaDistribution(shape, scale);
     }

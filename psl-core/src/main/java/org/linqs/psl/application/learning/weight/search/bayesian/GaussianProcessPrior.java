@@ -354,8 +354,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     protected class ValueAndStd {
-        public float value;
-        public float std;
+        float value;
+        float std;
 
         public ValueAndStd() {
             this(initialWeightValue, initialStdValue);
