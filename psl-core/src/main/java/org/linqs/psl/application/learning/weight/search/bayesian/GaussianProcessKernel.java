@@ -1,11 +1,7 @@
-package org.linqs.psl.application.learning.weight.bayesian;
+package org.linqs.psl.application.learning.weight.search.bayesian;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.util.FloatMatrix;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * All kernel methods MUST be threadsafe.

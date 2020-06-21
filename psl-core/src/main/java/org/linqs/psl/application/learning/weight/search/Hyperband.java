@@ -54,26 +54,9 @@ public class Hyperband extends WeightLearningApplication {
     public static final double MIN_BUDGET_PROPORTION = 0.001;
     public static final int MIN_BRACKET_SIZE = 1;
 
-    // TODO(eriq): Config
-    public static final double MEAN = 0.50;
-    public static final double VARIANCE = 0.10;
-
     private final int survival;
 
-    private double bestObjective;
-    private double[] bestWeights;
-
-    private boolean logScale;
-    private double logBase;
-
-    private Boolean searchHypersphere;
-    private double hypersphereRadius;
-
-    private Boolean searchDirichlet;
-    private double dirichletAlpha;
-    private double[] dirichletAlphas;
-
-    public static final String DELIM = ":";
+    private WeightSampler weightSampler;
 
     private int numBrackets;
     private int baseBracketSize;
@@ -85,23 +68,12 @@ public class Hyperband extends WeightLearningApplication {
     public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
+        weightSampler = new WeightSampler(mutableRules.size());
+
         survival = Options.WLA_HB_SURVIVAL.getInt();
         numBrackets = Options.WLA_HB_NUM_BRACKETS.getInt();
         baseBracketSize = Options.WLA_HB_BRACKET_SIZE.getInt();
 
-        logScale = Options.WLA_SEARCH_LOG_SCALE.getBoolean();
-        logBase = Options.WLA_SEARCH_LOG_BASE.getDouble();
-
-        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
-        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
-
-        searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
-        dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
-        dirichletAlphas = new double[mutableRules.size()];
-
-        for (int i = 0; i < mutableRules.size(); i ++) {
-            dirichletAlphas[i] = dirichletAlpha;
-        }
     }
 
     @Override
@@ -178,54 +150,13 @@ public class Hyperband extends WeightLearningApplication {
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }
 
-    private void getHypersphereRandomWeights(double[] weights) {
-        double[] hypersphereSurfaceSample = RandUtils.sampleHypersphereSurface(mutableRules.size(), hypersphereRadius);
-
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
-            weights[i] = Math.abs(hypersphereSurfaceSample[i]);
-        }
-    }
-
-    private void getCartesianRandomWeights (double[] config) {
-        for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
-            // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-            config[weightIndex] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + MEAN;
-        }
-    }
-
-    private void getDirichletRandomWeights(double[] weights) {
-        double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
-
-        dirichletSample = MathUtils.toUnit(dirichletSample);
-
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
-            weights[i] = dirichletSample[i];
-        }
-    }
-
     private List<double[]> chooseConfigs(int bracketSize) {
         List<double[]> configs = new ArrayList<double[]>(bracketSize);
 
         for (int i = 0; i < bracketSize; i++) {
             double[] config = new double[mutableRules.size()];
 
-            if (searchHypersphere) {
-                log.debug("Getting Hypersphere Weights");
-                getHypersphereRandomWeights(config);
-                log.debug("Hypersphere Weights: {}", config);
-            } else if (searchDirichlet) {
-                log.debug("Getting Dirichlet Weights");
-                getDirichletRandomWeights(config);
-                log.debug("Dirichlet Weights: {}", config);
-            } else {
-                getCartesianRandomWeights(config);
-            }
-
-            if (logScale) {
-                config = MathUtils.toLogScale(config, logBase);
-            }
+            weightSampler.getRandomWeights(config);
 
             configs.add(config);
         }

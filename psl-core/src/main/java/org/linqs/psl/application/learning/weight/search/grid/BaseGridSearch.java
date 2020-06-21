@@ -70,46 +70,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected int numLocations;
 
     /**
-     * The dimension of the space we are searching over.
-     */
-    protected int spaceDimension;
-
-    /**
-     * Whether to perform search in log scale
-     * */
-    protected double logBase;
-
-    /**
-     * The base of the log scale we are using
-     * */
-    protected boolean logScale;
-
-    /**
-     * The radius of the sphere that is being optimized over
-     * */
-    protected double hypersphereRadius;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
-    protected boolean searchHypersphere;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
-    protected boolean searchDirichlet;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
-    protected double dirichletAlpha;
-
-    /**
-     * Whether we will be performing search over hypersphere
-     * */
-    protected double[] dirichletAlphas;
-
-    /**
      * The objectives at each location.
      * The default implementation does not actually need this, but childen may.
      */
@@ -136,22 +96,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         objectives = new HashMap<String, Double>();
 
         exploredConfigurations = new HashMap<String, String>();
-
-        logScale = Options.WLA_SEARCH_LOG_SCALE.getBoolean();
-        logBase = Options.WLA_SEARCH_LOG_BASE.getDouble();
-
-        hypersphereRadius = Options.WLA_SEARCH_HYPERSPHERE_RADIUS.getDouble();
-        searchHypersphere = Options.WLA_SEARCH_HYPERSPHERE.getBoolean();
-
-        searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
-        dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
-        dirichletAlphas = new double[mutableRules.size()];
-
-        for (int i = 0; i < mutableRules.size(); i ++) {
-            dirichletAlphas[i] = dirichletAlpha;
-        }
-
-        spaceDimension = searchHypersphere ? mutableRules.size() - 1 : mutableRules.size();
     }
 
     @Override
@@ -175,18 +119,16 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
             // Set the weights for the current round.
             getWeights(weights);
-            if (logScale) {
-                log.debug("Pre Log scaled weights: {}", weights);
-                weights = MathUtils.toLogScale(weights, logBase);
-                log.debug("Log scaled weights: {}", weights);
-            }
 
             // Check if we have explored this configuration before
-            unitWeightVector = MathUtils.toUnit(weights);
+            System.arraycopy(weights, 0, unitWeightVector, 0, weights.length);
+            MathUtils.toUnit(unitWeightVector);
+
             // Round each weight to 5 decimal places
             for(int i = 0; i < unitWeightVector.length; i ++){
                 unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000d) / 100000d;
             }
+
             unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
             if (exploredConfigurations.containsKey(unitConfiguration)) {
                 log.debug("Location: {} \nalready explored via: {} \nSkipping", currentLocation,

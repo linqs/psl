@@ -63,7 +63,7 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
         // Adjust the number of locations.
         numLocations = Math.min(
                 numLocations,
-                numSeedLocations + numExploreLocations * (int)(Math.pow(2, spaceDimension)));
+                numSeedLocations + numExploreLocations * (int)(Math.pow(2, mutableRules.size())));
 
         toExplore = new HashSet<String>(numLocations - numSeedLocations);
     }

@@ -18,7 +18,7 @@
 package org.linqs.psl.config;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
-import org.linqs.psl.application.learning.weight.bayesian.GaussianProcessKernel;
+import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.rdbms.QueryRewriter;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
@@ -30,7 +30,6 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.util.SystemUtils;
 
 import org.json.JSONArray;
@@ -137,42 +136,10 @@ public class Options {
         "The representative metric (see Continuousevaluator.RepresentativeMetric)."
     );
 
-    public static final Option WLA_CRGS_BASE_WEIGHT = new Option(
-        "continuousrandomgridsearch.baseweight",
-        0.40,
-        "The mean of the Gaussian from which a weight will be sampled.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_CRGS_BASE_ANGLE = new Option(
-            "continuousrandomgridsearch.baseweight",
-            Math.PI / 4,
-            "If search over hypershpere, the mean of the Gaussian from which an angle will be " +
-                    "sampled in the hypersphere coordinate system.",
-            Option.FLAG_POSITIVE
-    );
-
     public static final Option WLA_CRGS_MAX_LOCATIONS = new Option(
         "continuousrandomgridsearch.maxlocations",
         250,
         "The max number of locations to search.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_CRGS_SCALE_ORDERS = new Option(
-        "continuousrandomgridsearch.scaleorders",
-        0,
-        "If greater than 0, then various different scaled versions of the weights will be tested."
-        + " For example, if set to 3 then 10x, 100x, and 1000x will also be tested."
-        + " These additional tests DO NOT count against WLA_CRGS_MAX_LOCATIONS,"
-        + " i.e. WLA_CRGS_MAX_LOCATIONS * (WLA_CRGS_SCALE_ORDERS + 1) configurations will be tested.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option WLA_CRGS_VARIANCE = new Option(
-        "continuousrandomgridsearch.variance",
-        0.20,
-        "The variance used when sampling the weights from a Gaussian.",
         Option.FLAG_POSITIVE
     );
 
@@ -271,12 +238,6 @@ public class Options {
         null
     );
 
-    public static final Option WLA_GPP_USE_PROVIDED_WEIGHT = new Option(
-        "gpp.useProvidedWeight",
-        true,
-        "Whether the weight in the user provided model file should be used in the "
-    );
-
     public static final Option WLA_GPP_EXPLORATION = new Option(
         "gpp.explore",
         2.0f,
@@ -316,6 +277,12 @@ public class Options {
         "gpp.randomConfigsOnly",
         true,
         null
+    );
+
+    public static final Option WLA_GPP_USE_PROVIDED_WEIGHT = new Option(
+            "gpp.useProvidedWeight",
+            true,
+            "Whether the weight configuration in the user provided model file should be used as the initial sample point in GPP."
     );
 
     public static final Option WLA_GPP_KERNEL_REL_DEP = new Option(
@@ -842,19 +809,7 @@ public class Options {
     public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(
             "search.dirichletalpha",
             0.05,
-            "The radius of the hypersphere that is being optimized over."
-    );
-
-    public static final Option WLA_SEARCH_LOG_SCALE = new Option(
-            "search.logscale",
-            false,
-            "Whether the search should be distributed over a log scale."
-    );
-
-    public static final Option WLA_SEARCH_LOG_BASE = new Option(
-            "basegridsearch.logbase",
-            10.0,
-            "The base of the log scale."
+            "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
     public static final Option WLA_RANDOM_WEIGHTS = new Option(

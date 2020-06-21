@@ -55,34 +55,29 @@ public class GridSearch extends BaseGridSearch {
         numLocations = maxNumLocations;
     }
 
-    protected void getCartesianWeights (int[] indexes, double[] weights) {
+
+    @Override
+    protected void getWeights(double[] weights) {
+        int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
+
         for (int i = 0; i < mutableRules.size(); i++) {
             weights[i] = possibleWeights[indexes[i]];
         }
     }
 
     @Override
-    protected void getWeights(double[] weights) {
-        int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
-        assert(indexes.length == spaceDimension);
-
-        getCartesianWeights(indexes, weights);
-    }
-
-    @Override
     protected boolean chooseNextLocation() {
         // Start at all zeros.
         if (currentLocation == null) {
-            currentLocation = StringUtils.join(DELIM, new int[spaceDimension]);
+            currentLocation = StringUtils.join(DELIM, new int[mutableRules.size()]);
             return true;
         }
 
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
-        assert(indexes.length == spaceDimension);
 
         // Start at the last weight and move it.
         // If it rolls over, move the one above it.
-        for (int i = spaceDimension - 1; i >= 0; i--) {
+        for (int i = mutableRules.size() - 1; i >= 0; i--) {
             indexes[i]++;
 
             if (indexes[i] == possibleWeights.length) {

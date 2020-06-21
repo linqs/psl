@@ -1,6 +1,7 @@
-package org.linqs.psl.application.learning.weight.bayesian;
+package org.linqs.psl.application.learning.weight.search.bayesian;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.search.WeightSampler;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
@@ -24,7 +25,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     public static final int MAX_RAND_INT_VAL = 100000000;
     public static final float SMALL_VALUE = 0.4f;
-    public static final int PROVIDED_CONFIG_INDEX = 0;
 
     private int maxIterations;
     private int maxConfigs;
@@ -42,15 +42,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private float initialWeightValue;
     private float initialStdValue;
 
-    /**
-     * Whether we will be performing search over the probability simplex
-     */
-    protected boolean searchDirichlet;
-
-    /**
-     * The dirichlet distribution alpha parameters
-     */
-    protected double[] dirichletAlphas;
+    private WeightSampler weightSampler;
 
     /**
      * Whether to use the provided weight configuration as the first point for exploration
@@ -77,14 +69,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
-        searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
-        double dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
-        dirichletAlphas = new double[mutableRules.size()];
-
-        for (int i = 0; i < mutableRules.size(); i ++) {
-            dirichletAlphas[i] = dirichletAlpha;
-        }
-
+        weightSampler = new WeightSampler(mutableRules.size());
     }
 
     private void reset() {
@@ -241,14 +226,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs) / numMutableRules);
 
-        // Create initial configuration for weights in the user provided model file.
-        WeightConfig initialConfig = new WeightConfig(new float[numMutableRules]);
-        for (int j = 0; j < numMutableRules; j++) {
-            initialConfig.config[j] = (float) mutableRules.get(j).getWeight();
-        }
-
-        if (searchDirichlet) {
-            initialConfig.config = MathUtils.toUnit(initialConfig.config);
+        // Create user provided configuration for weights in the user provided model file.
+        WeightConfig userProvidedConfig = new WeightConfig(new float[numMutableRules]);
+        for (int i = 0; i < numMutableRules; i++) {
+            userProvidedConfig.config[i] = (float)mutableRules.get(i).getWeight();
         }
 
         // If systematic generation of points will lead to not a reasonable exploration of space,
@@ -258,7 +239,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             configs = getRandomConfigs();
         } else {
             if (numPerSplit < 5) {
-                log.warn("Note not picking random points and large number of rules will yield bad exploration.");
+                log.warn("Note that not picking random points for a model with a large number of rules will result in poor exploration of the weight space.");
             }
 
             float inc = max / numPerSplit;
@@ -287,8 +268,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             }
         }
 
+        // Add the user provided weight configuration to the tail of the list.
+        // This is accessed in the getNextPoint method.
         if (useProvidedWeight) {
-            configs.add(PROVIDED_CONFIG_INDEX, initialConfig);
+            configs.add(userProvidedConfig);
         }
 
         return configs;
@@ -300,23 +283,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         for (int i = 0; i < maxConfigs; i++) {
             WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
-            if (searchDirichlet) {
-                log.debug("Generating random points from dirichlet");
-
-                double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
-
-                dirichletSample = MathUtils.toUnit(dirichletSample);
-
-                for (int j = 0; j < numMutableRules; j++) {
-                    curConfig.config[j] = (float)dirichletSample[j];
-                }
-            } else {
-                log.debug("Generating random points from hypercube");
-
-                for (int j = 0; j < numMutableRules; j++) {
-                    curConfig.config[j] = (RandUtils.nextInt(MAX_RAND_INT_VAL) + 1) / (float)(MAX_RAND_INT_VAL + 1);
-                }
-            }
+            weightSampler.getRandomWeights(curConfig.config);
             configs.add(curConfig);
         }
         return configs;
@@ -371,7 +338,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         float curBestVal = -Float.MAX_VALUE;
 
         if ((iteration == 0) && useProvidedWeight) {
-            bestConfig = PROVIDED_CONFIG_INDEX;
+            // User provided configuration was added to the tail of the list.
+            bestConfig = configs.size() - 1;
         } else {
             for (int i = 0; i < configs.size(); i++) {
                 float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
