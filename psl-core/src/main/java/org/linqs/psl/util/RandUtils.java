@@ -25,9 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import org.apache.commons.math3.distribution.GammaDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.random.JDKRandomGenerator;
 
 /**
  * The canonical source of randomness for all PSL core code.
@@ -182,16 +179,12 @@ public final class RandUtils {
      * Sample from a dirichlet with the provided parameters
      */
     public static synchronized double[] sampleDirichlet(double[] alphas) {
-        ensureRNG();
-
         double [] gammaSamples = new double[alphas.length];
         double gammaSampleSum = 0;
         double [] dirichletSample = new double[alphas.length];
-        GammaDistribution gammaDist;
 
         for(int i = 0; i < alphas.length; i++){
-            gammaDist = getNextGammaSampler(alphas[i],1);
-            gammaSamples[i] = gammaDist.sample(1)[0];
+            gammaSamples[i] = nextGamma(alphas[i],1);
             gammaSampleSum = gammaSampleSum + gammaSamples[i];
         }
 
@@ -203,14 +196,51 @@ public final class RandUtils {
     }
 
     /**
-     * Sample from a gamma with the provided parameters
+     * Sample from a gamma distribution with the provided shape and scale parameters.
+     * See Marsaglia and Tsang (2000a): https://dl.acm.org/doi/10.1145/358407.358414
      */
-    public static synchronized GammaDistribution getNextGammaSampler(double shape, double scale) {
-        ensureRNG();
+    public static synchronized double nextGamma(double shape, double scale) {
+        boolean transform_flag;
+        double alpha;
+        double d;
+        double c;
+        double Z;
+        double V;
+        double U;
+        double gamma_sample;
 
-        RandomGenerator rng_gamma = new JDKRandomGenerator();
-        rng_gamma.setSeed(nextLong());
+        if (shape < 1) {
+            transform_flag = true;
+            alpha = shape + 1;
+        } else {
+            transform_flag = false;
+            alpha = shape;
+        }
 
-        return new GammaDistribution(shape, scale);
+        d = alpha - 1.0 / 3.0;
+        c = 1 / Math.sqrt(9.0 * d);
+
+        do {
+            do {
+                Z = nextGaussian();
+                V = 1 + c * Z;
+            } while (V <= 0);
+            // V is a truncated normal distribution
+            V = Math.pow(V, 3.0);
+            U = nextDouble();
+
+            if ((U < 1.0 - 0.0331 * Math.pow(Z, 4.0)) ||
+                    (Math.log(U) < 0.5 * Math.pow(Z, 2) + d * (1 - V + Math.log(V)))) {
+                gamma_sample = d * V;
+                break;
+            }
+        } while (true);
+
+        if (transform_flag) {
+            U = nextDouble();
+            gamma_sample = gamma_sample * Math.pow(U, (1 / shape));
+        }
+
+        return scale * gamma_sample;
     }
 }
