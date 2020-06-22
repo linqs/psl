@@ -246,7 +246,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             float[] configArray = new float[numMutableRules];
             Arrays.fill(configArray, min);
             WeightConfig config = new WeightConfig(configArray);
-
             boolean done = false;
             while (!done) {
                 int i = 0;
@@ -286,6 +285,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             weightSampler.getRandomWeights(curConfig.config);
             configs.add(curConfig);
         }
+
         return configs;
     }
 
@@ -339,14 +339,14 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         if ((iteration == 0) && useProvidedWeight) {
             // User provided configuration was added to the tail of the list.
-            bestConfig = configs.size() - 1;
-        } else {
-            for (int i = 0; i < configs.size(); i++) {
-                float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
-                if (bestConfig == -1 || curVal > curBestVal) {
-                    curBestVal = curVal;
-                    bestConfig = i;
-                }
+            return configs.size() - 1;
+        }
+
+        for (int i = 0; i < configs.size(); i++) {
+            float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
+            if (bestConfig == -1 || curVal > curBestVal) {
+                curBestVal = curVal;
+                bestConfig = i;
             }
         }
 
