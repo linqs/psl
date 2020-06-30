@@ -358,7 +358,7 @@ public class Launcher {
         truthDatabase.close();
     }
 
-    private void runOnlineClient(Model model, DataStore dataStore) {
+    private void runOnlineClient() {
         log.info("Starting Online PSL Client.");
 
         OnlineClient onlineClient = new OnlineClient();
@@ -403,7 +403,7 @@ public class Launcher {
 
         // Run Client Interface for Online PSL
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)){
-            runOnlineClient(model, dataStore);
+            runOnlineClient();
         } else {
             // Inference
             Database evalDB = null;

@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.rule.GroundRule;
 
 public interface TermGenerator<T extends ReasonerTerm, V extends ReasonerLocalAtom> {
     /**
@@ -25,4 +26,9 @@ public interface TermGenerator<T extends ReasonerTerm, V extends ReasonerLocalAt
      * @return the number of terms added to the term store.
      */
     public int generateTerms(GroundRuleStore ruleStore, TermStore<T, V> termStore);
+
+    /**
+     * Create a ReasonerTerm from the ground rule.
+     */
+    public T createTerm(GroundRule groundRule, TermStore<T, V> termStore);
 }

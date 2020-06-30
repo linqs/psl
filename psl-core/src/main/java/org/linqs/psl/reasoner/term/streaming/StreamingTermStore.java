@@ -239,7 +239,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public int getVariableIndex(GroundAtom variable) {
-        return variables.get(variable).intValue();
+        return variables.get(variable);
     }
 
     public boolean[] getDeletedAtoms(){
@@ -315,7 +315,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void add(GroundRule rule, T term) {
-        throw new UnsupportedOperationException();
+        addTerm(term);
+    }
+
+    @Override
+    public void addTerm(T term) {
     }
 
     @Override
@@ -329,15 +333,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public synchronized void addTerm(T term) { return; }
-
-    @Override
     public boolean deletedTerm(T term) { return false; }
-
-    @Override
-    public boolean updateTerm(T term) {
-        return false;
-    }
 
     @Override
     public void addAtom(Predicate predicate, Constant[] arguments, float newValue, boolean readPartition) {
@@ -541,6 +537,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void initForOptimization() {
+        // check if there are new terms to be written to the last page and if so, rewrite the last page
+        if (newTermBuffer.size() > 0){
+            rewriteLastPage();
+        }
     }
 
     @Override

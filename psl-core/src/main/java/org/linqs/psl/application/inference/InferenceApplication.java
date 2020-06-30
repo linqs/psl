@@ -44,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * All the tools necessary to perform infernce.
+ * All the tools necessary to perform inference.
  * An inference application owns the ground atoms (Database/AtomManager), ground rules (GroundRuleStore), the terms (TermStore),
  * how terms are generated (TermGenerator), and how inference is actually performed (Reasoner).
  * As such, the inference application is the top level authority for these items and methods.

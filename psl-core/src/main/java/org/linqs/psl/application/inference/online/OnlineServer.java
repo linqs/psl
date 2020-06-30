@@ -57,7 +57,7 @@ public class OnlineServer<T> extends Thread{
 
     private Socket connectClient() throws IOException {
         Socket client = server.accept();
-        log.info("Client Connected");
+        log.trace("Client Connected");
         return client;
     }
 
@@ -71,12 +71,12 @@ public class OnlineServer<T> extends Thread{
         connections++;
     }
 
-    void removeThread(ServerClientThread sct) {
+    private void removeThread(ServerClientThread sct) {
         log.trace("Client Disconnected. Removing Thread.");
         threads.remove(sct);
         connections--;
         if (waiting) {
-            log.info("Waking Server up to accept new connections.");
+            log.debug("Waking Server up to accept new connections.");
             notify();
         }
     }
@@ -95,15 +95,15 @@ public class OnlineServer<T> extends Thread{
                     }
                     addThread(client);
                 } else {
-                    log.info("Too Many Clients Connected to Server. Waiting for Openings");
+                    log.debug("Too Many Clients Connected to Server. Waiting for Openings");
                     wait();
                 }
             } catch (InterruptedException e) {
-                log.info("Server Interrupted");
-                log.info(e.getMessage());
+                log.debug("Server Interrupted");
+                log.debug(e.getMessage());
             }
         }
-        log.info("Server Complete");
+        log.trace("Server Complete");
     }
 
     public void enqueue(T newObject) {
@@ -115,7 +115,7 @@ public class OnlineServer<T> extends Thread{
     }
 
     public void closeServer() {
-        log.info("Closing Server");
+        log.trace("Closing Server");
         try {
             server.close();
         } catch (IOException e) {
@@ -126,7 +126,7 @@ public class OnlineServer<T> extends Thread{
                 childThread.close();
             }
         }
-        log.info("Server Closed");
+        log.trace("Server Closed");
     }
 
     private class ServerClientThread extends Thread {
@@ -162,9 +162,9 @@ public class OnlineServer<T> extends Thread{
             while (client.isConnected() && !isInterrupted()) {
                 try {
                     newCommand = (T) inStream.readObject();
-                    log.info("Received new action from client: " + newCommand.toString());
+                    log.trace("Received new action from client: " + newCommand.toString());
                     enqueue(newCommand);
-                    log.info("Action from client queued");
+                    log.trace("Action from client queued");
                 } catch (EOFException e) {
                     log.debug("Client Disconnected");
                     log.debug(e.getMessage());
@@ -184,7 +184,7 @@ public class OnlineServer<T> extends Thread{
             }
 
             close();
-            log.info("Thread Completed");
+            log.trace("Thread Completed");
         }
     }
 }

@@ -18,7 +18,12 @@
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.online.actions.*;
+import org.linqs.psl.application.inference.online.actions.AddAtom;
+import org.linqs.psl.application.inference.online.actions.Close;
+import org.linqs.psl.application.inference.online.actions.DeleteAtom;
+import org.linqs.psl.application.inference.online.actions.UpdateObservation;
+import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
+import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -27,12 +32,13 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.TermGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -183,36 +189,35 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates nextAction) {
-        // Activate the atoms that are added by Partial grounding
+        // Activate the atoms that were added
         ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
         log.trace("Adding " + groundRules.size() + " ground rules to model");
 
-        // TODO: (Charles) This should not be specific to SGD
         int newTermCount = 0;
-        SGDTermGenerator termGenerator = new SGDTermGenerator();
         for (GroundRule groundRule : groundRules) {
-            SGDObjectiveTerm newTerm = termGenerator.createTerm(groundRule, termStore);
+            ReasonerTerm newTerm = termGenerator.createTerm(groundRule, termStore);
             if (newTerm == null) {
-                log.trace("New Term Null");
-                log.trace(groundRule.toString());
+                // Term was trivial
                 continue;
             }
             newTermCount++;
-            ((OnlineTermStore)termStore).addTerm(newTerm);
+            termStore.add(groundRule, newTerm);
         }
         log.trace("Added " + newTermCount + " terms to model");
 
         // Ensure we are in optimal state
-        ((OnlineTermStore)termStore).rewriteLastPage();
         reasoner.optimize(termStore);
 
-        // TODO: (Charles) Duplicated code fragment from launcher. Think about design.
+        outputResults(nextAction.getOutputDirectoryPath());
+    }
+
+    private void outputResults(String outputDirectoryPath) {
+        // TODO: (Charles) Duplicated code fragment from launcher.
         // Set of open predicates
         Set<StandardPredicate> registeredPredicates = db.getDataStore().getRegisteredPredicates();
 
         // Write to provided file name and location
-        String outputDirectoryPath = nextAction.getOutputDirectoryPath();
-        log.debug("Writing inferred predicates");
+        log.trace("Writing inferred predicates");
         if (outputDirectoryPath == null) {
             for (StandardPredicate openPredicate : registeredPredicates) {
                 for (GroundAtom atom : db.getAllGroundRandomVariableAtoms(openPredicate)) {
@@ -220,8 +225,8 @@ public abstract class OnlineInference extends InferenceApplication {
                 }
             }
         } else {
-            log.debug("Writing inferred predicates to file: " + outputDirectoryPath);
-            File outputDirectory = new File(nextAction.getOutputDirectoryPath());
+            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
+            File outputDirectory = new File(outputDirectoryPath);
 
             // mkdir -p
             outputDirectory.mkdirs();
@@ -233,9 +238,11 @@ public abstract class OnlineInference extends InferenceApplication {
 
                 try {
                     FileWriter predFileWriter = new FileWriter(new File(outputDirectory, predicate.getName() + ".txt"));
+                    BufferedWriter bufferedPredWriter = new BufferedWriter(predFileWriter);
                     StringBuilder row = new StringBuilder();
 
                     log.debug("Writing " + db.getAllGroundRandomVariableAtoms(predicate).size() + " Inferred predicates");
+
                     for (GroundAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
                         row.setLength(0);
 
@@ -246,10 +253,10 @@ public abstract class OnlineInference extends InferenceApplication {
                         row.append(Double.toString(atom.getValue()));
                         row.append("\n");
 
-                        predFileWriter.write(row.toString());
+                        bufferedPredWriter.write(row.toString());
                     }
 
-                    predFileWriter.close();
+                    bufferedPredWriter.close();
                 } catch (IOException ex) {
                     log.error("Exception writing predicate {}", predicate);
                 }
@@ -271,21 +278,21 @@ public abstract class OnlineInference extends InferenceApplication {
         try {
             do {
                 try {
-                    log.info("Waiting for next action from client");
+                    log.trace("Waiting for next action from client");
                     nextAction = (OnlineAction) server.dequeClientInput();
-                    log.info("Got next action from client. Executing: " + nextAction.getName());
+                    log.trace("Got next action from client. Executing: " + nextAction.getName());
 
                     executeAction(nextAction);
-                    log.info("Executed Action: " + nextAction.getName());
+                    log.trace("Executed Action: " + nextAction.getName());
                 } catch (IllegalArgumentException | IllegalStateException e) {
-                    log.info("Exception when executing action.");
-                    log.info(e.getMessage());
+                    log.debug("Exception when executing action.");
+                    log.debug(e.getMessage());
                     log.debug(Arrays.toString(e.getStackTrace()));
                 }
             } while (!close);
         } catch (InterruptedException e) {
-            log.info("Internal Inference Interrupted");
-            log.info(e.getMessage());
+            log.debug("Internal Inference Interrupted");
+            log.debug(e.getMessage());
         } finally {
             server.closeServer();
         }

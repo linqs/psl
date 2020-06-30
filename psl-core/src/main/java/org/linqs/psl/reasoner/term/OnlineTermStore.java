@@ -35,8 +35,6 @@ public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocal
 
     public boolean deletedTerm(T term);
 
-    public boolean updateTerm(T term);
-
     public void rewriteLastPage();
 
 }

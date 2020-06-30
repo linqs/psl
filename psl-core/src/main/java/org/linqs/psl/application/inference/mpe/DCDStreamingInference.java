@@ -24,6 +24,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDStreamingTermStore;
+import org.linqs.psl.reasoner.dcd.term.DCDTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -54,7 +55,7 @@ public class DCDStreamingInference extends MPEInference {
 
     @Override
     protected TermGenerator createTermGenerator() {
-        return null;
+        return new DCDTermGenerator();
     }
 
     @Override
