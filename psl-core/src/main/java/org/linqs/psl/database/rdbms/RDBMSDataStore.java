@@ -200,7 +200,7 @@ public class RDBMSDataStore implements DataStore {
         log.debug("Indexing predicates.");
         Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
             @Override
-            public void work(int index, PredicateInfo predicateInfo) {
+            public void work(long index, PredicateInfo predicateInfo) {
                 log.trace("Indexing " + predicateInfo.predicate());
 
                 try (Connection connection = getConnection()) {

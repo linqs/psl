@@ -27,11 +27,10 @@ import java.util.Map;
  * List of substitutions for {@link Variable Variables} in a {@link Formula}.
  */
 public interface ResultList extends QueryResultIterable {
-
     /**
      * @return the number of sets of substitutions in the list
      */
-    public int size();
+    public long size();
 
     /**
      * @return the number of distinct {@link Variable Variables} replaced in

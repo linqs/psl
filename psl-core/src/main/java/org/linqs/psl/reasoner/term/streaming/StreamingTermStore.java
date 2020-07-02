@@ -79,7 +79,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     protected boolean initialRound;
     protected StreamingIterator<T> activeIterator;
-    protected int seenTermCount;
+    protected long seenTermCount;
     protected int numPages;
 
     protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
@@ -309,7 +309,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     // TODO(Charles): seenTermCount is not updated for deleted terms at this point so seenTermCount includes
     // the number of deleted terms
     @Override
-    public int size() {
+    public long size() {
         return seenTermCount;
     }
 
@@ -323,12 +323,12 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public T get(int index) {
+    public T get(long index) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
+    public void ensureCapacity(long capacity) {
         throw new UnsupportedOperationException();
     }
 
@@ -428,7 +428,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      * A callback for the initial round iterator.
      * The ByterBuffers are here because of possible reallocation.
      */
-    public void initialIterationComplete(int termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
+    public void initialIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
         seenTermCount = termCount;
         this.numPages = numPages;
         this.termBuffer = termBuffer;
@@ -548,6 +548,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void iterationComplete() {
+    }
+
+    @Override
+    public void variablesExternallyUpdated() {
     }
 
     /**

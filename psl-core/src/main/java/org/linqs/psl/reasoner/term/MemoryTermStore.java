@@ -29,11 +29,15 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     private ArrayList<T> store;
 
     public MemoryTermStore() {
-        this(Options.MEMORY_TS_INITIAL_SIZE.getInt());
+        this(Options.MEMORY_TS_INITIAL_SIZE.getLong());
     }
 
-    public MemoryTermStore(int initialSize) {
-        store = new ArrayList<T>(initialSize);
+    public MemoryTermStore(long initialSize) {
+        if (initialSize > Integer.MAX_VALUE) {
+            throw new RuntimeException("Initial size (" + initialSize + ") too large for a MemoryTermStore, consider a streaming method.");
+        }
+
+        store = new ArrayList<T>((int)initialSize);
     }
 
     @Override
@@ -69,24 +73,26 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     }
 
     @Override
-    public T get(int index) {
-        return store.get(index);
+    public T get(long index) {
+        // This case is safe, since for this to fail either the user is already out of bounds
+        // or an exception would have been thrown when the container grew this large.
+        return store.get((int)index);
     }
 
     @Override
-    public int size() {
+    public long size() {
         return store.size();
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
-        assert(capacity >= 0);
+    public void ensureCapacity(long capacity) {
+        assert((int)capacity >= 0);
 
         if (capacity == 0) {
             return;
         }
 
-        store.ensureCapacity(capacity);
+        store.ensureCapacity((int)capacity);
     }
 
     @Override
@@ -105,6 +111,10 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     @Override
     public GroundAtom createLocalVariable(GroundAtom atom) {
         return atom;
+    }
+
+    @Override
+    public void variablesExternallyUpdated() {
     }
 
     public void shuffle() {

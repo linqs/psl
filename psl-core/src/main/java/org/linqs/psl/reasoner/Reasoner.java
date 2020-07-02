@@ -29,6 +29,7 @@ public abstract class Reasoner {
 
     protected boolean printInitialObj;
     protected boolean objectiveBreak;
+    protected boolean runFullIterations;
 
     protected float tolerance;
 
@@ -37,15 +38,16 @@ public abstract class Reasoner {
 
         objectiveBreak = Options.REASONER_OBJECTIVE_BREAK.getBoolean();
         printInitialObj = Options.REASONER_PRINT_INITIAL_OBJECTIVE.getBoolean();
+        runFullIterations = Options.REASONER_RUN_FULL_ITERATIONS.getBoolean();
 
         tolerance = Options.REASONER_TOLERANCE.getFloat();
     }
 
     /**
-     * Minimizes the total weighted incompatibility of the terms in the provided
-     * TermStore.
+     * Minimizes the total weighted incompatibility of the terms in the provided TermStore.
+     * @return the objective the reasoner uses.
      */
-    public abstract void optimize(TermStore termStore);
+    public abstract double optimize(TermStore termStore);
 
     /**
      * Releases all resources acquired by this Reasoner.

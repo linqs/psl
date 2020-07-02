@@ -127,7 +127,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
-    public int groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public long groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
         QueryResultIterable queryResults = atomManager.executeGroundingQuery(negatedDNF.getQueryFormula());
         return groundAll(queryResults, atomManager, groundRuleStore);
     }
@@ -167,11 +167,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         return groundInternal(constants, variableMap, atomManager, resources);
     }
 
-    public int groundAll(QueryResultIterable groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public long groundAll(QueryResultIterable groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         // We will manually handle these in the grounding process.
         // We do not want to throw too early because the ground rule may turn out to be trivial in the end.
         boolean oldAccessExceptionState = atomManager.enableAccessExceptions(false);
-        int initialCount = groundRuleStore.size();
+        long initialCount = groundRuleStore.size();
 
         final AtomManager finalAtomManager = atomManager;
         final GroundRuleStore finalGroundRuleStore = groundRuleStore;
@@ -179,7 +179,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
             @Override
-            public void work(int index, Constant[] row) {
+            public void work(long index, Constant[] row) {
                 GroundRule groundRule = ground(row, variableMap, finalAtomManager);
                 if (groundRule != null) {
                     finalGroundRuleStore.addGroundRule(groundRule);
@@ -187,7 +187,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             }
         });
 
-        int groundCount = groundRuleStore.size() - initialCount;
+        long groundCount = groundRuleStore.size() - initialCount;
         atomManager.enableAccessExceptions(oldAccessExceptionState);
 
         log.debug("Grounded {} instances of rule {}", groundCount, this);

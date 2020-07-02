@@ -349,7 +349,7 @@ public class GroundRuleTest {
         // Ensure that the grounding only predicate is not contributing to the value (incompatibility) of the rule.
         for (GroundRule groundRule : store.getGroundRules(rule)) {
             // All should gave the value of 1.0: Both Nice values are 1,0, and the Friends starts at 1.0 (with -1 coefficient).
-            assertEquals(1.0, ((WeightedGroundRule)groundRule).getIncompatibility(), EPSILON);
+            assertEquals(1.0f, ((WeightedGroundRule)groundRule).getIncompatibility(), EPSILON);
         }
 
         // Nice(A) + Nice(B) + (A != B) <= Friends(A, B)
@@ -450,12 +450,14 @@ public class GroundRuleTest {
         // 1.0: Nice(A) + Nice(B) >= 1 ^2
         coefficients = Arrays.asList(
             (Coefficient)(new ConstantNumber(1)),
+            (Coefficient)(new ConstantNumber(1)),
             (Coefficient)(new ConstantNumber(1))
         );
 
         atoms = Arrays.asList(
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
-            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B")))
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
         );
 
         rule = new WeightedArithmeticRule(
@@ -465,31 +467,31 @@ public class GroundRuleTest {
         );
 
         expected = Arrays.asList(
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') >= 1.0 ^2"
+            // "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Alice', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Alice', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Alice', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Alice', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Bob', 'Alice') >= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Bob', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Bob', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Bob', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Charlie', 'Bob') >= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Charlie', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Charlie', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Derek', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Derek', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Derek', 'Charlie') >= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Derek', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Eugene', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Eugene', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Eugene', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+            // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -497,12 +499,14 @@ public class GroundRuleTest {
         // 1.0: Nice(A) + Nice(B) <= 1 ^2
         coefficients = Arrays.asList(
             (Coefficient)(new ConstantNumber(1)),
+            (Coefficient)(new ConstantNumber(1)),
             (Coefficient)(new ConstantNumber(1))
         );
 
         atoms = Arrays.asList(
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
-            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B")))
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
         );
 
         rule = new WeightedArithmeticRule(
@@ -512,31 +516,31 @@ public class GroundRuleTest {
         );
 
         expected = Arrays.asList(
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') <= 1.0 ^2"
+            // "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Alice', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Alice', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Alice', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Alice', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Alice', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Bob', 'Alice') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Bob', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Bob', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Bob', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Bob', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Charlie', 'Bob') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Charlie', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Charlie', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Charlie', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Derek', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Derek', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Derek', 'Charlie') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Derek', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Derek', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Alice') + 1.0 * FRIENDS('Eugene', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Bob') + 1.0 * FRIENDS('Eugene', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Charlie') + 1.0 * FRIENDS('Eugene', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') <= 1.0 ^2"
+            // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') <= 1.0 ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -544,12 +548,14 @@ public class GroundRuleTest {
         // 1.0: Nice(A) + -1 * Nice(B) = 0 ^2
         coefficients = Arrays.asList(
             (Coefficient)(new ConstantNumber(1)),
-            (Coefficient)(new ConstantNumber(-1))
+            (Coefficient)(new ConstantNumber(-1)),
+            (Coefficient)(new ConstantNumber(1))
         );
 
         atoms = Arrays.asList(
             (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
-            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B")))
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))),
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
         );
 
         rule = new WeightedArithmeticRule(
@@ -560,57 +566,57 @@ public class GroundRuleTest {
 
         // Remember, equality puts in a <= and >=.
         expected = Arrays.asList(
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Eugene') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Alice') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Bob') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Charlie') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Derek') <= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Alice', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Alice', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Alice', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Alice', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Alice', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Bob', 'Alice') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Bob', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Bob', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Bob', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Bob', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Charlie', 'Bob') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Charlie', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Charlie', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Charlie', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Derek', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Derek', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Derek', 'Charlie') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Derek', 'Derek') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Derek', 'Eugene') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Eugene', 'Alice') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Eugene', 'Bob') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Eugene', 'Charlie') <= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') <= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') <= 1.0 ^2",
 
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Alice') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Bob') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Charlie') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Derek') >= 1.0 ^2",
-            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') >= 1.0 ^2"
+            // "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Alice', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Alice', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Alice', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Alice', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Bob', 'Alice') >= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Bob', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Bob', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Bob', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Charlie', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Charlie', 'Bob') >= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Charlie', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Charlie', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Derek', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Derek', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Derek', 'Charlie') >= 1.0 ^2",
+            // "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Derek', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Alice') + 1.0 * FRIENDS('Eugene', 'Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Bob') + 1.0 * FRIENDS('Eugene', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Charlie') + 1.0 * FRIENDS('Eugene', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+            // "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -757,19 +763,21 @@ public class GroundRuleTest {
 
     @Test
     // Everyone except Eugene has non-zero niceness.
-    // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
-    // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') || Nice(B)}
+    // Person(A) + |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
+    // Person(A) + |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') || Nice(B)}
     public void testFilterConstant() {
         // Reset the model to not use 100% nice.
         initModel(false);
 
         database.close();
 
+        // Use Person as the open predicate to ensure the ground rules are not trivial.
+        // To do this, we also need to use the obs partition as targets.
+
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         toClose.add(model.predicates.get("Nice"));
-        toClose.add(model.predicates.get("Person"));
         toClose.add(model.predicates.get("Friends"));
-        database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
+        database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
         AtomManager manager = new PersistedAtomManager(database);
@@ -781,10 +789,12 @@ public class GroundRuleTest {
         Map<SummationVariable, Formula> filters;
 
         coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1)),
             (Coefficient)(new Cardinality(new SummationVariable("B")))
         );
 
         atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Person"), new Variable("A"))),
             (SummationAtomOrAtom)(new SummationAtom(
                 model.predicates.get("Friends"),
                 new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
@@ -808,13 +818,13 @@ public class GroundRuleTest {
         );
 
         // Note that 'Alice' is not friends with herself (in the filter), but others can because of the closed predicate.
-        // |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
+        // Person(A) + |B| * Friends(A, +B) >= 1 {B: Friends(B, 'Alice') && Nice(B)}
         expected = Arrays.asList(
-            "1.0: 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Derek') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Bob') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Charlie') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Derek') >= 1.0 ^2",
-            "1.0: 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+            "1.0: 1.0 * PERSON('Alice') + 3.0 * FRIENDS('Alice', 'Bob') + 3.0 * FRIENDS('Alice', 'Charlie') + 3.0 * FRIENDS('Alice', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * PERSON('Bob') + 3.0 * FRIENDS('Bob', 'Charlie') + 3.0 * FRIENDS('Bob', 'Derek') + 3.0 * FRIENDS('Bob', 'Bob') >= 1.0 ^2",
+            "1.0: 1.0 * PERSON('Charlie') + 3.0 * FRIENDS('Charlie', 'Bob') + 3.0 * FRIENDS('Charlie', 'Derek') + 3.0 * FRIENDS('Charlie', 'Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * PERSON('Derek') + 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Derek') >= 1.0 ^2",
+            "1.0: 1.0 * PERSON('Eugene') + 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -1188,11 +1198,13 @@ public class GroundRuleTest {
 
         database.close();
 
+        // Use Nice as the open predicate to ensure the ground rules are not trivial.
+        // To do this, we also need to use the obs partition as targets.
+
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-        toClose.add(model.predicates.get("Nice"));
         toClose.add(model.predicates.get("Person"));
         toClose.add(model.predicates.get("Friends"));
-        database = model.dataStore.getDatabase(model.targetPartition, toClose, model.observationPartition);
+        database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
         AtomManager manager = new PersistedAtomManager(database);
@@ -1204,11 +1216,13 @@ public class GroundRuleTest {
         Map<SummationVariable, Formula> filters;
 
         coefficients = Arrays.asList(
+            (Coefficient)(new ConstantNumber(1)),
             (Coefficient)(new Cardinality(new SummationVariable("B"))),
             (Coefficient)(new ConstantNumber(1))
         );
 
         atoms = Arrays.asList(
+            (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Nice"), new Variable("C"))),
             (SummationAtomOrAtom)(new SummationAtom(
                 model.predicates.get("Friends"),
                 new SummationVariableOrTerm[]{new Variable("A"), new SummationVariable("B")}
@@ -1232,35 +1246,35 @@ public class GroundRuleTest {
         // |B| * Friends(A, +B) + Person(C) >= 1 {B: Friends(C, B)}
         // Note that self friendship is allowed here since Friends is a closed predicate.
         expected = Arrays.asList(
-            "1.0: 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);
@@ -1273,7 +1287,7 @@ public class GroundRuleTest {
             new SummationVariable("B"),
             new Conjunction(
                 new QueryAtom(model.predicates.get("Friends"), new Variable("C"), new Variable("B")),
-                new QueryAtom(model.predicates.get("Nice"), new Variable("C"))
+                new QueryAtom(model.predicates.get("Person"), new Variable("A"))
             )
         );
 
@@ -1286,36 +1300,35 @@ public class GroundRuleTest {
 
         // |B| * Friends(A, +B) + Person(C) >= 1 {B: Friends(C, B) & Nice(C)}
         expected = Arrays.asList(
-            "1.0: 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Derek') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Alice', 'Alice') + 4.0 * FRIENDS('Alice', 'Bob') + 4.0 * FRIENDS('Alice', 'Charlie') + 4.0 * FRIENDS('Alice', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Derek') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Bob', 'Bob') + 4.0 * FRIENDS('Bob', 'Alice') + 4.0 * FRIENDS('Bob', 'Charlie') + 4.0 * FRIENDS('Bob', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Charlie', 'Charlie') + 4.0 * FRIENDS('Charlie', 'Bob') + 4.0 * FRIENDS('Charlie', 'Alice') + 4.0 * FRIENDS('Charlie', 'Derek') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Eugene') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Derek', 'Derek') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2",
 
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
-            "1.0: 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
-
-            "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2",
-            "1.0: 1.0 * PERSON('Eugene') >= 1.0 ^2"
+            "1.0: 1.0 * NICE('Alice') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 1.0 * PERSON('Alice') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Bob') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Bob') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Charlie') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Charlie') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
+            "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
         PSLTest.compareGroundRules(expected, rule, store);

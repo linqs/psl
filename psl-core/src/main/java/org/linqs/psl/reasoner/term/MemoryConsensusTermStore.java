@@ -43,7 +43,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     /**
      * The total number of all local variables (the sum of the sizes of each list in |localVariables|).
      */
-    protected int numLocalVariables;
+    protected long numLocalVariables;
 
     public MemoryConsensusTermStore() {
         this.store = new MemoryVariableTermStore<T, RandomVariableAtom>() {
@@ -81,7 +81,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
         }
     }
 
-    public int getNumLocalVariables() {
+    public long getNumLocalVariables() {
         return numLocalVariables;
     }
 
@@ -148,18 +148,29 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public T get(int index) {
+    public T get(long index) {
         return store.get(index);
     }
 
     @Override
-    public int size() {
+    public long size() {
         return store.size();
     }
 
     @Override
-    public void ensureCapacity(int capacity) {
+    public void ensureCapacity(long capacity) {
         store.ensureCapacity(capacity);
+    }
+
+    @Override
+    public void ensureVariableCapacity(int capacity) {
+        store.ensureVariableCapacity(capacity);
+        ((ArrayList)localVariables).ensureCapacity(capacity);
+    }
+
+    @Override
+    public void variablesExternallyUpdated() {
+        store.variablesExternallyUpdated();
     }
 
     @Override
@@ -175,10 +186,4 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     protected abstract V createLocalVariableInternal(int consensusIndex, float value);
 
     protected abstract void resetLocalVariables();
-
-    @Override
-    public void ensureVariableCapacity(int capacity) {
-        store.ensureVariableCapacity(capacity);
-        ((ArrayList)localVariables).ensureCapacity(capacity);
-    }
 }

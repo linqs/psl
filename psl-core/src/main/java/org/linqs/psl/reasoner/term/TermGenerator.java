@@ -25,7 +25,7 @@ public interface TermGenerator<T extends ReasonerTerm, V extends ReasonerLocalAt
      * Use the ground rules in |ruleStore| to generate optimization terms and populate |termStore|.
      * @return the number of terms added to the term store.
      */
-    public int generateTerms(GroundRuleStore ruleStore, TermStore<T, V> termStore);
+    public long generateTerms(GroundRuleStore ruleStore, TermStore<T, V> termStore);
 
     /**
      * Create a ReasonerTerm from the ground rule.

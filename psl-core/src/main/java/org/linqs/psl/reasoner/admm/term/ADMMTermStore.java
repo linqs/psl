@@ -36,4 +36,10 @@ public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm, L
             }
         }
     }
+
+    @Override
+    public void variablesExternallyUpdated() {
+        super.variablesExternallyUpdated();
+        resetLocalVariables();
+    }
 }

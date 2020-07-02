@@ -49,7 +49,7 @@ public class DCDReasoner extends Reasoner {
     }
 
     @Override
-    public void optimize(TermStore baseTermStore) {
+    public double optimize(TermStore baseTermStore) {
         if (!(baseTermStore instanceof VariableTermStore)) {
             throw new IllegalArgumentException("DCDReasoner requires an AtomTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -64,8 +64,8 @@ public class DCDReasoner extends Reasoner {
         float[] values = termStore.getVariableValues();
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
 
-        float objective = -1.0f;
-        float oldObjective = Float.POSITIVE_INFINITY;
+        double objective = -1.0;
+        double oldObjective = Double.POSITIVE_INFINITY;
 
         if (printInitialObj && log.isTraceEnabled()) {
             objective = computeObjective(termStore, values);
@@ -107,17 +107,24 @@ public class DCDReasoner extends Reasoner {
             }
         }
 
+        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
+                iteration - 1, objective, totalTime);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+
         termStore.syncAtoms();
 
-        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimization Time: {}",
-                iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} atoms and {} terms.", termStore.getNumVariables(), termStore.size());
+        return objective;
     }
 
-    private boolean breakOptimization(int iteration, float objective, float oldObjective) {
+    private boolean breakOptimization(int iteration, double objective, double oldObjective) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
+        }
+
+        // Run through the maximum number of iterations.
+        if (runFullIterations) {
+            return false;
         }
 
         // Break if the objective has not changed.
@@ -128,9 +135,14 @@ public class DCDReasoner extends Reasoner {
         return false;
     }
 
+<<<<<<< HEAD
     private float computeObjective(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore, float[] variableValues) {
         float objective = 0.0f;
         int termCount = 0;
+=======
+    private double computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
+        double objective = 0.0;
+>>>>>>> b5698f0882a8784bd80f06b5eaa6e11439352fcd
 
         // If possible, use a readonly iterator.
         Iterator<DCDObjectiveTerm> termIterator = null;
@@ -142,10 +154,9 @@ public class DCDReasoner extends Reasoner {
 
         for (DCDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate(variableValues) / c;
-            termCount++;
         }
 
-        return objective / termCount;
+        return objective;
     }
 
     @Override

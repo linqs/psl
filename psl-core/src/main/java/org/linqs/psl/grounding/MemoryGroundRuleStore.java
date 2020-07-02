@@ -32,6 +32,7 @@ import java.util.List;
  * in memory.
  * addGroundRule() is thread-safe and will silently ignore already added rules.
  * Other methods are not guaranteed safe.
+ * Can hold up to the maximum size of a Collection (about 2^32).
  */
 public class MemoryGroundRuleStore implements GroundRuleStore {
     protected List<GroundRule> groundRules;
@@ -104,7 +105,7 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
     }
 
     @Override
-    public int size() {
+    public long size() {
         return groundRules.size();
     }
 
@@ -112,8 +113,8 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
      * O(n).
      */
     @Override
-    public int count(Rule rule) {
-        int count = 0;
+    public long count(Rule rule) {
+        long count = 0;
         for (GroundRule groundRule : groundRules) {
             // Note that order is very important because not all GroundRules have a parent.
             if (rule.equals(groundRule.getRule())) {

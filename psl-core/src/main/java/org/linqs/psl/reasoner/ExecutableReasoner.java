@@ -81,7 +81,7 @@ public abstract class ExecutableReasoner extends Reasoner {
     }
 
     @Override
-    public void optimize(TermStore termStore) {
+    public double optimize(TermStore termStore) {
         log.debug("Writing model file: " + executableInputPath);
         File modelFile = new File(executableInputPath);
 
@@ -110,6 +110,8 @@ public abstract class ExecutableReasoner extends Reasoner {
             throw new RuntimeException("Failed to read results file: " + executableOutputPath, ex);
         }
         log.debug("Finished reading results file.");
+
+        return -1.0;
     }
 
     protected void callReasoner() throws IOException {

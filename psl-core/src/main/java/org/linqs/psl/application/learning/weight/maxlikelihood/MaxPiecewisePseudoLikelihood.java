@@ -109,9 +109,12 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
     protected void computeExpectedIncompatibility() {
         setLabeledRandomVariables();
 
-        Parallel.count(mutableRules.size(), new Parallel.Worker<Integer>() {
+        Parallel.count(mutableRules.size(), new Parallel.Worker<Long>() {
             @Override
-            public void work(int ruleIndex, Integer ignore) {
+            public void work(long rawRuleIndex, Long ignore) {
+                // We know that Java will not allocate the data structures that this will index into if it is larger than an int.
+                int ruleIndex = (int)rawRuleIndex;
+
                 WeightedRule rule = mutableRules.get(ruleIndex);
                 Map<RandomVariableAtom, List<WeightedGroundRule>> groundRuleMap = ruleRandomVariableMap.get(ruleIndex);
 
@@ -149,8 +152,11 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
         setLabeledRandomVariables();
 
         final double[] losses = new double[mutableRules.size()];
-        Parallel.count(mutableRules.size(), new Parallel.Worker<Integer>() {
-            public void work(int ruleIndex, Integer ignore) {
+        Parallel.count(mutableRules.size(), new Parallel.Worker<Long>() {
+            public void work(long rawRuleIndex, Long ignore) {
+                // We know that Java will not allocate the data structures that this will index into if it is larger than an int.
+                int ruleIndex = (int)rawRuleIndex;
+
                 Map<RandomVariableAtom, List<WeightedGroundRule>> groundRuleMap = ruleRandomVariableMap.get(ruleIndex);
                 WeightedRule rule = mutableRules.get(ruleIndex);
                 double weight = rule.getWeight();

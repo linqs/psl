@@ -61,12 +61,12 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     }
 
     @Override
-    public double getIncompatibility() {
+    public float getIncompatibility() {
         return dissatisfaction.getValue();
     }
 
     @Override
-    public double getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
+    public float getIncompatibility(GroundAtom replacementAtom, float replacementValue) {
         return dissatisfaction.getValue(replacementAtom, replacementValue);
     }
 

@@ -50,7 +50,7 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
     }
 
     @Override
-    public double getInfeasibility() {
+    public float getInfeasibility() {
         float sum = 0.0f;
         for (int i = 0; i < coefficients.length; i++) {
             // Skip any grounding only predicates.
