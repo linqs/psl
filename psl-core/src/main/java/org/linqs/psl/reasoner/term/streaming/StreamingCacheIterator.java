@@ -17,13 +17,11 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
-import org.linqs.psl.util.RuntimeStats;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +34,8 @@ import java.util.List;
  * In this case, pages will not be witten to disk.
  */
 public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
+    private static final Logger log = LoggerFactory.getLogger(StreamingCacheIterator.class);
+
     protected StreamingTermStore<T> parentStore;
     protected int[] shuffleMap;
 
@@ -62,6 +62,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected boolean closed;
 
     protected int numPages;
+
+    long deletedTermCheckTime;
 
     public StreamingCacheIterator(
             StreamingTermStore<T> parentStore, boolean readonly,
@@ -102,6 +104,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         // Note that we cannot pre-fetch.
         nextTerm = null;
+
+        deletedTermCheckTime = 0;
     }
 
     /**
@@ -121,6 +125,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         nextTerm = fetchNextTerm();
 
         // Keep going until a term that is not deleted is found.
+        long start = System.currentTimeMillis();
         if (nextTerm != null) {
             while (parentStore.deletedTerm(nextTerm)) {
                 nextTerm = fetchNextTerm();
@@ -129,6 +134,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
                 }
             }
         }
+        long stop = System.currentTimeMillis();
+        deletedTermCheckTime += (stop - start);
 
         // check if there were no more pages, we are done.
         if (nextTerm == null) {
@@ -254,6 +261,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         flushCache();
 
         parentStore.cacheIterationComplete();
+
+        log.trace("Streaming Cache Iterator Non-Tombstoned Term Search Time: {}", deletedTermCheckTime);
     }
 
     /**

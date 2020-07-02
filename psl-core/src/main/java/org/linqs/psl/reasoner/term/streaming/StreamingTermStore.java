@@ -351,6 +351,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     @Override
     public void deleteAtom(Predicate predicate, Constant[] arguments) {
         GroundAtom atom = atomManager.getAtom(predicate, arguments);
+        // TODO (Charles): If the atom being deleted has yet to be activated, for example
+        //  if optimization has not been called since there was an add and delete of the same atom,
+        //  then the atom will have never of been added to variables, thus it will not be removed.
         if (variables.containsKey(atom)) {
             deletedAtoms[getVariableIndex(atom)] = true;
             if (atom instanceof RandomVariableAtom) {

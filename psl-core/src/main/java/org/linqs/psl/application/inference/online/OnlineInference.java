@@ -34,7 +34,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,10 +188,19 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates nextAction) {
+        long start;
+        long stop;
         // Activate the atoms that were added
+        log.trace("Partial Grounding Start");
+        start = System.currentTimeMillis();
         ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
-        log.trace("Adding " + groundRules.size() + " ground rules to model");
+        stop = System.currentTimeMillis();
+        log.trace("Partial Grounding Stop");
+        log.trace("Partial Grounding Time: {}", (stop - start));
 
+        log.trace("Term Generation Start");
+        log.trace("Adding " + groundRules.size() + " ground rules to model");
+        start = System.currentTimeMillis();
         int newTermCount = 0;
         for (GroundRule groundRule : groundRules) {
             ReasonerTerm newTerm = termGenerator.createTerm(groundRule, termStore);
@@ -203,10 +211,18 @@ public abstract class OnlineInference extends InferenceApplication {
             newTermCount++;
             termStore.add(groundRule, newTerm);
         }
+        stop = System.currentTimeMillis();
         log.trace("Added " + newTermCount + " terms to model");
+        log.trace("Term Generation Stop");
+        log.trace("Term Generation Time: {}", (stop - start));
 
         // Ensure we are in optimal state
+        log.trace("Optimization Start");
+        start = System.currentTimeMillis();
         reasoner.optimize(termStore);
+        stop = System.currentTimeMillis();
+        log.trace("Optimization Start");
+        log.trace("Optimization Time: {}", (stop - start));
 
         outputResults(nextAction.getOutputDirectoryPath());
     }
@@ -278,12 +294,8 @@ public abstract class OnlineInference extends InferenceApplication {
         try {
             do {
                 try {
-                    log.trace("Waiting for next action from client");
                     nextAction = (OnlineAction) server.dequeClientInput();
-                    log.trace("Got next action from client. Executing: " + nextAction.getName());
-
                     executeAction(nextAction);
-                    log.trace("Executed Action: " + nextAction.getName());
                 } catch (IllegalArgumentException | IllegalStateException e) {
                     log.debug("Exception when executing action.");
                     log.debug(e.getMessage());
