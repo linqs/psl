@@ -64,13 +64,6 @@ public class RandomVariableAtom extends GroundAtom implements ReasonerLocalVaria
         return false;
     }
 
-    /**
-     * Sets the truth value of this Atom.
-     */
-    public void setValue(float value) {
-        this.value = value;
-    }
-
     public void setPersisted(boolean isPersisted) {
         this.isPersisted = isPersisted;
     }

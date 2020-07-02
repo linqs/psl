@@ -117,6 +117,7 @@ public class GeneralFunction implements FunctionTerm {
             coefficients[termIndex] = coefficient;
             termIndex++;
         }
+
         constantTerms = constantTerms && term.isConstant();
         linearTerms = linearTerms && term.isLinear();
     }

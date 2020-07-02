@@ -60,7 +60,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected List<WeightedRule> rules;
     protected AtomManager atomManager;
 
-    // Keep track of variable and observation indexes.
+    // Mapping from observed and random variable atoms to indices into the instance arrays.
     protected Map<GroundAtom, Integer> variables;
 
     // Matching arrays for variables and observations values and atoms.
@@ -223,7 +223,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public GroundAtom[] getVariableAtoms(){
+    public GroundAtom[] getVariableAtoms() {
         return variableAtoms;
     }
 
@@ -242,7 +242,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return variables.get(variable);
     }
 
-    public boolean[] getDeletedAtoms(){
+    public boolean[] getDeletedAtoms() {
         return deletedAtoms;
     }
 
@@ -352,7 +352,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public void deleteAtom(Predicate predicate, Constant[] arguments) {
         GroundAtom atom = atomManager.getAtom(predicate, arguments);
         // TODO (Charles): If the atom being deleted has yet to be activated, for example
-        //  if optimization has not been called since there was an add and delete of the same atom,
+        //  if optimization has not been called since there was an add then a delete of the same atom,
         //  then the atom will have never of been added to variables, thus it will not be removed.
         if (variables.containsKey(atom)) {
             deletedAtoms[getVariableIndex(atom)] = true;
@@ -368,7 +368,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public synchronized void updateAtom(Predicate predicate, Constant[] arguments, float newValue){
+    public synchronized void updateAtom(Predicate predicate, Constant[] arguments, float newValue) {
         // add the atom and newValue to the updates map for cache iterator
         GroundAtom atom = atomManager.getAtom(predicate, arguments);
         if (variables.containsKey(atom)) {
@@ -379,7 +379,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void rewriteLastPage() {
-        if (newTermBuffer.size() <= 0){
+        if (newTermBuffer.size() <= 0) {
             return;
         }
 
@@ -541,7 +541,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     @Override
     public void initForOptimization() {
         // check if there are new terms to be written to the last page and if so, rewrite the last page
-        if (newTermBuffer.size() > 0){
+        if (newTermBuffer.size() > 0) {
             rewriteLastPage();
         }
     }

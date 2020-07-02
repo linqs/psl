@@ -74,9 +74,9 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
     }
 
     /**
-     * Create a dictonary for each unground rule.
-     * The dictonary maps random variable atoms to the ground rules it participates in.
-     * */
+     * Create a dictionary for each unground rule.
+     * The dictionary maps random variable atoms to the ground rules it participates in.
+     */
     private void populateRandomVariableMap() {
         ruleRandomVariableMap = new ArrayList<Map<RandomVariableAtom, List<WeightedGroundRule>>>();
 

@@ -52,7 +52,6 @@ public class SGDStreamingInference extends MPEInference {
         return null;
     }
 
-    // Note that the SGDStreamingTermStore class has a class TermGenerator
     @Override
     protected TermGenerator createTermGenerator() {
         return new SGDTermGenerator();

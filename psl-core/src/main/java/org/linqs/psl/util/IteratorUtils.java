@@ -75,7 +75,7 @@ public final class IteratorUtils {
     public static <T> Iterable<T> newIterable(Iterator<T> items) {
         final Iterator<T> finalItems = items;
 
-        return new Iterable<T>(){
+        return new Iterable<T>() {
             @Override
             public Iterator<T> iterator() {
                 return finalItems;

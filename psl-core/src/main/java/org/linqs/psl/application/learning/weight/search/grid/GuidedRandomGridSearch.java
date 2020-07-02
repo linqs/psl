@@ -84,7 +84,7 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
                 List<Map.Entry<String, Double>> locations =
                         new ArrayList<Map.Entry<String, Double>>(objectives.entrySet());
 
-                Collections.sort(locations, new Comparator<Map.Entry<String, Double>>(){
+                Collections.sort(locations, new Comparator<Map.Entry<String, Double>>() {
                     @Override
                     public int compare(Map.Entry<String, Double> a, Map.Entry<String, Double> b) {
                         return MathUtils.compare(a.getValue().doubleValue(), b.getValue().doubleValue());

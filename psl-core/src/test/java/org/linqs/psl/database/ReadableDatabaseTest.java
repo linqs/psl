@@ -71,7 +71,7 @@ public class ReadableDatabaseTest {
     public void testHasAtom() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg){
+            public void doWork(ReadableDatabase db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
                 assertTrue(db.hasAtom(predicate, arg));
             }

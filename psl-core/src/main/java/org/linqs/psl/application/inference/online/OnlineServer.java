@@ -1,3 +1,21 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2020 The Regents of the University of California
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.config.Options;
@@ -17,7 +35,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Online server class
- * */
+ */
 public class OnlineServer<T> extends Thread{
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
@@ -85,7 +103,7 @@ public class OnlineServer<T> extends Thread{
         while(!isInterrupted()) {
             Socket client = null;
             try {
-                if (connections < max_clients){
+                if (connections < max_clients) {
                     try {
                         client = connectClient();
                     } catch (IOException e) {
@@ -122,7 +140,7 @@ public class OnlineServer<T> extends Thread{
             log.debug(e.getMessage());
         } finally {
             log.trace("Interrupting Child Threads");
-            for(ServerClientThread childThread : threads){
+            for(ServerClientThread childThread : threads) {
                 childThread.close();
             }
         }
@@ -134,7 +152,7 @@ public class OnlineServer<T> extends Thread{
         private Socket client;
         private ObjectInputStream inStream;
 
-        ServerClientThread(Socket inSocket){
+        ServerClientThread(Socket inSocket) {
             client = inSocket;
             try {
                 inStream = new ObjectInputStream(client.getInputStream());
@@ -143,7 +161,7 @@ public class OnlineServer<T> extends Thread{
             }
         }
 
-        public void close(){
+        public void close() {
             log.trace("Interrupting thread.");
             interrupt();
 
@@ -157,7 +175,7 @@ public class OnlineServer<T> extends Thread{
             }
         }
 
-        public void run(){
+        public void run() {
             T newCommand;
             while (client.isConnected() && !isInterrupted()) {
                 try {

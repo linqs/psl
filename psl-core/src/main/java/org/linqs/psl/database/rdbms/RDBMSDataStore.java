@@ -314,7 +314,7 @@ public class RDBMSDataStore implements DataStore {
         writePartitionIDs.remove(db.getWritePartition());
     }
 
-    public Partition getNewPartition(){
+    public Partition getNewPartition() {
         return metadata.getNewPartition();
     }
 

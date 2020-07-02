@@ -1,3 +1,20 @@
+/*
+ * This file is part of the PSL software.
+ * Copyright 2011-2015 University of Maryland
+ * Copyright 2013-2020 The Regents of the University of California
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.linqs.psl.application.inference.mpe;
 
 import org.junit.Before;
@@ -18,12 +35,21 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
-import org.linqs.psl.model.term.*;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -126,7 +152,7 @@ public class SGDOnlineInferenceTest {
         return new SGDOnlineInference(rules, db);
     }
 
-    private void queueCommands(SGDOnlineInference inference, ArrayList<String> commands){
+    private void queueCommands(SGDOnlineInference inference, ArrayList<String> commands) {
         String[] tokenized_command;
 
         for(String command : commands) {
@@ -155,7 +181,7 @@ public class SGDOnlineInferenceTest {
     }
 
     @Test
-    public void testUpdateObservation(){
+    public void testUpdateObservation() {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0",
@@ -170,7 +196,7 @@ public class SGDOnlineInferenceTest {
     }
 
     @Test
-    public void testAddAtoms(){
+    public void testAddAtoms() {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
@@ -188,7 +214,7 @@ public class SGDOnlineInferenceTest {
     }
 
     @Test
-    public void testPageRewriting(){
+    public void testPageRewriting() {
         Options.STREAMING_TS_PAGE_SIZE.set(2);
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
@@ -211,7 +237,7 @@ public class SGDOnlineInferenceTest {
     }
 
     @Test
-    public void testAtomDeleting(){
+    public void testAtomDeleting() {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
         //  The atom will not be deleted. This behavior is also noted in streaming term store deleteAtom
@@ -239,14 +265,13 @@ public class SGDOnlineInferenceTest {
 
         numTerms = 0;
         for (SGDObjectiveTerm term : termStore) {
-            System.out.println(term);
             numTerms++;
         }
         assertEquals(numTerms, 1.0, 0.01);
     }
 
     @Test
-    public void testChangeAtomPartition(){
+    public void testChangeAtomPartition() {
         Options.STREAMING_TS_PAGE_SIZE.set(4);
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(

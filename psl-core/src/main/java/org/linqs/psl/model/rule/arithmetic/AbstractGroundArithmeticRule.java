@@ -89,13 +89,13 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
         }
     }
 
-    public int getObservationCount(){
+    public int getObservationCount() {
         int obsCount = 0;
-        if(atoms == null){
+        if(atoms == null) {
             return 0;
         }
-        for(GroundAtom atom : atoms){
-            if(atom instanceof ObservedAtom){
+        for(GroundAtom atom : atoms) {
+            if(atom instanceof ObservedAtom) {
                 obsCount ++;
             }
         }

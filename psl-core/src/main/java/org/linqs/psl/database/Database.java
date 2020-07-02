@@ -285,11 +285,11 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
     /**
      * @return the DataStore backing this Database
      */
-    public DataStore getDataStore(){
+    public DataStore getDataStore() {
         return parentDataStore;
     }
 
-    public AtomCache getCache(){
+    public AtomCache getCache() {
         return cache;
     }
 

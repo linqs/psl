@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
 
@@ -25,10 +24,8 @@ import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
  * An in-memory TermStore specifically for DCD terms.
  */
 public class DCDMemoryTermStore extends MemoryVariableTermStore<DCDObjectiveTerm, RandomVariableAtom> {
-
     @Override
     protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
         return atom;
     }
-
 }

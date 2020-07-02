@@ -50,7 +50,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     }
 
     @Override
-    protected synchronized StreamingIterator<SGDObjectiveTerm> getCacheIterator() {
+    protected StreamingIterator<SGDObjectiveTerm> getCacheIterator() {
         return new SGDStreamingCacheIterator(
                 this, false, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
@@ -68,17 +68,17 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         seenTermCount = seenTermCount + 1;
         newTermBuffer.add(term);
 
-        if (newTermBuffer.size() >= pageSize){
+        if (newTermBuffer.size() >= pageSize) {
             rewriteLastPage();
         }
     }
 
     @Override
-    public boolean deletedTerm(SGDObjectiveTerm term){
+    public boolean deletedTerm(SGDObjectiveTerm term) {
         int[] indices = term.getIndices();
         boolean[] deletedAtoms = getDeletedAtoms();
         for (int index: indices) {
-            if(deletedAtoms[index]){
+            if(deletedAtoms[index]) {
                 return true;
             }
         }

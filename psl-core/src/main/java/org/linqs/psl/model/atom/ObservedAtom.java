@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.atom;
 
-import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
@@ -35,7 +34,7 @@ import org.linqs.psl.model.term.Constant;
  */
 public class ObservedAtom extends GroundAtom {
     /**
-     * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
+     * Instantiation of GroundAtoms should typically be left to the Database so it can maintain a cache.
      */
     public ObservedAtom(Predicate predicate, Constant[] args, float value) {
         super(predicate, args, value);

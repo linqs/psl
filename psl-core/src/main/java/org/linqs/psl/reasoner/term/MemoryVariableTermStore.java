@@ -77,7 +77,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public GroundAtom[] getVariableAtoms(){
+    public GroundAtom[] getVariableAtoms() {
         return variableAtoms;
     }
 
@@ -100,7 +100,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     @Override
     public synchronized V createLocalVariable(GroundAtom atom) {
-        if (atom instanceof RandomVariableAtom){
+        if (atom instanceof RandomVariableAtom) {
             return createLocalAtom((RandomVariableAtom) atom) ;
         } else {
             // Memory variable termstore does not keep track of observations

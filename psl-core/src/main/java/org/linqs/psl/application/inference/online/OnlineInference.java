@@ -283,7 +283,8 @@ public abstract class OnlineInference extends InferenceApplication {
     /**
      * Minimize the total weighted incompatibility of the atoms according to the rules,
      * TODO: (Charles) By overriding internal inference rather than inference() we are not committing the random
-     *  variable atom values to the data base after updates
+     *  variable atom values to the database after updates. Perhaps periodically update the database or add it
+     *  as a part of action execution.
      */
     @Override
     public void internalInference() {

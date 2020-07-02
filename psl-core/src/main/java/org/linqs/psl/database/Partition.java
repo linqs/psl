@@ -47,7 +47,7 @@ public class Partition {
         return id;
     }
 
-    public String getName(){
+    public String getName() {
         return name;
     }
 
