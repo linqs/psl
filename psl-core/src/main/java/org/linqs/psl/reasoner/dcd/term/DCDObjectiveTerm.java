@@ -42,9 +42,9 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     private int[] indices;
 
     public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore,
-                            boolean squared,
-                            Hyperplane<GroundAtom> hyperplane,
-                            float weight, float c) {
+            boolean squared,
+            Hyperplane<GroundAtom> hyperplane,
+            float weight, float c) {
         this.squared = squared;
 
         size = (short)hyperplane.size();
