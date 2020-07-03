@@ -68,7 +68,7 @@ public abstract class InferenceApplication implements ModelApplication {
     protected TermGenerator termGenerator;
     protected PersistedAtomManager atomManager;
 
-    protected boolean atomsCommitted;
+    private boolean atomsCommitted;
 
     protected InferenceApplication(List<Rule> rules, Database db) {
         this(rules, db, Options.INFERENCE_RELAX.getBoolean());
@@ -104,8 +104,7 @@ public abstract class InferenceApplication implements ModelApplication {
         groundRuleStore = createGroundRuleStore();
         termGenerator = createTermGenerator();
 
-        int atomCapacity = atomManager.getCachedRVACount();
-        termStore.ensureVariableCapacity(atomCapacity);
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
         if (normalizeWeights) {
             normalizeWeights();
@@ -140,7 +139,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
     /**
      * Complete the initialization process.
-     * Most of the infrastructure will have been constructued.
+     * Most of the infrastructure will have been constructed.
      * The child is responsible for constructing the AtomManager
      * and populating the ground rule store.
      */

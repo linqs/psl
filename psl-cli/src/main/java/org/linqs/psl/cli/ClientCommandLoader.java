@@ -24,21 +24,21 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 /**
- * Parse CLI client command
+ * Parse CLI client commands.
+ * TODO (Charles): This class could accept more information about the server model to perform more interesting validation.
  */
 public class ClientCommandLoader {
-
     private static final Logger log = LoggerFactory.getLogger(ClientCommandLoader.class);
 
+    /**
+     * Method for parsing client commands, performing some validation, and creating new action instances.
+     * The expected format for commands are: <ActionClassName>\t<ActionSpecificArgs...>
+     */
     public static OnlineAction parseClientCommand(String clientCommand) throws RuntimeException{
-        // Format: ActionName   ActionSpecificArgs...
         log.trace("Parsing: " + clientCommand);
 
         // tokenize
         String[] tokenized_command = clientCommand.split("\t");
-
-        log.trace("Tokenized Command: " + Arrays.toString(tokenized_command));
-        log.trace("Tokenized Command Length: " + tokenized_command.length);
 
         // Construct OnlineAction
         String className = tokenized_command[0];

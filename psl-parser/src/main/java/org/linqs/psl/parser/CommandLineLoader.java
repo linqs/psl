@@ -57,6 +57,7 @@ public class CommandLineLoader {
     public static final String OPERATION_INFER_LONG = "infer";
     public static final String OPERATION_LEARN = "l";
     public static final String OPERATION_LEARN_LONG = "learn";
+    public static final String OPERATION_ONLINE_CLIENT = "c";
     public static final String OPERATION_ONLINE_CLIENT_LONG = "onlineClient";
 
     public static final String OPTION_DATA = "d";
@@ -220,7 +221,7 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
-        newOptions.addOption(Option.builder()
+        newOptions.addOption(Option.builder(OPERATION_ONLINE_CLIENT)
                 .longOpt(OPERATION_ONLINE_CLIENT_LONG)
                 .desc("Accept Commands for the Online PSL Client" +
                         " You must supply commands via STDIN")

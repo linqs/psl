@@ -55,7 +55,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-
 import java.util.Set;
 
 /**
@@ -206,8 +205,6 @@ public class Launcher {
 
         // Output the results.
         outputResults(database, dataStore, closedPredicates);
-
-        log.info("Results Written to Output");
 
         return database;
     }
@@ -392,7 +389,6 @@ public class Launcher {
 
     private void run() {
         log.info("Running PSL CLI Version {}", Version.getFull());
-        // Init DataStore
         DataStore dataStore = initDataStore();
 
         // Load data
@@ -402,7 +398,7 @@ public class Launcher {
         Model model = loadModel(dataStore);
 
         // Run Client Interface for Online PSL
-        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)){
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT)) {
             runOnlineClient();
         } else {
             // Inference
@@ -430,8 +426,6 @@ public class Launcher {
         }
 
         dataStore.close();
-
-        log.info("Run Complete");
     }
 
     private static boolean isCommandLineValid(CommandLine givenOptions) {
@@ -457,7 +451,7 @@ public class Launcher {
 
         if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) &&
                 (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) &&
-                (!givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG))) {
+                (!givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
             helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;
@@ -489,6 +483,5 @@ public class Launcher {
                 System.exit(1);
             }
         }
-        log.info("Main Complete");
     }
 }

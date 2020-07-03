@@ -18,7 +18,6 @@
 package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;

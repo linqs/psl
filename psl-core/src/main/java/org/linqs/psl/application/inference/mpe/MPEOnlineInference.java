@@ -20,8 +20,6 @@ package org.linqs.psl.application.inference.mpe;
 import org.linqs.psl.application.inference.online.OnlineInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -30,8 +28,7 @@ import java.util.List;
  * RandomVariableAtoms persisted in a Database,
  * according to the rules, given the Database's ObservedAtoms.
  */
-public abstract class MPEOnlineInference extends OnlineInference {
-    private static final Logger log = LoggerFactory.getLogger(MPEOnlineInference.class);
+public class MPEOnlineInference extends OnlineInference {
 
     public MPEOnlineInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         super(rules, db, relaxHardConstraints);

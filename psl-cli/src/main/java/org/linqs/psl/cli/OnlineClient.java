@@ -22,17 +22,20 @@ import org.linqs.psl.config.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Arrays;
 
 import static org.linqs.psl.cli.ClientCommandLoader.parseClientCommand;
 
 public class OnlineClient {
-    private String hostName;
-    private int portNumber;
     private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
 
+    private String hostName;
+    private int portNumber;
 
     public OnlineClient() {
         this.hostName = Options.ONLINE_HOST_NAME.getString();
@@ -58,15 +61,9 @@ public class OnlineClient {
                 log.info(e.toString());
                 log.info(e.getMessage());
                 log.info(Arrays.toString(e.getStackTrace()));
-            } catch (NotSerializableException e) {
-                log.info("Error parsing command: " + userInput);
-                log.info(e.toString());
-                log.info(e.getMessage());
-                log.info(Arrays.toString(e.getStackTrace()));
             }
         }
 
-        // Also closes output stream
         server.close();
         stdIn.close();
     }

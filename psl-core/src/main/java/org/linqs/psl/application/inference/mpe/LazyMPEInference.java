@@ -75,8 +75,7 @@ public class LazyMPEInference extends MPEInference {
             termStore.clear();
 
             log.debug("Initializing objective terms for {} ground rules.", groundRuleStore.size());
-            int atomCapacity = atomManager.getCachedRVACount();
-            termStore.ensureVariableCapacity(atomCapacity);
+            termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
             @SuppressWarnings("unchecked")
             long termCount = termGenerator.generateTerms(groundRuleStore, termStore);
             log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
