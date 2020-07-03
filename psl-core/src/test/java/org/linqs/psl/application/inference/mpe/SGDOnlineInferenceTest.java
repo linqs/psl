@@ -251,6 +251,7 @@ public class SGDOnlineInferenceTest {
 //
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
+                "DeleteAtom\tRead\tSim_Users\tEddie\tAlice",
                 "WriteInferredPredicates",
                 "Close"));
         queueCommands(inference, commands);
@@ -260,7 +261,7 @@ public class SGDOnlineInferenceTest {
         for (SGDObjectiveTerm term : termStore) {
             numTerms++;
         }
-        assertEquals(numTerms, 2.0, 0.01);
+        assertEquals(2.0, numTerms, 0.01);
 
         inference.inference();
 
@@ -268,7 +269,7 @@ public class SGDOnlineInferenceTest {
         for (SGDObjectiveTerm term : termStore) {
             numTerms++;
         }
-        assertEquals(numTerms, 1.0, 0.01);
+        assertEquals(1.0, numTerms, 0.01);
     }
 
     @Test
