@@ -38,8 +38,6 @@ import java.lang.reflect.InvocationTargetException;
 public abstract class OnlineAction implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(UpdateObservation.class);
 
-    public abstract String getName();
-
     /**
      * Construct an OnlineAction given the name and necessary information.
      */

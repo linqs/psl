@@ -48,11 +48,6 @@ public class AddAtom extends OnlineAction{
     }
 
     @Override
-    public String getName() {
-        return "AddAtom";
-    }
-
-    @Override
     public void initAction(String[] tokenized_command) throws IllegalArgumentException {
         // Format: AddAtom PartitionName PredicateName Arguments Value(Optional)
         Predicate registeredPredicate = null;

@@ -35,7 +35,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,9 +73,9 @@ public abstract class OnlineInference extends InferenceApplication {
     protected void initialize() {
         startServer();
 
-        close = false;
-        objective = 0;
+        log.debug("Creating persisted atom manager.");
         atomManager = createAtomManager(db);
+        log.debug("Atom manager initialization complete.");
 
         initializeAtoms();
 
@@ -95,6 +94,9 @@ public abstract class OnlineInference extends InferenceApplication {
         if (relaxHardConstraints) {
             relaxHardConstraints();
         }
+
+        close = false;
+        objective = 0;
 
         completeInitialize();
     }
@@ -122,26 +124,18 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void executeAction(OnlineAction nextAction) throws IllegalArgumentException {
-        // TODO: (Charles)
-        //  switch or if else on classtypes
-        switch (nextAction.getName()) {
-            case "UpdateObservation":
-                doUpdateObservation((UpdateObservation)nextAction);
-                break;
-            case "AddAtom":
-                doAddAtom((AddAtom)nextAction);
-                break;
-            case "DeleteAtom":
-                doDeleteAtom((DeleteAtom)nextAction);
-                break;
-            case "WriteInferredPredicates":
-                doWriteInferredPredicates((WriteInferredPredicates)nextAction);
-                break;
-            case "Close":
-                doClose((Close)nextAction);
-                break;
-            default:
-                throw new IllegalArgumentException("Action: " + nextAction.getClass().getName() + " Not Supported.");
+        if (nextAction.getClass() == UpdateObservation.class) {
+            doUpdateObservation((UpdateObservation)nextAction);
+        } else if (nextAction.getClass() == AddAtom.class) {
+            doAddAtom((AddAtom)nextAction);
+        } else if (nextAction.getClass() == DeleteAtom.class) {
+            doDeleteAtom((DeleteAtom)nextAction);
+        } else if (nextAction.getClass() == WriteInferredPredicates.class) {
+            doWriteInferredPredicates((WriteInferredPredicates)nextAction);
+        } else if (nextAction.getClass() == Close.class) {
+            doClose((Close)nextAction);
+        } else {
+            throw new IllegalArgumentException("Action: " + nextAction.getClass().getName() + " Not Supported.");
         }
     }
 

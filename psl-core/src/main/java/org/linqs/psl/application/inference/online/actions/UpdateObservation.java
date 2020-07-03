@@ -47,11 +47,6 @@ public class UpdateObservation extends OnlineAction{
     }
 
     @Override
-    public String getName() {
-        return "UpdateObservation";
-    }
-
-    @Override
     public void initAction(String[] tokenized_command) throws IllegalArgumentException {
         Predicate registeredPredicate = null;
         for (int i = 1; i < tokenized_command.length; i++) {

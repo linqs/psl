@@ -17,21 +17,11 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class WriteInferredPredicates extends OnlineAction{
-
     private String outputDirectoryPath;
-    private static final Logger log = LoggerFactory.getLogger(WriteInferredPredicates.class);
 
     public WriteInferredPredicates() {
         outputDirectoryPath = null;
-    }
-
-    @Override
-    public String getName() {
-        return "WriteInferredPredicates";
     }
 
     public String getOutputDirectoryPath() {
