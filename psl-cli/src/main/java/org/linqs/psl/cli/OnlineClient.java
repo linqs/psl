@@ -52,10 +52,7 @@ public class OnlineClient {
         while (!(userInput = stdIn.readLine()).equals("Exit")) {
             try {
                 newAction = parseClientCommand(userInput);
-                log.trace("Action Initialized: " + newAction.getClass().getName());
-                log.trace("Sending Action");
                 out.writeObject(newAction);
-                log.trace("Action Sent");
             } catch (RuntimeException e) {
                 log.info("Error parsing command: " + userInput);
                 log.info(e.toString());
