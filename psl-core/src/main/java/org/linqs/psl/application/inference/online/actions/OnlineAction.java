@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;

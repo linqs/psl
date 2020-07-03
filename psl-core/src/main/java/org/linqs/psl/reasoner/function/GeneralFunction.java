@@ -49,7 +49,7 @@ public class GeneralFunction implements FunctionTerm {
 
     public GeneralFunction(boolean nonNegative, boolean squared, int rvaCount, int obsCount) {
         // TODO: (Charles) "Online" Maybe should not be here.
-        int totalCount = online? rvaCount + obsCount: rvaCount;
+        int totalCount = online ? rvaCount + obsCount : rvaCount;
         coefficients = new float[totalCount];
         terms = new FunctionTerm[totalCount];
         termIndex = 0;
@@ -108,11 +108,11 @@ public class GeneralFunction implements FunctionTerm {
         }
 
         if ((term instanceof RandomVariableAtom) || ((term instanceof ObservedAtom) && online)) {
-
             if (termIndex == terms.length) {
                 throw new IllegalStateException(
                         "More than the max terms added to the function. Max: " + terms.length);
             }
+
             terms[termIndex] = term;
             coefficients[termIndex] = coefficient;
             termIndex++;

@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
 

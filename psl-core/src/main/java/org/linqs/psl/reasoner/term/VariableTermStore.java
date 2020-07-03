@@ -19,8 +19,6 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 
-import java.util.ArrayList;
-
 /**
  * An interface for term stores that can handle some atom operations.
  */
@@ -56,5 +54,4 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public void syncAtoms();
 
     public GroundAtom[] getVariableAtoms();
-
 }

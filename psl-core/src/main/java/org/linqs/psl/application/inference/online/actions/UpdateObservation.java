@@ -24,15 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UpdateObservation extends OnlineAction{
-
     private String predicateName;
     private Constant[] arguments;
     private float newValue;
-    private static final Logger log = LoggerFactory.getLogger(UpdateObservation.class);
 
-    public UpdateObservation() {
-
-    }
+    public UpdateObservation() { }
 
     public String getPredicateName() {
         return this.predicateName;

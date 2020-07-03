@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.config.Options;
@@ -34,7 +33,8 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Online server class
+ * Online server class.
+ * Listens and establishes client connections and enqueues objects provided by client to a shared queue.
  */
 public class OnlineServer<T> extends Thread{
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
@@ -47,7 +47,6 @@ public class OnlineServer<T> extends Thread{
     private ServerSocket server;
     private LinkedBlockingQueue<T> queue;
     private Set<ServerClientThread> threads;
-
 
     public OnlineServer() throws IOException {
         waiting = false;
@@ -206,4 +205,3 @@ public class OnlineServer<T> extends Thread{
         }
     }
 }
-

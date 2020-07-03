@@ -23,7 +23,7 @@ public class Partition {
      * value to this so that we can tell them apart.
      * Afterwards, they will be reset to the correct value (the write partition
      * of the database).
-     * Note that no valid partition is actaully allowed to have negative values.
+     * Note that no valid partition is actually allowed to have negative values.
      */
     public static final int SPECIAL_WRITE_ID = -1;
     public static final int SPECIAL_READ_ID = -2;

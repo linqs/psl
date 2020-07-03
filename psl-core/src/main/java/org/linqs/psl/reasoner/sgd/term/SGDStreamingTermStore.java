@@ -77,11 +77,13 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     public boolean deletedTerm(SGDObjectiveTerm term) {
         int[] indices = term.getIndices();
         boolean[] deletedAtoms = getDeletedAtoms();
+
         for (int index: indices) {
             if(deletedAtoms[index]) {
                 return true;
             }
         }
+
         return false;
     }
 }

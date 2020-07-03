@@ -41,9 +41,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private int[] indices;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
-                            boolean squared, boolean hinge,
-                            Hyperplane<GroundAtom> hyperplane,
-                            float weight, float learningRate) {
+            boolean squared, boolean hinge,
+            Hyperplane<GroundAtom> hyperplane,
+            float weight, float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
 
@@ -64,7 +64,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public int[] getIndices() {
         return indices;
     }
-
 
     @Override
     public int size() {
@@ -146,7 +145,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             + Float.SIZE  // constant
             + Float.SIZE  // learningRate
             + Short.SIZE  // size
-            + size * (Float.SIZE + Integer.SIZE);// coefficients + variableIndexes
+            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
+
         return bitSize / 8;
     }
 

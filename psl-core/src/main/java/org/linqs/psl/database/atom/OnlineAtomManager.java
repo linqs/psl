@@ -19,13 +19,11 @@ package org.linqs.psl.database.atom;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.rdbms.PredicateInfo;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.database.rdbms.RDBMSInserter;
 import org.linqs.psl.grounding.PartialGrounding;
-import org.linqs.psl.model.atom.*;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -35,7 +33,10 @@ import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * A persisted atom manager that will add new atoms in an online setting.

@@ -49,25 +49,25 @@ public class Options {
     public static final Option ONLINE = new Option(
             "inference.online",
             false,
-            "Whether we are running in online mode or not"
-    );
-
-    public static final Option ONLINE_PORT_NUMBER = new Option(
-            "inference.onlineportnumber",
-            8889,
-            "The port number for the online server"
-    );
-
-    public static final Option ONLINE_MAX_CLIENTS = new Option(
-            "inference.onlinemaxclients",
-            50,
-            "The max number of online clients"
+            "Whether we are running in online mode or not."
     );
 
     public static final Option ONLINE_HOST_NAME = new Option(
             "inference.onlinehostname",
             "127.0.0.1",
-            "host and connect to server using localhost"
+            "The hostname for the online server."
+    );
+
+    public static final Option ONLINE_MAX_CLIENTS = new Option(
+            "inference.onlinemaxclients",
+            50,
+            "The maximum number of online clients."
+    );
+
+    public static final Option ONLINE_PORT_NUMBER = new Option(
+            "inference.onlineportnumber",
+            8888,
+            "The port number for the online server."
     );
 
     public static final Option ONLINE_READ_PARTITION = new Option(

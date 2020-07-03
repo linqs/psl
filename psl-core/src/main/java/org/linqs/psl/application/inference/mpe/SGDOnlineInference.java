@@ -29,7 +29,6 @@ import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 
-
 import java.util.List;
 
 /**

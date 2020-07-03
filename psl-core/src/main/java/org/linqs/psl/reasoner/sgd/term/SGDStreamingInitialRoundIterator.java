@@ -19,7 +19,6 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;

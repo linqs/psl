@@ -29,7 +29,6 @@ import java.util.List;
  * according to the rules, given the Database's ObservedAtoms.
  */
 public class MPEOnlineInference extends OnlineInference {
-
     public MPEOnlineInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         super(rules, db, relaxHardConstraints);
     }

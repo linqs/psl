@@ -55,13 +55,12 @@ public class AddAtom extends OnlineAction{
         for (int i = 1; i < tokenized_command.length; i++) {
             if (i == 1) {
                 // Partition Name Field:
-                switch (tokenized_command[i].toUpperCase()) {
+                partitionName = tokenized_command[i].toUpperCase();
+                switch (partitionName) {
                     case "READ":
-                        partitionName = "READ";
                         argumentLength = 4;
                         break;
                     case "WRITE":
-                        partitionName = "WRITE";
                         argumentLength = 3;
                         break;
                     default:

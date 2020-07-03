@@ -20,7 +20,8 @@ package org.linqs.psl.grounding;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.SetOperationQuery;
 import com.healthmarketscience.sqlbuilder.UnionQuery;
-import org.linqs.psl.database.*;
+import org.linqs.psl.database.Database;
+import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
@@ -41,7 +42,11 @@ import org.linqs.psl.model.term.VariableTypeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Static utilities for common {@link Model}-grounding tasks.

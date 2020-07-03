@@ -137,7 +137,6 @@ public class LazyAtomManager extends PersistedAtomManager {
      * @return the number of lazy atoms instantiated.
      */
     public int activateAtoms(Set<RandomVariableAtom> atoms, List<Rule> rules, GroundRuleStore groundRuleStore) {
-
         // Ensure that all the atoms are valid.
         Iterator<RandomVariableAtom> atomIterator = atoms.iterator();
         while (atomIterator.hasNext()) {

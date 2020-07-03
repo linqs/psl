@@ -18,8 +18,8 @@
 package org.linqs.psl.reasoner.term;
 
 /**
- * Local atoms are the atoms in reasoner terms.
- * In the simple case, they are the same as the global atoms RVAs and Observed Atoms.
+ * Reasoner local atoms are the atoms in reasoner terms.
+ * In the simple case, they are the same as the global Random variable and Observed Atoms.
  */
 public interface ReasonerLocalAtom {
     public float getValue();

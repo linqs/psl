@@ -52,7 +52,7 @@ public class SGDReasoner extends Reasoner {
     @Override
     public double optimize(TermStore baseTermStore) {
         if (!(baseTermStore instanceof VariableTermStore)) {
-            throw new IllegalArgumentException("SGDReasoner requires a AtomTermStore (found " + baseTermStore.getClass().getName() + ").");
+            throw new IllegalArgumentException("SGDReasoner requires a VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
 
         @SuppressWarnings("unchecked")
@@ -150,10 +150,8 @@ public class SGDReasoner extends Reasoner {
         }
 
         float[] variableValues = termStore.getVariableValues();
-        int term_count = 0;
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
             objective += term.evaluate(variableValues);
-            term_count += 1;
         }
 
         return objective;
