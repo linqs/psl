@@ -26,7 +26,12 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A general TermStore that handles terms and variables all in memory.
@@ -101,7 +106,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     @Override
     public synchronized V createLocalVariable(GroundAtom atom) {
         if (atom instanceof RandomVariableAtom) {
-            return createLocalAtom((RandomVariableAtom) atom) ;
+            return createLocalAtom((RandomVariableAtom)atom) ;
         } else {
             // Memory variable termstore does not keep track of observations
             return null;
@@ -124,7 +129,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         variables.put(variable, index);
         variableValues[index] = atom.getValue();
-        variableAtoms[index] = (RandomVariableAtom)atom;
+        variableAtoms[index] = atom;
 
         if (atom.getPredicate() instanceof ModelPredicate) {
             modelPredicates.add((ModelPredicate)atom.getPredicate());
