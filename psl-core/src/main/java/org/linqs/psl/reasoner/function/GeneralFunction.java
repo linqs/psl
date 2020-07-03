@@ -45,7 +45,7 @@ public class GeneralFunction implements FunctionTerm {
     private boolean nonNegative;
     private boolean squared;
 
-    private static boolean online = Options.ONLINE.getBoolean();
+    private boolean online = Options.ONLINE.getBoolean();
 
     public GeneralFunction(boolean nonNegative, boolean squared, int rvaCount, int obsCount) {
         // TODO: (Charles) "Online" Maybe should not be here.
