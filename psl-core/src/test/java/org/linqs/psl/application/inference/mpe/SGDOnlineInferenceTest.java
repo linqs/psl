@@ -256,11 +256,12 @@ public class SGDOnlineInferenceTest {
                 "Close"));
         queueCommands(inference, commands);
 
-        int numTerms = 0;
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
+        int numTerms = 0;
         for (SGDObjectiveTerm term : termStore) {
             numTerms++;
         }
+
         assertEquals(2.0, numTerms, 0.01);
 
         inference.inference();
@@ -268,7 +269,9 @@ public class SGDOnlineInferenceTest {
         numTerms = 0;
         for (SGDObjectiveTerm term : termStore) {
             numTerms++;
+            System.out.println(term.toString(termStore));
         }
+
         assertEquals(1.0, numTerms, 0.01);
     }
 

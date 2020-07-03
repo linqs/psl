@@ -169,7 +169,6 @@ public abstract class OnlineInference extends InferenceApplication {
         ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, nextAction.getArguments());
     }
 
-
     protected void doUpdateObservation(UpdateObservation nextAction) throws IllegalArgumentException {
         // Resolve Predicate
         Predicate registeredPredicate = Predicate.get(nextAction.getPredicateName());
