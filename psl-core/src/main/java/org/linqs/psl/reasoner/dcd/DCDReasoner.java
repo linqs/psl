@@ -135,14 +135,8 @@ public class DCDReasoner extends Reasoner {
         return false;
     }
 
-<<<<<<< HEAD
-    private float computeObjective(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore, float[] variableValues) {
-        float objective = 0.0f;
-        int termCount = 0;
-=======
-    private double computeObjective(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore, float[] variableValues) {
+    private double computeObjective(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore, float[] variableValues) {
         double objective = 0.0;
->>>>>>> b5698f0882a8784bd80f06b5eaa6e11439352fcd
 
         // If possible, use a readonly iterator.
         Iterator<DCDObjectiveTerm> termIterator = null;
