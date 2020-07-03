@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class WeightSampler {
-    private static final Logger log  = LoggerFactory.getLogger(WeightSampler.class);
+    private static final Logger log = LoggerFactory.getLogger(WeightSampler.class);
 
     /**
      * Whether we will be sampling points from a Dirichlet distribution.
@@ -34,23 +34,23 @@ public class WeightSampler {
     private boolean searchDirichlet;
 
     /**
-     * The dirichlet distribution alpha parameters
+     * The alpha parameters for the dirichlet distribution.
      */
     private double[] dirichletAlphas;
 
     /**
      * The number of weights
      */
-    private int nWeights;
+    private int numWeights;
 
-    public WeightSampler(int nWeights) {
-        this.nWeights = nWeights;
+    public WeightSampler(int numWeights) {
+        this.numWeights = numWeights;
 
         searchDirichlet = Options.WLA_SEARCH_DIRICHLET.getBoolean();
         double dirichletAlpha = Options.WLA_SEARCH_DIRICHLET_ALPHA.getDouble();
-        dirichletAlphas = new double[nWeights];
+        dirichletAlphas = new double[this.numWeights];
 
-        for (int i = 0; i < nWeights; i ++) {
+        for (int i = 0; i < this.numWeights; i ++) {
             dirichletAlphas[i] = dirichletAlpha;
         }
     }
@@ -70,44 +70,14 @@ public class WeightSampler {
 
         MathUtils.toUnit(dirichletSample);
 
-        for (int i = 0; i < nWeights; i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
+        for (int i = 0; i < numWeights; i++) {
             weights[i] = dirichletSample[i];
         }
     }
 
     private void getHyperCubeRandomWeights (double[] weights) {
-        for (int i = 0; i < nWeights; i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
+        for (int i = 0; i < numWeights; i++) {
             weights[i] = RandUtils.nextDouble();
-        }
-    }
-
-    private void getDirichletRandomWeights(float[] weights) {
-        double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
-
-        MathUtils.toUnit(dirichletSample);
-
-        for (int i = 0; i < nWeights; i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
-            weights[i] = (float)dirichletSample[i];
-        }
-    }
-
-    private void getHyperCubeRandomWeights (float[] weights) {
-        for (int i = 0; i < nWeights; i++) {
-            // Returns the next pseudorandom, uniformly distributed value between 0 and 1
-            weights[i] = RandUtils.nextFloat();
-        }
-    }
-
-    public void getRandomWeights(float[] weights) {
-        if (searchDirichlet) {
-            log.debug("Getting Dirichlet Weights");
-            getDirichletRandomWeights(weights);
-            log.debug("Dirichlet Weights: {}", weights);
-        } else {
-            getHyperCubeRandomWeights(weights);
         }
     }
 }
