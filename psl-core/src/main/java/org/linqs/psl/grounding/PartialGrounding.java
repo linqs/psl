@@ -234,7 +234,7 @@ public class PartialGrounding {
         // For every mention of a online predicate in this rule, we will need to get the grounding query
         // with that specific predicate mention being the online target.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            // TODO(connor) : Changed code here, should be handled properly
+            // TODO(connor) : Changed code here, should be handled properly.
             onlineTargets.add(atom);
         }
 
@@ -256,16 +256,12 @@ public class PartialGrounding {
         List<SelectQuery> queries = new ArrayList<SelectQuery>();
 
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-        Map<Variable, Integer> projectionMap = null;
 
         Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, null);
         queries.add(sqler.getQuery(formula));
+        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 
-        if (projectionMap == null) {
-            projectionMap = sqler.getProjectionMap();
-        }
-
-        // This fallbacks to a normal SELECT when there is only one.
+        // This falls back to a normal SELECT when there is only one.
         UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
         return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
     }
