@@ -67,7 +67,7 @@ public class PartialGrounding {
         return lazyPredicates;
     }
 
-    public static Set<Rule> getLazyRules(List<Rule> rules, Set<StandardPredicate> lazyPredicates) {
+    public static Set<Rule> getLazyRules(List<Rule> rules, Set<? extends Predicate> lazyPredicates) {
         Set<Rule> lazyRules = new HashSet<Rule>();
 
         for (Rule rule : rules) {
@@ -193,36 +193,6 @@ public class PartialGrounding {
             onlinePredicates.add(atom.getPredicate());
         }
         return onlinePredicates;
-    }
-
-    public static Set<Rule> getOnlineRules(List<Rule> rules, Set<Predicate> onlinePredicates) {
-        Set<Rule> onlineRules = new HashSet<Rule>();
-
-        for (Rule rule : rules) {
-            if (rule instanceof AbstractLogicalRule) {
-                // Note that we check for atoms not in the base formula, but in the
-                // query formula for the DNF because negated atoms will not
-                // be considered.
-                for (Atom atom : ((AbstractLogicalRule)rule).getNegatedDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
-                    if (onlinePredicates.contains(atom.getPredicate())) {
-                        onlineRules.add(rule);
-                        break;
-                    }
-                }
-            } else if (rule instanceof AbstractArithmeticRule) {
-                // Note that we do not bother checking the filters since those predicates must be closed.
-                for (Predicate predicate : ((AbstractArithmeticRule)rule).getBodyPredicates()) {
-                    if (onlinePredicates.contains(predicate)) {
-                        onlineRules.add(rule);
-                        break;
-                    }
-                }
-            } else {
-                throw new IllegalStateException("Unknown rule type: " + rule.getClass().getName());
-            }
-        }
-
-        return onlineRules;
     }
 
     public static ArrayList<GroundRule> onlineSimpleGround(Rule rule, Set<Predicate> onlinePredicates, AtomManager atomManager) {

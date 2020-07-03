@@ -30,7 +30,6 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.util.SystemUtils;
 
 import org.json.JSONArray;

@@ -106,7 +106,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
         db.commitGroundAtoms(rvAtoms, db.getWritePartition().getID());
 
         Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(newAtoms);
-        Set<Rule> onlineRules = PartialGrounding.getOnlineRules(rules, onlinePredicates);
+        Set<Rule> onlineRules = PartialGrounding.getLazyRules(rules, onlinePredicates);
         ArrayList<GroundRule> totalGroundRules = new ArrayList<GroundRule>();
 
         // TODO(connor): Currently ignoring arithmetic rules. Why do these need a full regrounding?
