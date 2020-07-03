@@ -245,17 +245,17 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GPP_INITIAL_WEIGHT_STD = new Option(
-        "gpp.initialweightstd",
+    public static final Option WLA_GPP_INITIAL_METRIC_STD = new Option(
+        "gpp.initialmetricstd",
         1.0f,
-        null,
+        "The initial standard deviation of the metric at each configuration.",
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GPP_INITIAL_WEIGHT_VALUE = new Option(
-        "gpp.initialweightvalue",
+    public static final Option WLA_GPP_INITIAL_METRIC_VALUE = new Option(
+        "gpp.initialmetricvalue",
         0.0f,
-        null,
+        "The initial value of the metric at each configuration.",
         Option.FLAG_NON_NEGATIVE
     );
 

@@ -37,8 +37,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private List<WeightConfig> exploredConfigs;
     private FloatMatrix blasYKnown;
 
-    private float initialWeightValue;
-    private float initialStdValue;
+    private float initialMetricValue;
+    private float initialMetricStd;
 
     private WeightSampler weightSampler;
 
@@ -61,9 +61,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         earlyStopping = Options.WLA_GPP_EARLY_STOPPING.getBoolean();
         useProvidedWeight = Options.WLA_GPP_USE_PROVIDED_WEIGHT.getBoolean();
 
-        initialWeightValue = evaluator.isHigherRepBetter()? Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat()
-                : -Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat();
-        initialStdValue = Options.WLA_GPP_INITIAL_WEIGHT_STD.getFloat();
+        initialMetricValue = evaluator.isHigherRepBetter() ? Options.WLA_GPP_INITIAL_METRIC_VALUE.getFloat()
+                : -Options.WLA_GPP_INITIAL_METRIC_VALUE.getFloat();
+        initialMetricStd = Options.WLA_GPP_INITIAL_METRIC_STD.getFloat();
 
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
@@ -356,7 +356,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         float std;
 
         public ValueAndStd() {
-            this(initialWeightValue, initialStdValue);
+            this(initialMetricValue, initialMetricStd);
         }
 
         public ValueAndStd(float value, float std) {
@@ -370,7 +370,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         public ValueAndStd valueAndStd;
 
         public WeightConfig(double[] config) {
-            this(config, initialWeightValue, initialStdValue);
+            this(config, initialMetricValue, initialMetricStd);
         }
 
         public WeightConfig(WeightConfig config) {

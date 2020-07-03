@@ -61,7 +61,7 @@ public class WeightSampler {
             getDirichletRandomWeights(weights);
             log.debug("Dirichlet Weights: {}", weights);
         } else {
-            getHyperCubeRandomWeights(weights);
+            getHypercubeRandomWeights(weights);
         }
     }
 
@@ -75,7 +75,7 @@ public class WeightSampler {
         }
     }
 
-    private void getHyperCubeRandomWeights (double[] weights) {
+    private void getHypercubeRandomWeights(double[] weights) {
         for (int i = 0; i < numWeights; i++) {
             weights[i] = RandUtils.nextDouble();
         }
