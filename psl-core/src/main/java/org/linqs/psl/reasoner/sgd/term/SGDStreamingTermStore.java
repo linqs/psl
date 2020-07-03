@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
@@ -64,7 +65,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     }
 
     @Override
-    public synchronized void addTerm(SGDObjectiveTerm term) {
+    public void add(GroundRule rule, SGDObjectiveTerm term) {
         seenTermCount = seenTermCount + 1;
         newTermBuffer.add(term);
 

@@ -31,8 +31,6 @@ public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocal
 
     public void updateAtom(Predicate predicate, Constant[] arguments, float newValue);
 
-    public void addTerm(T term);
-
     public boolean deletedTerm(T term);
 
     public void rewriteLastPage();

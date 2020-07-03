@@ -46,7 +46,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
@@ -55,7 +62,7 @@ import java.util.*;
 public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, GroundAtom>, OnlineTermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
-    private static final int INITIAL_PATH_CACHE_SIZE = 100;
+    public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
     protected List<WeightedRule> rules;
     protected AtomManager atomManager;
@@ -315,11 +322,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void add(GroundRule rule, T term) {
-        addTerm(term);
-    }
-
-    @Override
-    public void addTerm(T term) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

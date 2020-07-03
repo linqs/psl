@@ -240,7 +240,8 @@ public class SGDOnlineInferenceTest {
     public void testAtomDeleting() {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
-        //  The atom will not be deleted. This behavior is also noted in streaming term store deleteAtom
+        //  The atom will not be deleted if there is an add and then a delete of the same atom before the atoms are
+        //  activated. This behavior is also noted in streaming term store deleteAtom.
 //        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
 //                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
 //                "AddAtom\tRead\tSim_Users\tAlice\tEddie\t1.0",
