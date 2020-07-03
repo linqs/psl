@@ -25,11 +25,8 @@ public class DeleteAtom extends OnlineAction{
     private String predicateName;
     private String partitionName;
     private Constant[] arguments;
-    private float newValue;
 
-    public DeleteAtom() {
-        this.newValue = (float)0.5;
-    }
+    public DeleteAtom() { }
 
     public String getPredicateName() {
         return this.predicateName;
@@ -37,10 +34,6 @@ public class DeleteAtom extends OnlineAction{
 
     public String getPartitionName() {
         return this.partitionName;
-    }
-
-    public float getValue() {
-        return this.newValue;
     }
 
     public Constant[] getArguments() {
@@ -58,8 +51,6 @@ public class DeleteAtom extends OnlineAction{
                 partitionName = tokenized_command[i].toUpperCase();
                 switch (partitionName) {
                     case "READ":
-                        argumentLength = 4;
-                        break;
                     case "WRITE":
                         argumentLength = 3;
                         break;
@@ -83,7 +74,7 @@ public class DeleteAtom extends OnlineAction{
             } else if (i == (3 + registeredPredicate.getArity())) {
                 // Value Field: Ensure value is valid
                 // Block only reached if value provided
-                newValue = resolveValue(tokenized_command[i]);
+                resolveValue(tokenized_command[i]);
             } else {
                 throw new IllegalArgumentException("Too many arguments provided for Predicate: " +
                         tokenized_command[i] + " With arity: " + registeredPredicate.getArity());

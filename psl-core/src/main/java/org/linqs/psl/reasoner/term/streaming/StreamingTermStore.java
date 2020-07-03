@@ -388,27 +388,22 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         termBuffer.clear();
         termCache.clear();
 
-        int pageNewTerms;
         readPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
         while (true) {
-            pageNewTerms = 0;
             while (termCache.size() < pageSize && newTermBuffer.size() > 0) {
                 if (numPages == 1) {
                     termPool.add(newTermBuffer.peek());
                 }
                 termCache.add(newTermBuffer.remove());
                 seenTermCount++;
-                pageNewTerms++;
             }
-
-            if (pageNewTerms > 0) {
-                writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
-                numPages++;
-            }
+            writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
 
             if (newTermBuffer.size() <= 0) {
                 break;
             }
+
+            numPages++;
         }
     }
 
