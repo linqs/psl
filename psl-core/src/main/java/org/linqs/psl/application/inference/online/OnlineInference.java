@@ -24,6 +24,7 @@ import org.linqs.psl.application.inference.online.actions.DeleteAtom;
 import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -34,6 +35,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,17 +56,14 @@ public abstract class OnlineInference extends InferenceApplication {
 
     public OnlineServer server;
     private boolean close;
+    private double objective;
 
     protected OnlineInference(List<Rule> rules, Database db) {
         super(rules, db);
-        startServer();
-        close = false;
     }
 
     protected OnlineInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         super(rules, db, relaxHardConstraints);
-        startServer();
-        close = false;
     }
 
     /**
@@ -73,9 +72,11 @@ public abstract class OnlineInference extends InferenceApplication {
      */
     @Override
     protected void initialize() {
-        log.debug("Creating persisted atom manager.");
+        startServer();
+
+        close = false;
+        objective = 0;
         atomManager = createAtomManager(db);
-        log.debug("Atom manager initialization complete.");
 
         initializeAtoms();
 
@@ -99,7 +100,9 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     @Override
-    protected abstract OnlineTermStore createTermStore();
+    protected OnlineTermStore createTermStore() {
+        return (OnlineTermStore)Options.INFERENCE_TS.getNewObject();
+    }
 
     @Override
     protected OnlineAtomManager createAtomManager(Database db) {
@@ -219,7 +222,7 @@ public abstract class OnlineInference extends InferenceApplication {
         // Ensure we are in optimal state
         log.trace("Optimization Start");
         start = System.currentTimeMillis();
-        reasoner.optimize(termStore);
+        objective = reasoner.optimize(termStore);
         stop = System.currentTimeMillis();
         log.trace("Optimization Start");
         log.trace("Optimization Time: {}", (stop - start));
@@ -287,9 +290,9 @@ public abstract class OnlineInference extends InferenceApplication {
      *  as a part of action execution.
      */
     @Override
-    public void internalInference() {
+    public double internalInference() {
         // Initial round of inference
-        reasoner.optimize(termStore);
+        objective = reasoner.optimize(termStore);
 
         OnlineAction nextAction;
         try {
@@ -309,5 +312,6 @@ public abstract class OnlineInference extends InferenceApplication {
         } finally {
             server.closeServer();
         }
+        return objective;
     }
 }
