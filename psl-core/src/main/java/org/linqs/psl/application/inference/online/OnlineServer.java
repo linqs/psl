@@ -73,23 +73,17 @@ public class OnlineServer<T> extends Thread{
     }
 
     private Socket connectClient() throws IOException {
-        Socket client = server.accept();
-        log.trace("Client Connected");
-        return client;
+        return server.accept();
     }
 
     private void addThread(Socket client) {
-        log.trace("Creating Thread: " + connections);
         ServerClientThread sct = new ServerClientThread(client);
-        log.trace("Starting Thread: " + connections);
         sct.start();
-        log.trace("Thread Started");
         threads.add(sct);
         connections++;
     }
 
     private void removeThread(ServerClientThread sct) {
-        log.trace("Client Disconnected. Removing Thread.");
         threads.remove(sct);
         connections--;
         if (waiting) {
@@ -120,7 +114,6 @@ public class OnlineServer<T> extends Thread{
                 log.debug(e.getMessage());
             }
         }
-        log.trace("Server Complete");
     }
 
     public void enqueue(T newObject) {
@@ -132,18 +125,15 @@ public class OnlineServer<T> extends Thread{
     }
 
     public void closeServer() {
-        log.trace("Closing Server");
         try {
             server.close();
         } catch (IOException e) {
             log.debug(e.getMessage());
         } finally {
-            log.trace("Interrupting Child Threads");
             for(ServerClientThread childThread : threads) {
                 childThread.close();
             }
         }
-        log.trace("Server Closed");
     }
 
     private class ServerClientThread extends Thread {
@@ -161,7 +151,6 @@ public class OnlineServer<T> extends Thread{
         }
 
         public void close() {
-            log.trace("Interrupting thread.");
             interrupt();
 
             try {
@@ -179,9 +168,7 @@ public class OnlineServer<T> extends Thread{
             while (client.isConnected() && !isInterrupted()) {
                 try {
                     newCommand = (T) inStream.readObject();
-                    log.trace("Received new action from client: " + newCommand.toString());
                     enqueue(newCommand);
-                    log.trace("Action from client queued");
                 } catch (EOFException e) {
                     log.debug("Client Disconnected");
                     log.debug(e.getMessage());
@@ -201,7 +188,6 @@ public class OnlineServer<T> extends Thread{
             }
 
             close();
-            log.trace("Thread Completed");
         }
     }
 }

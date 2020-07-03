@@ -155,7 +155,6 @@ public abstract class OnlineInference extends InferenceApplication {
                 break;
             default:
                 throw new IllegalArgumentException("Add Atom Partition: " + nextAction.getPartitionName() + "Not Supported");
-
         }
     }
 
