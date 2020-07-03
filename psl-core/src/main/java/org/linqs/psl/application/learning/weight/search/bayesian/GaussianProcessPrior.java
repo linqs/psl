@@ -266,9 +266,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
 
         // Add the user provided weight configuration to the tail of the list.
-        // This is accessed in the getNextPoint method.
+        // This is accessed in the getNextPoint method and assumes that the initial
+        // iteration will always select the first config in configs.
         if (useProvidedWeight) {
-            configs.add(userProvidedConfig);
+            configs.add(0, userProvidedConfig);
         }
 
         return configs;
@@ -334,11 +335,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     protected int getNextPoint(List<WeightConfig> configs, int iteration) {
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
-
-        if ((iteration == 0) && useProvidedWeight) {
-            // User provided configuration was added to the tail of the list.
-            return configs.size() - 1;
-        }
 
         for (int i = 0; i < configs.size(); i++) {
             float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
