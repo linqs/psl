@@ -21,8 +21,6 @@ import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-
 /**
  * Parse CLI client commands.
  * TODO (Charles): This class could accept more information about the server model to perform more interesting validation.
@@ -35,18 +33,13 @@ public class ClientCommandLoader {
      * The expected format for commands are: <ActionClassName>\t<ActionSpecificArgs...>
      */
     public static OnlineAction parseClientCommand(String clientCommand) throws RuntimeException {
-        log.trace("Parsing: " + clientCommand);
-
         // tokenize
         String[] tokenized_command = clientCommand.split("\t");
 
         // Construct OnlineAction
         String className = tokenized_command[0];
-        log.trace("Creating Action Type: " + className);
         OnlineAction onlineAction = OnlineAction.getOnlineAction(className);
-        log.trace("Initializing Action: " + className);
         onlineAction.initAction(tokenized_command);
-        log.trace("Action Initialized");
         return onlineAction;
     }
 }
