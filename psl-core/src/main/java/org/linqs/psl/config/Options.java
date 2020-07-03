@@ -18,8 +18,8 @@
 package org.linqs.psl.config;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
-import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
 import org.linqs.psl.database.rdbms.QueryRewriter;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
@@ -280,10 +280,10 @@ public class Options {
     );
 
     public static final Option WLA_GPP_USE_PROVIDED_WEIGHT = new Option(
-            "gpp.useProvidedWeight",
-            true,
-            "Whether the weight configuration in the user provided model file should be used as the initial "
-            + "sample point in GPP."
+        "gpp.useProvidedWeight",
+        true,
+        "Whether the weight configuration in the user provided model file should be used as the initial "
+        + "sample point in GPP."
     );
 
     public static final Option WLA_GPP_KERNEL_REL_DEP = new Option(

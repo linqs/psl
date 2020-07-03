@@ -27,11 +27,10 @@ import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.Math;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import java.lang.Math;
 
 /**
  * The base for grid search-like method.
@@ -102,7 +101,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         double[] weights = new double[mutableRules.size()];
         double[] unitWeightVector = new double[mutableRules.size()];
 
-        String unitConfiguration;
+        String unitConfiguration = null;
 
         for (int iteration = 0; iteration < numLocations; iteration++) {
             if (!chooseNextLocation()) {
@@ -121,12 +120,12 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
             // Round each weight to 5 decimal places.
             for(int i = 0; i < unitWeightVector.length; i ++){
-                unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000d) / 100000d;
+                unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000.0) / 100000.0;
             }
 
             unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
             if (exploredConfigurations.containsKey(unitConfiguration)) {
-                log.debug("Location: {} \nalready explored via: {} \nSkipping", currentLocation,
+                log.debug("Location: {} already explored via: {} Skipping", currentLocation,
                         exploredConfigurations.get(unitConfiguration));
                 continue;
             }

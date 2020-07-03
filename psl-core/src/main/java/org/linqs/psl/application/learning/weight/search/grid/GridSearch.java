@@ -55,7 +55,6 @@ public class GridSearch extends BaseGridSearch {
         numLocations = maxNumLocations;
     }
 
-
     @Override
     protected void getWeights(double[] weights) {
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
