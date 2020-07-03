@@ -69,7 +69,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         newTermBuffer.add(term);
 
         if (newTermBuffer.size() >= pageSize) {
-            activateTerms();
+            activateNewTerms();
         }
     }
 

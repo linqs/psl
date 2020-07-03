@@ -380,7 +380,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
-    protected void activateTerms() {
+    protected void activateNewTerms() {
         if (newTermBuffer.size() <= 0) {
             return;
         }
@@ -403,13 +403,12 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
             if (pageNewTerms > 0) {
                 writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
+                numPages++;
             }
 
             if (newTermBuffer.size() <= 0) {
                 break;
             }
-
-            numPages++;
         }
     }
 
@@ -549,7 +548,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public void initForOptimization() {
         // check if there are new terms to be written to the last page and if so, rewrite the last page
         if (newTermBuffer.size() > 0) {
-            activateTerms();
+            activateNewTerms();
         }
     }
 

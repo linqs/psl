@@ -63,7 +63,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
     protected int numPages;
 
-    long deletedTermCheckTime;
+    private long deletedTermCheckTime;
 
     public StreamingCacheIterator(
             StreamingTermStore<T> parentStore, boolean readonly,
@@ -173,9 +173,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
             // Flush all the volatile terms.
             flushCache();
 
-            // Clear the existing page cache.
-            termCache.clear();
-
             // Check if there is another page, and load it if it exists.
             if (!fetchPage()) {
                 // There are no more pages, we are done.
@@ -195,6 +192,9 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * @return true if the next page was fetched and loaded (false when there are no more pages).
      */
     private boolean fetchPage() {
+        // Clear the existing page cache.
+        termCache.clear();
+
         currentPage++;
         nextCachedTermIndex = 0;
 
@@ -211,6 +211,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         // Note that the termBuffer should be at maximum size from the initial round.
         termBuffer.clear();
         volatileBuffer.clear();
+
         readPage(termPagePath, volatilePagePath);
 
         if (shufflePage) {
@@ -221,6 +222,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
             RandUtils.pairedShuffleIndexes(termCache, shuffleMap);
         }
+
         return true;
     }
 
