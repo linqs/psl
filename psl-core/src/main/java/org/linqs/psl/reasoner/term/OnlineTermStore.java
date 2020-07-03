@@ -32,6 +32,4 @@ public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocal
     public void updateAtom(Predicate predicate, Constant[] arguments, float newValue);
 
     public boolean deletedTerm(T term);
-
-    public void rewriteLastPage();
 }

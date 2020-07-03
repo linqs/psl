@@ -380,8 +380,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
-    @Override
-    public void rewriteLastPage() {
+    protected void activateTerms() {
         if (newTermBuffer.size() <= 0) {
             return;
         }
@@ -389,17 +388,22 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         termBuffer.clear();
         termCache.clear();
 
+        int pageNewTerms;
         readPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
         while (true) {
+            pageNewTerms = 0;
             while (termCache.size() < pageSize && newTermBuffer.size() > 0) {
                 if (numPages == 1) {
                     termPool.add(newTermBuffer.peek());
                 }
                 termCache.add(newTermBuffer.remove());
                 seenTermCount++;
+                pageNewTerms++;
             }
-            // TODO: (Charles) Unnecessary if no new terms added to page. rare but worth a check
-            writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
+
+            if (pageNewTerms > 0) {
+                writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
+            }
 
             if (newTermBuffer.size() <= 0) {
                 break;
@@ -444,7 +448,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     /**
      * A callback for the non-initial round iterator.
      */
-    public synchronized void cacheIterationComplete() {
+    public void cacheIterationComplete() {
         activeIterator = null;
     }
 
@@ -468,7 +472,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public synchronized Iterator<T> iterator() {
+    public Iterator<T> iterator() {
         if (activeIterator != null) {
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
@@ -545,7 +549,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public void initForOptimization() {
         // check if there are new terms to be written to the last page and if so, rewrite the last page
         if (newTermBuffer.size() > 0) {
-            rewriteLastPage();
+            activateTerms();
         }
     }
 

@@ -20,7 +20,6 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
@@ -70,7 +69,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         newTermBuffer.add(term);
 
         if (newTermBuffer.size() >= pageSize) {
-            rewriteLastPage();
+            activateTerms();
         }
     }
 
