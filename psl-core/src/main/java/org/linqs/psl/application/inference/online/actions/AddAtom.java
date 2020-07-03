@@ -21,7 +21,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
-public class AddAtom extends OnlineAction{
+public class AddAtom extends OnlineAction {
     private String predicateName;
     private String partitionName;
     private Constant[] arguments;

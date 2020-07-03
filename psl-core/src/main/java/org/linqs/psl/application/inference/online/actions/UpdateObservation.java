@@ -23,7 +23,7 @@ import org.linqs.psl.model.term.ConstantType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UpdateObservation extends OnlineAction{
+public class UpdateObservation extends OnlineAction {
     private String predicateName;
     private Constant[] arguments;
     private float newValue;

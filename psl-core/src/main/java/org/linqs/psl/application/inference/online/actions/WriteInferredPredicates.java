@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-public class WriteInferredPredicates extends OnlineAction{
+public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
 
     public WriteInferredPredicates() {

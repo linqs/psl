@@ -105,7 +105,7 @@ public abstract class OnlineAction implements Serializable {
         return registeredPredicate;
     }
 
-    protected static float resolveValue(String value) throws IllegalArgumentException{
+    protected static float resolveValue(String value) throws IllegalArgumentException {
         float resolvedValue;
         try {
             resolvedValue = Float.parseFloat(value);

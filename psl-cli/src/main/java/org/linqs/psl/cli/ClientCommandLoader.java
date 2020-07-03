@@ -34,7 +34,7 @@ public class ClientCommandLoader {
      * Method for parsing client commands, performing some validation, and creating new action instances.
      * The expected format for commands are: <ActionClassName>\t<ActionSpecificArgs...>
      */
-    public static OnlineAction parseClientCommand(String clientCommand) throws RuntimeException{
+    public static OnlineAction parseClientCommand(String clientCommand) throws RuntimeException {
         log.trace("Parsing: " + clientCommand);
 
         // tokenize
