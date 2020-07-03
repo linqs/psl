@@ -225,7 +225,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs) / numMutableRules);
 
         // Create user provided configuration for weights in the user provided model file.
-        WeightConfig userProvidedConfig = new WeightConfig(new float[numMutableRules]);
+        WeightConfig userProvidedConfig = new WeightConfig(new double[numMutableRules]);
         for (int i = 0; i < numMutableRules; i++) {
             userProvidedConfig.config[i] = (float)mutableRules.get(i).getWeight();
         }
@@ -241,7 +241,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             }
 
             float inc = max / numPerSplit;
-            float[] configArray = new float[numMutableRules];
+            double[] configArray = new double[numMutableRules];
             Arrays.fill(configArray, min);
             WeightConfig config = new WeightConfig(configArray);
             boolean done = false;
@@ -279,7 +279,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         List<WeightConfig> configs = new ArrayList<WeightConfig>();
 
         for (int i = 0; i < maxConfigs; i++) {
-            WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
+            WeightConfig curConfig = new WeightConfig(new double[numMutableRules]);
             weightSampler.getRandomWeights(curConfig.config);
             configs.add(curConfig);
         }
@@ -290,7 +290,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     /**
      * predictFnValAndStd, but no memory sharing.
      */
-    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown) {
+    protected ValueAndStd predictFnValAndStd(double[] x, List<WeightConfig> xKnown) {
         return predictFnValAndStd(x, xKnown, new float[blasYKnown.size()],
                 new float[x.length], new float[x.length], new FloatMatrix(), new FloatMatrix(),
                 new FloatMatrix(), FloatMatrix.zeroes(1, x.length));
@@ -302,7 +302,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
      * @param xyStdData A correctly-sized buffer to perform computations with.
      *  Will get modified.
      */
-    protected ValueAndStd predictFnValAndStd(float[] x, List<WeightConfig> xKnown, float[] xyStdData,
+    protected ValueAndStd predictFnValAndStd(double[] x, List<WeightConfig> xKnown, float[] xyStdData,
             float[] kernelBuffer1, float[] kernelBuffer2, FloatMatrix kernelMatrixShell1, FloatMatrix kernelMatrixShell2,
             FloatMatrix xyStdMatrixShell, FloatMatrix mulBuffer) {
         ValueAndStd fnAndStd = new ValueAndStd();
@@ -366,10 +366,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     protected class WeightConfig {
-        public float[] config;
+        public double[] config;
         public ValueAndStd valueAndStd;
 
-        public WeightConfig(float[] config) {
+        public WeightConfig(double[] config) {
             this(config, initialWeightValue, initialStdValue);
         }
 
@@ -377,7 +377,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             this(Arrays.copyOf(config.config, config.config.length), config.valueAndStd.value, config.valueAndStd.std);
         }
 
-        public WeightConfig(float[] config, float val, float std) {
+        public WeightConfig(double[] config, float val, float std) {
             this.config = config;
             this.valueAndStd = new ValueAndStd(val, std);
         }
