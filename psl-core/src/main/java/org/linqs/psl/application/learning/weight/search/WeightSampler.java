@@ -57,9 +57,7 @@ public class WeightSampler {
 
     public void getRandomWeights(double[] weights) {
         if (searchDirichlet) {
-            log.debug("Getting Dirichlet Weights");
             getDirichletRandomWeights(weights);
-            log.debug("Dirichlet Weights: {}", weights);
         } else {
             getHypercubeRandomWeights(weights);
         }
