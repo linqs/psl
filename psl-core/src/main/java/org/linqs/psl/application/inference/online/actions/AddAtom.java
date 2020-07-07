@@ -27,8 +27,10 @@ public class AddAtom extends OnlineAction {
     private Constant[] arguments;
     private float newValue;
 
-    public AddAtom() {
+    public AddAtom(String[] tokenized_command) {
+        super(tokenized_command);
         this.newValue = (float)0.5;
+        parseCommand(tokenized_command);
     }
 
     public String getPredicateName() {
@@ -47,8 +49,7 @@ public class AddAtom extends OnlineAction {
         return this.arguments;
     }
 
-    @Override
-    public void initAction(String[] tokenized_command) throws IllegalArgumentException {
+    public void parseCommand(String[] tokenized_command) throws IllegalArgumentException {
         // Format: AddAtom PartitionName PredicateName Arguments Value(Optional)
         Predicate registeredPredicate = null;
         int argumentLength = 0;

@@ -20,16 +20,17 @@ package org.linqs.psl.application.inference.online.actions;
 public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
 
-    public WriteInferredPredicates() {
+    public WriteInferredPredicates(String[] tokenized_command) {
+        super(tokenized_command);
         outputDirectoryPath = null;
+        parseCommand(tokenized_command);
     }
 
     public String getOutputDirectoryPath() {
         return outputDirectoryPath;
     }
 
-    @Override
-    public void initAction(String[] tokenized_command) throws IllegalArgumentException {
+    public void parseCommand(String[] tokenized_command) throws IllegalArgumentException {
         // Format: WriteInferredPredicates outputDirectoryPath(optional)
         for (int i = 1; i < tokenized_command.length; i++) {
             if (i == 1) {

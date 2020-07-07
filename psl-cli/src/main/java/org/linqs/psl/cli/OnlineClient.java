@@ -29,7 +29,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Arrays;
 
-import static org.linqs.psl.cli.ClientCommandLoader.parseClientCommand;
 
 public class OnlineClient {
     private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
@@ -51,7 +50,7 @@ public class OnlineClient {
         String userInput;
         while (!(userInput = stdIn.readLine()).equals("Exit")) {
             try {
-                newAction = parseClientCommand(userInput);
+                newAction = OnlineAction.getOnlineAction(userInput);
                 out.writeObject(newAction);
             } catch (RuntimeException e) {
                 log.info("Error parsing command: " + userInput);

@@ -37,14 +37,20 @@ import java.lang.reflect.InvocationTargetException;
 public abstract class OnlineAction implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(UpdateObservation.class);
 
+    public OnlineAction(String[] tokenized_command) { }
+
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
-    public static OnlineAction getOnlineAction(String input) throws RuntimeException {
-        String className = Reflection.resolveClassName(input);
+    public static OnlineAction getOnlineAction(String clientCommand) throws RuntimeException {
+        // tokenize
+        String[] tokenizedCommand = clientCommand.split("\t");
+
+        // Construct OnlineAction
+        String className = Reflection.resolveClassName(tokenizedCommand[0]);
         log.trace("ClassName: " + className);
         if(className == null) {
-            throw new IllegalArgumentException("Could not find class: " + input);
+            throw new IllegalArgumentException("Could not find class: " + tokenizedCommand[0]);
         }
         Class<? extends OnlineAction> classObject = null;
         try {
@@ -57,14 +63,13 @@ public abstract class OnlineAction implements Serializable {
 
         Constructor<? extends OnlineAction> constructor = null;
         try {
-            constructor = classObject.getConstructor();
+            constructor = classObject.getConstructor(String[].class);
         } catch (NoSuchMethodException ex) {
             throw new IllegalArgumentException("No suitable constructor () found for Online Action: " + className + ".", ex);
         }
 
-        OnlineAction onlineAction = null;
         try {
-            onlineAction = constructor.newInstance();
+            return constructor.newInstance(new Object[]{tokenizedCommand});
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate Online Action (" + className + ")", ex);
         } catch (IllegalAccessException ex) {
@@ -72,11 +77,7 @@ public abstract class OnlineAction implements Serializable {
         } catch (InvocationTargetException ex) {
             throw new RuntimeException("Error thrown while constructing " + className, ex);
         }
-
-        return onlineAction;
     }
-
-    public abstract void initAction(String[] tokenized_command) throws IllegalArgumentException;
 
     protected static Constant resolveConstant(String name, ConstantType type) {
         switch (type) {

@@ -26,7 +26,10 @@ public class DeleteAtom extends OnlineAction {
     private String partitionName;
     private Constant[] arguments;
 
-    public DeleteAtom() { }
+    public DeleteAtom(String[] tokenized_command) {
+        super(tokenized_command);
+        parseCommand(tokenized_command);
+    }
 
     public String getPredicateName() {
         return this.predicateName;
@@ -40,8 +43,7 @@ public class DeleteAtom extends OnlineAction {
         return this.arguments;
     }
 
-    @Override
-    public void initAction(String[] tokenized_command) throws IllegalArgumentException {
+    public void parseCommand(String[] tokenized_command) throws IllegalArgumentException {
         // Format: DeleteAtom PartitionName PredicateName Arguments Value(Optional)
         Predicate registeredPredicate = null;
         int argumentLength = 0;

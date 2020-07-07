@@ -28,7 +28,10 @@ public class UpdateObservation extends OnlineAction {
     private Constant[] arguments;
     private float newValue;
 
-    public UpdateObservation() { }
+    public UpdateObservation(String[] tokenized_command) {
+        super(tokenized_command);
+        parseCommand(tokenized_command);
+    }
 
     public String getPredicateName() {
         return this.predicateName;
@@ -42,8 +45,7 @@ public class UpdateObservation extends OnlineAction {
         return this.arguments;
     }
 
-    @Override
-    public void initAction(String[] tokenized_command) throws IllegalArgumentException {
+    public void parseCommand(String[] tokenized_command) throws IllegalArgumentException {
         Predicate registeredPredicate = null;
         for (int i = 1; i < tokenized_command.length; i++) {
             if (i == 1) {
