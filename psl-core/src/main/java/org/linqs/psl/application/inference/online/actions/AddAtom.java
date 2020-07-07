@@ -21,6 +21,8 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
+import java.util.Arrays;
+
 public class AddAtom extends OnlineAction {
     private String predicateName;
     private String partitionName;
@@ -90,5 +92,11 @@ public class AddAtom extends OnlineAction {
                         tokenized_command[i] + " With arity: " + registeredPredicate.getArity());
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<OnlineAction: %s, Predicate: %s, Partition: %s, Arguments: %s, NewValue: %f>",
+                this.getClass().getName(), predicateName, partitionName, Arrays.toString(arguments), newValue);
     }
 }

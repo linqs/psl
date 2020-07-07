@@ -115,5 +115,10 @@ public abstract class OnlineAction implements Serializable {
         }
         return resolvedValue;
     }
+
+    @Override
+    public String toString() {
+        return String.format("<OnlineAction: %s>", this.getClass().getName());
+    }
 }
 

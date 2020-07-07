@@ -23,6 +23,8 @@ import org.linqs.psl.model.term.ConstantType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 public class UpdateObservation extends OnlineAction {
     private String predicateName;
     private Constant[] arguments;
@@ -70,5 +72,11 @@ public class UpdateObservation extends OnlineAction {
                         tokenized_command[i] + " With arity: " + registeredPredicate.getArity());
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<OnlineAction: %s, Predicate: %s, Arguments: %s, NewValue: %f>",
+                this.getClass().getName(), predicateName, Arrays.toString(arguments), newValue);
     }
 }

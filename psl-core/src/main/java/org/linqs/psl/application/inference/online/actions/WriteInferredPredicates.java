@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
+import java.util.Arrays;
+
 public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
 
@@ -40,5 +42,11 @@ public class WriteInferredPredicates extends OnlineAction {
                 throw new IllegalArgumentException("Too many arguments provided for Action: WriteInferredPredicates");
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("<OnlineAction: %s, outputDirectoryPath: %s>",
+                this.getClass().getName(), outputDirectoryPath);
     }
 }
