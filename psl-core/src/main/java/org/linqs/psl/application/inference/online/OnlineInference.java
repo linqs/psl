@@ -123,79 +123,73 @@ public abstract class OnlineInference extends InferenceApplication {
         }
     }
 
-    protected void executeAction(OnlineAction nextAction) throws IllegalArgumentException {
-        if (nextAction.getClass() == UpdateObservation.class) {
-            doUpdateObservation((UpdateObservation)nextAction);
-        } else if (nextAction.getClass() == AddAtom.class) {
-            doAddAtom((AddAtom)nextAction);
-        } else if (nextAction.getClass() == DeleteAtom.class) {
-            doDeleteAtom((DeleteAtom)nextAction);
-        } else if (nextAction.getClass() == WriteInferredPredicates.class) {
-            doWriteInferredPredicates((WriteInferredPredicates)nextAction);
-        } else if (nextAction.getClass() == Close.class) {
-            doClose((Close)nextAction);
+    protected void executeAction(OnlineAction action) throws IllegalArgumentException {
+        if (action.getClass() == UpdateObservation.class) {
+            doUpdateObservation((UpdateObservation)action);
+        } else if (action.getClass() == AddAtom.class) {
+            doAddAtom((AddAtom)action);
+        } else if (action.getClass() == DeleteAtom.class) {
+            doDeleteAtom((DeleteAtom)action);
+        } else if (action.getClass() == WriteInferredPredicates.class) {
+            doWriteInferredPredicates((WriteInferredPredicates)action);
+        } else if (action.getClass() == Close.class) {
+            doClose((Close)action);
         } else {
-            throw new IllegalArgumentException("Action: " + nextAction.getClass().getName() + " Not Supported.");
+            throw new IllegalArgumentException("Action: " + action.getClass().getName() + " Not Supported.");
         }
     }
 
-    protected void doAddAtom(AddAtom nextAction) throws IllegalArgumentException {
+    protected void doAddAtom(AddAtom action) throws IllegalArgumentException {
         // Resolve Predicate
-        Predicate registeredPredicate = Predicate.get(nextAction.getPredicateName());
+        Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new IllegalArgumentException("Predicate is not registered: " + nextAction.getPredicateName());
+            throw new IllegalArgumentException("Predicate is not registered: " + action.getPredicateName());
         }
 
-        switch (nextAction.getPartitionName()) {
+        switch (action.getPartitionName()) {
             case "READ":
-                ((OnlineTermStore)termStore).addAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue(), true);
+                ((OnlineTermStore)termStore).addAtom(registeredPredicate, action.getArguments(), action.getValue(), true);
                 break;
             case "WRITE":
-                ((OnlineTermStore)termStore).addAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue(), false);
+                ((OnlineTermStore)termStore).addAtom(registeredPredicate, action.getArguments(), action.getValue(), false);
                 break;
             default:
-                throw new IllegalArgumentException("Add Atom Partition: " + nextAction.getPartitionName() + "Not Supported");
+                throw new IllegalArgumentException("Add Atom Partition: " + action.getPartitionName() + "Not Supported");
         }
     }
 
-    protected void doDeleteAtom(DeleteAtom nextAction) throws IllegalArgumentException {
+    protected void doDeleteAtom(DeleteAtom action) throws IllegalArgumentException {
         // Resolve Predicate
-        Predicate registeredPredicate = Predicate.get(nextAction.getPredicateName());
+        Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new IllegalArgumentException("Predicate is not registered: " + nextAction.getPredicateName());
+            throw new IllegalArgumentException("Predicate is not registered: " + action.getPredicateName());
         }
 
-        ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, nextAction.getArguments());
+        ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, action.getArguments());
     }
 
-    protected void doUpdateObservation(UpdateObservation nextAction) throws IllegalArgumentException {
+    protected void doUpdateObservation(UpdateObservation action) throws IllegalArgumentException {
         // Resolve Predicate
-        Predicate registeredPredicate = Predicate.get(nextAction.getPredicateName());
+        Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new IllegalArgumentException("Predicate is not registered: " + nextAction.getPredicateName());
+            throw new IllegalArgumentException("Predicate is not registered: " + action.getPredicateName());
         }
 
-        ((OnlineTermStore)termStore).updateAtom(registeredPredicate, nextAction.getArguments(), nextAction.getValue());
+        ((OnlineTermStore)termStore).updateAtom(registeredPredicate, action.getArguments(), action.getValue());
     }
 
-    protected void doClose(Close nextAction) {
+    protected void doClose(Close action) {
         close = true;
     }
 
-    protected void doWriteInferredPredicates(WriteInferredPredicates nextAction) {
-        long start;
-        long stop;
+    protected void doWriteInferredPredicates(WriteInferredPredicates action) {
         // Activate the atoms that were added
         log.trace("Partial Grounding Start");
-        start = System.currentTimeMillis();
         ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
-        stop = System.currentTimeMillis();
         log.trace("Partial Grounding Stop");
-        log.trace("Partial Grounding Time: {}", (stop - start));
 
         log.trace("Term Generation Start");
         log.trace("Adding " + groundRules.size() + " ground rules to model");
-        start = System.currentTimeMillis();
         int newTermCount = 0;
         for (GroundRule groundRule : groundRules) {
             ReasonerTerm newTerm = termGenerator.createTerm(groundRule, termStore);
@@ -206,20 +200,15 @@ public abstract class OnlineInference extends InferenceApplication {
             newTermCount++;
             termStore.add(groundRule, newTerm);
         }
-        stop = System.currentTimeMillis();
         log.trace("Added " + newTermCount + " terms to model");
         log.trace("Term Generation Stop");
-        log.trace("Term Generation Time: {}", (stop - start));
 
         // Ensure we are in optimal state
         log.trace("Optimization Start");
-        start = System.currentTimeMillis();
         objective = reasoner.optimize(termStore);
-        stop = System.currentTimeMillis();
         log.trace("Optimization Start");
-        log.trace("Optimization Time: {}", (stop - start));
 
-        outputResults(nextAction.getOutputDirectoryPath());
+        outputResults(action.getOutputDirectoryPath());
     }
 
     private void outputResults(String outputDirectoryPath) {
@@ -286,12 +275,12 @@ public abstract class OnlineInference extends InferenceApplication {
         // Initial round of inference
         objective = reasoner.optimize(termStore);
 
-        OnlineAction nextAction;
+        OnlineAction action;
         try {
             do {
                 try {
-                    nextAction = (OnlineAction) server.dequeClientInput();
-                    executeAction(nextAction);
+                    action = (OnlineAction) server.dequeClientInput();
+                    executeAction(action);
                 } catch (IllegalArgumentException | IllegalStateException e) {
                     log.debug("Exception when executing action.");
                     log.debug(e.getMessage());
@@ -304,6 +293,7 @@ public abstract class OnlineInference extends InferenceApplication {
         } finally {
             server.closeServer();
         }
+
         return objective;
     }
 }
