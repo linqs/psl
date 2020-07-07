@@ -44,7 +44,7 @@ public class DCDStreamingInference extends MPEInference {
 
     @Override
     protected TermStore createTermStore() {
-        return new DCDStreamingTermStore(rules, atomManager);
+        return new DCDStreamingTermStore(rules, atomManager, (DCDTermGenerator)termGenerator);
     }
 
     @Override

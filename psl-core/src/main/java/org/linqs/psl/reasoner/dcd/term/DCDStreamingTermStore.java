@@ -37,8 +37,8 @@ import java.util.Set;
  * So interrupting the iteration can cause the term count to be incorrect.
  */
 public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> {
-    public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
-        super(rules, atomManager, new DCDTermGenerator());
+    public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager, DCDTermGenerator dcdTermGenerator) {
+        super(rules, atomManager, dcdTermGenerator);
     }
 
     @Override

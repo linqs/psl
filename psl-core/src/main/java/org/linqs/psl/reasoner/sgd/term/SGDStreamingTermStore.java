@@ -32,8 +32,8 @@ import java.util.List;
  * So interrupting the iteration can cause the term count to be incorrect.
  */
 public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
-    public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
-        super(rules, atomManager, new SGDTermGenerator());
+    public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager, SGDTermGenerator sgdTermGenerator) {
+        super(rules, atomManager, sgdTermGenerator);
     }
 
     @Override

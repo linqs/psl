@@ -46,7 +46,7 @@ public class SGDOnlineInference extends MPEOnlineInference {
 
     @Override
     protected OnlineTermStore<SGDObjectiveTerm, GroundAtom> createTermStore() {
-        return new SGDStreamingTermStore(rules, atomManager);
+        return new SGDStreamingTermStore(rules, atomManager, (SGDTermGenerator)termGenerator);
     }
 
     @Override

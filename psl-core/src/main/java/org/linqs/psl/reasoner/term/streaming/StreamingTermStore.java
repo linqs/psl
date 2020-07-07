@@ -400,6 +400,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
                 termCache.add(newTermBuffer.remove());
                 seenTermCount++;
             }
+
             writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
 
             if (newTermBuffer.size() <= 0) {
@@ -579,7 +580,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      */
     protected abstract StreamingIterator<T> getNoWriteIterator();
 
-    // TODO (Connor): Make these functions inside SGDStreamingCacheIterator Static.
+    // TODO (Connor): Make these functions be methods of streamingTermStore and have iterators use them.
     private void readPage(String termPagePath, String volatilePagePath) {
         int termsSize = 0;
         int numTerms = 0;
@@ -610,6 +611,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
+    // TODO (Connor): Make these functions be methods of streamingTermStore and have iterators use them rather than reimplement.
     private void writeFullPage(String termPagePath, String volatilePagePath) {
         flushTermCache(termPagePath);
 
