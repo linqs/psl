@@ -123,7 +123,7 @@ public abstract class OnlineInference extends InferenceApplication {
         }
     }
 
-    protected void executeAction(OnlineAction action) throws IllegalArgumentException {
+    protected void executeAction(OnlineAction action) throws OnlineException {
         if (action.getClass() == UpdateObservation.class) {
             doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == AddAtom.class) {
@@ -135,15 +135,15 @@ public abstract class OnlineInference extends InferenceApplication {
         } else if (action.getClass() == Close.class) {
             doClose((Close)action);
         } else {
-            throw new IllegalArgumentException("Action: " + action.getClass().getName() + " Not Supported.");
+            throw new OnlineException("Action: " + action.getClass().getName() + " not Supported.");
         }
     }
 
-    protected void doAddAtom(AddAtom action) throws IllegalArgumentException {
+    protected void doAddAtom(AddAtom action) throws OnlineException {
         // Resolve Predicate
         Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new IllegalArgumentException("Predicate is not registered: " + action.getPredicateName());
+            throw new OnlineException("Predicate is not registered: " + action.getPredicateName());
         }
 
         switch (action.getPartitionName()) {
@@ -154,25 +154,25 @@ public abstract class OnlineInference extends InferenceApplication {
                 ((OnlineTermStore)termStore).addAtom(registeredPredicate, action.getArguments(), action.getValue(), false);
                 break;
             default:
-                throw new IllegalArgumentException("Add Atom Partition: " + action.getPartitionName() + "Not Supported");
+                throw new OnlineException("Add Atom Partition: " + action.getPartitionName() + " not Supported");
         }
     }
 
-    protected void doDeleteAtom(DeleteAtom action) throws IllegalArgumentException {
+    protected void doDeleteAtom(DeleteAtom action) throws OnlineException {
         // Resolve Predicate
         Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new IllegalArgumentException("Predicate is not registered: " + action.getPredicateName());
+            throw new OnlineException("Predicate is not registered: " + action.getPredicateName());
         }
 
         ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, action.getArguments());
     }
 
-    protected void doUpdateObservation(UpdateObservation action) throws IllegalArgumentException {
+    protected void doUpdateObservation(UpdateObservation action) throws OnlineException {
         // Resolve Predicate
         Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new IllegalArgumentException("Predicate is not registered: " + action.getPredicateName());
+            throw new OnlineException("Predicate is not registered: " + action.getPredicateName());
         }
 
         ((OnlineTermStore)termStore).updateAtom(registeredPredicate, action.getArguments(), action.getValue());
@@ -185,7 +185,7 @@ public abstract class OnlineInference extends InferenceApplication {
     protected void doWriteInferredPredicates(WriteInferredPredicates action) {
         // Activate the atoms that were added
         log.trace("Partial Grounding Start");
-        ArrayList<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
+        List<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
         log.trace("Partial Grounding Stop");
 
         log.trace("Term Generation Start");
@@ -275,25 +275,30 @@ public abstract class OnlineInference extends InferenceApplication {
         // Initial round of inference
         objective = reasoner.optimize(termStore);
 
-        OnlineAction action;
+        OnlineAction action = null;
         try {
             do {
+                action = (OnlineAction) server.dequeClientInput();
                 try {
-                    action = (OnlineAction) server.dequeClientInput();
                     executeAction(action);
-                } catch (IllegalArgumentException | IllegalStateException e) {
-                    log.debug("Exception when executing action.");
-                    log.debug(e.getMessage());
-                    log.debug(Arrays.toString(e.getStackTrace()));
+                } catch (OnlineException ex) {
+                    log.warn(String.format("Exception when executing action: %s", action), ex);
+                } catch (RuntimeException ex) {
+                    throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
                 }
             } while (!close);
-        } catch (InterruptedException e) {
-            log.debug("Internal Inference Interrupted");
-            log.debug(e.getMessage());
+        } catch (InterruptedException ex) {
+            log.warn("Internal Inference Interrupted.", ex);
         } finally {
             server.closeServer();
         }
 
         return objective;
+    }
+}
+
+class OnlineException extends Exception {
+    public OnlineException(String s) {
+        super(s);
     }
 }
