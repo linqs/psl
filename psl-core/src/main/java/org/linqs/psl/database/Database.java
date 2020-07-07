@@ -30,7 +30,10 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Parallel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -42,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * A data model for retrieving and persisting {@link GroundAtom GroundAtoms}.
@@ -87,6 +91,8 @@ import java.util.Set;
  * GroundAtoms with FunctionalPredicates.
  */
 public abstract class Database implements ReadableDatabase, WritableDatabase {
+    private static final Logger log = LoggerFactory.getLogger(Database.class);
+
     private static final String THREAD_QUERY_ATOM_KEY = Database.class.getName() + "::" + QueryAtom.class.getName();
 
     /**
@@ -303,5 +309,57 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
     public int getCachedRVACount() {
         return cache.getRVACount();
+    }
+
+    public void outputRandomVariableAtoms(PrintStream stream) {
+        // Set of open predicates
+        Set<StandardPredicate> registeredPredicates = parentDataStore.getRegisteredPredicates();
+
+        // Write to provided file name and location
+        for (StandardPredicate openPredicate : registeredPredicates) {
+            for (GroundAtom atom : getAllGroundRandomVariableAtoms(openPredicate)) {
+                stream.println(atom.toString() + " = " + atom.getValue());
+            }
+        }
+    }
+
+    public void outputRandomVariableAtoms(String outputDirectoryPath) {
+        // Set of open predicates
+        Set<StandardPredicate> registeredPredicates = parentDataStore.getRegisteredPredicates();
+
+        // Write to provided file name and location
+        File outputDirectory = new File(outputDirectoryPath);
+
+        // mkdir -p
+        outputDirectory.mkdirs();
+
+        for (StandardPredicate predicate : registeredPredicates) {
+            if (getAllGroundRandomVariableAtoms(predicate).size() == 0) {
+                continue;
+            }
+
+            try {
+                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, predicate.getName() + ".txt"));
+                BufferedWriter bufferedPredWriter = new BufferedWriter(predFileWriter);
+                StringBuilder row = new StringBuilder();
+
+                for (GroundAtom atom : getAllGroundRandomVariableAtoms(predicate)) {
+                    row.setLength(0);
+
+                    for (Constant term : atom.getArguments()) {
+                        row.append(term.rawToString());
+                        row.append("\t");
+                    }
+                    row.append(atom.getValue());
+                    row.append("\n");
+
+                    bufferedPredWriter.write(row.toString());
+                }
+
+                bufferedPredWriter.close();
+            } catch (IOException ex) {
+                log.error("Exception writing predicate {}", predicate);
+            }
+        }
     }
 }

@@ -185,7 +185,7 @@ public abstract class OnlineInference extends InferenceApplication {
     protected void doWriteInferredPredicates(WriteInferredPredicates action) {
         // Activate the atoms that were added
         log.trace("Partial Grounding Start");
-        List<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore) termStore);
+        List<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore)termStore);
         log.trace("Partial Grounding Stop");
 
         log.trace("Term Generation Start");
@@ -208,60 +208,8 @@ public abstract class OnlineInference extends InferenceApplication {
         objective = reasoner.optimize(termStore);
         log.trace("Optimization Start");
 
-        outputResults(action.getOutputDirectoryPath());
-    }
-
-    private void outputResults(String outputDirectoryPath) {
-        // TODO: (Charles) Duplicated code fragment from launcher.
-        // Set of open predicates
-        Set<StandardPredicate> registeredPredicates = db.getDataStore().getRegisteredPredicates();
-
-        // Write to provided file name and location
-        log.trace("Writing inferred predicates");
-        if (outputDirectoryPath == null) {
-            for (StandardPredicate openPredicate : registeredPredicates) {
-                for (GroundAtom atom : db.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    System.out.println(atom.toString() + " = " + atom.getValue());
-                }
-            }
-        } else {
-            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
-            File outputDirectory = new File(outputDirectoryPath);
-
-            // mkdir -p
-            outputDirectory.mkdirs();
-
-            for (StandardPredicate predicate : registeredPredicates) {
-                if (db.getAllGroundRandomVariableAtoms(predicate).size() == 0) {
-                    continue;
-                }
-
-                try {
-                    FileWriter predFileWriter = new FileWriter(new File(outputDirectory, predicate.getName() + ".txt"));
-                    BufferedWriter bufferedPredWriter = new BufferedWriter(predFileWriter);
-                    StringBuilder row = new StringBuilder();
-
-                    log.debug("Writing " + db.getAllGroundRandomVariableAtoms(predicate).size() + " Inferred predicates");
-
-                    for (GroundAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
-                        row.setLength(0);
-
-                        for (Constant term : atom.getArguments()) {
-                            row.append(term.rawToString());
-                            row.append("\t");
-                        }
-                        row.append(Double.toString(atom.getValue()));
-                        row.append("\n");
-
-                        bufferedPredWriter.write(row.toString());
-                    }
-
-                    bufferedPredWriter.close();
-                } catch (IOException ex) {
-                    log.error("Exception writing predicate {}", predicate);
-                }
-            }
-        }
+        log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
+        db.outputRandomVariableAtoms(action.getOutputDirectoryPath());
     }
 
     /**
@@ -300,5 +248,9 @@ public abstract class OnlineInference extends InferenceApplication {
 class OnlineException extends Exception {
     public OnlineException(String s) {
         super(s);
+    }
+
+    public OnlineException(String s, Exception ex) {
+        super(s, ex);
     }
 }

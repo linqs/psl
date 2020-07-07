@@ -204,57 +204,17 @@ public class Launcher {
         log.info("Inference Complete");
 
         // Output the results.
-        outputResults(database, dataStore, closedPredicates);
+        log.trace("Writing inferred predicates");
+
+        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
+            database.outputRandomVariableAtoms(System.out);
+        } else {
+            String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
+            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
+            database.outputRandomVariableAtoms(outputDirectoryPath);
+        }
 
         return database;
-    }
-
-    private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-        // Set of open predicates
-        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-        openPredicates.removeAll(closedPredicates);
-
-        // If we are just writing to the console, use a more human-readable format.
-        if (!parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR)) {
-            for (StandardPredicate openPredicate : openPredicates) {
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    System.out.println(atom.toString() + " = " + atom.getValue());
-                }
-            }
-
-            return;
-        }
-
-        // If we have an output directory, then write a different file for each predicate.
-        String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
-        File outputDirectory = new File(outputDirectoryPath);
-
-        // mkdir -p
-        outputDirectory.mkdirs();
-
-        for (StandardPredicate openPredicate : openPredicates) {
-            try {
-                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
-                StringBuilder row = new StringBuilder();
-
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    row.setLength(0);
-
-                    for (Constant term : atom.getArguments()) {
-                        row.append(term.rawToString());
-                        row.append("\t");
-                    }
-                    row.append(Double.toString(atom.getValue()));
-                    row.append("\n");
-
-                    predFileWriter.write(row.toString());
-                }
-
-                predFileWriter.close();
-            } catch (IOException ex) {
-                log.error("Exception writing predicate {}", openPredicate);
-            }
-        }
     }
 
     private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName) {
