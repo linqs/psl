@@ -42,7 +42,7 @@ public abstract class OnlineAction implements Serializable {
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
-    public static OnlineAction getOnlineAction(String clientCommand) throws RuntimeException {
+    public static OnlineAction getOnlineAction(String clientCommand) throws OnlineActionException {
         // tokenize
         String[] tokenizedCommand = clientCommand.split("\t");
 
@@ -50,7 +50,7 @@ public abstract class OnlineAction implements Serializable {
         String className = Reflection.resolveClassName(tokenizedCommand[0]);
         log.trace("ClassName: " + className);
         if(className == null) {
-            throw new IllegalArgumentException("Could not find class: " + tokenizedCommand[0]);
+            throw new OnlineActionException("Could not find class: " + tokenizedCommand[0]);
         }
         Class<? extends OnlineAction> classObject = null;
         try {
@@ -58,24 +58,24 @@ public abstract class OnlineAction implements Serializable {
             Class<? extends OnlineAction> uncheckedClassObject = (Class<? extends OnlineAction>)Class.forName(className);
             classObject = uncheckedClassObject;
         } catch (ClassNotFoundException ex) {
-            throw new IllegalArgumentException("Could not find class: " + className, ex);
+            throw new OnlineActionException("Could not find class: " + className, ex);
         }
 
         Constructor<? extends OnlineAction> constructor = null;
         try {
             constructor = classObject.getConstructor(String[].class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No suitable constructor () found for Online Action: " + className + ".", ex);
+            throw new OnlineActionException("No suitable constructor () found for Online Action: " + className + ".", ex);
         }
 
         try {
             return constructor.newInstance(new Object[]{tokenizedCommand});
         } catch (InstantiationException ex) {
-            throw new RuntimeException("Unable to instantiate Online Action (" + className + ")", ex);
+            throw new OnlineActionException("Unable to instantiate Online Action (" + className + ")", ex);
         } catch (IllegalAccessException ex) {
-            throw new RuntimeException("Insufficient access to constructor for " + className, ex);
+            throw new OnlineActionException("Insufficient access to constructor for " + className, ex);
         } catch (InvocationTargetException ex) {
-            throw new RuntimeException("Error thrown while constructing " + className, ex);
+            throw new OnlineActionException("Error thrown while constructing " + className, ex);
         }
     }
 
@@ -116,3 +116,4 @@ public abstract class OnlineAction implements Serializable {
         return resolvedValue;
     }
 }
+

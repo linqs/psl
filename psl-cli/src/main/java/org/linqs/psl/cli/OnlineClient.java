@@ -18,6 +18,7 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.config.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,40 +28,57 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Arrays;
-
 
 public class OnlineClient {
     private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
 
-    private String hostName;
+    private String hostname;
     private int portNumber;
 
     public OnlineClient() {
-        this.hostName = Options.ONLINE_HOST_NAME.getString();
-        this.portNumber = Options.ONLINE_PORT_NUMBER.getInt();
+        hostname = Options.ONLINE_HOST_NAME.getString();
+        portNumber = Options.ONLINE_PORT_NUMBER.getInt();
     }
 
-    public void run() throws IOException {
-        Socket server = new Socket(hostName, portNumber);
-        OnlineAction newAction;
-        ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+    public void run() {
+        OnlineAction newAction = null;
+        ObjectOutputStream out = null;
+        String userInput = null;
+        Socket server = null;
+
         BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 
-        String userInput;
-        while (!(userInput = stdIn.readLine()).equals("Exit")) {
-            try {
-                newAction = OnlineAction.getOnlineAction(userInput);
-                out.writeObject(newAction);
-            } catch (RuntimeException e) {
-                log.info("Error parsing command: " + userInput);
-                log.info(e.toString());
-                log.info(e.getMessage());
-                log.info(Arrays.toString(e.getStackTrace()));
-            }
+        try {
+            server = new Socket(hostname, portNumber);
+        } catch (IOException ex) {
+            throw new RuntimeException(String.format(
+                    "Exception thrown when connecting to server at hostname: %s and port number: %d",
+                    hostname, portNumber), ex);
         }
 
-        server.close();
-        stdIn.close();
+        try {
+            out = new ObjectOutputStream(server.getOutputStream());
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        try {
+            while (!(userInput = stdIn.readLine().trim()).equalsIgnoreCase("exit")) {
+                try {
+                    out.writeObject(OnlineAction.getOnlineAction(userInput));
+                } catch (OnlineActionException ex) {
+                    log.error(String.format("Error parsing command: %s", userInput), ex);
+                }
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        try {
+            server.close();
+            stdIn.close();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

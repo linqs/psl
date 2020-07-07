@@ -359,11 +359,7 @@ public class Launcher {
         log.info("Starting Online PSL Client.");
 
         OnlineClient onlineClient = new OnlineClient();
-        try {
-            onlineClient.run();
-        } catch (IOException e) {
-            log.info(e.getMessage());
-        }
+        onlineClient.run();
     }
 
     private Model loadModel(DataStore dataStore) {
