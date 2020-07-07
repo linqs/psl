@@ -355,13 +355,6 @@ public class Launcher {
         truthDatabase.close();
     }
 
-    private void runOnlineClient() {
-        log.info("Starting Online PSL Client.");
-
-        OnlineClient onlineClient = new OnlineClient();
-        onlineClient.run();
-    }
-
     private Model loadModel(DataStore dataStore) {
         log.info("Loading model from {}", parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
 
@@ -383,6 +376,38 @@ public class Launcher {
         return model;
     }
 
+    private void runOnlineClient() {
+        log.info("Starting Online PSL Client.");
+
+        OnlineClient onlineClient = new OnlineClient();
+        onlineClient.run();
+    }
+
+    private void runPSL(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
+        // Inference
+        Database evalDB = null;
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
+            evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
+        } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
+            learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
+        } else {
+            throw new IllegalArgumentException("No valid operation provided.");
+        }
+
+        // Evaluation
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+            for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
+                evaluation(dataStore, evalDB, closedPredicates, evaluator);
+            }
+
+            log.info("Evaluation complete.");
+        }
+
+        if (evalDB != null) {
+            evalDB.close();
+        }
+    }
+
     private void run() {
         log.info("Running PSL CLI Version {}", Version.getFull());
         DataStore dataStore = initDataStore();
@@ -393,32 +418,10 @@ public class Launcher {
         // Load model
         Model model = loadModel(dataStore);
 
-        // Run Client Interface for Online PSL
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT)) {
             runOnlineClient();
         } else {
-            // Inference
-            Database evalDB = null;
-            if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
-                evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
-            } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
-                learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
-            } else {
-                throw new IllegalArgumentException("No valid operation provided.");
-            }
-
-            // Evaluation
-            if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-                for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-                    evaluation(dataStore, evalDB, closedPredicates, evaluator);
-                }
-
-                log.info("Evaluation complete.");
-            }
-
-            if (evalDB != null) {
-                evalDB.close();
-            }
+            runPSL(model, dataStore, closedPredicates);
         }
 
         dataStore.close();
