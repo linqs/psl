@@ -30,8 +30,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class OnlineClient {
-    private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
-
     private String hostname;
     private int portNumber;
 
@@ -41,7 +39,6 @@ public class OnlineClient {
     }
 
     public void run() {
-        OnlineAction newAction = null;
         ObjectOutputStream out = null;
         String userInput = null;
         Socket server = null;
@@ -67,7 +64,8 @@ public class OnlineClient {
                 try {
                     out.writeObject(OnlineAction.getOnlineAction(userInput));
                 } catch (OnlineActionException ex) {
-                    log.error(String.format("Error parsing command: %s", userInput), ex);
+                    System.err.println(String.format("Error parsing command: %s", userInput));
+                    ex.printStackTrace(System.err);
                 }
             }
         } catch (IOException ex) {
