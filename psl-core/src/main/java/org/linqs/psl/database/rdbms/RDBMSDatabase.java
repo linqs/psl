@@ -172,68 +172,7 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void commit(Iterable<RandomVariableAtom> atoms, int partitionId) {
-        if (closed) {
-            throw new IllegalStateException("Cannot commit on a closed database.");
-        }
-
-        // Split the atoms up by predicate.
-        Map<Predicate, List<RandomVariableAtom>> atomsByPredicate = new HashMap<Predicate, List<RandomVariableAtom>>();
-
-        for (RandomVariableAtom atom : atoms) {
-            if (!atomsByPredicate.containsKey(atom.getPredicate())) {
-                atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>());
-            }
-
-            atomsByPredicate.get(atom.getPredicate()).add(atom);
-        }
-
-        try (Connection connection = getConnection()) {
-            // Upsert each predicate batch.
-            for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
-                try (PreparedStatement statement = getAtomUpsert(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(entry.getKey()))) {
-                    int batchSize = 0;
-
-                    // Set all the upsert params.
-                    for (RandomVariableAtom atom : entry.getValue()) {
-                        // Partition
-                        statement.setInt(1, partitionId);
-
-                        // Value
-                        statement.setDouble(2, atom.getValue());
-
-                        // Args
-                        Term[] arguments = atom.getArguments();
-                        for (int i = 0; i < arguments.length; i++) {
-                            setAtomArgument(statement, arguments[i], i + 3);
-                        }
-
-                        statement.addBatch();
-                        batchSize++;
-
-                        if (batchSize >= RDBMSInserter.DEFAULT_PAGE_SIZE) {
-                            statement.executeBatch();
-                            statement.clearBatch();
-                            batchSize = 0;
-                        }
-                    }
-
-                    if (batchSize > 0) {
-                        statement.executeBatch();
-                        statement.clearBatch();
-                    }
-                    statement.clearParameters();
-                } catch (SQLException ex) {
-                    throw new RuntimeException("Error doing batch commit for: " + entry.getKey(), ex);
-                }
-            }
-        } catch (SQLException ex) {
-            throw new RuntimeException("Error doing batch commit.", ex);
-        }
-    }
-
-    @Override
-    public void commitGroundAtoms(Iterable<GroundAtom> atoms, int partitionId) {
+    public void commit(Iterable<? extends GroundAtom> atoms, int partitionId) {
         if (closed) {
             throw new IllegalStateException("Cannot commit on a closed database.");
         }

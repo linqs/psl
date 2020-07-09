@@ -97,8 +97,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
 
     public synchronized Set<GroundAtom> flushNewAtoms() {
         // HACK(connor): Generalize commit for groundAtoms.
-        db.commitGroundAtoms(obAtoms, db.getReadPartitions().get(readPartition).getID());
-        db.commitGroundAtoms(rvAtoms, db.getWritePartition().getID());
+        db.commit(obAtoms, db.getReadPartitions().get(readPartition).getID());
+        db.commit(rvAtoms, db.getWritePartition().getID());
 
         Set<GroundAtom> newAtoms = new HashSet<>(this.newAtoms);
 

@@ -41,7 +41,7 @@ public interface WritableDatabase {
     public void commit(RandomVariableAtom atom);
 
     /**
-     * A batch form or commit().
+     * A batch form of commit().
      * When possible, this commit should be used.
      */
     public void commit(Iterable<RandomVariableAtom> atoms);
@@ -59,17 +59,11 @@ public interface WritableDatabase {
 
     /**
      * A form of commit() that allows the caller to choose the specific partition
-     * the atoms are comitted to.
+     * the atoms are committed to.
      * Should only be used if you REALLY know what you are doing.
      */
-    public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
-
-    /**
-     * A form of commit() that allows the caller to choose the specific partition
-     * the atoms are comitted to.
-     * Should only be used if you REALLY know what you are doing.
-     */
-    public void commitGroundAtoms(Iterable<GroundAtom> atoms, int partitionId);
+    public void commit(Iterable<? extends GroundAtom> atoms, int partitionId);
+    
 
     /**
      * Move all ground atoms of a predicate/partition combination into
