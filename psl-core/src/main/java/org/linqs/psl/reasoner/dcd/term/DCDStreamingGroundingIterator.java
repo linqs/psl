@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.sgd.term;
+package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -34,32 +35,29 @@ import java.util.List;
  * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundIterator<SGDObjectiveTerm> {
-    public SGDStreamingInitialRoundIterator(
-            SGDStreamingTermStore parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
-            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
+public class DCDStreamingGroundingIterator extends StreamingGroundingIterator<DCDObjectiveTerm> {
+    public DCDStreamingGroundingIterator(
+            DCDStreamingTermStore parentStore, List<? extends Rule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, GroundAtom> termGenerator,
+            List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize) {
-        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);
+            int pageSize, int numPages, boolean partialGround) {
+        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize,
+                numPages, partialGround);
     }
 
     @Override
     protected void writeFullPage(String termPagePath, String volatilePagePath) {
         flushTermCache(termPagePath);
+        flushVolatileCache(volatilePagePath);
 
         termCache.clear();
-
-        // SGD doesn't use a volatile buffer.
-        if (volatileBuffer == null) {
-            volatileBuffer = ByteBuffer.allocate(0);
-        }
     }
 
     private void flushTermCache(String termPagePath) {
         // Count the exact size we will need to write.
         int termsSize = 0;
-        for (SGDObjectiveTerm term : termCache) {
+        for (DCDObjectiveTerm term : termCache) {
             termsSize += term.fixedByteSize();
         }
 
@@ -76,7 +74,7 @@ public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundItera
         termBuffer.putInt(termCache.size());
 
         // Now put in all the terms.
-        for (SGDObjectiveTerm term : termCache) {
+        for (DCDObjectiveTerm term : termCache) {
             term.writeFixedValues(termBuffer);
         }
 
@@ -88,5 +86,28 @@ public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundItera
 
         // Log io.
         RuntimeStats.logDiskWrite(termBufferSize);
+    }
+
+    private void flushVolatileCache(String volatilePagePath) {
+        int volatileBufferSize = (Float.SIZE / 8) * termCache.size();
+
+        if (volatileBuffer == null || volatileBuffer.capacity() < volatileBufferSize) {
+            volatileBuffer = ByteBuffer.allocate((int)(volatileBufferSize * OVERALLOCATION_RATIO));
+        }
+        volatileBuffer.clear();
+
+        // Put in all the volatile values.
+        for (DCDObjectiveTerm term : termCache) {
+            volatileBuffer.putFloat(term.getLagrange());
+        }
+
+        try (FileOutputStream stream = new FileOutputStream(volatilePagePath)) {
+            stream.write(volatileBuffer.array(), 0, volatileBufferSize);
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to write volatile cache page: " + volatilePagePath, ex);
+        }
+
+        // Log io.
+        RuntimeStats.logDiskWrite(volatileBufferSize);
     }
 }

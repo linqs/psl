@@ -76,10 +76,8 @@ public class SGDReasoner extends Reasoner {
             // Keep track of the mean movement of the random variables.
             float movement = 0.0f;
 
-            float[] variableValues = termStore.getVariableValues();
-            GroundAtom[] variableAtoms = termStore.getVariableAtoms();
             for (SGDObjectiveTerm term : termStore) {
-                movement += term.minimize(iteration, variableValues, variableAtoms);
+                movement += term.minimize(iteration, termStore);
             }
 
             if (termStore.getNumVariables() != 0) {

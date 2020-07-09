@@ -78,9 +78,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     private int variableIndex;
     private int numRandomVariables;
 
-    // Buffer to hold new terms
-    protected Queue<T> newTermBuffer;
-
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
 
@@ -192,11 +189,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
-        newTermBuffer = new LinkedList<T>();
 
         initialRound = true;
         activeIterator = null;
         numPages = 0;
+        seenTermCount = 0;
         variableIndex = 0;
 
         termBuffer = null;
@@ -216,7 +213,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public boolean isLoaded() {
-        return !initialRound;
+        return !initialRound && !(online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0);
     }
 
     @Override
@@ -383,34 +380,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
-    protected void activateNewTerms() {
-        if (newTermBuffer.size() <= 0) {
-            return;
-        }
-
-        termBuffer.clear();
-        termCache.clear();
-
-        readPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
-        while (true) {
-            while (termCache.size() < pageSize && newTermBuffer.size() > 0) {
-                if (numPages == 1) {
-                    termPool.add(newTermBuffer.peek());
-                }
-                termCache.add(newTermBuffer.remove());
-                seenTermCount++;
-            }
-
-            writeFullPage(getTermPagePath(numPages - 1), getVolatilePagePath(numPages - 1));
-
-            if (newTermBuffer.size() <= 0) {
-                break;
-            }
-
-            numPages++;
-        }
-    }
-
     public String getTermPagePath(int index) {
         // Make sure the path is built.
         for (int i = termPagePaths.size(); i <= index; i++) {
@@ -433,8 +402,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      * A callback for the initial round iterator.
      * The ByterBuffers are here because of possible reallocation.
      */
-    public void initialIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
-        seenTermCount = termCount;
+    public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
+        seenTermCount += termCount;
         this.numPages = numPages;
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
@@ -475,8 +444,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
 
-        if (initialRound) {
-            activeIterator = getInitialRoundIterator();
+        if (initialRound || (online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0)) {
+            activeIterator = getGroundingIterator();
         } else {
             activeIterator = getCacheIterator();
         }
@@ -545,10 +514,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void initForOptimization() {
-        // check if there are new terms to be written to the last page and if so, rewrite the last page
-        if (newTermBuffer.size() > 0) {
-            activateNewTerms();
-        }
     }
 
     @Override
@@ -568,7 +533,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     /**
      * Get an iterator that will perform grounding queries and write the initial pages to disk.
      */
-    protected abstract StreamingIterator<T> getInitialRoundIterator();
+    protected abstract StreamingIterator<T> getGroundingIterator();
 
     /**
      * Get an iterator that will read and write from disk.
@@ -580,81 +545,4 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      */
     protected abstract StreamingIterator<T> getNoWriteIterator();
 
-    // TODO (Connor): Make these functions be methods of streamingTermStore and have iterators use them.
-    private void readPage(String termPagePath, String volatilePagePath) {
-        int termsSize = 0;
-        int numTerms = 0;
-        int headerSize = (Integer.SIZE / 8) * 2;
-
-        try (FileInputStream termStream = new FileInputStream(termPagePath)) {
-            // First read the term size information.
-            termStream.read(termBuffer.array(), 0, headerSize);
-
-            termsSize = termBuffer.getInt();
-            numTerms = termBuffer.getInt();
-
-            // Now read in all the terms.
-            termStream.read(termBuffer.array(), headerSize, termsSize);
-        } catch (IOException ex) {
-            throw new RuntimeException(String.format("Unable to read cache page: [%s].", termPagePath), ex);
-        }
-
-        // Log io.
-        RuntimeStats.logDiskRead(headerSize + termsSize);
-
-        // Convert all the terms from binary to objects.
-        // Use the terms from the pool.
-        for (int i = 0; i < numTerms; i++) {
-            SGDObjectiveTerm term = (SGDObjectiveTerm)termPool.get(i);
-            term.read(termBuffer, volatileBuffer);
-            termCache.add((T)term);
-        }
-    }
-
-    // TODO (Connor): Make these functions be methods of streamingTermStore and have iterators use them rather than reimplement.
-    private void writeFullPage(String termPagePath, String volatilePagePath) {
-        flushTermCache(termPagePath);
-
-        termCache.clear();
-
-        // SGD doesn't use a volatile buffer.
-        if (volatileBuffer == null) {
-            volatileBuffer = ByteBuffer.allocate(0);
-        }
-    }
-
-    private void flushTermCache(String termPagePath) {
-        // Count the exact size we will need to write.
-        int termsSize = 0;
-        double overallocation_ratio = 1.25;
-        for (T term : termCache) {
-            termsSize += ((SGDObjectiveTerm)term).fixedByteSize();
-        }
-
-        // Allocate an extra two ints for the number of terms and size of terms in that page.
-        int termBufferSize = termsSize + (Integer.SIZE / 8) * 2;
-
-        if (termBuffer == null || termBuffer.capacity() < termBufferSize) {
-            termBuffer = ByteBuffer.allocate((int)(termBufferSize * overallocation_ratio));
-        }
-        termBuffer.clear();
-
-        // First put the size of the terms and number of terms.
-        termBuffer.putInt(termsSize);
-        termBuffer.putInt(termCache.size());
-
-        // Now put in all the terms.
-        for (T term : termCache) {
-            ((SGDObjectiveTerm)term).writeFixedValues(termBuffer);
-        }
-
-        try (FileOutputStream stream = new FileOutputStream(termPagePath)) {
-            stream.write(termBuffer.array(), 0, termBufferSize);
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to write term cache page: " + termPagePath, ex);
-        }
-
-        // Log io.
-        RuntimeStats.logDiskWrite(termBufferSize);
-    }
 }

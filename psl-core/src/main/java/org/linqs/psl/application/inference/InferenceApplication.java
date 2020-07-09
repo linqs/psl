@@ -100,9 +100,9 @@ public abstract class InferenceApplication implements ModelApplication {
         initializeAtoms();
 
         reasoner = createReasoner();
+        termGenerator = createTermGenerator();
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
-        termGenerator = createTermGenerator();
 
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 

@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -91,21 +92,21 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(int iteration, float[] variableValues, GroundAtom[] variableAtoms) {
+    public float minimize(int iteration, VariableTermStore termStore) {
         float movement = 0.0f;
 
         for (int i = 0 ; i < size; i++) {
-            if (variableAtoms[indices[i]] instanceof ObservedAtom) {
+            if (termStore.getVariableAtoms()[indices[i]] instanceof ObservedAtom) {
                 continue;
             }
 
-            float dot = dot(variableValues);
+            float dot = dot(termStore.getVariableValues());
             float gradient = computeGradient(i, dot);
             float gradientStep = gradient * (learningRate / iteration);
 
-            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[indices[i]] - gradientStep));
-            movement += Math.abs(newValue - variableValues[indices[i]]);
-            variableValues[indices[i]] = newValue;
+            float newValue = Math.max(0.0f, Math.min(1.0f, termStore.getVariableValues()[indices[i]] - gradientStep));
+            movement += Math.abs(newValue - termStore.getVariableValues()[indices[i]]);
+            termStore.getVariableValues()[indices[i]] = newValue;
         }
 
         return movement;

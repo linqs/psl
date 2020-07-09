@@ -27,25 +27,17 @@ import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+
 
 /**
  * Use streaming grounding and inference with an SGD reasoner.
@@ -80,9 +72,9 @@ public abstract class OnlineInference extends InferenceApplication {
         initializeAtoms();
 
         reasoner = createReasoner();
+        termGenerator = createTermGenerator();
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
-        termGenerator = createTermGenerator();
 
         int atomCapacity = atomManager.getCachedRVACount() + atomManager.getCachedOBSCount();
         termStore.ensureVariableCapacity(atomCapacity);
@@ -118,7 +110,6 @@ public abstract class OnlineInference extends InferenceApplication {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> server.closeServer()));
         } catch (IOException e) {
             log.info("Failed to start server");
-            close();
             System.exit(1);
         }
     }
@@ -183,33 +174,17 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates action) {
-        // Activate the atoms that were added
-        log.trace("Partial Grounding Start");
-        List<GroundRule> groundRules = ((OnlineAtomManager)atomManager).activateAtoms(rules, (OnlineTermStore)termStore);
-        log.trace("Partial Grounding Stop");
-
-        log.trace("Term Generation Start");
-        log.trace("Adding " + groundRules.size() + " ground rules to model");
-        int newTermCount = 0;
-        for (GroundRule groundRule : groundRules) {
-            ReasonerTerm newTerm = termGenerator.createTerm(groundRule, termStore);
-            if (newTerm == null) {
-                // Term was trivial
-                continue;
-            }
-            newTermCount++;
-            termStore.add(groundRule, newTerm);
-        }
-        log.trace("Added " + newTermCount + " terms to model");
-        log.trace("Term Generation Stop");
-
-        // Ensure we are in optimal state
         log.trace("Optimization Start");
         objective = reasoner.optimize(termStore);
         log.trace("Optimization Start");
 
-        log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
-        db.outputRandomVariableAtoms(action.getOutputDirectoryPath());
+        if (action.getOutputDirectoryPath() != null) {
+            log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
+            db.outputRandomVariableAtoms(action.getOutputDirectoryPath());
+        } else {
+            log.info("Writing inferred predicates to output stream.");
+            db.outputRandomVariableAtoms(System.out);
+        }
     }
 
     /**

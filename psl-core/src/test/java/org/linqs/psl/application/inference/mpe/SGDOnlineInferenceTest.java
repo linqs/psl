@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -153,12 +154,14 @@ public class SGDOnlineInferenceTest {
     }
 
     private void queueCommands(SGDOnlineInference inference, ArrayList<String> commands) {
-        String[] tokenized_command;
+        OnlineAction action = null;
 
         for(String command : commands) {
-            tokenized_command = command.split("\t");
-            OnlineAction action = OnlineAction.getOnlineAction(tokenized_command[0]);
-            action.initAction(tokenized_command);
+            try {
+                action = OnlineAction.getOnlineAction(command);
+            } catch (OnlineActionException ex) {
+                throw new RuntimeException(ex);
+            }
             inference.server.enqueue(action);
         }
     }

@@ -31,7 +31,7 @@ import java.util.List;
  * On these non-initial iterations, we will fill the term cache from disk and drain it.
  *
  * This iterator can be constructed as read-only.
- * In this case, pages will not be witten to disk.
+ * In this case, pages will not be written to disk.
  */
 public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
     private static final Logger log = LoggerFactory.getLogger(StreamingCacheIterator.class);
@@ -124,24 +124,23 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         nextTerm = fetchNextTerm();
 
-        // Keep going until a term that is not deleted is found.
         long start = System.currentTimeMillis();
         if (nextTerm != null) {
+            // Keep going until a term that is not deleted is found.
             while (parentStore.deletedTerm(nextTerm)) {
                 nextTerm = fetchNextTerm();
                 if (nextTerm == null) {
-                    break;
+                    deletedTermCheckTime += (System.currentTimeMillis() - start);
+                    close();
+                    return false;
                 }
             }
-        }
-        long stop = System.currentTimeMillis();
-        deletedTermCheckTime += (stop - start);
-
-        // check if there were no more pages, we are done.
-        if (nextTerm == null) {
+        } else {
+            // No more pages, we are done.
             close();
             return false;
         }
+        deletedTermCheckTime += (System.currentTimeMillis() - start);
 
         return true;
     }

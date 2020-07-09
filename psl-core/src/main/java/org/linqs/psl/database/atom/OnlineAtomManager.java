@@ -19,6 +19,7 @@ package org.linqs.psl.database.atom;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A persisted atom manager that will add new atoms in an online setting.
@@ -93,34 +95,29 @@ public class OnlineAtomManager extends PersistedAtomManager {
         // OnlineAtomManger does not have access exceptions.
     }
 
-    public ArrayList<GroundRule> activateAtoms(List<Rule> rules, OnlineTermStore termStore) {
-        log.trace("Activating " + newAtoms.size() + " new atoms");
-
-        if (newAtoms.size() == 0) {
-            return new ArrayList<GroundRule>();
-        }
-
-        // TODO(connor): This could run into memory issues.
+    public synchronized Set<GroundAtom> flushNewAtoms() {
         // HACK(connor): Generalize commit for groundAtoms.
         db.commitGroundAtoms(obAtoms, db.getReadPartitions().get(readPartition).getID());
         db.commitGroundAtoms(rvAtoms, db.getWritePartition().getID());
 
-        Set<Predicate> onlinePredicates = PartialGrounding.getOnlinePredicates(newAtoms);
-        Set<Rule> onlineRules = PartialGrounding.getLazyRules(rules, onlinePredicates);
-        ArrayList<GroundRule> totalGroundRules = new ArrayList<GroundRule>();
-
-        // TODO(connor): Currently ignoring arithmetic rules. Why do these need a full regrounding?
-        for (Rule onlineRule : onlineRules) {
-            if (onlineRule.supportsGroundingQueryRewriting()) {
-                ArrayList onlineRuleGroundings = PartialGrounding.onlineSimpleGround(onlineRule, onlinePredicates, this);
-                totalGroundRules.addAll(onlineRuleGroundings);
-            }
-        }
+        Set<GroundAtom> newAtoms = new HashSet<>(this.newAtoms);
 
         obAtoms.clear();
         rvAtoms.clear();
-        newAtoms.clear();
+        this.newAtoms.clear();
 
-        return totalGroundRules;
+        return newAtoms;
+    }
+
+    public synchronized Set<GroundAtom> getNewAtoms() {
+        return newAtoms;
+    }
+
+    public synchronized Set<GroundAtom> getNewObservedAtoms() {
+        return obAtoms;
+    }
+
+    public synchronized Set<GroundAtom> getNewRandomVariableAtoms() {
+        return rvAtoms;
     }
 }

@@ -18,12 +18,18 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.atom.OnlineAtomManager;
+import org.linqs.psl.grounding.PartialGrounding;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
@@ -43,10 +49,19 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     }
 
     @Override
-    protected StreamingIterator<SGDObjectiveTerm> getInitialRoundIterator() {
-        return new SGDStreamingInitialRoundIterator(
-                this, rules, atomManager, termGenerator,
-                termCache, termPool, termBuffer, volatileBuffer, pageSize);
+    protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
+        if (initialRound) {
+            return new SGDStreamingGroundingIterator(
+                    this, this.rules, atomManager, termGenerator,
+                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, true);
+        } else {
+            Set<GroundAtom> newAtoms = ((OnlineAtomManager)atomManager).flushNewAtoms();
+            ArrayList<? extends Rule> rules = new ArrayList(PartialGrounding.getLazyRules(this.rules, PartialGrounding.getOnlinePredicates(newAtoms)));
+
+            return new SGDStreamingGroundingIterator(
+                    this, rules, atomManager, termGenerator,
+                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, false);
+        }
     }
 
     @Override
@@ -61,16 +76,6 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         return new SGDStreamingCacheIterator(
                 this, true, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
-    }
-
-    @Override
-    public void add(GroundRule rule, SGDObjectiveTerm term) {
-        seenTermCount = seenTermCount + 1;
-        newTermBuffer.add(term);
-
-        if (newTermBuffer.size() >= pageSize) {
-            activateNewTerms();
-        }
     }
 
     @Override

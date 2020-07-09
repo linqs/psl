@@ -164,7 +164,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         // Collect the specific predicates that are targets in this lazy batch
         // and the rules associated with those predicates.
         Set<StandardPredicate> lazyPredicates = PartialGrounding.getLazyPredicates(toActivate);
-        Set<Rule> lazyRules = PartialGrounding.getLazyRules(rules, lazyPredicates);
+        Set<? extends Rule> lazyRules = PartialGrounding.getLazyRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
             // We will deal with these rules after we move the lazy atoms to the write partition.
