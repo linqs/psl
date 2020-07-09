@@ -137,12 +137,12 @@ public class OnlineServer<T> extends Thread{
     }
 
     private class ServerClientThread extends Thread {
-
         private Socket client;
         private ObjectInputStream inStream;
 
         ServerClientThread(Socket inSocket) {
             client = inSocket;
+
             try {
                 inStream = new ObjectInputStream(client.getInputStream());
             } catch (IOException e) {
@@ -164,7 +164,8 @@ public class OnlineServer<T> extends Thread{
         }
 
         public void run() {
-            T newCommand;
+            T newCommand = null;
+
             while (client.isConnected() && !isInterrupted()) {
                 try {
                     newCommand = (T) inStream.readObject();

@@ -30,13 +30,11 @@ import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
@@ -204,9 +202,8 @@ public class Launcher {
         log.info("Inference Complete");
 
         // Output the results.
-        log.trace("Writing inferred predicates");
-
         if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
+            log.trace("Writing inferred predicates to out stream.");
             database.outputRandomVariableAtoms(System.out);
         } else {
             String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
@@ -409,8 +406,8 @@ public class Launcher {
         }
 
         if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) &&
-                (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) &&
-                (!givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT))) {
+                !givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN) &&
+                !givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT)) {
             System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
             helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;

@@ -20,8 +20,6 @@ package org.linqs.psl.cli;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.config.Options;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

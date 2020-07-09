@@ -28,10 +28,8 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
