@@ -320,5 +320,4 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     protected abstract V convertAtomToVariable(RandomVariableAtom atom);
-
 }

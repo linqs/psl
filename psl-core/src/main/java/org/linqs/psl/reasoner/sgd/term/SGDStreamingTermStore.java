@@ -21,9 +21,8 @@ import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
@@ -53,14 +52,11 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         if (initialRound) {
             return new SGDStreamingGroundingIterator(
                     this, this.rules, atomManager, termGenerator,
-                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, true);
-        } else {
-            Set<GroundAtom> newAtoms = ((OnlineAtomManager)atomManager).flushNewAtoms();
-            ArrayList<? extends Rule> rules = new ArrayList(PartialGrounding.getLazyRules(this.rules, PartialGrounding.getOnlinePredicates(newAtoms)));
-
-            return new SGDStreamingGroundingIterator(
-                    this, rules, atomManager, termGenerator,
                     termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, false);
+        } else {
+            return new SGDStreamingGroundingIterator(
+                    this, this.rules, atomManager, termGenerator,
+                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, true);
         }
     }
 
@@ -80,7 +76,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
 
     @Override
     public boolean deletedTerm(SGDObjectiveTerm term) {
-        int[] indices = term.getIndices();
+        int[] indices = term.getVariableIndices();
         boolean[] deletedAtoms = getDeletedAtoms();
 
         for (int index: indices) {

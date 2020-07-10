@@ -51,7 +51,7 @@ public class DCDReasoner extends Reasoner {
     @Override
     public double optimize(TermStore baseTermStore) {
         if (!(baseTermStore instanceof VariableTermStore)) {
-            throw new IllegalArgumentException("DCDReasoner requires an AtomTermStore (found " + baseTermStore.getClass().getName() + ").");
+            throw new IllegalArgumentException("DCDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
 
         @SuppressWarnings("unchecked")
@@ -61,14 +61,14 @@ public class DCDReasoner extends Reasoner {
 
         // This must be called after the term store has to correct variable capacity.
         // A reallocation can cause this array to become out-of-date.
-        float[] values = termStore.getVariableValues();
+        float[] variableValues = termStore.getVariableValues();
         GroundAtom[] variableAtoms = termStore.getVariableAtoms();
 
         double objective = -1.0;
         double oldObjective = Double.POSITIVE_INFINITY;
 
         if (printInitialObj && log.isTraceEnabled()) {
-            objective = computeObjective(termStore, values);
+            objective = computeObjective(termStore, variableValues);
             log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimization Time: {}", 0, objective, 0, 0);
         }
 
@@ -78,7 +78,7 @@ public class DCDReasoner extends Reasoner {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {
-                term.minimize(truncateEveryStep, values, variableAtoms);
+                term.minimize(truncateEveryStep, variableValues, variableAtoms);
             }
 
             // If we are truncating every step, then the variables are already in valid state.
@@ -91,7 +91,7 @@ public class DCDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
 
             oldObjective = objective;
-            objective = computeObjective(termStore, values);
+            objective = computeObjective(termStore, variableValues);
             totalTime += end - start;
 
             if (log.isTraceEnabled()) {

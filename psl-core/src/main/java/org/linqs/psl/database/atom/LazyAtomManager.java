@@ -163,7 +163,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         // Collect the specific predicates that are targets in this lazy batch
         // and the rules associated with those predicates.
-        Set<StandardPredicate> lazyPredicates = PartialGrounding.getLazyPredicates(toActivate);
+        Set<Predicate> lazyPredicates = PartialGrounding.getLazyPredicates(toActivate);
         Set<? extends Rule> lazyRules = PartialGrounding.getLazyRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
@@ -174,7 +174,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         }
 
         // Move all the new atoms out of the lazy partition and into the write partition.
-        for (StandardPredicate lazyPredicate : lazyPredicates) {
+        for (Predicate lazyPredicate : lazyPredicates) {
             db.moveToPartition(lazyPredicate, Partition.SPECIAL_WRITE_ID, db.getWritePartition().getID());
         }
 

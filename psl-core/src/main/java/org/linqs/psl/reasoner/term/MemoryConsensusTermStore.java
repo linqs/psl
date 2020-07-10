@@ -65,7 +65,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
             int consensusId = store.getVariableIndex((RandomVariableAtom)atom);
 
             // The underlying store should not give us an index that is more than one larger than the current highest.
-            assert (consensusId <= localVariables.size());
+            assert(consensusId <= localVariables.size());
 
             if (consensusId == localVariables.size()) {
                 localVariables.add(new ArrayList<V>());

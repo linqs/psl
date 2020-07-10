@@ -70,14 +70,11 @@ public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> 
         if (initialRound) {
             return new DCDStreamingGroundingIterator(
                     this, this.rules, atomManager, termGenerator,
-                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, true);
-        } else {
-            Set<GroundAtom> newAtoms = ((OnlineAtomManager)atomManager).flushNewAtoms();
-            ArrayList<? extends Rule> rules = new ArrayList(PartialGrounding.getLazyRules(this.rules, PartialGrounding.getOnlinePredicates(newAtoms)));
-
-            return new DCDStreamingGroundingIterator(
-                    this, rules, atomManager, termGenerator,
                     termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, false);
+        } else {
+            return new DCDStreamingGroundingIterator(
+                    this, this.rules, atomManager, termGenerator,
+                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, true);
         }
     }
 

@@ -52,7 +52,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         constant = hyperplane.getConstant();
 
         indices = new int[size];
-        GroundAtom[] atoms = hyperplane.getAtoms();
+        GroundAtom[] atoms = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             indices[i] = termStore.getVariableIndex(atoms[i]);
         }

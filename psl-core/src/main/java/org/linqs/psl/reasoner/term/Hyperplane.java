@@ -25,54 +25,54 @@ import java.lang.reflect.Array;
  * Information representing a raw hyperplane.
  */
 public class Hyperplane<E extends ReasonerLocalAtom> {
-    private E[] atoms;
+    private E[] variables;
     private float[] coefficients;
-    private int nextIndex;
+    private int size;
     private float constant;
 
     @SuppressWarnings("unchecked")
-    public Hyperplane(Class<E> localVariableClass, int maxVariableSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxVariableSize), new float[maxVariableSize], constant, 0);
+    public Hyperplane(Class<E> localVariableClass, int maxSize, float constant) {
+        this((E[])Array.newInstance(localVariableClass, maxSize), new float[maxSize], constant, 0);
     }
 
-    public Hyperplane(E[] atoms, float[] coefficients, float constant, int index) {
-        this.atoms = atoms;
+    public Hyperplane(E[] variables, float[] coefficients, float constant, int index) {
+        this.variables = variables;
         this.coefficients = coefficients;
         this.constant = constant;
-        this.nextIndex = index;
+        this.size = index;
     }
 
-    public void addAtom(E atom, float coefficient) {
-        atoms[nextIndex] = atom;
-        coefficients[nextIndex] = coefficient;
-        nextIndex++;
+    public void addVariable(E variable, float coefficient) {
+        variables[size] = variable;
+        coefficients[size] = coefficient;
+        size++;
     }
 
     public int size() {
-        return nextIndex;
+        return size;
     }
 
 
-    public E getAtom(int index) {
-        if (index >= this.nextIndex) {
-            throw new IndexOutOfBoundsException("Tried to access atom at index " + index + ", but only " + this.nextIndex + " exist.");
+    public E getVariable(int index) {
+        if (index >= this.size) {
+            throw new IndexOutOfBoundsException("Tried to access atom at index " + index + ", but only " + this.size + " exist.");
         }
 
-        return atoms[index];
+        return variables[index];
     }
 
 
     public float getCoefficient(int index) {
-        if (index >= this.nextIndex) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + this.nextIndex + " exist.");
+        if (index >= this.size) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + this.size + " exist.");
         }
 
         return coefficients[index];
     }
 
     public void appendCoefficient(int index, float value) {
-        if (index >= this.nextIndex) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + this.nextIndex + " exist.");
+        if (index >= this.size) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + this.size + " exist.");
         }
 
         coefficients[index] += value;
@@ -86,16 +86,15 @@ public class Hyperplane<E extends ReasonerLocalAtom> {
         this.constant = constant;
     }
 
-    public int indexOfAtom(E needle) {
-        return ArrayUtils.indexOf(atoms, nextIndex, needle);
+    public int indexOfVariable(E needle) {
+        return ArrayUtils.indexOf(variables, size, needle);
     }
 
-    public E[] getAtoms() {
-        return atoms;
+    public E[] getVariables() {
+        return variables;
     }
 
     public float[] getCoefficients() {
         return coefficients;
     }
-
 }

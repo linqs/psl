@@ -17,11 +17,14 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
@@ -32,6 +35,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Iterate over all the terms that come up from grounding.
@@ -72,6 +76,9 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected int pageSize;
     protected int numPages;
 
+    protected Set<GroundAtom> newAtoms;
+    protected Set<Predicate> onlinePredicates;
+
     // The flag setting the type of grounding this iterator will be performing
     protected boolean partialGround;
 
@@ -94,7 +101,10 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this.termCache.clear();
 
         this.termPool = termPool;
-        this.termPool.clear();
+        if (!partialGround) {
+            // Initial round, clear termPool.
+            this.termPool.clear();
+        }
 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
@@ -103,6 +113,13 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this.numPages = numPages;
 
         this.partialGround = partialGround;
+
+        if (partialGround) {
+            newAtoms = ((OnlineAtomManager)atomManager).activateNewAtoms();
+            onlinePredicates = PartialGrounding.getOnlinePredicates(newAtoms);
+        } else {
+            newAtoms = null;
+        }
 
         newTermCount = 0;
 
@@ -188,7 +205,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         termCache.add(term);
 
-        // If we are on the first page, set aside the term for reuse.
+        // Fill up termPool for reuse.
         if (termCache.size() > termPool.size()) {
             termPool.add(term);
         }
@@ -226,7 +243,9 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         // Start grounding the next rule.
         if (partialGround) {
-            queryIterable = getPartialGroundingIterator();
+            do {
+                queryIterable = getPartialGroundingIterator();
+            } while((queryIterable == null) && (currentRule < rules.size()));
         } else {
             queryIterable = getFullGroundingIterator();
         }
@@ -253,7 +272,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             return null;
         }
 
-        return PartialGrounding.onlineSimpleGround(rules.get(currentRule), atomManager);
+        return PartialGrounding.onlineSimpleGround(rules.get(currentRule), onlinePredicates, atomManager.getDatabase());
     }
 
     private void flushCache() {
@@ -284,6 +303,17 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             queryIterable.close();
             queryIterable = null;
             queryResults = null;
+        }
+
+        // Move all the new atoms out of the lazy partition and into the write partition.
+        if (partialGround) {
+            for (Predicate onlinePredicate : onlinePredicates) {
+                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID,
+                        atomManager.getDatabase().getWritePartition().getID());
+
+                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,
+                        atomManager.getDatabase().getReadPartitions().get(0).getID());
+            }
         }
 
         parentStore.groundingIterationComplete(newTermCount, numPages, termBuffer, volatileBuffer);

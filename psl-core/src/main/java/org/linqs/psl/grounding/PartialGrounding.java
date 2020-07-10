@@ -58,11 +58,11 @@ public class PartialGrounding {
     // Static only.
     private PartialGrounding() {}
 
-    public static Set<StandardPredicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
-        Set<StandardPredicate> lazyPredicates = new HashSet<StandardPredicate>();
+    public static Set<Predicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
+        Set<Predicate> lazyPredicates = new HashSet<Predicate>();
         for (Atom atom : toActivate) {
             if (atom.getPredicate() instanceof StandardPredicate) {
-                lazyPredicates.add((StandardPredicate)atom.getPredicate());
+                lazyPredicates.add(atom.getPredicate());
             }
         }
         return lazyPredicates;
@@ -113,14 +113,14 @@ public class PartialGrounding {
         rule.groundAll(atomManager, groundRuleStore);
     }
 
-    public static void lazySimpleGround(Rule rule, Set<StandardPredicate> lazyPredicates,
+    public static void lazySimpleGround(Rule rule, Set<Predicate> lazyPredicates,
                                         GroundRuleStore groundRuleStore, AtomManager atomManager) {
         Database db = atomManager.getDatabase();
         if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
 
-        Formula formula = rule.getRewritableGroundingFormula(atomManager);
+        Formula formula = rule.getRewritableGroundingFormula();
         ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates, db);
         if (groundingResults == null) {
             return;
@@ -140,12 +140,11 @@ public class PartialGrounding {
         }
     }
 
-    private static ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates,
-                                                      Database db) {
+    private static List<Atom> getLazyTargets(Formula formula, Set<Predicate> lazyPredicates) {
         List<Atom> lazyTargets = new ArrayList<Atom>();
 
-        // For every mention of a lazy predicate in this rule, we will need to get the grounding query
-        // with that specific predicate mention being the lazy target.
+        // For every mention of a online predicate in this rule, we will need to get the grounding query
+        // with that specific predicate mention being the online target.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
             if (!lazyPredicates.contains(atom.getPredicate())) {
                 continue;
@@ -154,12 +153,19 @@ public class PartialGrounding {
             lazyTargets.add(atom);
         }
 
+        return lazyTargets;
+    }
+
+    private static ResultList getLazyGroundingResults(Formula formula, Set<Predicate> lazyPredicates,
+                                                      Database db) {
+        List<Atom> lazyTargets = getLazyTargets(formula, lazyPredicates);
+
         if (lazyTargets.size() == 0) {
             return null;
+        } else {
+            // Do the grounding query for this rule.
+            return lazyGround(formula, getLazyTargets(formula, lazyPredicates), db);
         }
-
-        // Do the grounding query for this rule.
-        return lazyGround(formula, lazyTargets, db);
     }
 
     private static ResultList lazyGround(Formula formula, List<Atom> lazyTargets, Database db) {
@@ -196,32 +202,25 @@ public class PartialGrounding {
         return onlinePredicates;
     }
 
-    public static QueryResultIterable onlineSimpleGround(Rule rule, AtomManager atomManager) {
-        Database db = atomManager.getDatabase();
+    public static QueryResultIterable onlineSimpleGround(Rule rule, Set<Predicate> onlinePredicates, Database db) {
         if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
 
-        Formula formula = rule.getRewritableGroundingFormula(atomManager);
-        return getOnlineGroundingResults(formula, db);
+        Formula formula = rule.getRewritableGroundingFormula();
+        return getOnlineGroundingResults(formula, onlinePredicates, db);
     }
 
-    private static QueryResultIterable getOnlineGroundingResults(Formula formula, Database db) {
-        List<Atom> onlineTargets = new ArrayList<Atom>();
-
-        // For every mention of a online predicate in this rule, we will need to get the grounding query
-        // with that specific predicate mention being the online target.
-        for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            // TODO(connor) : Changed code here, should be handled properly.
-            onlineTargets.add(atom);
-        }
+    private static QueryResultIterable getOnlineGroundingResults(Formula formula, Set<Predicate> onlinePredicates,
+                                                                 Database db) {
+        List<Atom> onlineTargets = getLazyTargets(formula, onlinePredicates);
 
         if (onlineTargets.size() == 0) {
             return null;
+        } else {
+            // Do the grounding query for this rule.
+            return partialGround(formula, onlineTargets, db);
         }
-
-        // Do the grounding query for this rule.
-        return partialGround(formula, onlineTargets, db);
     }
 
     private static QueryResultIterable partialGround(Formula formula, List<Atom> onlineTargets, Database db) {
@@ -234,10 +233,16 @@ public class PartialGrounding {
         List<SelectQuery> queries = new ArrayList<SelectQuery>();
 
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+        Map<Variable, Integer> projectionMap = null;
 
-        Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, null);
-        queries.add(sqler.getQuery(formula));
-        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
+        for (Atom onlineTarget : onlineTargets) {
+            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, onlineTarget);
+            queries.add(sqler.getQuery(formula));
+
+            if (projectionMap == null) {
+                projectionMap = sqler.getProjectionMap();
+            }
+        }
 
         // This falls back to a normal SELECT when there is only one.
         UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));

@@ -33,7 +33,7 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
      * Caller releases control of the hyperplane and all members of it.
      */
     public ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
-        this.variables = hyperplane.getAtoms();
+        this.variables = hyperplane.getVariables();
         this.size = hyperplane.size();
         this.groundRule = groundRule;
     }

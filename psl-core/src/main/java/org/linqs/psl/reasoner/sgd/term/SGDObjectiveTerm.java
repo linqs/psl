@@ -19,7 +19,6 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -39,7 +38,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private short size;
     private float[] coefficients;
-    private int[] indices;
+    private int[] variableIndices;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
             boolean squared, boolean hinge,
@@ -55,15 +54,15 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
-        indices = new int[size];
-        GroundAtom[] atoms = hyperplane.getAtoms();
+        variableIndices = new int[size];
+        GroundAtom[] atoms = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
-            indices[i] = termStore.getVariableIndex(atoms[i]);
+            variableIndices[i] = termStore.getVariableIndex(atoms[i]);
         }
     }
 
-    public int[] getIndices() {
-        return indices;
+    public int[] getVariableIndices() {
+        return variableIndices;
     }
 
     @Override
@@ -96,7 +95,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float movement = 0.0f;
 
         for (int i = 0 ; i < size; i++) {
-            if (termStore.getVariableAtoms()[indices[i]] instanceof ObservedAtom) {
+            if (termStore.getVariableAtoms()[variableIndices[i]] instanceof ObservedAtom) {
                 continue;
             }
 
@@ -104,9 +103,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             float gradient = computeGradient(i, dot);
             float gradientStep = gradient * (learningRate / iteration);
 
-            float newValue = Math.max(0.0f, Math.min(1.0f, termStore.getVariableValues()[indices[i]] - gradientStep));
-            movement += Math.abs(newValue - termStore.getVariableValues()[indices[i]]);
-            termStore.getVariableValues()[indices[i]] = newValue;
+            float newValue = Math.max(0.0f, Math.min(1.0f, termStore.getVariableValues()[variableIndices[i]] - gradientStep));
+            movement += Math.abs(newValue - termStore.getVariableValues()[variableIndices[i]]);
+            termStore.getVariableValues()[variableIndices[i]] = newValue;
         }
 
         return movement;
@@ -128,7 +127,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[indices[i]];
+            value += coefficients[i] * variableValues[variableIndices[i]];
         }
 
         return value - constant;
@@ -165,7 +164,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(indices[i]);
+            fixedBuffer.putInt(variableIndices[i]);
         }
     }
 
@@ -183,12 +182,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
             coefficients = new float[size];
-            indices = new int[size];
+            variableIndices = new int[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            indices[i] = fixedBuffer.getInt();
+            variableIndices[i] = fixedBuffer.getInt();
         }
     }
 
@@ -217,11 +216,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
             if (termStore == null) {
                 builder.append(" * <index:");
-                builder.append(indices[i]);
+                builder.append(variableIndices[i]);
                 builder.append(">)");
             } else {
                 builder.append(" * ");
-                builder.append(termStore.getVariableValue(indices[i]));
+                builder.append(termStore.getVariableValue(variableIndices[i]));
                 builder.append(")");
             }
 

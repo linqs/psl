@@ -137,6 +137,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
             }
         } else {
             // No more pages, we are done.
+            deletedTermCheckTime += (System.currentTimeMillis() - start);
             close();
             return false;
         }
@@ -247,7 +248,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         int pageIndex = pageAccessOrder.get(currentPage);
         String volatilePagePath = parentStore.getVolatilePagePath(pageIndex);
-        String termPagePath = parentStore.getVolatilePagePath(pageIndex);
 
         writeVolatilePage(volatilePagePath);
     }

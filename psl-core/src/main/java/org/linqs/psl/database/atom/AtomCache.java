@@ -144,8 +144,8 @@ public class AtomCache {
      * Instantiates an ObservedAtom and stores it in this AtomCache.
      *
      * This method should only be called by this AtomCache's {@link Database}.
-     * To retrieve a GroundAtom, all others should use Database.getAtom()
-     * or AtomManager.getAtom().
+     * To retrieve a GroundAtom, all others should use Database.getVariable()
+     * or AtomManager.getVariable().
      *
      * Further, this method should only be called after ensuring that the Atom
      * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.
@@ -179,8 +179,8 @@ public class AtomCache {
      * Instantiates a RandomVariableAtom and stores it in this AtomCache.
      *
      * This method should only be called by this AtomCache's {@link Database}.
-     * To retrieve a GroundAtom, all others should use Database.getAtom()
-     * or AtomManager.getAtom().
+     * To retrieve a GroundAtom, all others should use Database.getVariable()
+     * or AtomManager.getVariable().
      *
      * Further, this method should only be called after ensuring that the Atom
      * is not already in this AtomCache using {@link #getCachedAtom(QueryAtom)}.

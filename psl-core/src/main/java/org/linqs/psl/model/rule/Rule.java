@@ -61,7 +61,7 @@ public interface Rule {
      * Get a grounding formual that can be rewritten.
      * Should throw if supportsGroundingQueryRewriting() == false.
      */
-    public Formula getRewritableGroundingFormula(AtomManager atomManager);
+    public Formula getRewritableGroundingFormula();
 
     /**
      * Does this rule support grounding out single instances at a time.

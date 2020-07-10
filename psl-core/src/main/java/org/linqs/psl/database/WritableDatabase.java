@@ -63,7 +63,7 @@ public interface WritableDatabase {
      * Should only be used if you REALLY know what you are doing.
      */
     public void commit(Iterable<? extends GroundAtom> atoms, int partitionId);
-    
+
 
     /**
      * Move all ground atoms of a predicate/partition combination into

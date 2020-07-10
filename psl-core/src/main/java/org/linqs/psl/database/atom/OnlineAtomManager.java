@@ -19,26 +19,17 @@ package org.linqs.psl.database.atom;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ResultList;
+import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.term.OnlineTermStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A persisted atom manager that will add new atoms in an online setting.
@@ -46,17 +37,14 @@ import java.util.stream.Collectors;
  * (Options.LAM_ACTIVATION_THRESHOLD) will be instantiated as real atoms.
  */
 public class OnlineAtomManager extends PersistedAtomManager {
-    private static final Logger log = LoggerFactory.getLogger(OnlineAtomManager.class);
-
     private static final float DEFAULT_UNOBSERVED_VALUE = 1.0f;
 
     /**
      * All the ground atoms that have been seen, but not instantiated.
      */
-    private final Set<GroundAtom> obAtoms;
-    private final Set<GroundAtom> rvAtoms;
-    public final Set<GroundAtom> newAtoms;
-    private final int readPartition;
+    private Set<GroundAtom> obAtoms;
+    private Set<GroundAtom> rvAtoms;
+    private Set<GroundAtom> newAtoms;
 
     public OnlineAtomManager(Database db) {
         super(db);
@@ -68,11 +56,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
         obAtoms = new HashSet<GroundAtom>();
         rvAtoms = new HashSet<GroundAtom>();
         newAtoms = new HashSet<GroundAtom>();
-        readPartition = Options.ONLINE_READ_PARTITION.getInt();
     }
 
     //TODO(connor) Check to see if atom exists in the database, throw error if it does
-    //TODO(connor) Should there be an activation like lazyatommanager?
     public synchronized void addObservedAtom(Predicate predicate, Float value, Constant... arguments) {
         AtomCache cache = db.getCache();
         ObservedAtom atom = cache.instantiateObservedAtom(predicate, arguments, value);
@@ -84,7 +70,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
     public synchronized void addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
         AtomCache cache = db.getCache();
         RandomVariableAtom atom = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
-        atom.setPersisted(true);
+        addToPersistedCache(atom);
 
         rvAtoms.add(atom);
         newAtoms.add(atom);
@@ -95,10 +81,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
         // OnlineAtomManger does not have access exceptions.
     }
 
-    public synchronized Set<GroundAtom> flushNewAtoms() {
-        // HACK(connor): Generalize commit for groundAtoms.
-        db.commit(obAtoms, db.getReadPartitions().get(readPartition).getID());
-        db.commit(rvAtoms, db.getWritePartition().getID());
+    public synchronized Set<GroundAtom> activateNewAtoms() {
+        db.commit(obAtoms, Partition.SPECIAL_READ_ID);
+        db.commit(rvAtoms, Partition.SPECIAL_WRITE_ID);
 
         Set<GroundAtom> newAtoms = new HashSet<>(this.newAtoms);
 

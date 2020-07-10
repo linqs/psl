@@ -32,7 +32,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 public class GeneralFunction implements FunctionTerm {
     private final float[] coefficients;
     private final FunctionTerm[] terms;
-    private int termIndex;
+    private int size;
 
     // All constants will get merged into this.
     private float constant;
@@ -52,7 +52,7 @@ public class GeneralFunction implements FunctionTerm {
         int totalCount = online ? rvaCount + obsCount : rvaCount;
         coefficients = new float[totalCount];
         terms = new FunctionTerm[totalCount];
-        termIndex = 0;
+        size = 0;
         constant = 0.0f;
         
         this.nonNegative = nonNegative;
@@ -108,14 +108,14 @@ public class GeneralFunction implements FunctionTerm {
         }
 
         if ((term instanceof RandomVariableAtom) || ((term instanceof ObservedAtom) && online)) {
-            if (termIndex == terms.length) {
+            if (size == terms.length) {
                 throw new IllegalStateException(
                         "More than the max terms added to the function. Max: " + terms.length);
             }
 
-            terms[termIndex] = term;
-            coefficients[termIndex] = coefficient;
-            termIndex++;
+            terms[size] = term;
+            coefficients[size] = coefficient;
+            size++;
         }
 
         constantTerms = constantTerms && term.isConstant();
@@ -123,7 +123,7 @@ public class GeneralFunction implements FunctionTerm {
     }
 
     public int size() {
-        return termIndex;
+        return size;
     }
 
     public float getCoefficient(int index) {
@@ -138,7 +138,7 @@ public class GeneralFunction implements FunctionTerm {
     public float getValue() {
         float val = constant;
 
-        for (int i = 0; i < termIndex; i++) {
+        for (int i = 0; i < size; i++) {
             val += terms[i].getValue() * coefficients[i];
         }
 
@@ -160,7 +160,7 @@ public class GeneralFunction implements FunctionTerm {
     public float getValue(float[] values) {
         float val = constant;
 
-        for (int i = 0; i < termIndex; i++) {
+        for (int i = 0; i < size; i++) {
             val += coefficients[i] * values[i];
         }
 
@@ -183,7 +183,7 @@ public class GeneralFunction implements FunctionTerm {
         float val = constant;
 
         // Use numeric for loops instead of iterators in high traffic code.
-        for (int i = 0; i < termIndex; i++) {
+        for (int i = 0; i < size; i++) {
             FunctionTerm term = terms[i];
             float coefficient = coefficients[i];
 
@@ -214,7 +214,7 @@ public class GeneralFunction implements FunctionTerm {
 
         string.append(constant);
 
-        for (int i = 0; i < termIndex; i++) {
+        for (int i = 0; i < size; i++) {
             FunctionTerm term = terms[i];
             float coefficient = coefficients[i];
 

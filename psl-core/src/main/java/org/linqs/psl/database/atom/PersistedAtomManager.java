@@ -21,20 +21,15 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.util.IteratorUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -44,7 +39,7 @@ import java.util.Set;
  *
  * All other types of Atoms are returned normally.
  *
- * getAtom() is thread-safe.
+ * getVariable() is thread-safe.
  */
 public class PersistedAtomManager extends AtomManager {
     private static final Logger log = LoggerFactory.getLogger(PersistedAtomManager.class);
@@ -203,7 +198,7 @@ public class PersistedAtomManager extends AtomManager {
         public RandomVariableAtom atom;
 
         public PersistedAccessException(RandomVariableAtom atom) {
-            super("Can only call getAtom() on persisted RandomVariableAtoms (RVAs)" +
+            super("Can only call getVariable() on persisted RandomVariableAtoms (RVAs)" +
                     " using a PersistedAtomManager." +
                     " Cannot access " + atom + "." +
                     " This typically means that provided data is insufficient." +

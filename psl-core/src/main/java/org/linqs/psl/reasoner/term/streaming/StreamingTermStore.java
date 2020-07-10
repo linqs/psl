@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -29,31 +30,24 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.util.RuntimeStats;
 import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 /**
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
@@ -213,7 +207,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public boolean isLoaded() {
-        return !initialRound && !(online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0);
+        return !(initialRound || (online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0));
     }
 
     @Override

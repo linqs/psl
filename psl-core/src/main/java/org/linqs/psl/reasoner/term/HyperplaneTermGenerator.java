@@ -146,7 +146,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                 // Check to see if we have seen this localTerm before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
                 // variables per hyperplane.
-                int localIndex = hyperplane.indexOfAtom(localTerm);
+                int localIndex = hyperplane.indexOfVariable(localTerm);
                 if (localIndex != -1) {
                     // If this function came from a logical rule
                     // and the sign of the current coefficient and the coefficient of this localTerm do not match,
@@ -161,7 +161,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                     // If the local localTerm already exists, just add to its coefficient.
                     hyperplane.appendCoefficient(localIndex, coefficient);
                 } else {
-                    hyperplane.addAtom(localTerm, coefficient);
+                    hyperplane.addVariable(localTerm, coefficient);
                 }
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
