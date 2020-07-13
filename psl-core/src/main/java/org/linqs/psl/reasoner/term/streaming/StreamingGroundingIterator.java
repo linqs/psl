@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
@@ -78,7 +79,6 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected int numPages;
 
     protected Set<GroundAtom> newAtoms;
-    protected Set<Predicate> onlinePredicates;
 
     // The flag setting the type of grounding this iterator will be performing
     protected boolean partialGround;
@@ -116,10 +116,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this.partialGround = partialGround;
 
         if (partialGround) {
-            newAtoms = ((OnlineAtomManager)atomManager).activateNewAtoms();
-            onlinePredicates = PartialGrounding.getOnlinePredicates(newAtoms);
-        } else {
-            newAtoms = null;
+            ((OnlineAtomManager)atomManager).activateNewAtoms();
         }
 
         newTermCount = 0;
@@ -273,7 +270,8 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             return null;
         }
 
-        return PartialGrounding.onlineSimpleGround(rules.get(currentRule), onlinePredicates, atomManager.getDatabase());
+        return PartialGrounding.onlineSimpleGround(rules.get(currentRule),
+                ((OnlineAtomManager)atomManager).getOnlinePredicates(), atomManager.getDatabase());
     }
 
     private void flushCache() {
@@ -308,13 +306,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         // Move all the new atoms out of the lazy partition and into the write partition.
         if (partialGround) {
-            for (Predicate onlinePredicate : onlinePredicates) {
-                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID,
-                        atomManager.getDatabase().getWritePartition().getID());
-
-                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,
-                        atomManager.getDatabase().getReadPartitions().get(0).getID());
-            }
+            ((OnlineAtomManager)atomManager).flushNewAtomCache();
         }
 
         parentStore.groundingIterationComplete(newTermCount, numPages, termBuffer, volatileBuffer);

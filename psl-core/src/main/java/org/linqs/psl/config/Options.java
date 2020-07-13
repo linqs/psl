@@ -72,7 +72,8 @@ public class Options {
     public static final Option ONLINE_READ_PARTITION = new Option(
         "onlineatommanager.read",
         0,
-        "Partition to add new observations to."
+        "Partition to add new observations to.",
+        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option ADMM_COMPUTE_PERIOD = new Option(

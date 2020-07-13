@@ -21,6 +21,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -39,12 +40,19 @@ import java.util.Set;
 public class OnlineAtomManager extends PersistedAtomManager {
     private static final float DEFAULT_UNOBSERVED_VALUE = 1.0f;
 
-    /**
-     * All the ground atoms that have been seen, but not instantiated.
-     */
-    private Set<GroundAtom> obAtoms;
-    private Set<GroundAtom> rvAtoms;
-    private Set<GroundAtom> newAtoms;
+    //Ground atoms that have been seen, but not instantiated.
+    private Set<GroundAtom> obsAtomBuffer;
+    private Set<GroundAtom> rvAtomBuffer;
+    private Set<GroundAtom> newAtomBuffer;
+
+     // Ground atoms that are currently being used for grounding.
+    private Set<GroundAtom> newAtomCache;
+
+    // Predicates that are currently being used for grounding.
+    private Set<Predicate> onlinePredicates;
+
+    // The partition we will add new observed atoms to.
+    protected int onlineReadPartition;
 
     public OnlineAtomManager(Database db) {
         super(db);
@@ -53,9 +61,18 @@ public class OnlineAtomManager extends PersistedAtomManager {
             throw new IllegalArgumentException("OnlineAtomManagers require RDBMSDatabase.");
         }
 
-        obAtoms = new HashSet<GroundAtom>();
-        rvAtoms = new HashSet<GroundAtom>();
-        newAtoms = new HashSet<GroundAtom>();
+        obsAtomBuffer = new HashSet<GroundAtom>();
+        rvAtomBuffer = new HashSet<GroundAtom>();
+        newAtomBuffer = new HashSet<GroundAtom>();
+
+        newAtomCache = new HashSet<GroundAtom>();
+        onlinePredicates = new HashSet<Predicate>();
+
+        if (Options.ONLINE_READ_PARTITION.getString() == null) {
+            onlineReadPartition = db.getReadPartitions().get(0).getID();
+        } else {
+            onlineReadPartition = Options.ONLINE_READ_PARTITION.getInt();
+        }
     }
 
     //TODO(connor) Check to see if atom exists in the database, throw error if it does
@@ -63,8 +80,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
         AtomCache cache = db.getCache();
         ObservedAtom atom = cache.instantiateObservedAtom(predicate, arguments, value);
 
-        obAtoms.add(atom);
-        newAtoms.add(atom);
+        obsAtomBuffer.add(atom);
+        newAtomBuffer.add(atom);
     }
 
     public synchronized void addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
@@ -72,8 +89,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
         RandomVariableAtom atom = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
         addToPersistedCache(atom);
 
-        rvAtoms.add(atom);
-        newAtoms.add(atom);
+        rvAtomBuffer.add(atom);
+        newAtomBuffer.add(atom);
     }
 
     @Override
@@ -81,28 +98,41 @@ public class OnlineAtomManager extends PersistedAtomManager {
         // OnlineAtomManger does not have access exceptions.
     }
 
-    public synchronized Set<GroundAtom> activateNewAtoms() {
-        db.commit(obAtoms, Partition.SPECIAL_READ_ID);
-        db.commit(rvAtoms, Partition.SPECIAL_WRITE_ID);
+    public synchronized void activateNewAtoms() {
+        db.commit(obsAtomBuffer, Partition.SPECIAL_READ_ID);
+        db.commit(rvAtomBuffer, Partition.SPECIAL_WRITE_ID);
 
-        Set<GroundAtom> newAtoms = new HashSet<>(this.newAtoms);
+        newAtomCache.addAll(this.newAtomBuffer);
+        onlinePredicates.addAll(PartialGrounding.getOnlinePredicates(this.newAtomBuffer));
 
-        obAtoms.clear();
-        rvAtoms.clear();
-        this.newAtoms.clear();
+        obsAtomBuffer.clear();
+        rvAtomBuffer.clear();
+        newAtomBuffer.clear();
+    }
 
-        return newAtoms;
+    public synchronized void flushNewAtomCache() {
+        for (Predicate onlinePredicate : onlinePredicates) {
+            db.moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID, db.getWritePartition().getID());
+            db.moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID, onlineReadPartition);
+        }
+
+        onlinePredicates.clear();
+        newAtomCache.clear();
+    }
+
+    public synchronized Set<Predicate> getOnlinePredicates() {
+        return onlinePredicates;
     }
 
     public synchronized Set<GroundAtom> getNewAtoms() {
-        return newAtoms;
+        return newAtomBuffer;
     }
 
     public synchronized Set<GroundAtom> getNewObservedAtoms() {
-        return obAtoms;
+        return obsAtomBuffer;
     }
 
     public synchronized Set<GroundAtom> getNewRandomVariableAtoms() {
-        return rvAtoms;
+        return rvAtomBuffer;
     }
 }
