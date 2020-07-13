@@ -438,6 +438,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
 
+        // TODO: We may want to parallelize optimization, in which case multiple iterators may exist.
+        //  This can cause issues for the grounding iterator if pages are being written.
         if (initialRound || (online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0)) {
             activeIterator = getGroundingIterator();
         } else {

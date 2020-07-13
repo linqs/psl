@@ -202,9 +202,11 @@ public class SGDOnlineInferenceTest {
     public void testAddAtoms() {
         SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
                 "AddAtom\tWrite\tRating\tConnor\tAvatar",
                 "WriteInferredPredicates",
+                "AddAtom\tWrite\tRating\tConnor\tSurfs Up\t1.0",
                 "Close"));
 
         queueCommands(inference, commands);

@@ -42,6 +42,7 @@ import java.util.Set;
  * On this iteration, we will build the term cache up from ground rules.
  * There may or may not be existing term pages stored on disk.
  */
+// TODO (Charles): Currently we always start writing to new pages and do not fill up partially filled term pages.
 public abstract class StreamingGroundingIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;

@@ -235,6 +235,7 @@ public class PartialGrounding {
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Map<Variable, Integer> projectionMap = null;
 
+        // TODO(): We do not want to create new atoms. This is lazy grounding which does create new atoms.
         for (Atom onlineTarget : onlineTargets) {
             Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, onlineTarget);
             queries.add(sqler.getQuery(formula));
@@ -246,6 +247,7 @@ public class PartialGrounding {
 
         // This falls back to a normal SELECT when there is only one.
         UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
+        // TODO(): union is the full SQL query we use.
         return relationalDB.executeQueryIterator(projectionMap, varTypes, union.validate().toString());
     }
 }
