@@ -281,7 +281,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         }
 
         // This fallbacks to a normal SELECT when there is only one.
-        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
+        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION_ALL, queries.toArray(new SelectQuery[0]));
         return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
     }
 
