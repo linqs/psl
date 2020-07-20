@@ -42,19 +42,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     private static final Logger log = LoggerFactory.getLogger(BaseGridSearch.class);
 
     /**
-     * The delimiter to separate rule weights (and location ids).
-     * Note that we cannot use ',' because our configuration infrastructure will try
-     * interpret it as a list of strings.
-     */
-    public static final String DELIM = ":";
-
-    /**
-     * The current location we are investigating.
-     * The exact representation is up to the implementing child class.
-     */
-    protected String currentLocation;
-
-    /**
      * The number of actual possible locations.
      * Initially set to 0 and should be set by child constructors.
      */
@@ -84,8 +71,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
     public BaseGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
-
-        currentLocation = null;
 
         maxNumLocations = 0;
         numLocations = maxNumLocations;

@@ -27,6 +27,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.util.MathUtils;
 
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,6 +160,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
         double[] lastSteps = new double[mutableRules.size()];
         double lastObjective = -1.0;
 
+        double[] currentWeights = new double[mutableRules.size()];
         double[] lastWeights = new double[mutableRules.size()];
         for (int i = 0; i < mutableRules.size(); i++) {
             lastWeights[i] = mutableRules.get(i).getWeight();
@@ -204,9 +206,16 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 mutableRules.get(i).setWeight(newWeight);
                 lastSteps[i] = currentStep;
                 avgWeights[i] += newWeight;
+                currentWeights[i] = newWeight;
                 norm += Math.pow(expectedIncompatibility[i] - observedIncompatibility[i], 2);
             }
 
+            // set current location
+            currentLocation = StringUtils.join(DELIM, currentWeights);
+
+            log.trace("Weights: {}", currentWeights);
+
+            // The weights have changed, so we are no longer in an MPE state.
             inMPEState = false;
 
             norm = Math.sqrt(norm);
@@ -222,6 +231,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
                 evaluator.compute(trainingMap);
                 objective = -1.0 * evaluator.getNormalizedRepMetric();
+
+                log.debug("Location {} -- objective: {}", currentLocation, objective);
 
                 if (cutObjective && step > 0 && objective > lastObjective) {
                     log.trace("Objective increased: {} -> {}, cutting step size: {} -> {}.",

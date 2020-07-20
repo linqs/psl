@@ -117,17 +117,24 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             exploredConfigs.add(config);
             configs.remove(nextPoint);
 
+            // set current location
+            currentLocation = StringUtils.join(DELIM, config.config);
+
+            log.trace("Weights: {}", config.config);
+
             float fnVal = (float)getFunctionValue(config);
             exploredFnVal.add(fnVal);
             config.valueAndStd.value = fnVal;
             config.valueAndStd.std = 0.0f;
+
+            log.debug("Location {} -- objective: {}", currentLocation, fnVal);
 
             if (bestConfig == null || fnVal > bestVal) {
                 bestVal = fnVal;
                 bestConfig = config;
             }
 
-            log.info(String.format("Iteration %d -- Config Picked: %s, Curent Best Config: %s.", (iteration + 1), exploredConfigs.get(iteration), bestConfig));
+            log.info(String.format("Iteration %d -- Config Picked: %s, Current Best Config: %s.", (iteration + 1), exploredConfigs.get(iteration), bestConfig));
 
             int numKnown = exploredFnVal.size();
             knownDataStdInv = FloatMatrix.zeroes(numKnown, numKnown);

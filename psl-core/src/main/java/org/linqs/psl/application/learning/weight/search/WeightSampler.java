@@ -22,12 +22,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class WeightSampler {
-    private static final Logger log = LoggerFactory.getLogger(WeightSampler.class);
-
     /**
      * Whether we will be sampling points from a Dirichlet distribution.
      */

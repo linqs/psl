@@ -57,6 +57,19 @@ public abstract class WeightLearningApplication implements ModelApplication {
     private boolean groundModelInit;
 
     /**
+     * The current location we are investigating.
+     * The exact representation is up to the implementing child class.
+     */
+    protected String currentLocation;
+
+    /**
+     * The delimiter to separate rule weights (and location ids).
+     * Note that we cannot use ',' because our configuration infrastructure will try
+     * interpret it as a list of strings.
+     */
+    public static final String DELIM = ":";
+
+    /**
      * Flags to track if the current variable configuration is an MPE state.
      * This will get set to true when computeMPEState is called,
      * but besides that it is up to children to set to false when weights are changed.
@@ -66,6 +79,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
     public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB) {
         this.rvDB = rvDB;
         this.observedDB = observedDB;
+
+        currentLocation = null;
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();

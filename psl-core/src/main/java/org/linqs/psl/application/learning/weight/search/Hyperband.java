@@ -23,6 +23,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,13 +111,19 @@ public class Hyperband extends WeightLearningApplication {
                         mutableRules.get(i).setWeight(config[i]);
                     }
 
+                    // set current location
+                    currentLocation = StringUtils.join(DELIM, config);
+
+                    log.trace("Weights: {}", config);
+
                     // The weights have changed, so we are no longer in an MPE state.
                     inMPEState = false;
 
                     double objective = run(config);
                     RunResult result = new RunResult(config, objective);
-
                     results.add(result);
+
+                    log.debug("Location {} -- objective: {}", currentLocation, objective);
 
                     if (bestWeights == null || objective < bestObjective) {
                         bestObjective = objective;
