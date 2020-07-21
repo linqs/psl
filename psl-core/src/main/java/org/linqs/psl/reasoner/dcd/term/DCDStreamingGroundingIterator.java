@@ -41,9 +41,9 @@ public class DCDStreamingGroundingIterator extends StreamingGroundingIterator<DC
             AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, GroundAtom> termGenerator,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize, int numPages, boolean partialGround) {
+            int pageSize, int numPages) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize,
-                numPages, partialGround);
+                numPages);
     }
 
     @Override

@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -210,6 +209,14 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return !(initialRound || (online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0));
     }
 
+    public boolean isInitialRound() {
+        return initialRound;
+    }
+
+    public boolean isCachedAtom(GroundAtom atom) {
+        return variables.containsKey(atom);
+    }
+
     @Override
     public int getNumVariables() {
         return numRandomVariables;
@@ -253,7 +260,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
-        if (variables.containsKey(atom)) {
+        if (isCachedAtom(atom)) {
             return atom;
         }
 
@@ -393,7 +400,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     /**
-     * A callback for the initial round iterator.
+     * A callback for the grounding iterator.
      * The ByterBuffers are here because of possible reallocation.
      */
     public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
@@ -438,8 +445,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
 
-        // TODO: We may want to parallelize optimization, in which case multiple iterators may exist.
-        //  This can cause issues for the grounding iterator if pages are being written.
         if (initialRound || (online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0)) {
             activeIterator = getGroundingIterator();
         } else {

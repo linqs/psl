@@ -21,7 +21,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.grounding.PartialGrounding;
+import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -103,7 +103,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
         db.commit(rvAtomBuffer, Partition.SPECIAL_WRITE_ID);
 
         newAtomCache.addAll(this.newAtomBuffer);
-        onlinePredicates.addAll(PartialGrounding.getOnlinePredicates(this.newAtomBuffer));
+        onlinePredicates.addAll(LazyGrounding.getLazyPredicates(this.newAtomBuffer));
 
         obsAtomBuffer.clear();
         rvAtomBuffer.clear();

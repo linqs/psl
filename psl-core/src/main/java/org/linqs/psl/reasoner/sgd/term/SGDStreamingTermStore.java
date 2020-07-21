@@ -18,17 +18,11 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.OnlineAtomManager;
-import org.linqs.psl.grounding.PartialGrounding;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
@@ -49,15 +43,9 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
-        if (initialRound) {
-            return new SGDStreamingGroundingIterator(
-                    this, this.rules, atomManager, termGenerator,
-                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, false);
-        } else {
-            return new SGDStreamingGroundingIterator(
-                    this, this.rules, atomManager, termGenerator,
-                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, true);
-        }
+        return new SGDStreamingGroundingIterator(
+                this, this.rules, atomManager, termGenerator,
+                termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }
 
     @Override

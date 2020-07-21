@@ -22,15 +22,12 @@ import com.healthmarketscience.sqlbuilder.SetOperationQuery;
 import com.healthmarketscience.sqlbuilder.UnionQuery;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -38,27 +35,24 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Static utilities for common {@link Model}-grounding tasks.
  */
-public class PartialGrounding {
-    private static final Logger log = LoggerFactory.getLogger(PartialGrounding.class);
+public class LazyGrounding {
+    private static final Logger log = LoggerFactory.getLogger(LazyGrounding.class);
 
     // Static only.
-    private PartialGrounding() {}
+    private LazyGrounding() {}
 
-    public static Set<Predicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
+    public static Set<Predicate> getLazyPredicates(Set<? extends GroundAtom> toActivate) {
         Set<Predicate> lazyPredicates = new HashSet<Predicate>();
         for (Atom atom : toActivate) {
             if (atom.getPredicate() instanceof StandardPredicate) {
@@ -121,17 +115,19 @@ public class PartialGrounding {
         }
 
         Formula formula = rule.getRewritableGroundingFormula();
-        ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates, db);
+        QueryResultIterable groundingResults = getLazyGroundingResults(formula, lazyPredicates, db);
         if (groundingResults == null) {
             return;
         }
 
         log.trace(String.format("Simple lazy grounding on rule: [%s], formula: [%s]", rule, formula));
 
+        Iterator<Constant[]> groundingResultsIterator = groundingResults.iterator();
         List<GroundRule> groundRules = new ArrayList<GroundRule>();
-        for (int i = 0; i < groundingResults.size(); i++) {
+        while (groundingResultsIterator.hasNext()){
+            Constant[] constants = groundingResultsIterator.next();
             groundRules.clear();
-            rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), atomManager, groundRules);
+            rule.ground(constants, groundingResults.getVariableMap(), atomManager, groundRules);
             for (GroundRule groundRule : groundRules) {
                 if (groundRule != null) {
                     groundRuleStore.addGroundRule(groundRule);
@@ -140,11 +136,20 @@ public class PartialGrounding {
         }
     }
 
+    public static QueryResultIterable getLazyGroundingResults(Rule rule, Set<Predicate> lazyPredicates, Database db) {
+        if (!rule.supportsGroundingQueryRewriting()) {
+            throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
+        }
+
+        Formula formula = rule.getRewritableGroundingFormula();
+        return getLazyGroundingResults(formula, lazyPredicates, db);
+    }
+
     private static List<Atom> getLazyTargets(Formula formula, Set<Predicate> lazyPredicates) {
         List<Atom> lazyTargets = new ArrayList<Atom>();
 
-        // For every mention of a online predicate in this rule, we will need to get the grounding query
-        // with that specific predicate mention being the online target.
+        // For every mention of a lazy predicate in this rule, we will need to get the grounding query
+        // with that specific predicate mention being the lazy target.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
             if (!lazyPredicates.contains(atom.getPredicate())) {
                 continue;
@@ -156,7 +161,7 @@ public class PartialGrounding {
         return lazyTargets;
     }
 
-    private static ResultList getLazyGroundingResults(Formula formula, Set<Predicate> lazyPredicates,
+    private static QueryResultIterable getLazyGroundingResults(Formula formula, Set<Predicate> lazyPredicates,
                                                       Database db) {
         List<Atom> lazyTargets = getLazyTargets(formula, lazyPredicates);
 
@@ -164,11 +169,11 @@ public class PartialGrounding {
             return null;
         } else {
             // Do the grounding query for this rule.
-            return lazyGround(formula, getLazyTargets(formula, lazyPredicates), db);
+            return lazyGroundIterable(formula, lazyTargets, db);
         }
     }
 
-    private static ResultList lazyGround(Formula formula, List<Atom> lazyTargets, Database db) {
+    private static QueryResultIterable lazyGroundIterable(Formula formula, List<Atom> lazyTargets, Database db) {
         if (lazyTargets.size() == 0) {
             throw new IllegalArgumentException();
         }
@@ -189,65 +194,8 @@ public class PartialGrounding {
             }
         }
 
-        // This fallbacks to a normal SELECT when there is only one.
-        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
-        return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
-    }
-
-    public static Set<Predicate> getOnlinePredicates(Set<GroundAtom> onlineAtoms) {
-        Set<Predicate> onlinePredicates = new HashSet<Predicate>();
-        for (Atom atom : onlineAtoms) {
-            onlinePredicates.add(atom.getPredicate());
-        }
-        return onlinePredicates;
-    }
-
-    public static QueryResultIterable onlineSimpleGround(Rule rule, Set<Predicate> onlinePredicates, Database db) {
-        if (!rule.supportsGroundingQueryRewriting()) {
-            throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
-        }
-
-        Formula formula = rule.getRewritableGroundingFormula();
-        return getOnlineGroundingResults(formula, onlinePredicates, db);
-    }
-
-    private static QueryResultIterable getOnlineGroundingResults(Formula formula, Set<Predicate> onlinePredicates,
-                                                                 Database db) {
-        List<Atom> onlineTargets = getLazyTargets(formula, onlinePredicates);
-
-        if (onlineTargets.size() == 0) {
-            return null;
-        } else {
-            // Do the grounding query for this rule.
-            return partialGround(formula, onlineTargets, db);
-        }
-    }
-
-    private static QueryResultIterable partialGround(Formula formula, List<Atom> onlineTargets, Database db) {
-        if (onlineTargets.size() == 0) {
-            throw new IllegalArgumentException();
-        }
-
-        RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
-
-        List<SelectQuery> queries = new ArrayList<SelectQuery>();
-
-        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-        Map<Variable, Integer> projectionMap = null;
-
-        // TODO(): We do not want to create new atoms. This is lazy grounding which does create new atoms.
-        for (Atom onlineTarget : onlineTargets) {
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, onlineTarget);
-            queries.add(sqler.getQuery(formula));
-
-            if (projectionMap == null) {
-                projectionMap = sqler.getProjectionMap();
-            }
-        }
-
         // This falls back to a normal SELECT when there is only one.
-        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION, queries.toArray(new SelectQuery[0]));
-        // TODO(): union is the full SQL query we use.
+        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION_ALL, queries.toArray(new SelectQuery[0]));
         return relationalDB.executeQueryIterator(projectionMap, varTypes, union.validate().toString());
     }
 }

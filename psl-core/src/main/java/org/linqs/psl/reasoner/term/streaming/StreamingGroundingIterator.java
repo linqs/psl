@@ -17,15 +17,12 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.config.Options;
-import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.grounding.PartialGrounding;
+import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
@@ -78,17 +75,12 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected int pageSize;
     protected int numPages;
 
-    protected Set<GroundAtom> newAtoms;
-
-    // The flag setting the type of grounding this iterator will be performing
-    protected boolean partialGround;
-
     public StreamingGroundingIterator(
             StreamingTermStore<T> parentStore, List<? extends Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize, int numPages, boolean partialGround) {
+            int pageSize, int numPages) {
         this.parentStore = parentStore;
         this.termGenerator = termGenerator;
         this.atomManager = atomManager;
@@ -102,7 +94,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this.termCache.clear();
 
         this.termPool = termPool;
-        if (!partialGround) {
+        if (this.parentStore.isInitialRound()) {
             // Initial round, clear termPool.
             this.termPool.clear();
         }
@@ -113,9 +105,8 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this.pageSize = pageSize;
         this.numPages = numPages;
 
-        this.partialGround = partialGround;
-
-        if (partialGround) {
+        if (!this.parentStore.isInitialRound()) {
+            // Not initial round, ready the new atoms in the atom manager for partial grounding.
             ((OnlineAtomManager)atomManager).activateNewAtoms();
         }
 
@@ -225,10 +216,26 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             Constant[] tuple = queryResults.next();
             rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), atomManager, pendingGroundRules);
 
+            Boolean validRule = true;
             while (pendingGroundRules.size() > 0) {
                 GroundRule groundRule = pendingGroundRules.remove(pendingGroundRules.size() - 1);
-                if (groundRule != null) {
+                // Validate rule.
+                if (groundRule == null) {
+                    validRule = false;
+                } else if (!parentStore.isInitialRound()) {
+                    for (GroundAtom atom : groundRule.getAtoms()) {
+                        // We do not want to create new atoms when partial grounding.
+                        if (!parentStore.isCachedAtom(atom)) {
+                            validRule = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (validRule) {
                     return groundRule;
+                } else {
+                    validRule = true;
                 }
             }
         }
@@ -240,12 +247,12 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         }
 
         // Start grounding the next rule.
-        if (partialGround) {
+        if (!parentStore.isInitialRound()) {
             do {
-                queryIterable = getPartialGroundingIterator();
+                queryIterable = getLazyGroundingIterable();
             } while((queryIterable == null) && (currentRule < rules.size()));
         } else {
-            queryIterable = getFullGroundingIterator();
+            queryIterable = getFullGroundingIterable();
         }
 
         if (queryIterable != null) {
@@ -256,11 +263,11 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         }
     }
 
-    private QueryResultIterable getFullGroundingIterator() {
+    private QueryResultIterable getFullGroundingIterable() {
         return ((RDBMSDatabase)atomManager.getDatabase()).executeQueryIterator(rules.get(currentRule).getGroundingQuery(atomManager));
     }
 
-    private QueryResultIterable getPartialGroundingIterator() {
+    private QueryResultIterable getLazyGroundingIterable() {
         while (!rules.get(currentRule).supportsGroundingQueryRewriting() && currentRule < rules.size()) {
             currentRule++;
         }
@@ -270,7 +277,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             return null;
         }
 
-        return PartialGrounding.onlineSimpleGround(rules.get(currentRule),
+        return LazyGrounding.getLazyGroundingResults(rules.get(currentRule),
                 ((OnlineAtomManager)atomManager).getOnlinePredicates(), atomManager.getDatabase());
     }
 
@@ -305,7 +312,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         }
 
         // Move all the new atoms out of the lazy partition and into the write partition.
-        if (partialGround) {
+        if (!parentStore.isInitialRound()) {
             ((OnlineAtomManager)atomManager).flushNewAtomCache();
         }
 

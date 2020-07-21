@@ -22,11 +22,10 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.PartialGrounding;
+import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
@@ -163,13 +162,13 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         // Collect the specific predicates that are targets in this lazy batch
         // and the rules associated with those predicates.
-        Set<Predicate> lazyPredicates = PartialGrounding.getLazyPredicates(toActivate);
-        Set<? extends Rule> lazyRules = PartialGrounding.getLazyRules(rules, lazyPredicates);
+        Set<Predicate> lazyPredicates = LazyGrounding.getLazyPredicates(toActivate);
+        Set<? extends Rule> lazyRules = LazyGrounding.getLazyRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
             // We will deal with these rules after we move the lazy atoms to the write partition.
             if (lazyRule.supportsGroundingQueryRewriting()) {
-                PartialGrounding.lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore, this);
+                LazyGrounding.lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore, this);
             }
         }
 
@@ -182,7 +181,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         // after we move the atoms to the write partition.
         for (Rule lazyRule : lazyRules) {
             if (!lazyRule.supportsGroundingQueryRewriting()) {
-                PartialGrounding.lazyComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore, this);
+                LazyGrounding.lazyComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore, this);
             }
         }
     }

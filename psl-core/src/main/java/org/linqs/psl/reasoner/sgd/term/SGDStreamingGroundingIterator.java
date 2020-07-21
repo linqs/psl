@@ -40,9 +40,9 @@ public class SGDStreamingGroundingIterator extends StreamingGroundingIterator<SG
             AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize, int numPages, boolean partialGround) {
+            int pageSize, int numPages) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer,
-                pageSize, numPages, partialGround);
+                pageSize, numPages);
     }
 
     @Override

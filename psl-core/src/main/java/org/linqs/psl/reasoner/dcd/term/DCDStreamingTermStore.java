@@ -18,20 +18,14 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.OnlineAtomManager;
-import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingGroundingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,15 +61,9 @@ public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> 
 
     @Override
     protected StreamingIterator<DCDObjectiveTerm> getGroundingIterator() {
-        if (initialRound) {
-            return new DCDStreamingGroundingIterator(
-                    this, this.rules, atomManager, termGenerator,
-                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, false);
-        } else {
-            return new DCDStreamingGroundingIterator(
-                    this, this.rules, atomManager, termGenerator,
-                    termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages, true);
-        }
+        return new DCDStreamingGroundingIterator(
+                this, this.rules, atomManager, termGenerator,
+                termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }
 
     @Override
