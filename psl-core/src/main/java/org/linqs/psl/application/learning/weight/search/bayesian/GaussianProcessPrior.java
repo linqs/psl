@@ -61,9 +61,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         earlyStopping = Options.WLA_GPP_EARLY_STOPPING.getBoolean();
         useProvidedWeight = Options.WLA_GPP_USE_PROVIDED_WEIGHT.getBoolean();
 
-        initialMetricValue = evaluator.isHigherRepBetter() ? Options.WLA_GPP_INITIAL_METRIC_VALUE.getFloat()
-                : -Options.WLA_GPP_INITIAL_METRIC_VALUE.getFloat();
-        initialMetricStd = Options.WLA_GPP_INITIAL_METRIC_STD.getFloat();
+        initialMetricValue = Float.NEGATIVE_INFINITY;
+        initialMetricStd = Float.POSITIVE_INFINITY;
 
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
@@ -96,6 +95,16 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         this.blasYKnown = blasYKnown;
     }
 
+    private void setInitialConfigValAndStd(WeightConfig initialConfig) {
+        float initialStd = (float) evaluator.getNormalizedMaxRepMetric() - initialConfig.valueAndStd.value;
+
+        for (int i = 0; i < configs.size(); i++) {
+            WeightConfig config = configs.get(i);
+            config.valueAndStd.value = initialConfig.valueAndStd.value;
+            config.valueAndStd.std = initialStd;
+        }
+    }
+
     @Override
     protected void doLearn() {
         // Very important to define a good kernel.
@@ -106,12 +115,12 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         List<Float> exploredFnVal = new ArrayList<Float>();
 
         WeightConfig bestConfig = null;
-        double bestVal = 0.0;
+        float bestVal = Float.NEGATIVE_INFINITY;
         boolean allStdSmall = false;
 
         int iteration = 0;
         while (iteration < maxIterations && configs.size() > 0 && !(earlyStopping && allStdSmall)) {
-            int nextPoint = getNextPoint(configs, iteration);
+            int nextPoint = (iteration == 0) ? 0 : getNextPoint(configs);
             WeightConfig config = configs.get(nextPoint);
 
             exploredConfigs.add(config);
@@ -128,6 +137,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             config.valueAndStd.std = 0.0f;
 
             log.debug("Location {} -- objective: {}", currentLocation, fnVal);
+
+            if (iteration == 0) {
+                setInitialConfigValAndStd(config);
+            }
 
             if (bestConfig == null || fnVal > bestVal) {
                 bestVal = fnVal;
@@ -272,7 +285,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             }
         }
 
-        // Add the user provided weight configuration to the tail of the list.
+        // Add the user provided weight configuration to the head of the list.
         // This is accessed in the getNextPoint method and assumes that the initial
         // iteration will always select the first config in configs.
         if (useProvidedWeight) {
@@ -339,9 +352,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     // Exploration strategy
-    protected int getNextPoint(List<WeightConfig> configs, int iteration) {
+    protected int getNextPoint(List<WeightConfig> configs) {
         int bestConfig = -1;
-        float curBestVal = -Float.MAX_VALUE;
+        float curBestVal = Float.NEGATIVE_INFINITY;
 
         for (int i = 0; i < configs.size(); i++) {
             float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;

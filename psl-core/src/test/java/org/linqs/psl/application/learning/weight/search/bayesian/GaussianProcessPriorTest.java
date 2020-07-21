@@ -42,7 +42,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
             weightConfigs.add(wl.new WeightConfig(null, yPred.get(i), yStd.get(i)));
         }
 
-        Assert.assertEquals(1, wl.getNextPoint(weightConfigs, 1));
+        Assert.assertEquals(1, wl.getNextPoint(weightConfigs));
     }
 
     @Test
