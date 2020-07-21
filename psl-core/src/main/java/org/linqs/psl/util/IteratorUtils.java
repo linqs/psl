@@ -84,13 +84,23 @@ public final class IteratorUtils {
     }
 
     /**
-     * Get an iterator that iterates over all the given iterables in whatever iteration order each provides.
+     * Get an iterable that can iterate over all the given iterables in whatever iteration order each provides.
      * It is up to the caller to make sure the underlying iterables are not changed during iteration.
      * The benefit of using this is that is does not perform variable allocations.
      */
     @SafeVarargs
     public static <T> Iterable<T> join(Iterable<? extends T>... collections) {
         return new ConcatenationIterable<T>(collections);
+    }
+
+    /**
+     * Get an iterator that will iterate over all the given iterators in whatever iteration order each provides.
+     * It is up to the caller to make sure the underlying iterables are not changed during iteration.
+     * The benefit of using this is that is does not perform variable allocations.
+     */
+    @SafeVarargs
+    public static <T> Iterator<T> join(Iterator<? extends T>... collections) {
+        return new ConcatenationIterator<T>(collections);
     }
 
     /**
@@ -294,12 +304,29 @@ public final class IteratorUtils {
     }
 
     private static class ConcatenationIterator<T> implements Iterator<T> {
-        private Iterable<? extends T>[] collections;
+        private Iterable<? extends T>[] iterableCollections;
+        private Iterator<? extends T>[] iteratorCollections;
         private int collectionIndex;
+        private int numCollections;
         private Iterator<? extends T> currentIterator;
 
         public ConcatenationIterator(Iterable<? extends T>[] collections) {
-            this.collections = collections;
+            iterableCollections = collections;
+            iteratorCollections = null;
+            numCollections = iterableCollections.length;
+
+            initialize();
+        }
+
+        public ConcatenationIterator(Iterator<? extends T>[] collections) {
+            iterableCollections = null;
+            iteratorCollections = collections;
+            numCollections = iteratorCollections.length;
+
+            initialize();
+        }
+
+        private void initialize() {
             collectionIndex = -1;
             currentIterator = null;
 
@@ -316,20 +343,28 @@ public final class IteratorUtils {
             collectionIndex++;
 
             // If we are out of bounds, we are done.
-            if (collectionIndex >= collections.length) {
+            if (collectionIndex >= numCollections) {
                 currentIterator = null;
                 return;
             }
 
-            currentIterator = collections[collectionIndex].iterator();
+            currentIterator = getNextIterator();
 
             // This iterator may be empty, so just try to prime again.
             primeNext();
         }
 
+        private Iterator<? extends T> getNextIterator() {
+            if (iterableCollections != null) {
+                return iterableCollections[collectionIndex].iterator();
+            } else {
+                return iteratorCollections[collectionIndex];
+            }
+        }
+
         @Override
         public boolean hasNext() {
-            // If primeNext() does not set a null iteraotr, then we have a next.
+            // If primeNext() does not set a null iterator, then we have a next.
             return currentIterator != null;
         }
 

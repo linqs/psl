@@ -33,6 +33,7 @@ import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
@@ -445,8 +446,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
 
-        if (initialRound || (online && ((OnlineAtomManager)atomManager).hasNewAtoms())) {
+        if (initialRound) {
             activeIterator = getGroundingIterator();
+        } else if (online && ((OnlineAtomManager)atomManager).hasNewAtoms()) {
+            activeIterator = (StreamingIterator<T>) IteratorUtils.join(getCacheIterator(), getGroundingIterator());
         } else {
             activeIterator = getCacheIterator();
         }
