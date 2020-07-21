@@ -17,12 +17,14 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Iterate over all the terms that come up from grounding.
@@ -63,6 +66,9 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected ByteBuffer volatileBuffer;
 
     protected long newTermCount;
+
+    // Predicates that are currently being used for grounding.
+    private Set<Predicate> onlinePredicates;
 
     // The iterable is kept around for cleanup.
     protected QueryResultIterable queryIterable;
@@ -102,13 +108,22 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
 
-        this.pageSize = pageSize;
-        this.numPages = numPages;
+        onlinePredicates = new HashSet<Predicate>();
 
         if (!this.parentStore.isInitialRound()) {
             // Not initial round, ready the new atoms in the atom manager for partial grounding.
-            ((OnlineAtomManager)atomManager).activateNewAtoms();
+            Set<GroundAtom> obsAtomCache = ((OnlineAtomManager)atomManager).flushNewObservedAtoms();
+            Set<GroundAtom> rvAtomCache = ((OnlineAtomManager)atomManager).flushNewRandomVariableAtoms();
+
+            onlinePredicates.addAll(LazyGrounding.getLazyPredicates(obsAtomCache));
+            onlinePredicates.addAll(LazyGrounding.getLazyPredicates(rvAtomCache));
+
+            atomManager.getDatabase().commit(obsAtomCache, Partition.SPECIAL_READ_ID);
+            atomManager.getDatabase().commit(rvAtomCache, Partition.SPECIAL_WRITE_ID);
         }
+
+        this.pageSize = pageSize;
+        this.numPages = numPages;
 
         newTermCount = 0;
 
@@ -277,8 +292,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
             return null;
         }
 
-        return LazyGrounding.getLazyGroundingResults(rules.get(currentRule),
-                ((OnlineAtomManager)atomManager).getOnlinePredicates(), atomManager.getDatabase());
+        return LazyGrounding.getLazyGroundingResults(rules.get(currentRule), onlinePredicates, atomManager.getDatabase());
     }
 
     private void flushCache() {
@@ -313,7 +327,12 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         // Move all the new atoms out of the lazy partition and into the write partition.
         if (!parentStore.isInitialRound()) {
-            ((OnlineAtomManager)atomManager).flushNewAtomCache();
+            for (Predicate onlinePredicate : onlinePredicates) {
+                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID,
+                        atomManager.getDatabase().getWritePartition().getID());
+                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,
+                        ((OnlineAtomManager)atomManager).getOnlineReadPartition());
+            }
         }
 
         parentStore.groundingIterationComplete(newTermCount, numPages, termBuffer, volatileBuffer);

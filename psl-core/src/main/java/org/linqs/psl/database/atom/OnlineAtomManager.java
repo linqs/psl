@@ -19,9 +19,7 @@ package org.linqs.psl.database.atom;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -43,13 +41,6 @@ public class OnlineAtomManager extends PersistedAtomManager {
     //Ground atoms that have been seen, but not instantiated.
     private Set<GroundAtom> obsAtomBuffer;
     private Set<GroundAtom> rvAtomBuffer;
-    private Set<GroundAtom> newAtomBuffer;
-
-     // Ground atoms that are currently being used for grounding.
-    private Set<GroundAtom> newAtomCache;
-
-    // Predicates that are currently being used for grounding.
-    private Set<Predicate> onlinePredicates;
 
     // The partition we will add new observed atoms to.
     protected int onlineReadPartition;
@@ -63,10 +54,6 @@ public class OnlineAtomManager extends PersistedAtomManager {
 
         obsAtomBuffer = new HashSet<GroundAtom>();
         rvAtomBuffer = new HashSet<GroundAtom>();
-        newAtomBuffer = new HashSet<GroundAtom>();
-
-        newAtomCache = new HashSet<GroundAtom>();
-        onlinePredicates = new HashSet<Predicate>();
 
         if (Options.ONLINE_READ_PARTITION.getString() == null) {
             onlineReadPartition = db.getReadPartitions().get(0).getID();
@@ -81,7 +68,6 @@ public class OnlineAtomManager extends PersistedAtomManager {
         ObservedAtom atom = cache.instantiateObservedAtom(predicate, arguments, value);
 
         obsAtomBuffer.add(atom);
-        newAtomBuffer.add(atom);
     }
 
     public synchronized void addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
@@ -90,7 +76,6 @@ public class OnlineAtomManager extends PersistedAtomManager {
         addToPersistedCache(atom);
 
         rvAtomBuffer.add(atom);
-        newAtomBuffer.add(atom);
     }
 
     @Override
@@ -98,41 +83,23 @@ public class OnlineAtomManager extends PersistedAtomManager {
         // OnlineAtomManger does not have access exceptions.
     }
 
-    public synchronized void activateNewAtoms() {
-        db.commit(obsAtomBuffer, Partition.SPECIAL_READ_ID);
-        db.commit(rvAtomBuffer, Partition.SPECIAL_WRITE_ID);
+    public int getOnlineReadPartition() {
+        return onlineReadPartition;
+    }
 
-        newAtomCache.addAll(this.newAtomBuffer);
-        onlinePredicates.addAll(LazyGrounding.getLazyPredicates(this.newAtomBuffer));
+    public synchronized Boolean hasNewAtoms() {
+        return (rvAtomBuffer.size() > 0) || (obsAtomBuffer.size() > 0);
+    }
 
+    public synchronized Set<GroundAtom> flushNewObservedAtoms() {
+        Set<GroundAtom> obsAtomCache = new HashSet<GroundAtom>(obsAtomBuffer);
         obsAtomBuffer.clear();
+        return obsAtomCache;
+    }
+
+    public synchronized Set<GroundAtom> flushNewRandomVariableAtoms() {
+        Set<GroundAtom> rvAtomCache = new HashSet<GroundAtom>(rvAtomBuffer);
         rvAtomBuffer.clear();
-        newAtomBuffer.clear();
-    }
-
-    public synchronized void flushNewAtomCache() {
-        for (Predicate onlinePredicate : onlinePredicates) {
-            db.moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID, db.getWritePartition().getID());
-            db.moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID, onlineReadPartition);
-        }
-
-        onlinePredicates.clear();
-        newAtomCache.clear();
-    }
-
-    public synchronized Set<Predicate> getOnlinePredicates() {
-        return onlinePredicates;
-    }
-
-    public synchronized Set<GroundAtom> getNewAtoms() {
-        return newAtomBuffer;
-    }
-
-    public synchronized Set<GroundAtom> getNewObservedAtoms() {
-        return obsAtomBuffer;
-    }
-
-    public synchronized Set<GroundAtom> getNewRandomVariableAtoms() {
-        return rvAtomBuffer;
+        return rvAtomCache;
     }
 }

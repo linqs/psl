@@ -206,7 +206,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public boolean isLoaded() {
-        return !(initialRound || (online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0));
+        return !(initialRound || (online && ((OnlineAtomManager)atomManager).hasNewAtoms()));
     }
 
     public boolean isInitialRound() {
@@ -445,7 +445,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
 
-        if (initialRound || (online && ((OnlineAtomManager)atomManager).getNewAtoms().size() > 0)) {
+        if (initialRound || (online && ((OnlineAtomManager)atomManager).hasNewAtoms())) {
             activeIterator = getGroundingIterator();
         } else {
             activeIterator = getCacheIterator();
