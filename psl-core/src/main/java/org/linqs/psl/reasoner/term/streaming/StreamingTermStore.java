@@ -76,7 +76,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected List<String> volatilePagePaths;
 
     protected boolean initialRound;
-    protected StreamingIterator<T> activeIterator;
+    protected Iterator<T> activeIterator;
     protected long seenTermCount;
     protected int numPages;
 
@@ -340,15 +340,19 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void addAtom(Predicate predicate, Constant[] arguments, float newValue, boolean readPartition) {
+        GroundAtom atom;
+
         if (atomManager.getDatabase().hasCachedAtom(new QueryAtom(predicate, arguments))) {
             deleteAtom(predicate, arguments);
         }
 
         if (readPartition) {
-            ((OnlineAtomManager)atomManager).addObservedAtom(predicate, newValue, arguments);
+            atom = ((OnlineAtomManager)atomManager).addObservedAtom(predicate, newValue, arguments);
         } else {
-            ((OnlineAtomManager)atomManager).addRandomVariableAtom((StandardPredicate) predicate, arguments);
+            atom = ((OnlineAtomManager)atomManager).addRandomVariableAtom((StandardPredicate) predicate, arguments);
         }
+
+        createLocalVariable(atom);
     }
 
     @Override
@@ -449,7 +453,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         if (initialRound) {
             activeIterator = getGroundingIterator();
         } else if (online && ((OnlineAtomManager)atomManager).hasNewAtoms()) {
-            activeIterator = (StreamingIterator<T>) IteratorUtils.join(getCacheIterator(), getGroundingIterator());
+            activeIterator = IteratorUtils.join(getCacheIterator(), getGroundingIterator());
         } else {
             activeIterator = getCacheIterator();
         }
@@ -463,7 +467,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         numPages = 0;
 
         if (activeIterator != null) {
-            activeIterator.close();
             activeIterator = null;
         }
 

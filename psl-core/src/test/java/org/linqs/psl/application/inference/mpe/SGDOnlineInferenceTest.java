@@ -272,9 +272,8 @@ public class SGDOnlineInferenceTest {
         inference.inference();
 
         numTerms = 0;
-        for (SGDObjectiveTerm term : termStore) {
+        for (SGDObjectiveTerm term: termStore) {
             numTerms++;
-            System.out.println(term.toString(termStore));
         }
 
         assertEquals(1.0, numTerms, 0.01);

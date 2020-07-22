@@ -63,19 +63,23 @@ public class OnlineAtomManager extends PersistedAtomManager {
     }
 
     //TODO(connor) Check to see if atom exists in the database, throw error if it does
-    public synchronized void addObservedAtom(Predicate predicate, Float value, Constant... arguments) {
+    public synchronized ObservedAtom addObservedAtom(Predicate predicate, Float value, Constant... arguments) {
         AtomCache cache = db.getCache();
         ObservedAtom atom = cache.instantiateObservedAtom(predicate, arguments, value);
 
         obsAtomBuffer.add(atom);
+
+        return atom;
     }
 
-    public synchronized void addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
+    public synchronized RandomVariableAtom addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
         AtomCache cache = db.getCache();
         RandomVariableAtom atom = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
         addToPersistedCache(atom);
 
         rvAtomBuffer.add(atom);
+
+        return atom;
     }
 
     @Override
