@@ -212,8 +212,6 @@ public class SGDOnlineInferenceTest {
         queueCommands(inference, commands);
         inference.inference();
 
-        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
-
         float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
         assertEquals(atomValue, 1.0, 0.01);
     }
