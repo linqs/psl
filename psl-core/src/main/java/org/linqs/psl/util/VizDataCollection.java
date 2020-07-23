@@ -1,25 +1,20 @@
 package org.linqs.psl.util;
 
-import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -124,7 +119,6 @@ public class VizDataCollection {
     public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String strGroundRuleId = Integer.toString(System.identityHashCode(groundRule));
-            // TODO: Abstract Arithmetic Rules
             if (groundRule instanceof WeightedGroundRule) {
                 Map<String, Object> groundRuleObj = vizData.groundRules.get(strGroundRuleId);
                 WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
@@ -132,7 +126,6 @@ public class VizDataCollection {
             }
         }
     }
-    // TODO: collect Arithmetic Logical Ground Rules
     public static synchronized void ruleMapInsertElement(AbstractLogicalRule parentRule,
             GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
         if (groundRule == null) {
