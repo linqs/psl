@@ -796,7 +796,7 @@ public class Options {
     public static final Option WLA_SEARCH_DIRICHLET = new Option(
             "search.dirichlet",
             true,
-            "Whether or not to perform weight learning in the polar coordinate system."
+            "Whether or not to perform search based weight learning using Dirichlet distributed weights."
     );
 
     public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(

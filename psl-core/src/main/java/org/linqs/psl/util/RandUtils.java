@@ -189,7 +189,7 @@ public final class RandUtils {
         }
 
         for(int i = 0; i < alphas.length; i++){
-            dirichletSample[i] = gammaSamples[i] / gammaSampleSum ;
+            dirichletSample[i] = gammaSamples[i] / gammaSampleSum;
         }
 
         return dirichletSample;

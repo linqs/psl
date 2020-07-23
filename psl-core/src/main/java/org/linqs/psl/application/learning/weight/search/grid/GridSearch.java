@@ -51,7 +51,6 @@ public class GridSearch extends BaseGridSearch {
         }
 
         maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
-
         numLocations = maxNumLocations;
     }
 
