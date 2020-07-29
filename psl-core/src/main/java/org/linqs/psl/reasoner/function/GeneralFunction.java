@@ -54,7 +54,7 @@ public class GeneralFunction implements FunctionTerm {
         terms = new FunctionTerm[totalCount];
         size = 0;
         constant = 0.0f;
-        
+
         this.nonNegative = nonNegative;
         this.squared = squared;
         constantTerms = true;

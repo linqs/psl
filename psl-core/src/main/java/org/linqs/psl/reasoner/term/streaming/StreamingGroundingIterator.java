@@ -24,7 +24,6 @@ import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
