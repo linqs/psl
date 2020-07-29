@@ -13,11 +13,6 @@ classpath.out
 .project
 .settings
 
-# Intellij metadata #
-####################
-.idea
-*.iml
-
 # Editor Temporary #
 ####################
 *.swp
