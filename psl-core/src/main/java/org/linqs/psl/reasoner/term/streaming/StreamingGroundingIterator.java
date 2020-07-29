@@ -25,6 +25,7 @@ import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
@@ -68,7 +69,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     protected long newTermCount;
 
     // Predicates that are currently being used for grounding.
-    private Set<Predicate> onlinePredicates;
+    private Set<StandardPredicate> onlinePredicates;
 
     // The iterable is kept around for cleanup.
     protected QueryResultIterable queryIterable;
@@ -108,7 +109,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
 
-        onlinePredicates = new HashSet<Predicate>();
+        onlinePredicates = new HashSet<StandardPredicate>();
 
         if (!this.parentStore.isInitialRound()) {
             // Not initial round, ready the new atoms in the atom manager for partial grounding.
@@ -327,7 +328,7 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
         // Move all the new atoms out of the lazy partition and into the write partition.
         if (!parentStore.isInitialRound()) {
-            for (Predicate onlinePredicate : onlinePredicates) {
+            for (StandardPredicate onlinePredicate : onlinePredicates) {
                 atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID,
                         atomManager.getDatabase().getWritePartition().getID());
                 atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,

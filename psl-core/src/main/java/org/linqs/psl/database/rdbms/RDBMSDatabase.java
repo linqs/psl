@@ -233,7 +233,7 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void moveToPartition(Predicate predicate, int oldPartitionId, int newPartitionID) {
+    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionID) {
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
         try (

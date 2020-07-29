@@ -52,11 +52,11 @@ public class LazyGrounding {
     // Static only.
     private LazyGrounding() {}
 
-    public static Set<Predicate> getLazyPredicates(Set<? extends GroundAtom> toActivate) {
-        Set<Predicate> lazyPredicates = new HashSet<Predicate>();
+    public static Set<StandardPredicate> getLazyPredicates(Set<? extends GroundAtom> toActivate) {
+        Set<StandardPredicate> lazyPredicates = new HashSet<StandardPredicate>();
         for (Atom atom : toActivate) {
             if (atom.getPredicate() instanceof StandardPredicate) {
-                lazyPredicates.add(atom.getPredicate());
+                lazyPredicates.add((StandardPredicate) atom.getPredicate());
             }
         }
         return lazyPredicates;
@@ -107,7 +107,7 @@ public class LazyGrounding {
         rule.groundAll(atomManager, groundRuleStore);
     }
 
-    public static void lazySimpleGround(Rule rule, Set<Predicate> lazyPredicates,
+    public static void lazySimpleGround(Rule rule, Set<StandardPredicate> lazyPredicates,
                                         GroundRuleStore groundRuleStore, AtomManager atomManager) {
         Database db = atomManager.getDatabase();
         if (!rule.supportsGroundingQueryRewriting()) {
@@ -136,7 +136,7 @@ public class LazyGrounding {
         }
     }
 
-    public static QueryResultIterable getLazyGroundingResults(Rule rule, Set<Predicate> lazyPredicates, Database db) {
+    public static QueryResultIterable getLazyGroundingResults(Rule rule, Set<StandardPredicate> lazyPredicates, Database db) {
         if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
@@ -145,7 +145,7 @@ public class LazyGrounding {
         return getLazyGroundingResults(formula, lazyPredicates, db);
     }
 
-    private static List<Atom> getLazyTargets(Formula formula, Set<Predicate> lazyPredicates) {
+    private static List<Atom> getLazyTargets(Formula formula, Set<StandardPredicate> lazyPredicates) {
         List<Atom> lazyTargets = new ArrayList<Atom>();
 
         // For every mention of a lazy predicate in this rule, we will need to get the grounding query
@@ -161,7 +161,7 @@ public class LazyGrounding {
         return lazyTargets;
     }
 
-    private static QueryResultIterable getLazyGroundingResults(Formula formula, Set<Predicate> lazyPredicates,
+    private static QueryResultIterable getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates,
                                                       Database db) {
         List<Atom> lazyTargets = getLazyTargets(formula, lazyPredicates);
 

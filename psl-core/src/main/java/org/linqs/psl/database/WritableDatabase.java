@@ -20,6 +20,7 @@ package org.linqs.psl.database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 
 /**
  * A database for persisting {@link GroundAtom GroundAtoms}.
@@ -70,7 +71,7 @@ public interface WritableDatabase {
      * the write partition.
      * Be careful not to call this while the database is in use.
      */
-    public void moveToPartition(Predicate predicate, int oldPartitionId, int newPartitionID);
+    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionID);
 
     /**
      * Releases the {@link Partition Partitions} used by this Database.

@@ -26,6 +26,7 @@ import org.linqs.psl.grounding.LazyGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
@@ -162,7 +163,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         // Collect the specific predicates that are targets in this lazy batch
         // and the rules associated with those predicates.
-        Set<Predicate> lazyPredicates = LazyGrounding.getLazyPredicates(toActivate);
+        Set<StandardPredicate> lazyPredicates = LazyGrounding.getLazyPredicates(toActivate);
         Set<? extends Rule> lazyRules = LazyGrounding.getLazyRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
@@ -173,7 +174,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         }
 
         // Move all the new atoms out of the lazy partition and into the write partition.
-        for (Predicate lazyPredicate : lazyPredicates) {
+        for (StandardPredicate lazyPredicate : lazyPredicates) {
             db.moveToPartition(lazyPredicate, Partition.SPECIAL_WRITE_ID, db.getWritePartition().getID());
         }
 
