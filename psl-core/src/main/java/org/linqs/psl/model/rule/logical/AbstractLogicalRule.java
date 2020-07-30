@@ -157,10 +157,12 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     @Override
     public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
         GroundRule groundRule = ground(constants, variableMap, atomManager);
+
         // Visualization runtime argument is specified.
-        if ( Options.CLI_VIZ.getBoolean() ) {
+        if (Options.CLI_VIZ.getBoolean()) {
             VizDataCollection.ruleMapInsertElement(this, groundRule, variableMap, constants);
         }
+
         results.add(groundRule);
     }
 

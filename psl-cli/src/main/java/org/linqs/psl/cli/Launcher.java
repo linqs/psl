@@ -230,7 +230,8 @@ public class Launcher {
         return database;
     }
 
-    private void visualization(Model model, InferenceApplication inferenceApplication, DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
+    private void visualization(Model model, InferenceApplication inferenceApplication, DataStore dataStore,
+            Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
         Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
         openPredicates.removeAll(closedPredicates);
 
@@ -260,9 +261,6 @@ public class Launcher {
             predictionDatabase.close();
         }
         truthDatabase.close();
-
-        VizDataCollection.dissatisfactionPerGroundRule(inferenceApplication.getGroundRuleStore());
-        VizDataCollection.groundingsPerRule(model.getRules(), inferenceApplication.getGroundRuleStore());
     }
 
     private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
