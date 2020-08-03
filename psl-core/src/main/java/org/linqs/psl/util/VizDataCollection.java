@@ -61,7 +61,6 @@ public class VizDataCollection {
             }
         }
 
-        // Print the JSON to stream
         stream.println(fullJson.toString(4));
 
         if (closeStream) {
@@ -92,7 +91,7 @@ public class VizDataCollection {
     public static void setOutputPath(String path) {
         outputPath = path;
     }
-    // Takes in a prediction truth pair and adds it to our map
+    // Takes in a prediction truth pair and adds it to the Truth Map.
     public static void addTruth(GroundAtom target, float truthVal ) {
         String groundAtomID = Integer.toString(System.identityHashCode(target));
         vizData.truthMap.put(groundAtomID, truthVal);
@@ -125,7 +124,7 @@ public class VizDataCollection {
             return;
         }
 
-        // Adds a groundAtom element to RuleMap
+        // Adds a groundAtom element to Ground Atom Map.
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
         HashSet<GroundAtom> atomSet = new HashSet<GroundAtom>(groundRule.getAtoms());
         int atomCount = 0;
@@ -138,7 +137,7 @@ public class VizDataCollection {
             atomCount++;
         }
 
-        // Adds a groundRule element to RuleMap
+        // Adds a groundRule element to Ground Rule Map.
         Map<String, String> varConstMap = new HashMap<String, String>();
         for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
             varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
