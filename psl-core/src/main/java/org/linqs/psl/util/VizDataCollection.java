@@ -4,6 +4,7 @@ import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.term.Constant;
@@ -21,14 +22,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-
 public class VizDataCollection {
+    private static final Logger log = LoggerFactory.getLogger(VizDataCollection.class);
+
     private static Runtime runtime = null;
     private static VisualizationData vizData = null;
 
-    private static final Logger log = LoggerFactory.getLogger(VizDataCollection.class);
-
-    public static String outputPath = null;
+    private static String outputPath = null;
 
     static {
         init();
@@ -57,8 +57,7 @@ public class VizDataCollection {
                 stream = new PrintStream(outputPath);
                 closeStream = true;
             } catch (IOException ex) {
-                log.error(String.format("Unable to open file (%s) for visualization data," +
-                    "using stdout instead.", outputPath), ex);
+                throw new RuntimeException();
             }
         }
 
@@ -68,7 +67,6 @@ public class VizDataCollection {
         if (closeStream) {
             stream.close();
         }
-
     }
 
     private static class ShutdownHook extends Thread {
@@ -91,11 +89,23 @@ public class VizDataCollection {
             groundAtoms = new HashMap<String, Map<String, Object>>();
         }
     }
-
+    public static void setOutputPath(String path) {
+        outputPath = path;
+    }
     // Takes in a prediction truth pair and adds it to our map
     public static void addTruth(GroundAtom target, float truthVal ) {
         String groundAtomID = Integer.toString(System.identityHashCode(target));
         vizData.truthMap.put(groundAtomID, truthVal);
+    }
+
+    public static void collectModelRules(List<Rule> rules) {
+        for (Rule rule : rules) {
+            String ruleStringID = Integer.toString(System.identityHashCode(rule));
+            Map<String, Object> ruleElementItem = new HashMap<String, Object>();
+            ruleElementItem.put("text", rule.getName());
+            ruleElementItem.put("weighted", rule.isWeighted());
+            vizData.rules.put(ruleStringID, ruleElementItem);
+        }
     }
 
     public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
@@ -108,9 +118,8 @@ public class VizDataCollection {
             }
         }
     }
-
     // TODO: Arithmetic Ground Rules Collection
-    public static synchronized void ruleMapInsertElement(AbstractLogicalRule parentRule,
+    public static synchronized void addGroundRule(AbstractLogicalRule parentRule,
             GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
         if (groundRule == null) {
             return;
@@ -120,28 +129,22 @@ public class VizDataCollection {
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
         HashSet<GroundAtom> atomSet = new HashSet<GroundAtom>(groundRule.getAtoms());
         int atomCount = 0;
-        for (GroundAtom a : atomSet) {
-            atomHashList.add(System.identityHashCode(a));
+        for (GroundAtom groundAtom : atomSet) {
+            atomHashList.add(System.identityHashCode(groundAtom));
             Map<String, Object> groundAtomElement = new HashMap<String, Object>();
-            groundAtomElement.put("text", a.toString());
-            groundAtomElement.put("prediction", a.getValue());
-            vizData.groundAtoms.put(Integer.toString(System.identityHashCode(a)), groundAtomElement);
+            groundAtomElement.put("text", groundAtom.toString());
+            groundAtomElement.put("prediction", groundAtom.getValue());
+            vizData.groundAtoms.put(Integer.toString(System.identityHashCode(groundAtom)), groundAtomElement);
             atomCount++;
         }
-
-        // Adds a rule element to RuleMap
-        JSONObject rulesElement = new JSONObject();
-        String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
-        Map<String, Object> rulesElementItem = new HashMap<String, Object>();
-        rulesElementItem.put("text", parentRule.getName());
-        rulesElementItem.put("weighted", parentRule.isWeighted());
-        vizData.rules.put(ruleStringID, rulesElementItem);
 
         // Adds a groundRule element to RuleMap
         Map<String, String> varConstMap = new HashMap<String, String>();
         for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
             varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
         }
+
+        String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
         Map<String, Object> constants = new HashMap<String, Object>();
@@ -150,6 +153,7 @@ public class VizDataCollection {
           String val = (String)varConstElement.getValue();
           constants.put(key,val);
         }
+
         groundRulesElement.put("constants", constants);
         groundRulesElement.put("groundAtoms", atomHashList);
         String groundRuleStringID = Integer.toString(System.identityHashCode(groundRule));

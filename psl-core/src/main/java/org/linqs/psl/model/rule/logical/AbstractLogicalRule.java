@@ -160,7 +160,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         // Visualization runtime argument is specified.
         if (Options.CLI_VIZ.getBoolean()) {
-            VizDataCollection.ruleMapInsertElement(this, groundRule, variableMap, constants);
+            VizDataCollection.addGroundRule(this, groundRule, variableMap, constants);
         }
 
         results.add(groundRule);

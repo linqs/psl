@@ -18,9 +18,9 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
-import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.DataStore;
@@ -50,7 +50,6 @@ import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 import org.linqs.psl.util.VizDataCollection;
 
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -70,7 +69,6 @@ import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -219,7 +217,7 @@ public class Launcher {
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
-            visualization(inferenceApplication, dataStore, database, closedPredicates);
+            modelDataCollection(model, inferenceApplication, dataStore, database, closedPredicates);
         }
 
         log.info("Inference Complete");
@@ -230,7 +228,7 @@ public class Launcher {
         return database;
     }
 
-    private void visualization(InferenceApplication inferenceApplication, DataStore dataStore,
+    private void modelDataCollection(Model model, InferenceApplication inferenceApplication, DataStore dataStore,
             Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
         Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
         openPredicates.removeAll(closedPredicates);
@@ -248,11 +246,11 @@ public class Launcher {
 
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        // Create TrainingMap between predictions and truth
+        // Create TrainingMap between predictions and truth.
         PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
         TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
 
-        // Loop through trainingMap, adding predicates, prediction val, and truth val to json
+        // Collect prediction and truth values for each target.
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             VizDataCollection.addTruth(entry.getKey(), entry.getValue().getValue());
         }
@@ -261,6 +259,9 @@ public class Launcher {
             predictionDatabase.close();
         }
         truthDatabase.close();
+
+        VizDataCollection.collectModelRules(model.getRules());
+        VizDataCollection.dissatisfactionPerGroundRule(inferenceApplication.getGroundRuleStore());
     }
 
     private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
@@ -442,7 +443,7 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
             Options.CLI_VIZ.set(true);
-            VizDataCollection.outputPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_VISUALIZATION);
+            VizDataCollection.setOutputPath(parsedOptions.getOptionValue(CommandLineLoader.OPTION_VISUALIZATION));
         }
 
         // Inference

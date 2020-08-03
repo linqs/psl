@@ -186,10 +186,6 @@ public abstract class InferenceApplication implements ModelApplication {
         log.info("Inference complete.");
         atomsCommitted = false;
 
-        if (Options.CLI_VIZ.getBoolean()) {
-            VizDataCollection.dissatisfactionPerGroundRule(groundRuleStore);
-        }
-
         // Commits the RandomVariableAtoms back to the Database.
         if (commitAtoms) {
             commit();

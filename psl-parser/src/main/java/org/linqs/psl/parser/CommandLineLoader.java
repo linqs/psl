@@ -269,7 +269,7 @@ public class CommandLineLoader {
                 .longOpt(OPTION_VISUALIZATION_LONG)
                 .desc("Gather data for creating a visualization of a given PSL run." +
                         " If a path is specified, the visualization will be output there." +
-                        " Otherwise, it will be output to stdout")
+                        " Otherwise, it will be output to stdout.")
                 .hasArg()
                 .argName("path")
                 .optionalArg(true)
