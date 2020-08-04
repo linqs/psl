@@ -27,54 +27,53 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+/**
+ * A client that takes input on stdin and passes it to the online host specified in configuration.
+ */
 public class OnlineClient {
-    private String hostname;
-    private int portNumber;
+    public static final String EXIT_STRING = "exit";
 
-    public OnlineClient() {
-        hostname = Options.ONLINE_HOST_NAME.getString();
-        portNumber = Options.ONLINE_PORT_NUMBER.getInt();
+    // Static only.
+    private OnlineClient() {}
+
+    public static void run() {
+        run(Options.ONLINE_HOST_NAME.getString(), Options.ONLINE_PORT_NUMBER.getInt());
     }
 
-    public void run() {
-        ObjectOutputStream out = null;
-        String userInput = null;
-        Socket server = null;
+    public static void run(String hostname, int port) {
+        try (
+                Socket server = new Socket(hostname, port);
+                ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+                BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
+            String userInput = null;
 
-        BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-
-        try {
-            server = new Socket(hostname, portNumber);
-        } catch (IOException ex) {
-            throw new RuntimeException(String.format(
-                    "Exception thrown when connecting to server at hostname: %s and port number: %d",
-                    hostname, portNumber), ex);
-        }
-
-        try {
-            out = new ObjectOutputStream(server.getOutputStream());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-
-        try {
-            while (!(userInput = stdIn.readLine().trim()).equalsIgnoreCase("exit")) {
+            while (true) {
                 try {
+                    userInput = stdin.readLine();
+                    if (userInput == null) {
+                        break;
+                    }
+
+                    userInput = userInput.trim();
+                    if (userInput.equals("")) {
+                        continue;
+                    } else if (userInput.equalsIgnoreCase(EXIT_STRING)) {
+                        break;
+                    }
+
                     out.writeObject(OnlineAction.getOnlineAction(userInput));
                 } catch (OnlineActionException ex) {
-                    System.err.println(String.format("Error parsing command: %s", userInput));
+                    System.err.println(String.format("Error parsing command: [%s].", userInput));
+                    System.err.println(ex);
                     ex.printStackTrace(System.err);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
             }
         } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-
-        try {
-            server.close();
-            stdIn.close();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            throw new RuntimeException(
+                    String.format("Error establishing connection to the online server (%s:%d).", hostname, port),
+                    ex);
         }
     }
 }

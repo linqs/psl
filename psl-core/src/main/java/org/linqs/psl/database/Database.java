@@ -34,7 +34,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -245,7 +244,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
         for (GroundAtom atom : groundAtoms) {
             // This is only possible if the predicate is partially observed and this ground atom
-            // was specified as a target and an observation/
+            // was specified as a target and an observation.
             if (atom instanceof RandomVariableAtom) {
                 throw new IllegalStateException(String.format(
                         "Found a ground atom (%s) that is both observed and a target." +
@@ -305,29 +304,27 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         return cache.getRVACount();
     }
 
-    public void outputRandomVariableAtoms(PrintStream stream) {
-        // Set of open predicates
-        Set<StandardPredicate> registeredPredicates = parentDataStore.getRegisteredPredicates();
-
-        // Write to provided file name and location
-        for (StandardPredicate openPredicate : registeredPredicates) {
+    /**
+     * Output all random variables to stdout in a human readable format: Foo('a', 'b') = 1.0.
+     */
+    public void outputRandomVariableAtoms() {
+        for (StandardPredicate openPredicate : parentDataStore.getRegisteredPredicates()) {
             for (GroundAtom atom : getAllGroundRandomVariableAtoms(openPredicate)) {
-                stream.println(atom.toString() + " = " + atom.getValue());
+                System.out.println(atom.toString() + " = " + atom.getValue());
             }
         }
     }
 
+    /**
+     * Output all random variables in a tab separated format.
+     */
     public void outputRandomVariableAtoms(String outputDirectoryPath) {
-        // Set of open predicates
-        Set<StandardPredicate> registeredPredicates = parentDataStore.getRegisteredPredicates();
-
-        // Write to provided file name and location
         File outputDirectory = new File(outputDirectoryPath);
 
         // mkdir -p
         outputDirectory.mkdirs();
 
-        for (StandardPredicate predicate : registeredPredicates) {
+        for (StandardPredicate predicate : parentDataStore.getRegisteredPredicates()) {
             if (getAllGroundRandomVariableAtoms(predicate).size() == 0) {
                 continue;
             }

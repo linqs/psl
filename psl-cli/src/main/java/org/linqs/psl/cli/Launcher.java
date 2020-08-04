@@ -204,7 +204,7 @@ public class Launcher {
         // Output the results.
         if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
             log.trace("Writing inferred predicates to out stream.");
-            database.outputRandomVariableAtoms(System.out);
+            database.outputRandomVariableAtoms();
         } else {
             String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
             log.info("Writing inferred predicates to file: " + outputDirectoryPath);
@@ -334,24 +334,25 @@ public class Launcher {
     }
 
     private void runOnlineClient() {
-        log.info("Starting Online PSL Client.");
-
-        OnlineClient onlineClient = new OnlineClient();
-        onlineClient.run();
+        log.info("Starting online PSL client.");
+        OnlineClient.run();
+        log.info("Online PSL client closed.");
     }
 
     private void runPSL(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-        // Inference
+        // Run inference.
         Database evalDB = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
             evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
         } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
             learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
+        } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT)) {
+            runOnlineClient();
         } else {
             throw new IllegalArgumentException("No valid operation provided.");
         }
 
-        // Evaluation
+        // Run evaluation.
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
             for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
                 evaluation(dataStore, evalDB, closedPredicates, evaluator);
@@ -369,17 +370,14 @@ public class Launcher {
         log.info("Running PSL CLI Version {}", Version.getFull());
         DataStore dataStore = initDataStore();
 
-        // Load data
+        // Load the data.
         Set<StandardPredicate> closedPredicates = loadData(dataStore);
 
-        // Load model
+        // Load the model.
         Model model = loadModel(dataStore);
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT)) {
-            runOnlineClient();
-        } else {
-            runPSL(model, dataStore, closedPredicates);
-        }
+        // Run PSL.
+        runPSL(model, dataStore, closedPredicates);
 
         dataStore.close();
     }
