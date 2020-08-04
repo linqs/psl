@@ -103,7 +103,7 @@ public abstract class OnlineInference extends InferenceApplication {
 
     private void startServer() {
         try {
-            server = new OnlineServer<OnlineAction>();
+            server = new OnlineServer();
             server.start();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> server.closeServer()));
         } catch (IOException e) {
@@ -181,7 +181,7 @@ public abstract class OnlineInference extends InferenceApplication {
             db.outputRandomVariableAtoms(action.getOutputDirectoryPath());
         } else {
             log.info("Writing inferred predicates to output stream.");
-            db.outputRandomVariableAtoms(System.out);
+            db.outputRandomVariableAtoms();
         }
     }
 
@@ -199,7 +199,11 @@ public abstract class OnlineInference extends InferenceApplication {
         OnlineAction action = null;
         try {
             do {
-                action = (OnlineAction) server.dequeClientInput();
+                action = server.dequeClientInput();
+                if (action == null) {
+                    continue;
+                }
+
                 try {
                     executeAction(action);
                 } catch (OnlineException ex) {
@@ -208,8 +212,6 @@ public abstract class OnlineInference extends InferenceApplication {
                     throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
                 }
             } while (!close);
-        } catch (InterruptedException ex) {
-            log.warn("Internal Inference Interrupted.", ex);
         } finally {
             server.closeServer();
         }

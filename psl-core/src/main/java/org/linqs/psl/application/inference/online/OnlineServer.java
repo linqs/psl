@@ -17,7 +17,9 @@
  */
 package org.linqs.psl.application.inference.online;
 
+import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.config.Options;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +32,14 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Online server class.
  * Listens and establishes client connections and enqueues objects provided by client to a shared queue.
  */
-public class OnlineServer<T> extends Thread{
+public class OnlineServer extends Thread {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
     private boolean waiting;
@@ -45,7 +48,7 @@ public class OnlineServer<T> extends Thread{
     private int connections;
     private InetAddress addr;
     private ServerSocket server;
-    private LinkedBlockingQueue<T> queue;
+    private BlockingQueue<OnlineAction> queue;
     private Set<ServerClientThread> threads;
 
     public OnlineServer() throws IOException {
@@ -68,7 +71,7 @@ public class OnlineServer<T> extends Thread{
 
         log.info("Started Server at port: " + server.getLocalPort() + " and IP: + " + server.getInetAddress());
 
-        this.queue = new LinkedBlockingQueue<T>();
+        this.queue = new LinkedBlockingQueue<OnlineAction>();
         this.threads = new HashSet<>();
     }
 
@@ -116,12 +119,21 @@ public class OnlineServer<T> extends Thread{
         }
     }
 
-    public void enqueue(T newObject) {
-        queue.offer(newObject);
+    public synchronized void enqueue(OnlineAction newObject) {
+        try {
+            queue.put(newObject);
+        } catch (InterruptedException ex) {
+            log.warn("Interrupted while putting an action on the queue.", ex);
+        }
     }
 
-    public synchronized T dequeClientInput() throws InterruptedException {
-        return queue.take();
+    public synchronized OnlineAction dequeClientInput() {
+        try {
+            return queue.take();
+        } catch (InterruptedException ex) {
+            log.warn("Interrupted while taking an action from the queue.", ex);
+            return null;
+        }
     }
 
     public void closeServer() {
@@ -164,11 +176,11 @@ public class OnlineServer<T> extends Thread{
         }
 
         public void run() {
-            T newCommand = null;
+            OnlineAction newCommand = null;
 
             while (client.isConnected() && !isInterrupted()) {
                 try {
-                    newCommand = (T) inStream.readObject();
+                    newCommand = (OnlineAction)inStream.readObject();
                     enqueue(newCommand);
                 } catch (EOFException e) {
                     log.debug("Client Disconnected");
