@@ -88,6 +88,7 @@ public class VizDataCollection {
             groundAtoms = new HashMap<String, Map<String, Object>>();
         }
     }
+
     public static void setOutputPath(String path) {
         outputPath = path;
     }
