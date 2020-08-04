@@ -54,7 +54,7 @@ public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
 
     protected List<Rule> rules;
-    protected Database db;
+    protected Database database;
     protected Reasoner reasoner;
     protected InitialValue initialValue;
 
@@ -70,13 +70,13 @@ public abstract class InferenceApplication implements ModelApplication {
 
     private boolean atomsCommitted;
 
-    protected InferenceApplication(List<Rule> rules, Database db) {
-        this(rules, db, Options.INFERENCE_RELAX.getBoolean());
+    protected InferenceApplication(List<Rule> rules, Database database) {
+        this(rules, database, Options.INFERENCE_RELAX.getBoolean());
     }
 
-    protected InferenceApplication(List<Rule> rules, Database db, boolean relaxHardConstraints) {
+    protected InferenceApplication(List<Rule> rules, Database database, boolean relaxHardConstraints) {
         this.rules = new ArrayList<Rule>(rules);
-        this.db = db;
+        this.database = database;
         this.atomsCommitted = false;
 
         this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
@@ -94,7 +94,7 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void initialize() {
         log.debug("Creating persisted atom manager.");
-        atomManager = createAtomManager(db);
+        atomManager = createAtomManager(database);
         log.debug("Atom manager initialization complete.");
 
         initializeAtoms();
@@ -117,8 +117,8 @@ public abstract class InferenceApplication implements ModelApplication {
         completeInitialize();
     }
 
-    protected PersistedAtomManager createAtomManager(Database db) {
-        return new PersistedAtomManager(db, false, initialValue);
+    protected PersistedAtomManager createAtomManager(Database database) {
+        return new PersistedAtomManager(database, false, initialValue);
     }
 
     protected GroundRuleStore createGroundRuleStore() {
@@ -265,7 +265,7 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         rules = null;
-        db = null;
+        database = null;
     }
 
     /**
@@ -336,7 +336,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * Construct an inference application given the data.
      * Look for a constructor like: (List<Rule>, Database).
      */
-    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database db) {
+    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database database) {
         className = Reflection.resolveClassName(className);
 
         Class<? extends InferenceApplication> classObject = null;
@@ -357,7 +357,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         InferenceApplication inferenceApplication = null;
         try {
-            inferenceApplication = constructor.newInstance(rules, db);
+            inferenceApplication = constructor.newInstance(rules, database);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate inference application (" + className + ")", ex);
         } catch (IllegalAccessException ex) {

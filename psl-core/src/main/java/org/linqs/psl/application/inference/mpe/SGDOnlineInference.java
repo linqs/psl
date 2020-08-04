@@ -35,8 +35,8 @@ import java.util.List;
  * Use streaming grounding and inference with an SGD reasoner.
  */
 public class SGDOnlineInference extends MPEOnlineInference {
-    public SGDOnlineInference(List<Rule> rules, Database db) {
-        super(rules, db);
+    public SGDOnlineInference(List<Rule> rules, Database database) {
+        super(rules, database);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class SGDOnlineInference extends MPEOnlineInference {
         reasoner = null;
 
         rules = null;
-        db = null;
+        database = null;
     }
 
     @Override

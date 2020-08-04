@@ -23,6 +23,7 @@ import org.linqs.psl.config.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -39,8 +40,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Online server class.
  * Listens and establishes client connections and enqueues objects provided by client to a shared queue.
  */
-public class OnlineServer extends Thread {
-    private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
+public class OnlineServer extends Thread implements Closeable {
+    private static final Logger log = LoggerFactory.getLogger(OnlineServer.class);
 
     private boolean waiting;
     private int port;
@@ -51,6 +52,7 @@ public class OnlineServer extends Thread {
     private BlockingQueue<OnlineAction> queue;
     private Set<ServerClientThread> threads;
 
+    // TODO(eriq): This should not throw a checked exception.
     public OnlineServer() throws IOException {
         waiting = false;
 
@@ -136,7 +138,8 @@ public class OnlineServer extends Thread {
         }
     }
 
-    public void closeServer() {
+    @Override
+    public void close() {
         try {
             server.close();
         } catch (IOException e) {

@@ -86,7 +86,7 @@ public class AtomCache {
         return rvaCount;
     }
 
-    public int getOBSCount() {
+    public int getObsCount() {
         return obsCount;
     }
 

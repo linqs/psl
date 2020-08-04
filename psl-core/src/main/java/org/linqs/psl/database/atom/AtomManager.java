@@ -121,8 +121,8 @@ public abstract class AtomManager {
     /**
      * Get the number of ObservedAtoms cached by the database.
      */
-    public int getCachedOBSCount() {
-        return db.getCachedOBSCount();
+    public int getCachedObsCount() {
+        return db.getCachedObsCount();
     }
 
     /**

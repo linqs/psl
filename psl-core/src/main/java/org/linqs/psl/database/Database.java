@@ -191,8 +191,12 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         return cache.getCachedRandomVariableAtoms();
     }
 
-    public int getCachedOBSCount() {
-        return cache.getOBSCount();
+    public int getCachedRVACount() {
+        return cache.getRVACount();
+    }
+
+    public int getCachedObsCount() {
+        return cache.getObsCount();
     }
 
     public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate) {
@@ -298,10 +302,6 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
     public Partition getWritePartition() {
         return writePartition;
-    }
-
-    public int getCachedRVACount() {
-        return cache.getRVACount();
     }
 
     /**

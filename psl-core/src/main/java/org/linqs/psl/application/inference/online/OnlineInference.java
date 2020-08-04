@@ -24,95 +24,74 @@ import org.linqs.psl.application.inference.online.actions.DeleteAtom;
 import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
 
-
-/**
- * Use streaming grounding and inference with an SGD reasoner.
- */
 public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
-    public OnlineServer server;
-    private boolean close;
+    private OnlineServer server;
+    private boolean closed;
     private double objective;
 
-    protected OnlineInference(List<Rule> rules, Database db) {
-        super(rules, db);
+    protected OnlineInference(List<Rule> rules, Database database) {
+        super(rules, database);
     }
 
-    protected OnlineInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
-        super(rules, db, relaxHardConstraints);
+    protected OnlineInference(List<Rule> rules, Database database, boolean relaxHardConstraints) {
+        super(rules, database, relaxHardConstraints);
     }
 
-    /**
-     * Get objects ready for inference.
-     * This will call into the abstract method completeInitialize().
-     */
     @Override
     protected void initialize() {
+        closed = false;
+        objective = 0.0;
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount() + atomManager.getCachedObsCount());
+
         startServer();
 
-        log.debug("Creating persisted atom manager.");
-        atomManager = createAtomManager(db);
-        log.debug("Atom manager initialization complete.");
+        super.initialize();
 
-        initializeAtoms();
-
-        reasoner = createReasoner();
-        termGenerator = createTermGenerator();
-        termStore = createTermStore();
-        groundRuleStore = createGroundRuleStore();
-
-        int atomCapacity = atomManager.getCachedRVACount() + atomManager.getCachedOBSCount();
-        termStore.ensureVariableCapacity(atomCapacity);
-
-        if (normalizeWeights) {
-            normalizeWeights();
+        if (!(termStore instanceof OnlineTermStore)) {
+            throw new RuntimeException("Online inference requires an OnlineTermStore. Found " + termStore.getClass() + ".");
         }
-
-        if (relaxHardConstraints) {
-            relaxHardConstraints();
-        }
-
-        close = false;
-        objective = 0;
-
-        completeInitialize();
     }
 
     @Override
-    protected OnlineTermStore createTermStore() {
-        return (OnlineTermStore)Options.INFERENCE_TS.getNewObject();
-    }
-
-    @Override
-    protected OnlineAtomManager createAtomManager(Database db) {
-        return new OnlineAtomManager(db);
+    protected PersistedAtomManager createAtomManager(Database database) {
+        return new OnlineAtomManager(database);
     }
 
     private void startServer() {
+        // TODO(eriq): This should not throw.
         try {
             server = new OnlineServer();
             server.start();
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> server.closeServer()));
-        } catch (IOException e) {
-            log.info("Failed to start server");
-            System.exit(1);
+
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    server.close();
+                }
+            });
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to start online server.", ex);
         }
     }
 
-    protected void executeAction(OnlineAction action) throws OnlineException {
+    protected void executeAction(OnlineAction action) {
         if (action.getClass() == UpdateObservation.class) {
             doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == AddAtom.class) {
@@ -124,15 +103,15 @@ public abstract class OnlineInference extends InferenceApplication {
         } else if (action.getClass() == Close.class) {
             doClose((Close)action);
         } else {
-            throw new OnlineException("Action: " + action.getClass().getName() + " not Supported.");
+            throw new OnlineActionException("Action: " + action.getClass().getName() + " not Supported.");
         }
     }
 
-    protected void doAddAtom(AddAtom action) throws OnlineException {
+    protected void doAddAtom(AddAtom action) {
         // Resolve Predicate
         Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new OnlineException("Predicate is not registered: " + action.getPredicateName());
+            throw new OnlineActionException("Predicate is not registered: " + action.getPredicateName());
         }
 
         switch (action.getPartitionName()) {
@@ -143,32 +122,32 @@ public abstract class OnlineInference extends InferenceApplication {
                 ((OnlineTermStore)termStore).addAtom(registeredPredicate, action.getArguments(), action.getValue(), false);
                 break;
             default:
-                throw new OnlineException("Add Atom Partition: " + action.getPartitionName() + " not Supported");
+                throw new OnlineActionException("Add Atom Partition: " + action.getPartitionName() + " not Supported");
         }
     }
 
-    protected void doDeleteAtom(DeleteAtom action) throws OnlineException {
+    protected void doDeleteAtom(DeleteAtom action) {
         // Resolve Predicate
         Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new OnlineException("Predicate is not registered: " + action.getPredicateName());
+            throw new OnlineActionException("Predicate is not registered: " + action.getPredicateName());
         }
 
         ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, action.getArguments());
     }
 
-    protected void doUpdateObservation(UpdateObservation action) throws OnlineException {
+    protected void doUpdateObservation(UpdateObservation action) {
         // Resolve Predicate
         Predicate registeredPredicate = Predicate.get(action.getPredicateName());
         if (registeredPredicate == null) {
-            throw new OnlineException("Predicate is not registered: " + action.getPredicateName());
+            throw new OnlineActionException("Predicate is not registered: " + action.getPredicateName());
         }
 
         ((OnlineTermStore)termStore).updateAtom(registeredPredicate, action.getArguments(), action.getValue());
     }
 
     protected void doClose(Close action) {
-        close = true;
+        closed = true;
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates action) {
@@ -178,16 +157,16 @@ public abstract class OnlineInference extends InferenceApplication {
 
         if (action.getOutputDirectoryPath() != null) {
             log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
-            db.outputRandomVariableAtoms(action.getOutputDirectoryPath());
+            database.outputRandomVariableAtoms(action.getOutputDirectoryPath());
         } else {
             log.info("Writing inferred predicates to output stream.");
-            db.outputRandomVariableAtoms();
+            database.outputRandomVariableAtoms();
         }
     }
 
     /**
-     * Minimize the total weighted incompatibility of the atoms according to the rules,
-     * TODO: (Charles) By overriding internal inference rather than inference() we are not committing the random
+     * Minimize the total weighted incompatibility of the atoms according to the rules.
+     * TODO(Charles): By overriding internal inference rather than inference() we are not committing the random
      *  variable atom values to the database after updates. Perhaps periodically update the database or add it
      *  as a part of action execution.
      */
@@ -206,26 +185,16 @@ public abstract class OnlineInference extends InferenceApplication {
 
                 try {
                     executeAction(action);
-                } catch (OnlineException ex) {
+                } catch (OnlineActionException ex) {
                     log.warn(String.format("Exception when executing action: %s", action), ex);
                 } catch (RuntimeException ex) {
                     throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
                 }
-            } while (!close);
+            } while (!closed);
         } finally {
-            server.closeServer();
+            server.close();
         }
 
         return objective;
-    }
-}
-
-class OnlineException extends Exception {
-    public OnlineException(String s) {
-        super(s);
-    }
-
-    public OnlineException(String s, Exception ex) {
-        super(s, ex);
     }
 }

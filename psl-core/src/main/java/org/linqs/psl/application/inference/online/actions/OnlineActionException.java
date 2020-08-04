@@ -17,12 +17,12 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-public class OnlineActionException extends Exception {
-    OnlineActionException(String message) {
+public class OnlineActionException extends RuntimeException {
+    public OnlineActionException(String message) {
         super(message);
     }
 
-    OnlineActionException(String message, Exception ex) {
+    public OnlineActionException(String message, Exception ex) {
         super(message, ex);
     }
 }

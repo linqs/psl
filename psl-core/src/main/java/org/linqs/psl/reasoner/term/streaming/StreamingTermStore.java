@@ -177,7 +177,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
 
-        int atomCapacity = online ? atomManager.getCachedRVACount() + atomManager.getCachedOBSCount() :
+        int atomCapacity = online ? atomManager.getCachedRVACount() + atomManager.getCachedObsCount() :
                 atomManager.getCachedRVACount();
         ensureVariableCapacity(atomCapacity);
 
