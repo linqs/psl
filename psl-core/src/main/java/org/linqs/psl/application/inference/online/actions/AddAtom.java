@@ -29,10 +29,9 @@ public class AddAtom extends OnlineAction {
     private Constant[] arguments;
     private float newValue;
 
-    public AddAtom(String[] tokenized_command) {
-        super(tokenized_command);
-        this.newValue = (float)0.5;
-        parseCommand(tokenized_command);
+    public AddAtom(String[] tokenizedCommand) {
+        this.newValue = 0.5f;
+        parseCommand(tokenizedCommand);
     }
 
     public String getPredicateName() {
@@ -51,14 +50,14 @@ public class AddAtom extends OnlineAction {
         return this.arguments;
     }
 
-    public void parseCommand(String[] tokenized_command) throws IllegalArgumentException {
+    public void parseCommand(String[] tokenizedCommand) throws IllegalArgumentException {
         // Format: AddAtom PartitionName PredicateName Arguments Value(Optional)
         Predicate registeredPredicate = null;
         int argumentLength = 0;
-        for (int i = 1; i < tokenized_command.length; i++) {
+        for (int i = 1; i < tokenizedCommand.length; i++) {
             if (i == 1) {
                 // Partition Name Field:
-                partitionName = tokenized_command[i].toUpperCase();
+                partitionName = tokenizedCommand[i].toUpperCase();
                 switch (partitionName) {
                     case "READ":
                         argumentLength = 4;
@@ -67,29 +66,29 @@ public class AddAtom extends OnlineAction {
                         argumentLength = 3;
                         break;
                     default:
-                        throw new IllegalArgumentException("Illegal Partition Name: " + tokenized_command[i]);
+                        throw new IllegalArgumentException("Illegal Partition Name: " + tokenizedCommand[i]);
                 }
             } else if (i == 2) {
                 // Predicate Field: Ensure predicate is registered in data store
-                registeredPredicate = resolvePredicate(tokenized_command[i]);
+                registeredPredicate = resolvePredicate(tokenizedCommand[i]);
                 predicateName = registeredPredicate.getName();
-                if (tokenized_command.length < registeredPredicate.getArity() + argumentLength) {
+                if (tokenizedCommand.length < registeredPredicate.getArity() + argumentLength) {
                     throw new IllegalArgumentException("Not enough arguments provided for updating Predicate: " +
-                            tokenized_command[i] + " With arity: " + registeredPredicate.getArity());
+                            tokenizedCommand[i] + " With arity: " + registeredPredicate.getArity());
                 }
                 arguments = new Constant[registeredPredicate.getArity()];
             } else if (i <= (2 + registeredPredicate.getArity())) {
                 // Argument Field:
                 // Resolve Arguments
                 ConstantType type = registeredPredicate.getArgumentType(i - 3);
-                arguments[i - 3] = resolveConstant(tokenized_command[i], type);
+                arguments[i - 3] = resolveConstant(tokenizedCommand[i], type);
             } else if (i == (3 + registeredPredicate.getArity())) {
                 // Value Field: Ensure value is valid
                 // Block only reached if value provided
-                newValue = resolveValue(tokenized_command[i]);
+                newValue = resolveValue(tokenizedCommand[i]);
             } else {
                 throw new IllegalArgumentException("Too many arguments provided for Predicate: " +
-                        tokenized_command[i] + " With arity: " + registeredPredicate.getArity());
+                        tokenizedCommand[i] + " With arity: " + registeredPredicate.getArity());
             }
         }
     }

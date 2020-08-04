@@ -35,9 +35,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 public abstract class OnlineAction implements Serializable {
-    private static final Logger log = LoggerFactory.getLogger(UpdateObservation.class);
-
-    public OnlineAction(String[] tokenized_command) { }
+    private static final Logger log = LoggerFactory.getLogger(OnlineAction.class);
 
     /**
      * Construct an OnlineAction given the name and necessary information.

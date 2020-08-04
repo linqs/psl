@@ -22,22 +22,21 @@ import java.util.Arrays;
 public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
 
-    public WriteInferredPredicates(String[] tokenized_command) {
-        super(tokenized_command);
+    public WriteInferredPredicates(String[] tokenizedCommand) {
         outputDirectoryPath = null;
-        parseCommand(tokenized_command);
+        parseCommand(tokenizedCommand);
     }
 
     public String getOutputDirectoryPath() {
         return outputDirectoryPath;
     }
 
-    public void parseCommand(String[] tokenized_command) throws IllegalArgumentException {
+    public void parseCommand(String[] tokenizedCommand) throws IllegalArgumentException {
         // Format: WriteInferredPredicates outputDirectoryPath(optional)
-        for (int i = 1; i < tokenized_command.length; i++) {
+        for (int i = 1; i < tokenizedCommand.length; i++) {
             if (i == 1) {
                 // outputDirectoryPath Field:
-                outputDirectoryPath = tokenized_command[i];
+                outputDirectoryPath = tokenizedCommand[i];
             } else {
                 throw new IllegalArgumentException("Too many arguments provided for Action: WriteInferredPredicates");
             }
