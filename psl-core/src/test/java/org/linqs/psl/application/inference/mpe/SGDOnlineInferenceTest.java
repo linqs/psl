@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.application.inference.mpe;
 
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
@@ -44,6 +42,10 @@ import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,17 +59,24 @@ import static org.junit.Assert.assertEquals;
 public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
     private Database inferDB;
-    private DatabaseDriver driver = DatabaseTestUtil.getH2Driver();
-    private Map<String, StandardPredicate> baselinePredicates = new HashMap<>();
-    private List<Rule> baselineRules = new ArrayList<Rule>();
-    private Map<StandardPredicate, List<TestModel.PredicateData>> baselineObservations = new HashMap<>();
-    private Map<StandardPredicate, List<TestModel.PredicateData>> baselineTargets = new HashMap<>();
-    private Map<StandardPredicate, List<TestModel.PredicateData>> baselineTruths = new HashMap<>();
+    private SGDOnlineInference inference;
+
+    public SGDOnlineInferenceTest() {
+        modelInfo = null;
+        inferDB = null;
+        inference = null;
+    }
 
     /**
      * Initialize a baseline model that we will be modifying with the online inference application
      */
     private void initBaselineModel() {
+        Map<String, StandardPredicate> baselinePredicates = new HashMap<String, StandardPredicate>();
+        List<Rule> baselineRules = new ArrayList<Rule>();
+        Map<StandardPredicate, List<TestModel.PredicateData>> baselineObservations = new HashMap<StandardPredicate, List<TestModel.PredicateData>>();
+        Map<StandardPredicate, List<TestModel.PredicateData>> baselineTargets = new HashMap<StandardPredicate, List<TestModel.PredicateData>>();
+        Map<StandardPredicate, List<TestModel.PredicateData>> baselineTruths = new HashMap<StandardPredicate, List<TestModel.PredicateData>>();
+
         // Define Predicates
         Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
         predicatesInfo.put("Sim_Users", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
@@ -123,12 +132,29 @@ public class SGDOnlineInferenceTest {
                 new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Avatar"})
         )));
 
+        DatabaseDriver driver = DatabaseTestUtil.getH2Driver();
         modelInfo = TestModel.getModel(driver, baselinePredicates, baselineRules,
                 baselineObservations, baselineTargets, baselineTruths);
     }
 
     @Before
     public void setup() {
+        cleanup();
+
+        Options.ONLINE.set(true);
+
+        initBaselineModel();
+
+        // Close the predicates we are using.
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+
+        inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition, toClose, modelInfo.observationPartition);
+
+        inference = new SGDOnlineInference(modelInfo.model.getRules(), inferDB);
+    }
+
+    @After
+    public void cleanup() {
         if (inferDB != null) {
             inferDB.close();
             inferDB = null;
@@ -139,18 +165,10 @@ public class SGDOnlineInferenceTest {
             modelInfo = null;
         }
 
-        Options.ONLINE.set(true);
-        
-        initBaselineModel();
-
-        // Close the predicates we are using.
-        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-
-        inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition, toClose, modelInfo.observationPartition);
-    }
-
-    protected InferenceApplication getInference(List<Rule> rules, Database db) {
-        return new SGDOnlineInference(rules, db);
+        if (inference != null) {
+            inference.close();
+            inference = null;
+        }
     }
 
     private void queueCommands(SGDOnlineInference inference, ArrayList<String> commands) {
@@ -162,7 +180,7 @@ public class SGDOnlineInferenceTest {
             } catch (OnlineActionException ex) {
                 throw new RuntimeException(ex);
             }
-            inference.server.enqueue(action);
+            inference.addOnlineActionForTesting(action);
         }
     }
 
@@ -185,7 +203,6 @@ public class SGDOnlineInferenceTest {
 
     @Test
     public void testUpdateObservation() {
-        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0",
                 "WriteInferredPredicates",
@@ -200,7 +217,6 @@ public class SGDOnlineInferenceTest {
 
     @Test
     public void testAddAtoms() {
-        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
@@ -219,7 +235,6 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testPageRewriting() {
         Options.STREAMING_TS_PAGE_SIZE.set(2);
-        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "AddAtom\tRead\tSim_Users\tConnor\tAlice\t0.0",
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t0.0",
@@ -241,17 +256,18 @@ public class SGDOnlineInferenceTest {
 
     @Test
     public void testAtomDeleting() {
-        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
         // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
         //  The atom will not be deleted if there is an add and then a delete of the same atom before the atoms are
         //  activated. This behavior is also noted in streaming term store deleteAtom.
-//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-//                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
-//                "AddAtom\tRead\tSim_Users\tAlice\tEddie\t1.0",
-//                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
-//                "WriteInferredPredicates",
-//                "Close"));
-//
+        /*
+        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
+                "AddAtom\tRead\tSim_Users\tAlice\tEddie\t1.0",
+                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
+                "WriteInferredPredicates",
+                "Close"));
+        */
+
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
                 "DeleteAtom\tRead\tSim_Users\tEddie\tAlice",
@@ -259,6 +275,7 @@ public class SGDOnlineInferenceTest {
                 "Close"));
         queueCommands(inference, commands);
 
+        @SuppressWarnings("unchecked")
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
         int numTerms = 0;
         for (SGDObjectiveTerm term : termStore) {
@@ -280,7 +297,8 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testChangeAtomPartition() {
         Options.STREAMING_TS_PAGE_SIZE.set(4);
-        SGDOnlineInference inference = (SGDOnlineInference)getInference(modelInfo.model.getRules(), inferDB);
+        setup();
+
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
                 "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",

@@ -70,6 +70,15 @@ public class OnlineServer implements Closeable {
         }
     }
 
+    // TODO(Charles): This can be removed once testing with sockets is added.
+    public void addOnlineActionForTesting(OnlineAction action) {
+        try {
+            queue.put(action);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     @Override
     public void close() {
         if (queue != null) {

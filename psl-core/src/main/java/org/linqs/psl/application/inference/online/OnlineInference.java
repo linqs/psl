@@ -58,7 +58,6 @@ public abstract class OnlineInference extends InferenceApplication {
     protected void initialize() {
         closed = false;
         objective = 0.0;
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount() + atomManager.getCachedObsCount());
 
         startServer();
 
@@ -67,6 +66,7 @@ public abstract class OnlineInference extends InferenceApplication {
         if (!(termStore instanceof OnlineTermStore)) {
             throw new RuntimeException("Online inference requires an OnlineTermStore. Found " + termStore.getClass() + ".");
         }
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount() + atomManager.getCachedObsCount());
     }
 
     @Override
@@ -80,11 +80,18 @@ public abstract class OnlineInference extends InferenceApplication {
             server.close();
             server = null;
         }
+
+        super.close();
     }
 
     private void startServer() {
         server = new OnlineServer();
         server.start();
+    }
+
+    // TODO(Charles): This can be removed once testing with sockets is added.
+    public void addOnlineActionForTesting(OnlineAction action) {
+        server.addOnlineActionForTesting(action);
     }
 
     protected void executeAction(OnlineAction action) {

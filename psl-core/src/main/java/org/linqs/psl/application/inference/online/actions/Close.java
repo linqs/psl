@@ -18,4 +18,5 @@
 package org.linqs.psl.application.inference.online.actions;
 
 public class Close extends OnlineAction {
+    public Close(String[] tokenizedCommand) {}
 }
