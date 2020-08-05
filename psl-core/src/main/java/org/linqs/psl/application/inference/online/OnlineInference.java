@@ -74,21 +74,17 @@ public abstract class OnlineInference extends InferenceApplication {
         return new OnlineAtomManager(database);
     }
 
-    private void startServer() {
-        // TODO(eriq): This should not throw.
-        try {
-            server = new OnlineServer();
-            server.start();
-
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    server.close();
-                }
-            });
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to start online server.", ex);
+    @Override
+    public void close() {
+        if (server != null) {
+            server.close();
+            server = null;
         }
+    }
+
+    private void startServer() {
+        server = new OnlineServer();
+        server.start();
     }
 
     protected void executeAction(OnlineAction action) {
@@ -176,24 +172,20 @@ public abstract class OnlineInference extends InferenceApplication {
         objective = reasoner.optimize(termStore);
 
         OnlineAction action = null;
-        try {
-            do {
-                action = server.dequeClientInput();
-                if (action == null) {
-                    continue;
-                }
+        do {
+            action = server.getAction();
+            if (action == null) {
+                continue;
+            }
 
-                try {
-                    executeAction(action);
-                } catch (OnlineActionException ex) {
-                    log.warn(String.format("Exception when executing action: %s", action), ex);
-                } catch (RuntimeException ex) {
-                    throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
-                }
-            } while (!closed);
-        } finally {
-            server.close();
-        }
+            try {
+                executeAction(action);
+            } catch (OnlineActionException ex) {
+                log.warn(String.format("Exception when executing action: %s", action), ex);
+            } catch (RuntimeException ex) {
+                throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
+            }
+        } while (!closed);
 
         return objective;
     }

@@ -37,7 +37,7 @@ public class OnlineClient {
     private OnlineClient() {}
 
     public static void run() {
-        run(Options.ONLINE_HOST_NAME.getString(), Options.ONLINE_PORT_NUMBER.getInt());
+        run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt());
     }
 
     public static void run(String hostname, int port) {

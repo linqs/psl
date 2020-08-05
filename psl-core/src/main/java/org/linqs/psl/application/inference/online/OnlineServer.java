@@ -24,186 +24,186 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Online server class.
- * Listens and establishes client connections and enqueues objects provided by client to a shared queue.
+ * A class that handles establishing a server socket and waiting for client connections.
+ * Actions given by any client connections will be held in a shared queue and
+ * accessible via the getAction() method.
  */
-public class OnlineServer extends Thread implements Closeable {
+public class OnlineServer implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(OnlineServer.class);
 
-    private boolean waiting;
-    private int port;
-    private int max_clients;
-    private int connections;
-    private InetAddress addr;
-    private ServerSocket server;
+    private ServerConnectionThread serverThread;
     private BlockingQueue<OnlineAction> queue;
-    private Set<ServerClientThread> threads;
 
-    // TODO(eriq): This should not throw a checked exception.
-    public OnlineServer() throws IOException {
-        waiting = false;
-
-        // Startup server listening on a port from the list of ports
-        port = Options.ONLINE_PORT_NUMBER.getInt();
-        max_clients = Options.ONLINE_MAX_CLIENTS.getInt();
-        addr = InetAddress.getByName(Options.ONLINE_HOST_NAME.getString());
-
-        try {
-            server = new ServerSocket(port, max_clients, addr);
-        } catch (IOException ex) {
-            log.debug(ex.getMessage());
-        }
-
-        if (server == null) {
-            throw new IOException("Port not free " + port);
-        }
-
-        log.info("Started Server at port: " + server.getLocalPort() + " and IP: + " + server.getInetAddress());
-
-        this.queue = new LinkedBlockingQueue<OnlineAction>();
-        this.threads = new HashSet<>();
+    public OnlineServer() {
+        serverThread = new ServerConnectionThread();
+        queue = new LinkedBlockingQueue<OnlineAction>();
     }
 
-    private Socket connectClient() throws IOException {
-        return server.accept();
+    /**
+     * Start up the server on the configured port and wait for connections.
+     * This does not block, as another thread will be waiting for connections.
+     */
+    public void start() {
+        serverThread.start();
     }
 
-    private void addThread(Socket client) {
-        ServerClientThread sct = new ServerClientThread(client);
-        sct.start();
-        threads.add(sct);
-        connections++;
-    }
-
-    private void removeThread(ServerClientThread sct) {
-        threads.remove(sct);
-        connections--;
-        if (waiting) {
-            log.debug("Waking Server up to accept new connections.");
-            notify();
-        }
-    }
-
-    public void run() {
-        while(!isInterrupted()) {
-            Socket client = null;
-            try {
-                if (connections < max_clients) {
-                    try {
-                        client = connectClient();
-                    } catch (IOException e) {
-                        log.debug("Exception Connecting to Client");
-                        log.debug(e.getMessage());
-                        break;
-                    }
-                    addThread(client);
-                } else {
-                    log.debug("Too Many Clients Connected to Server. Waiting for Openings");
-                    wait();
-                }
-            } catch (InterruptedException e) {
-                log.debug("Server Interrupted");
-                log.debug(e.getMessage());
-            }
-        }
-    }
-
-    public synchronized void enqueue(OnlineAction newObject) {
-        try {
-            queue.put(newObject);
-        } catch (InterruptedException ex) {
-            log.warn("Interrupted while putting an action on the queue.", ex);
-        }
-    }
-
-    public synchronized OnlineAction dequeClientInput() {
+    /**
+     * Get the next action from the client.
+     * If no action is already enqueued, this method will block indefinitely until an action is available.
+     */
+    public OnlineAction getAction() {
         try {
             return queue.take();
         } catch (InterruptedException ex) {
-            log.warn("Interrupted while taking an action from the queue.", ex);
+            log.warn("Interrupted while taking an online action from the queue.", ex);
             return null;
         }
     }
 
     @Override
     public void close() {
-        try {
-            server.close();
-        } catch (IOException e) {
-            log.debug(e.getMessage());
-        } finally {
-            for(ServerClientThread childThread : threads) {
-                childThread.close();
+        if (queue != null) {
+            queue.clear();
+            queue = null;
+        }
+
+        if (serverThread != null) {
+            serverThread.interrupt();
+            serverThread.close();
+            serverThread = null;
+        }
+    }
+
+    /**
+     * The thread that waits for client connections.
+     */
+    private class ServerConnectionThread extends Thread {
+        private ServerSocket socket;
+        private Set<ClientConnectionThread> clientConnections;
+
+        public ServerConnectionThread() {
+            clientConnections = new HashSet<ClientConnectionThread>();
+
+            int port = Options.ONLINE_PORT_NUMBER.getInt();
+
+            try {
+                socket = new ServerSocket(port);
+            } catch (IOException ex) {
+                throw new RuntimeException("Could not establish socket on port " + port + ".", ex);
+            }
+
+            log.info("Online server started on port " + port + ".");
+        }
+
+        public void run() {
+            Socket client = null;
+
+            while (!isInterrupted()) {
+                try {
+                    client = socket.accept();
+                } catch (IOException ex) {
+                    if (isInterrupted()) {
+                        break;
+                    }
+
+                    close();
+                    throw new RuntimeException(ex);
+                }
+
+                ClientConnectionThread connectionThread = new ClientConnectionThread(client);
+                clientConnections.add(connectionThread);
+                connectionThread.start();
+            }
+
+            close();
+        }
+
+        public void close() {
+            if (clientConnections != null) {
+                for (ClientConnectionThread clientConnection : clientConnections) {
+                    clientConnection.close();
+                }
+
+                clientConnections.clear();
+                clientConnections = null;
+            }
+
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException ex) {
+                    // Ignore.
+                }
+
+                socket = null;
             }
         }
     }
 
-    private class ServerClientThread extends Thread {
-        private Socket client;
-        private ObjectInputStream inStream;
+    private class ClientConnectionThread extends Thread {
+        private Socket socket;
+        private ObjectInputStream inputStream;
 
-        ServerClientThread(Socket inSocket) {
-            client = inSocket;
+        public ClientConnectionThread(Socket socket) {
+            this.socket = socket;
 
             try {
-                inStream = new ObjectInputStream(client.getInputStream());
-            } catch (IOException e) {
-                log.debug(e.getMessage());
+                inputStream = new ObjectInputStream(socket.getInputStream());
+            } catch (IOException ex) {
+                close();
+                throw new RuntimeException(ex);
             }
         }
 
-        public void close() {
-            interrupt();
-
-            try {
-                inStream.close();
-                client.close();
-            } catch (IOException e) {
-                log.debug(e.getMessage());
-            } finally {
-                removeThread(this);
-            }
-        }
-
+        @Override
         public void run() {
-            OnlineAction newCommand = null;
-
-            while (client.isConnected() && !isInterrupted()) {
+            while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    newCommand = (OnlineAction)inStream.readObject();
-                    enqueue(newCommand);
-                } catch (EOFException e) {
-                    log.debug("Client Disconnected");
-                    log.debug(e.getMessage());
+                    queue.put((OnlineAction)inputStream.readObject());
+                } catch (InterruptedException ex) {
                     break;
-                } catch (IOException e) {
-                    log.debug("Error reading object from client");
-                    log.debug(e.getMessage());
-                    log.debug(Arrays.toString(e.getStackTrace()));
-                } catch (ClassNotFoundException e) {
-                    log.debug("Error casting object serialized by client");
-                    log.debug(e.getMessage());
-                } catch (NullPointerException e) {
-                    log.debug("Error reading object");
-                    log.debug(e.getMessage());
-                    log.debug(Arrays.toString(e.getStackTrace()));
+                } catch (IOException ex) {
+                    close();
+                    throw new RuntimeException(ex);
+                } catch (ClassNotFoundException ex) {
+                    close();
+                    throw new RuntimeException(ex);
                 }
             }
 
             close();
+        }
+
+        public void close() {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException ex) {
+                    // Ignore.
+                }
+
+                inputStream = null;
+            }
+
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException ex) {
+                    // Ignore.
+                }
+
+                socket = null;
+            }
         }
     }
 }

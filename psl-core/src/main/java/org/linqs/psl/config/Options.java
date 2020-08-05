@@ -51,16 +51,10 @@ public class Options {
         "Whether we are running in online mode or not."
     );
 
-    public static final Option ONLINE_HOST_NAME = new Option(
+    public static final Option ONLINE_HOST = new Option(
         "inference.onlinehostname",
         "127.0.0.1",
         "The hostname for the online server."
-    );
-
-    public static final Option ONLINE_MAX_CLIENTS = new Option(
-        "inference.onlinemaxclients",
-        50,
-        "The maximum number of online clients."
     );
 
     public static final Option ONLINE_PORT_NUMBER = new Option(
