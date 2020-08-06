@@ -125,7 +125,7 @@ public class DiscreteEvaluator extends Evaluator {
     }
 
     @Override
-    public double getMaxRepMetric() {
+    public double getBestRepScore() {
         switch (representative) {
             case F1:
             case POSITIVE_PRECISION:

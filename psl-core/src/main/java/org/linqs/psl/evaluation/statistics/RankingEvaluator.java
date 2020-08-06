@@ -107,7 +107,7 @@ public class RankingEvaluator extends Evaluator {
     }
 
     @Override
-    public double getMaxRepMetric() {
+    public double getBestRepScore() {
         switch (representative) {
             case AUROC:
             case POSITIVE_AUPRC:

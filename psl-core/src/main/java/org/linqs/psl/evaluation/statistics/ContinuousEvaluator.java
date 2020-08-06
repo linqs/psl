@@ -91,7 +91,7 @@ public class ContinuousEvaluator extends Evaluator {
     }
 
     @Override
-    public double getMaxRepMetric() {
+    public double getBestRepScore() {
         switch (representative) {
             case MAE:
             case MSE:

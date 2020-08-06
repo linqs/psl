@@ -105,11 +105,11 @@ public abstract class Evaluator {
     }
 
     /**
-     * Combine getMaxRepMetric() with isHigherRepBetter() so that the values from getNormalizedRepMetric are always
+     * Combine getBestRepScore() with isHigherRepBetter() so that the values from getNormalizedRepMetric are always
      * less than or equal to this value.
      */
     public double getNormalizedMaxRepMetric() {
-        double value = getMaxRepMetric();
+        double value = getBestRepScore();
         if (!isHigherRepBetter()) {
             value = -value;
         }
@@ -120,7 +120,7 @@ public abstract class Evaluator {
     /**
      * The maximum (i.e. the best) value that the representative (rep) can take for this evaluator.
      */
-    public abstract double getMaxRepMetric();
+    public abstract double getBestRepScore();
 
     /**
      * Get a string that contains the full range of stats that this Evaluator can provide.

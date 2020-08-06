@@ -43,7 +43,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private WeightSampler weightSampler;
 
     /**
-     * Whether to use the provided weight configuration as the first point for exploration
+     * This variable represents whether or not the provided weight configuration is used as the first point for
+     * exploration.
      */
     private boolean useProvidedWeight;
 
@@ -96,7 +97,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     private void setInitialConfigValAndStd(WeightConfig initialConfig) {
-        float initialStd = (float) evaluator.getNormalizedMaxRepMetric() - initialConfig.valueAndStd.value;
+        float initialStd = (float)evaluator.getNormalizedMaxRepMetric() - initialConfig.valueAndStd.value;
 
         for (int i = 0; i < configs.size(); i++) {
             WeightConfig config = configs.get(i);
@@ -107,6 +108,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     @Override
     protected void doLearn() {
+        String currentLocation = null;
+
         // Very important to define a good kernel.
         kernel = new SquaredExpKernel();
 
@@ -126,7 +129,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             exploredConfigs.add(config);
             configs.remove(nextPoint);
 
-            // set current location
+            // Set the current location.
             currentLocation = StringUtils.join(DELIM, config.config);
 
             log.trace("Weights: {}", config.config);
@@ -136,7 +139,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             config.valueAndStd.value = fnVal;
             config.valueAndStd.std = 0.0f;
 
-            log.debug("Location {} -- objective: {}", currentLocation, fnVal);
+            log.debug("Weights: {} -- objective: {}", currentLocation, fnVal);
 
             if (iteration == 0) {
                 setInitialConfigValAndStd(config);

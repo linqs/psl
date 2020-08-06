@@ -142,7 +142,7 @@ public class CategoricalEvaluator extends Evaluator {
     }
 
     @Override
-    public double getMaxRepMetric() {
+    public double getBestRepScore() {
         switch (representative) {
             case ACCURACY:
                 return 1.0;

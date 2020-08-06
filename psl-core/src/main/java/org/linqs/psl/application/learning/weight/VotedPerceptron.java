@@ -131,6 +131,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
     protected void doLearn() {
         double[] avgWeights = new double[mutableRules.size()];
 
+        String currentLocation = null;
+
         // Computes the observed incompatibilities.
         computeObservedIncompatibility();
 
@@ -210,7 +212,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 norm += Math.pow(expectedIncompatibility[i] - observedIncompatibility[i], 2);
             }
 
-            // set current location
+            // Set the current location.
             currentLocation = StringUtils.join(DELIM, currentWeights);
 
             log.trace("Weights: {}", currentWeights);
@@ -232,7 +234,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 evaluator.compute(trainingMap);
                 objective = -1.0 * evaluator.getNormalizedRepMetric();
 
-                log.debug("Location {} -- objective: {}", currentLocation, objective);
+                log.debug("Weights: {} -- objective: {}", currentLocation, objective);
 
                 if (cutObjective && step > 0 && objective > lastObjective) {
                     log.trace("Objective increased: {} -> {}, cutting step size: {} -> {}.",

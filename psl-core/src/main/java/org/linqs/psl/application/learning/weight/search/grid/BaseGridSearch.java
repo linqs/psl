@@ -65,6 +65,12 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      */
     protected Map<String, String> exploredConfigurations;
 
+    /**
+     * The current location we are investigating.
+     * The exact representation is up to the implementing child class.
+     */
+    protected String currentLocation;
+
     public BaseGridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
     }
@@ -77,6 +83,8 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
         objectives = new HashMap<String, Double>();
         exploredConfigurations = new HashMap<String, String>();
+
+        currentLocation = null;
     }
 
     @Override
@@ -104,13 +112,13 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             MathUtils.toUnit(unitWeightVector);
 
             // Round each weight to 5 decimal places.
-            for(int i = 0; i < unitWeightVector.length; i ++){
+            for(int i = 0; i < unitWeightVector.length; i ++) {
                 unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000.0) / 100000.0;
             }
 
             unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
             if (exploredConfigurations.containsKey(unitConfiguration)) {
-                log.debug("Location: {} already explored via: {} Skipping", currentLocation,
+                log.debug("Weights: {} already explored via: {} Skipping", currentLocation,
                         exploredConfigurations.get(unitConfiguration));
                 continue;
             }
@@ -137,7 +145,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
                 }
             }
 
-            log.debug("Location {} -- objective: {}", currentLocation, objective);
+            log.debug("Weights: {} -- objective: {}", currentLocation, objective);
         }
 
         // Set the final weights.

@@ -43,11 +43,13 @@ public final class RandUtils {
     private RandUtils() {}
 
     private static synchronized void ensureRNG() {
-        if (rng == null) {
-            long seed = Options.RANDOM_SEED.getInt();
-            log.info("Using random seed: " + seed);
-            rng = new Random(seed);
+        if (rng != null) {
+            return;
         }
+
+        long seed = Options.RANDOM_SEED.getInt();
+        log.info("Using random seed: " + seed);
+        rng = new Random(seed);
     }
 
     public static synchronized void seed(int seed) {
@@ -180,15 +182,15 @@ public final class RandUtils {
      */
     public static synchronized double[] sampleDirichlet(double[] alphas) {
         double [] gammaSamples = new double[alphas.length];
-        double gammaSampleSum = 0;
+        double gammaSampleSum = 0.0;
         double [] dirichletSample = new double[alphas.length];
 
-        for(int i = 0; i < alphas.length; i++){
-            gammaSamples[i] = nextGamma(alphas[i],1);
+        for(int i = 0; i < alphas.length; i++) {
+            gammaSamples[i] = nextGamma(alphas[i], 1);
             gammaSampleSum = gammaSampleSum + gammaSamples[i];
         }
 
-        for(int i = 0; i < alphas.length; i++){
+        for(int i = 0; i < alphas.length; i++) {
             dirichletSample[i] = gammaSamples[i] / gammaSampleSum;
         }
 
@@ -200,47 +202,47 @@ public final class RandUtils {
      * See Marsaglia and Tsang (2000a): https://dl.acm.org/doi/10.1145/358407.358414
      */
     public static synchronized double nextGamma(double shape, double scale) {
-        boolean transform_flag;
-        double alpha;
-        double d;
-        double c;
-        double Z;
-        double V;
-        double U;
-        double gamma_sample;
+        boolean transformFlag = false;
+        double alpha = 0.0;
+        double scalingParameterD = 0.0;  // d
+        double scalingParameterC = 0.0;  // c
+        double standardNormalRV = 0.0;  // Z
+        double truncatedNormalRV = 0.0;  // V
+        double uniformRV = 0.0;  // U
+        double gammaSample = 0.0;  // X
 
         if (shape < 1) {
-            transform_flag = true;
+            transformFlag = true;
             alpha = shape + 1;
         } else {
-            transform_flag = false;
+            transformFlag = false;
             alpha = shape;
         }
 
-        d = alpha - 1.0 / 3.0;
-        c = 1 / Math.sqrt(9.0 * d);
+        scalingParameterD = alpha - 1.0 / 3.0;
+        scalingParameterC = 1 / Math.sqrt(9.0 * scalingParameterD);
 
         do {
             do {
-                Z = nextGaussian();
-                V = 1 + c * Z;
-            } while (V <= 0);
-            // V is a truncated normal distribution
-            V = Math.pow(V, 3.0);
-            U = nextDouble();
+                standardNormalRV = nextGaussian();
+                truncatedNormalRV = 1 + scalingParameterC * standardNormalRV;
+            } while (truncatedNormalRV <= 0);
+            // truncatedNormalRV is a truncated normal distribution
+            truncatedNormalRV = Math.pow(truncatedNormalRV, 3.0);
+            uniformRV = nextDouble();
 
-            if ((U < 1.0 - 0.0331 * Math.pow(Z, 4.0)) ||
-                    (Math.log(U) < 0.5 * Math.pow(Z, 2) + d * (1 - V + Math.log(V)))) {
-                gamma_sample = d * V;
+            if ((uniformRV < 1.0 - 0.0331 * Math.pow(standardNormalRV, 4.0)) ||
+                    (Math.log(uniformRV) < 0.5 * Math.pow(standardNormalRV, 2) + scalingParameterD * (1 - truncatedNormalRV + Math.log(truncatedNormalRV)))) {
+                gammaSample = scalingParameterD * truncatedNormalRV;
                 break;
             }
         } while (true);
 
-        if (transform_flag) {
-            U = nextDouble();
-            gamma_sample = gamma_sample * Math.pow(U, (1 / shape));
+        if (transformFlag) {
+            uniformRV = nextDouble();
+            gammaSample = gammaSample * Math.pow(uniformRV, (1 / shape));
         }
 
-        return scale * gamma_sample;
+        return scale * gammaSample;
     }
 }
