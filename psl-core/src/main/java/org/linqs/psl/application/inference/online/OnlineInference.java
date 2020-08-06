@@ -19,8 +19,8 @@ package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.actions.AddAtom;
-import org.linqs.psl.application.inference.online.actions.Stop;
 import org.linqs.psl.application.inference.online.actions.DeleteAtom;
+import org.linqs.psl.application.inference.online.actions.Stop;
 import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
@@ -94,10 +94,10 @@ public abstract class OnlineInference extends InferenceApplication {
     protected void executeAction(OnlineAction action) {
         if (action.getClass() == AddAtom.class) {
             doAddAtom((AddAtom)action);
-        } else if (action.getClass() == Stop.class) {
-            doStop((Stop)action);
         } else if (action.getClass() == DeleteAtom.class) {
             doDeleteAtom((DeleteAtom)action);
+        } else if (action.getClass() == Stop.class) {
+            doStop((Stop)action);
         } else if (action.getClass() == UpdateObservation.class) {
             doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == WriteInferredPredicates.class) {
@@ -112,12 +112,12 @@ public abstract class OnlineInference extends InferenceApplication {
         ((OnlineTermStore)termStore).addAtom(action.getPredicate(), action.getArguments(), action.getValue(), readPartition);
     }
 
-    protected void doStop(Stop action) {
-        stopped = true;
-    }
-
     protected void doDeleteAtom(DeleteAtom action) {
         ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
+    }
+
+    protected void doStop(Stop action) {
+        stopped = true;
     }
 
     protected void doUpdateObservation(UpdateObservation action) {
@@ -138,20 +138,13 @@ public abstract class OnlineInference extends InferenceApplication {
         }
     }
 
-    /**
-     * Minimize the total weighted incompatibility of the atoms according to the rules.
-     * TODO(Charles): By overriding internal inference rather than inference() we are not committing the random
-     *  variable atom values to the database after updates. Perhaps periodically update the database or add it
-     *  as a part of action execution.
-     */
     @Override
     public double internalInference() {
-        // Initial round of inference
+        // Initial round of inference.
         objective = reasoner.optimize(termStore);
 
-        OnlineAction action = null;
-        do {
-            action = server.getAction();
+        while (!stopped) {
+            OnlineAction action = server.getAction();
             if (action == null) {
                 continue;
             }
@@ -159,11 +152,11 @@ public abstract class OnlineInference extends InferenceApplication {
             try {
                 executeAction(action);
             } catch (OnlineActionException ex) {
-                log.warn(String.format("Exception when executing action: %s", action), ex);
+                log.warn("Exception when executing action: " + action, ex);
             } catch (RuntimeException ex) {
                 throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
             }
-        } while (!stopped);
+        }
 
         return objective;
     }
