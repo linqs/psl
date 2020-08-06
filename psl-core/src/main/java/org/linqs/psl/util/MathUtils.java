@@ -18,6 +18,7 @@
 package org.linqs.psl.util;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 /**
  * Various static math utilities.
@@ -181,7 +182,7 @@ public final class MathUtils {
         }
 
         norm = Math.sqrt(norm);
-        assert(norm != 0.0);
+        assert((norm != 0.0) || (vector.length == 0));
 
         for (int i = 0; i < vector.length; i++) {
             vector[i] = (magnitude * (vector[i] / norm));
@@ -199,7 +200,7 @@ public final class MathUtils {
         }
 
         norm = Math.sqrt(norm);
-        assert(norm != 0.0);
+        assert((norm != 0.0) || (vector.length == 0));
 
         for (int i = 0; i < vector.length; i++) {
             vector[i] = (float)(magnitude * (vector[i] / norm));

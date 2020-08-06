@@ -90,6 +90,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     @Override
     protected void doLearn() {
         double bestObjective = -1.0;
+        boolean nonZero = false;
         double[] bestWeights = new double[mutableRules.size()];
         double[] weights = new double[mutableRules.size()];
         double[] unitWeightVector = new double[mutableRules.size()];
@@ -105,17 +106,28 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             log.debug("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, maxNumLocations, currentLocation);
 
             // Set the weights for the current round.
+            nonZero = false;
             getWeights(weights);
-
-            // Check if we have explored this configuration before.
             System.arraycopy(weights, 0, unitWeightVector, 0, weights.length);
-            MathUtils.toUnit(unitWeightVector);
+
+            // ensure that there is at least one non-zero weight.
+            for (int i = 0; i < weights.length; i++) {
+                if (weights[i] > 0.0) {
+                    nonZero = true;
+                    break;
+                }
+            }
+
+            if (nonZero) {
+                MathUtils.toUnit(unitWeightVector);
+            }
 
             // Round each weight to 5 decimal places.
             for(int i = 0; i < unitWeightVector.length; i ++) {
                 unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000.0) / 100000.0;
             }
 
+            // Check if we have explored this configuration before.
             unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
             if (exploredConfigurations.containsKey(unitConfiguration)) {
                 log.debug("Weights: {} already explored via: {} Skipping", currentLocation,
