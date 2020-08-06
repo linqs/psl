@@ -37,8 +37,8 @@ public abstract class OnlineAction implements Serializable {
         parts[0] = parts[0].trim();
         if (parts[0].equalsIgnoreCase("add")) {
             return new AddAtom(parts);
-        } else if (parts[0].equalsIgnoreCase("close")) {
-            return new Close();
+        } else if (parts[0].equalsIgnoreCase("stop")) {
+            return new Stop();
         } else if (parts[0].equalsIgnoreCase("delete")) {
             return new DeleteAtom(parts);
         } else if (parts[0].equalsIgnoreCase("update")) {

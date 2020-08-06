@@ -19,7 +19,7 @@ package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.actions.AddAtom;
-import org.linqs.psl.application.inference.online.actions.Close;
+import org.linqs.psl.application.inference.online.actions.Stop;
 import org.linqs.psl.application.inference.online.actions.DeleteAtom;
 import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
@@ -40,7 +40,7 @@ public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
     private OnlineServer server;
-    private boolean closed;
+    private boolean stopped;
     private double objective;
 
     protected OnlineInference(List<Rule> rules, Database database) {
@@ -53,7 +53,7 @@ public abstract class OnlineInference extends InferenceApplication {
 
     @Override
     protected void initialize() {
-        closed = false;
+        stopped = false;
         objective = 0.0;
 
         startServer();
@@ -92,16 +92,16 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void executeAction(OnlineAction action) {
-        if (action.getClass() == UpdateObservation.class) {
-            doUpdateObservation((UpdateObservation)action);
-        } else if (action.getClass() == AddAtom.class) {
+        if (action.getClass() == AddAtom.class) {
             doAddAtom((AddAtom)action);
+        } else if (action.getClass() == Stop.class) {
+            doStop((Stop)action);
         } else if (action.getClass() == DeleteAtom.class) {
             doDeleteAtom((DeleteAtom)action);
+        } else if (action.getClass() == UpdateObservation.class) {
+            doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == WriteInferredPredicates.class) {
             doWriteInferredPredicates((WriteInferredPredicates)action);
-        } else if (action.getClass() == Close.class) {
-            doClose((Close)action);
         } else {
             throw new OnlineActionException("Unknown action: " + action.getClass().getName() + ".");
         }
@@ -112,16 +112,16 @@ public abstract class OnlineInference extends InferenceApplication {
         ((OnlineTermStore)termStore).addAtom(action.getPredicate(), action.getArguments(), action.getValue(), readPartition);
     }
 
+    protected void doStop(Stop action) {
+        stopped = true;
+    }
+
     protected void doDeleteAtom(DeleteAtom action) {
         ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
     }
 
     protected void doUpdateObservation(UpdateObservation action) {
         ((OnlineTermStore)termStore).updateAtom(action.getPredicate(), action.getArguments(), action.getValue());
-    }
-
-    protected void doClose(Close action) {
-        closed = true;
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates action) {
@@ -163,7 +163,7 @@ public abstract class OnlineInference extends InferenceApplication {
             } catch (RuntimeException ex) {
                 throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
             }
-        } while (!closed);
+        } while (!stopped);
 
         return objective;
     }

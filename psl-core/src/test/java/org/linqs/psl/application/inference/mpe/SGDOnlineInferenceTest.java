@@ -206,7 +206,7 @@ public class SGDOnlineInferenceTest {
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "UPDATE\tSim_Users\tAlice\tEddie\t0.0",
                 "WRITE",
-                "CLOSE"));
+                "STOP"));
 
         queueCommands(inference, commands);
         inference.inference();
@@ -223,7 +223,7 @@ public class SGDOnlineInferenceTest {
                 "ADD\tWrite\tRating\tConnor\tAvatar",
                 "WRITE",
                 "ADD\tWrite\tRating\tConnor\tSurfs Up\t1.0",
-                "CLOSE"));
+                "STOP"));
 
         queueCommands(inference, commands);
         inference.inference();
@@ -245,7 +245,7 @@ public class SGDOnlineInferenceTest {
                 "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
                 "ADD\tWrite\tRating\tConnor\tSurfs Up",
                 "WRITE",
-                "CLOSE"));
+                "STOP"));
 
         queueCommands(inference, commands);
         inference.inference();
@@ -265,14 +265,14 @@ public class SGDOnlineInferenceTest {
                 "ADD\tRead\tSim_Users\tAlice\tEddie\t1.0",
                 "DELETE\tRead\tSim_Users\tAlice\tEddie",
                 "WRITE",
-                "CLOSE"));
+                "STOP"));
         */
 
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
                 "DELETE\tRead\tSim_Users\tAlice\tEddie",
                 "DELETE\tRead\tSim_Users\tEddie\tAlice",
                 "WRITE",
-                "CLOSE"));
+                "STOP"));
         queueCommands(inference, commands);
 
         @SuppressWarnings("unchecked")
@@ -309,7 +309,7 @@ public class SGDOnlineInferenceTest {
                 "ADD\tWrite\tRating\tConnor\tSurfs Up",
                 "ADD\tRead\tRating\tAlice\tAvatar\t0.5",
                 "WRITE",
-                "CLOSE"));
+                "STOP"));
 
         queueCommands(inference, commands);
         inference.inference();

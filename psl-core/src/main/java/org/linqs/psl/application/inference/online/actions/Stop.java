@@ -17,5 +17,5 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-public class Close extends OnlineAction {
+public class Stop extends OnlineAction {
 }
