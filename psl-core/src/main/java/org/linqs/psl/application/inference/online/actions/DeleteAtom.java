@@ -17,77 +17,60 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.StringUtils;
 
-import java.util.Arrays;
-
+/**
+ * Delete an atom from the existing model.
+ * String format: DELETE <READ/WRITE> <predicate> <args> ...
+ */
 public class DeleteAtom extends OnlineAction {
-    private String predicateName;
-    private String partitionName;
+    private StandardPredicate predicate;
+    private String partition;
     private Constant[] arguments;
 
-    public DeleteAtom(String[] tokenizedCommand) {
-        parseCommand(tokenizedCommand);
+    public DeleteAtom(String[] parts) {
+        parse(parts);
     }
 
-    public String getPredicateName() {
-        return this.predicateName;
+    public StandardPredicate getPredicate() {
+        return predicate;
     }
 
     public String getPartitionName() {
-        return this.partitionName;
+        return partition;
     }
 
     public Constant[] getArguments() {
-        return this.arguments;
-    }
-
-    public void parseCommand(String[] tokenizedCommand) throws IllegalArgumentException {
-        // Format: DeleteAtom PartitionName PredicateName Arguments Value(Optional)
-        Predicate registeredPredicate = null;
-        int argumentLength = 0;
-        for (int i = 1; i < tokenizedCommand.length; i++) {
-            if (i == 1) {
-                // Partition Name Field:
-                partitionName = tokenizedCommand[i].toUpperCase();
-                switch (partitionName) {
-                    case "READ":
-                    case "WRITE":
-                        argumentLength = 3;
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Illegal Partition Name: " + tokenizedCommand[i]);
-                }
-            } else if (i == 2) {
-                // Predicate Field: Ensure predicate is registered in data store
-                registeredPredicate = resolvePredicate(tokenizedCommand[i]);
-                predicateName = registeredPredicate.getName();
-                if (tokenizedCommand.length < registeredPredicate.getArity() + argumentLength) {
-                    throw new IllegalArgumentException("Not enough arguments provided for updating Predicate: " +
-                            tokenizedCommand[i] + " With arity: " + registeredPredicate.getArity());
-                }
-                arguments = new Constant[registeredPredicate.getArity()];
-            } else if (i <= (2 + registeredPredicate.getArity())) {
-                // Argument Field:
-                // Resolve Arguments
-                ConstantType type = registeredPredicate.getArgumentType(i - 3);
-                arguments[i - 3] = resolveConstant(tokenizedCommand[i], type);
-            } else if (i == (3 + registeredPredicate.getArity())) {
-                // Value Field: Ensure value is valid
-                // Block only reached if value provided
-                resolveValue(tokenizedCommand[i]);
-            } else {
-                throw new IllegalArgumentException("Too many arguments provided for Predicate: " +
-                        tokenizedCommand[i] + " With arity: " + registeredPredicate.getArity());
-            }
-        }
+        return arguments;
     }
 
     @Override
     public String toString() {
-        return String.format("<OnlineAction: %s, Predicate: %s, Partition: %s, Arguments: %s>",
-                this.getClass().getName(), predicateName, partitionName, Arrays.toString(arguments));
+        return String.format(
+                "DELETE\t%s\t%s\t%s",
+                partition, predicate.getName(), StringUtils.join("\t", arguments));
+    }
+
+    private void parse(String[] parts) {
+        assert(parts[0].equalsIgnoreCase("delete"));
+
+        if (parts.length < 4) {
+            throw new IllegalArgumentException("Not enough arguments.");
+        }
+
+        partition = parts[1].toUpperCase();
+        if (!(partition.equals("READ") || partition.equals("WRITE"))) {
+            throw new IllegalArgumentException("Expecting 'READ' or 'WRITE' for partition, got '" + parts[1] + "'.");
+        }
+
+        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 2);
+        predicate = atomInfo.predicate;
+        arguments = atomInfo.arguments;
+
+        if (parts.length == (3 + predicate.getArity() + 1)) {
+            throw new IllegalArgumentException("Values cannot be supplied to DELETE actions.");
+        }
     }
 }

@@ -17,106 +17,76 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.DoubleAttribute;
-import org.linqs.psl.model.term.IntegerAttribute;
-import org.linqs.psl.model.term.StringAttribute;
-import org.linqs.psl.model.term.LongAttribute;
-import org.linqs.psl.model.term.UniqueIntID;
-import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.util.Reflection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 
+/**
+ * Base class for online actions.
+ * All actions should be able to freely convert to and from strings.
+ */
 public abstract class OnlineAction implements Serializable {
-    private static final Logger log = LoggerFactory.getLogger(OnlineAction.class);
-
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
-    public static OnlineAction getOnlineAction(String clientCommand) throws OnlineActionException {
-        // tokenize
-        String[] tokenizedCommand = clientCommand.split("\t");
+    public static OnlineAction parse(String clientCommand) {
+        String[] parts = clientCommand.split("\t");
 
-        // Construct OnlineAction
-        String className = Reflection.resolveClassName(tokenizedCommand[0]);
-        log.trace("ClassName: " + className);
-        if(className == null) {
-            throw new OnlineActionException("Could not find class: " + tokenizedCommand[0]);
-        }
-        Class<? extends OnlineAction> classObject = null;
-        try {
-            @SuppressWarnings("unchecked")
-            Class<? extends OnlineAction> uncheckedClassObject = (Class<? extends OnlineAction>)Class.forName(className);
-            classObject = uncheckedClassObject;
-        } catch (ClassNotFoundException ex) {
-            throw new OnlineActionException("Could not find class: " + className, ex);
-        }
-
-        Constructor<? extends OnlineAction> constructor = null;
-        try {
-            constructor = classObject.getConstructor(String[].class);
-        } catch (NoSuchMethodException ex) {
-            throw new OnlineActionException("No suitable constructor () found for Online Action: " + className + ".", ex);
-        }
-
-        try {
-            return constructor.newInstance(new Object[]{tokenizedCommand});
-        } catch (InstantiationException ex) {
-            throw new OnlineActionException("Unable to instantiate Online Action (" + className + ")", ex);
-        } catch (IllegalAccessException ex) {
-            throw new OnlineActionException("Insufficient access to constructor for " + className, ex);
-        } catch (InvocationTargetException ex) {
-            throw new OnlineActionException("Error thrown while constructing " + className, ex);
+        parts[0] = parts[0].trim();
+        if (parts[0].equalsIgnoreCase("add")) {
+            return new AddAtom(parts);
+        } else if (parts[0].equalsIgnoreCase("close")) {
+            return new Close();
+        } else if (parts[0].equalsIgnoreCase("delete")) {
+            return new DeleteAtom(parts);
+        } else if (parts[0].equalsIgnoreCase("update")) {
+            return new UpdateObservation(parts);
+        } else if (parts[0].equalsIgnoreCase("write")) {
+            return new WriteInferredPredicates(parts);
+        } else {
+            throw new IllegalArgumentException("Unknown online action: '" + parts[0] + "'.");
         }
     }
 
-    protected static Constant resolveConstant(String name, ConstantType type) {
-        switch (type) {
-            case Double:
-                return new DoubleAttribute(Double.parseDouble(name));
-            case Integer:
-                return new IntegerAttribute(Integer.parseInt(name));
-            case String:
-                return new StringAttribute(name);
-            case Long:
-                return new LongAttribute(Long.parseLong(name));
-            case UniqueIntID:
-                return new UniqueIntID(Integer.parseInt(name));
-            case UniqueStringID:
-                return new UniqueStringID(name);
-            default:
-                throw new IllegalArgumentException("Unknown argument type: " + type);
+    /**
+     * Parse an atom.
+     * The given starting index should point to the predicate.
+     */
+    protected AtomInfo parseAtom(String[] parts, int startIndex) {
+        StandardPredicate predicate = StandardPredicate.get(parts[startIndex]);
+        if (predicate == null) {
+            throw new IllegalArgumentException("Unknown predicate: " + parts[startIndex] + ".");
         }
+
+        // The final +1 is for the optional value.
+        if (parts.length > (startIndex + 1 + predicate.getArity() + 1)) {
+            throw new IllegalArgumentException("Too many arguments.");
+        }
+
+        float value = 1.0f;
+        if (parts.length == (startIndex + 1 + predicate.getArity() + 1)) {
+            value = Float.valueOf(parts[parts.length - 1]);
+        }
+
+        Constant[] arguments = new Constant[predicate.getArity()];
+        for (int i = 0; i < arguments.length; i++) {
+            arguments[i] = ConstantType.getConstant(parts[startIndex + 1 + i], predicate.getArgumentType(i));
+        }
+
+        return new AtomInfo(predicate, arguments, value);
     }
 
-    protected static Predicate resolvePredicate(String predicateName) throws IllegalArgumentException {
-        Predicate registeredPredicate = Predicate.get(predicateName);
-        if (registeredPredicate == null) {
-            throw new IllegalArgumentException("Unregistered Predicate: " + predicateName);
-        }
-        return registeredPredicate;
-    }
+    protected static class AtomInfo {
+        public StandardPredicate predicate;
+        public Constant[] arguments;
+        public float value;
 
-    protected static float resolveValue(String value) throws IllegalArgumentException {
-        float resolvedValue;
-        try {
-            resolvedValue = Float.parseFloat(value);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Value provided cannot be parsed as a float: " + value);
+        public AtomInfo(StandardPredicate predicate, Constant[] arguments, float value) {
+            this.predicate = predicate;
+            this.arguments = arguments;
+            this.value = value;
         }
-        return resolvedValue;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("<OnlineAction: %s>", this.getClass().getName());
     }
 }
-

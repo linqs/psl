@@ -25,18 +25,15 @@ import org.linqs.psl.application.inference.online.actions.UpdateObservation;
 import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.actions.OnlineActionException;
-import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
 
 public abstract class OnlineInference extends InferenceApplication {
@@ -106,47 +103,21 @@ public abstract class OnlineInference extends InferenceApplication {
         } else if (action.getClass() == Close.class) {
             doClose((Close)action);
         } else {
-            throw new OnlineActionException("Action: " + action.getClass().getName() + " not Supported.");
+            throw new OnlineActionException("Unknown action: " + action.getClass().getName() + ".");
         }
     }
 
     protected void doAddAtom(AddAtom action) {
-        // Resolve Predicate
-        Predicate registeredPredicate = Predicate.get(action.getPredicateName());
-        if (registeredPredicate == null) {
-            throw new OnlineActionException("Predicate is not registered: " + action.getPredicateName());
-        }
-
-        switch (action.getPartitionName()) {
-            case "READ":
-                ((OnlineTermStore)termStore).addAtom(registeredPredicate, action.getArguments(), action.getValue(), true);
-                break;
-            case "WRITE":
-                ((OnlineTermStore)termStore).addAtom(registeredPredicate, action.getArguments(), action.getValue(), false);
-                break;
-            default:
-                throw new OnlineActionException("Add Atom Partition: " + action.getPartitionName() + " not Supported");
-        }
+        boolean readPartition = (action.getPartitionName().equalsIgnoreCase("READ"));
+        ((OnlineTermStore)termStore).addAtom(action.getPredicate(), action.getArguments(), action.getValue(), readPartition);
     }
 
     protected void doDeleteAtom(DeleteAtom action) {
-        // Resolve Predicate
-        Predicate registeredPredicate = Predicate.get(action.getPredicateName());
-        if (registeredPredicate == null) {
-            throw new OnlineActionException("Predicate is not registered: " + action.getPredicateName());
-        }
-
-        ((OnlineTermStore)termStore).deleteAtom(registeredPredicate, action.getArguments());
+        ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
     }
 
     protected void doUpdateObservation(UpdateObservation action) {
-        // Resolve Predicate
-        Predicate registeredPredicate = Predicate.get(action.getPredicateName());
-        if (registeredPredicate == null) {
-            throw new OnlineActionException("Predicate is not registered: " + action.getPredicateName());
-        }
-
-        ((OnlineTermStore)termStore).updateAtom(registeredPredicate, action.getArguments(), action.getValue());
+        ((OnlineTermStore)termStore).updateAtom(action.getPredicate(), action.getArguments(), action.getValue());
     }
 
     protected void doClose(Close action) {

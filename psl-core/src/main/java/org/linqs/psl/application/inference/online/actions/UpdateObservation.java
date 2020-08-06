@@ -17,65 +17,52 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.StringUtils;
 
-import java.util.Arrays;
-
+/**
+ * Update an existing observation from the model.
+ * String format: UPDATE <predicate> <args> ... [value]
+ */
 public class UpdateObservation extends OnlineAction {
-    private String predicateName;
+    private StandardPredicate predicate;
     private Constant[] arguments;
-    private float newValue;
+    private float value;
 
-    public UpdateObservation(String[] tokenizedCommand) {
-        parseCommand(tokenizedCommand);
+    public UpdateObservation(String[] parts) {
+        parse(parts);
     }
 
-    public String getPredicateName() {
-        return this.predicateName;
+    public StandardPredicate getPredicate() {
+        return predicate;
     }
 
     public float getValue() {
-        return this.newValue;
+        return value;
     }
 
     public Constant[] getArguments() {
-        return this.arguments;
-    }
-
-    public void parseCommand(String[] tokenizedCommand) throws IllegalArgumentException {
-        Predicate registeredPredicate = null;
-        for (int i = 1; i < tokenizedCommand.length; i++) {
-            if (i == 1) {
-                // Predicate Field: Ensure predicate is registered in data store
-                registeredPredicate = resolvePredicate(tokenizedCommand[i]);
-                predicateName = registeredPredicate.getName();
-                if (tokenizedCommand.length < registeredPredicate.getArity() + 3) {
-                    throw new IllegalArgumentException("Not enough arguments provided for updating Predicate: " +
-                            tokenizedCommand[i] + " With arity: " + registeredPredicate.getArity());
-                }
-                arguments = new Constant[registeredPredicate.getArity()];
-            } else if (i <= (1 + registeredPredicate.getArity())) {
-                // Argument Field:
-                // Resolve Arguments
-                ConstantType type = registeredPredicate.getArgumentType(i - 2);
-                arguments[i - 2] = resolveConstant(tokenizedCommand[i], type);
-            } else if (i == (2 + registeredPredicate.getArity())) {
-                // Value Field: Ensure value is valid
-                newValue = resolveValue(tokenizedCommand[i]);
-            } else {
-                throw new IllegalArgumentException("Too many arguments provided for Predicate: " +
-                        tokenizedCommand[i] + " With arity: " + registeredPredicate.getArity());
-            }
-        }
+        return arguments;
     }
 
     @Override
     public String toString() {
-        return String.format("<OnlineAction: %s, Predicate: %s, Arguments: %s, NewValue: %f>",
-                this.getClass().getName(), predicateName, Arrays.toString(arguments), newValue);
+        return String.format(
+                "UPDATE\t%s\t%s\t%f",
+                predicate.getName(), StringUtils.join("\t", arguments), value);
+    }
+
+    private void parse(String[] parts) {
+        assert(parts[0].equalsIgnoreCase("update"));
+
+        if (parts.length < 3) {
+            throw new IllegalArgumentException("Not enough arguments.");
+        }
+
+        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 1);
+        predicate = atomInfo.predicate;
+        arguments = atomInfo.arguments;
+        value = atomInfo.value;
     }
 }

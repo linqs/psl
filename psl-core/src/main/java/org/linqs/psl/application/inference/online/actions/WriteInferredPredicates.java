@@ -17,35 +17,40 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-import java.util.Arrays;
-
+/**
+ * Write out targets on the server side.
+ * String format: WRITE [path]
+ */
 public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
 
-    public WriteInferredPredicates(String[] tokenizedCommand) {
-        outputDirectoryPath = null;
-        parseCommand(tokenizedCommand);
+    public WriteInferredPredicates(String[] parts) {
+        parse(parts);
     }
 
     public String getOutputDirectoryPath() {
         return outputDirectoryPath;
     }
 
-    public void parseCommand(String[] tokenizedCommand) throws IllegalArgumentException {
-        // Format: WriteInferredPredicates outputDirectoryPath(optional)
-        for (int i = 1; i < tokenizedCommand.length; i++) {
-            if (i == 1) {
-                // outputDirectoryPath Field:
-                outputDirectoryPath = tokenizedCommand[i];
-            } else {
-                throw new IllegalArgumentException("Too many arguments provided for Action: WriteInferredPredicates");
-            }
+    @Override
+    public String toString() {
+        if (outputDirectoryPath == null) {
+            return "WRITE";
+        } else {
+            return String.format("WRITE\t%s", outputDirectoryPath);
         }
     }
 
-    @Override
-    public String toString() {
-        return String.format("<OnlineAction: %s, outputDirectoryPath: %s>",
-                this.getClass().getName(), outputDirectoryPath);
+    private void parse(String[] parts) throws IllegalArgumentException {
+        assert(parts[0].equalsIgnoreCase("write"));
+
+        if (parts.length > 2) {
+            throw new IllegalArgumentException("Too many arguments.");
+        }
+
+        outputDirectoryPath = null;
+        if (parts.length == 2) {
+            outputDirectoryPath = parts[1];
+        }
     }
 }

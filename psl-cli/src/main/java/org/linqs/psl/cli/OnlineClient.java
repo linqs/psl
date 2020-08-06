@@ -61,7 +61,7 @@ public class OnlineClient {
                         break;
                     }
 
-                    out.writeObject(OnlineAction.getOnlineAction(userInput));
+                    out.writeObject(OnlineAction.parse(userInput));
                 } catch (OnlineActionException ex) {
                     System.err.println(String.format("Error parsing command: [%s].", userInput));
                     System.err.println(ex);

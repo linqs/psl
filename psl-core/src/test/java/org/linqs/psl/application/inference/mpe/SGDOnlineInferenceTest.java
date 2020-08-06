@@ -176,7 +176,7 @@ public class SGDOnlineInferenceTest {
 
         for(String command : commands) {
             try {
-                action = OnlineAction.getOnlineAction(command);
+                action = OnlineAction.parse(command);
             } catch (OnlineActionException ex) {
                 throw new RuntimeException(ex);
             }
@@ -204,9 +204,9 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testUpdateObservation() {
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "UpdateObservation\tSim_Users\tAlice\tEddie\t0.0",
-                "WriteInferredPredicates",
-                "Close"));
+                "UPDATE\tSim_Users\tAlice\tEddie\t0.0",
+                "WRITE",
+                "CLOSE"));
 
         queueCommands(inference, commands);
         inference.inference();
@@ -218,12 +218,12 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testAddAtoms() {
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
-                "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
-                "AddAtom\tWrite\tRating\tConnor\tAvatar",
-                "WriteInferredPredicates",
-                "AddAtom\tWrite\tRating\tConnor\tSurfs Up\t1.0",
-                "Close"));
+                "ADD\tRead\tSim_Users\tConnor\tAlice\t1.0",
+                "ADD\tRead\tSim_Users\tAlice\tConnor\t1.0",
+                "ADD\tWrite\tRating\tConnor\tAvatar",
+                "WRITE",
+                "ADD\tWrite\tRating\tConnor\tSurfs Up\t1.0",
+                "CLOSE"));
 
         queueCommands(inference, commands);
         inference.inference();
@@ -236,16 +236,16 @@ public class SGDOnlineInferenceTest {
     public void testPageRewriting() {
         Options.STREAMING_TS_PAGE_SIZE.set(2);
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t0.0",
-                "AddAtom\tRead\tSim_Users\tAlice\tConnor\t0.0",
-                "AddAtom\tWrite\tRating\tConnor\tAvatar",
-                "WriteInferredPredicates",
-                "AddAtom\tRead\tSim_Users\tConnor\tBob\t1.0",
-                "AddAtom\tRead\tSim_Users\tBob\tConnor\t1.0",
-                "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
-                "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
-                "WriteInferredPredicates",
-                "Close"));
+                "ADD\tRead\tSim_Users\tConnor\tAlice\t0.0",
+                "ADD\tRead\tSim_Users\tAlice\tConnor\t0.0",
+                "ADD\tWrite\tRating\tConnor\tAvatar",
+                "WRITE",
+                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
+                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
+                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
+                "ADD\tWrite\tRating\tConnor\tSurfs Up",
+                "WRITE",
+                "CLOSE"));
 
         queueCommands(inference, commands);
         inference.inference();
@@ -261,18 +261,18 @@ public class SGDOnlineInferenceTest {
         //  activated. This behavior is also noted in streaming term store deleteAtom.
         /*
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
-                "AddAtom\tRead\tSim_Users\tAlice\tEddie\t1.0",
-                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
-                "WriteInferredPredicates",
-                "Close"));
+                "DELETE\tRead\tSim_Users\tAlice\tEddie",
+                "ADD\tRead\tSim_Users\tAlice\tEddie\t1.0",
+                "DELETE\tRead\tSim_Users\tAlice\tEddie",
+                "WRITE",
+                "CLOSE"));
         */
 
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "DeleteAtom\tRead\tSim_Users\tAlice\tEddie",
-                "DeleteAtom\tRead\tSim_Users\tEddie\tAlice",
-                "WriteInferredPredicates",
-                "Close"));
+                "DELETE\tRead\tSim_Users\tAlice\tEddie",
+                "DELETE\tRead\tSim_Users\tEddie\tAlice",
+                "WRITE",
+                "CLOSE"));
         queueCommands(inference, commands);
 
         @SuppressWarnings("unchecked")
@@ -300,16 +300,16 @@ public class SGDOnlineInferenceTest {
         setup();
 
         ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "AddAtom\tRead\tSim_Users\tConnor\tAlice\t1.0",
-                "AddAtom\tRead\tSim_Users\tAlice\tConnor\t1.0",
-                "AddAtom\tWrite\tRating\tConnor\tAvatar",
-                "AddAtom\tRead\tSim_Users\tConnor\tBob\t1.0",
-                "AddAtom\tRead\tSim_Users\tBob\tConnor\t1.0",
-                "AddAtom\tRead\tRating\tBob\tSurfs Up\t0.5",
-                "AddAtom\tWrite\tRating\tConnor\tSurfs Up",
-                "AddAtom\tRead\tRating\tAlice\tAvatar\t0.5",
-                "WriteInferredPredicates",
-                "Close"));
+                "ADD\tRead\tSim_Users\tConnor\tAlice\t1.0",
+                "ADD\tRead\tSim_Users\tAlice\tConnor\t1.0",
+                "ADD\tWrite\tRating\tConnor\tAvatar",
+                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
+                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
+                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
+                "ADD\tWrite\tRating\tConnor\tSurfs Up",
+                "ADD\tRead\tRating\tAlice\tAvatar\t0.5",
+                "WRITE",
+                "CLOSE"));
 
         queueCommands(inference, commands);
         inference.inference();
