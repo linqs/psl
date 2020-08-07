@@ -91,9 +91,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected void doLearn() {
         double bestObjective = -1.0;
         boolean nonZero = false;
-        double[] bestWeights = new double[mutableRules.size()];
-        double[] weights = new double[mutableRules.size()];
-        double[] unitWeightVector = new double[mutableRules.size()];
+        float[] bestWeights = new float[mutableRules.size()];
+        float[] weights = new float[mutableRules.size()];
+        float[] unitWeightVector = new float[mutableRules.size()];
 
         String unitConfiguration = null;
 
@@ -124,7 +124,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
             // Round each weight to 5 decimal places.
             for(int i = 0; i < unitWeightVector.length; i ++) {
-                unitWeightVector[i] = (double)Math.round(unitWeightVector[i] * 100000.0) / 100000.0;
+                unitWeightVector[i] = (float)(Math.round(unitWeightVector[i] * 100000.0) / 100000.0);
             }
 
             // Check if we have explored this configuration before.
@@ -177,8 +177,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * This is a prime method for child classes to override.
      * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
      * if lower is better for that evaluator.
+     * @param weights
      */
-    protected double inspectLocation(double[] weights) {
+    protected double inspectLocation(float[] weights) {
         computeMPEState();
 
         evaluator.compute(trainingMap);
@@ -188,8 +189,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
     /**
      * Get the weight configuration at the current location.
+     * @param weights
      */
-    protected abstract void getWeights(double[] weights);
+    protected abstract void getWeights(float[] weights);
 
     /**
      * Choose the next location we will search.

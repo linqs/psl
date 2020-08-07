@@ -19,7 +19,6 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.GeneralFunction;
@@ -28,9 +27,9 @@ import java.util.List;
 import java.util.Set;
 
 public class FakeGroundRule implements WeightedGroundRule {
-    private double weight;
+    private float weight;
 
-    public FakeGroundRule(double weight) {
+    public FakeGroundRule(float weight) {
         this.weight = weight;
     }
 
@@ -55,12 +54,12 @@ public class FakeGroundRule implements WeightedGroundRule {
     }
 
     @Override
-    public double getWeight() {
+    public float getWeight() {
         return weight;
     }
 
     @Override
-    public void setWeight(double weight) {
+    public void setWeight(float weight) {
         this.weight = weight;
     }
 

@@ -46,12 +46,12 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     }
 
     @Override
-    public double getWeight() {
+    public float getWeight() {
         return ((WeightedRule)rule).getWeight();
     }
 
     @Override
-    public void setWeight(double weight) {
+    public void setWeight(float weight) {
         ((WeightedRule)rule).setWeight(weight);
     }
 
@@ -86,7 +86,7 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
             }
         }
 
-        WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0 * ((WeightedLogicalRule)rule).getWeight(), isSquared(), name);
+        WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0f * ((WeightedLogicalRule)rule).getWeight(), isSquared(), name);
         return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
     }
 }

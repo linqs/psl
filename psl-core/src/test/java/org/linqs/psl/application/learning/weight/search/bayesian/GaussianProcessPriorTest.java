@@ -93,11 +93,11 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         inverseMat = inverseMat.inverse();
         wl.setKnownDataStdInvForTest(inverseMat);
 
-        double[] x = new double[]{0.4f, 0.2f, 0.1f};
+        float[] x = new float[]{0.4f, 0.2f, 0.1f};
         List<GaussianProcessPrior.WeightConfig> xKnown = new ArrayList<GaussianProcessPrior.WeightConfig>();
-        xKnown.add(wl.new WeightConfig(new double[]{0.1f, 0.2f, 0.3f}));
-        xKnown.add(wl.new WeightConfig(new double[]{0.2f, 0.2f, 0.1f}));
-        xKnown.add(wl.new WeightConfig(new double[]{0.4f, 0.3f, 0.2f}));
+        xKnown.add(wl.new WeightConfig(new float[]{0.1f, 0.2f, 0.3f}));
+        xKnown.add(wl.new WeightConfig(new float[]{0.2f, 0.2f, 0.1f}));
+        xKnown.add(wl.new WeightConfig(new float[]{0.4f, 0.3f, 0.2f}));
         float[] yKnown = new float[]{0.5f, 0.6f, 0.7f};
         FloatMatrix blasYKnown = FloatMatrix.columnVector(yKnown);
 

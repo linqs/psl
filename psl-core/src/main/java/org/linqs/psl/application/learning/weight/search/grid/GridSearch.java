@@ -36,7 +36,7 @@ public class GridSearch extends BaseGridSearch {
     private static final Logger log = LoggerFactory.getLogger(GridSearch.class);
 
 
-    protected final double[] possibleWeights;
+    protected final float[] possibleWeights;
 
     public GridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -45,7 +45,7 @@ public class GridSearch extends BaseGridSearch {
     public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        possibleWeights = StringUtils.splitDouble(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
+        possibleWeights = StringUtils.splitFloat(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
         if (possibleWeights.length == 0) {
             throw new IllegalArgumentException("No weights provided for grid search.");
         }
@@ -55,7 +55,7 @@ public class GridSearch extends BaseGridSearch {
     }
 
     @Override
-    protected void getWeights(double[] weights) {
+    protected void getWeights(float[] weights) {
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
         assert(indexes.length == mutableRules.size());
 

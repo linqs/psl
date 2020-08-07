@@ -45,7 +45,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     }
 
     @Override
-    protected void getWeights(double[] weights) {
+    protected void getWeights(float[] weights) {
         // Random choice.
         weightSampler.getRandomWeights(weights);
     }

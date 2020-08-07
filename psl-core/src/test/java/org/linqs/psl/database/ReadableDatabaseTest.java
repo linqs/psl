@@ -204,7 +204,7 @@ public class ReadableDatabaseTest {
             new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
         );
 
-        Rule rule = new WeightedLogicalRule(ruleFormula, 11.0, true);
+        Rule rule = new WeightedLogicalRule(ruleFormula, 11.0f, true);
         info.model.addRule(rule);
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();

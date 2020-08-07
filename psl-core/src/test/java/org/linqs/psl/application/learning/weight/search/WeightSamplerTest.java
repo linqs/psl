@@ -37,7 +37,7 @@ public class WeightSamplerTest {
         int numSamples = 1000;
         double sampleMagnitude = 0.0;
         int[] numWeights = new int[]{ 1, 2, 100 };
-        double[][] weightSamples = null;
+        float[][] weightSamples = null;
 
         WeightSampler weightSampler = null;
 
@@ -50,7 +50,7 @@ public class WeightSamplerTest {
         // Iterate over possible number of weights.
         for (int dimension: numWeights) {
             weightSampler = new WeightSampler(dimension);
-            weightSamples = new double[numSamples][dimension];
+            weightSamples = new float[numSamples][dimension];
 
             // Draw numSamples random samples from dirichlet distribution.
             for (int i = 0; i < numSamples; i++) {
@@ -83,7 +83,7 @@ public class WeightSamplerTest {
         double sampleMean = 0.0;
         double sampleVariance = 0.0;
         int[] numWeights = new int[]{ 1, 2, 100 };
-        double[][] weightSamples = null;
+        float[][] weightSamples = null;
 
         WeightSampler weightSampler = null;
 
@@ -96,7 +96,7 @@ public class WeightSamplerTest {
         // Iterate over possible number of weights.
         for (int dimension: numWeights) {
             weightSampler = new WeightSampler(dimension);
-            weightSamples = new double[numSamples][dimension];
+            weightSamples = new float[numSamples][dimension];
 
             // Draw numSamples random samples from dirichlet distribution.
             for (int i = 0; i < numSamples; i++) {

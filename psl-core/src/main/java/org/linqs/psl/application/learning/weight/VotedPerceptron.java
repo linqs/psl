@@ -129,7 +129,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
     @Override
     protected void doLearn() {
-        double[] avgWeights = new double[mutableRules.size()];
+        float[] avgWeights = new float[mutableRules.size()];
 
         String currentLocation = null;
 
@@ -141,7 +141,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
         if (zeroInitialWeights) {
             for (WeightedRule rule : mutableRules) {
-                rule.setWeight(0.0);
+                rule.setWeight(0.0f);
             }
         }
 
@@ -162,8 +162,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
         double[] lastSteps = new double[mutableRules.size()];
         double lastObjective = -1.0;
 
-        double[] currentWeights = new double[mutableRules.size()];
-        double[] lastWeights = new double[mutableRules.size()];
+        float[] currentWeights = new float[mutableRules.size()];
+        float[] lastWeights = new float[mutableRules.size()];
         for (int i = 0; i < mutableRules.size(); i++) {
             lastWeights[i] = mutableRules.get(i).getWeight();
         }
@@ -180,7 +180,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
             // Updates weights.
             for (int i = 0; i < mutableRules.size(); i++) {
-                double newWeight = mutableRules.get(i).getWeight();
+                float newWeight = mutableRules.get(i).getWeight();
                 double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
                         - l2Regularization * newWeight
                         - l1Regularization) / scalingFactor[i];
@@ -195,9 +195,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 currentStep += inertia * lastSteps[i];
 
                 if (clipNegativeWeights) {
-                    newWeight = Math.max(0.0, newWeight + currentStep);
+                    newWeight = (float)Math.max(0.0, newWeight + currentStep);
                 } else {
-                    newWeight = newWeight + currentStep;
+                    newWeight = (float)(newWeight + currentStep);
                 }
 
                 log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",

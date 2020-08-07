@@ -77,7 +77,7 @@ public class RulePartial {
      * Even if the partial is not a rule, then nulls are allowed if an unweighted rule is desired.
      * Weight and squared must either both be non-null, or both be null.
      */
-    public Rule toRule(Double weight, Boolean squared) {
+    public Rule toRule(Float weight, Boolean squared) {
         if (weight == null && squared == null) {
             if (rule == null) {
                 if (formula != null) {
@@ -91,9 +91,9 @@ public class RulePartial {
         } else if (weight != null && squared != null) {
             if (rule == null) {
                 if (formula != null) {
-                    return toWeightedLogicalRule(weight.doubleValue(), squared.booleanValue());
+                    return toWeightedLogicalRule(weight.floatValue(), squared.booleanValue());
                 } else {
-                    return toWeightedArithmeticRule(weight.doubleValue(), squared.booleanValue());
+                    return toWeightedArithmeticRule(weight.floatValue(), squared.booleanValue());
                 }
             }
 
@@ -107,7 +107,7 @@ public class RulePartial {
         return new UnweightedLogicalRule(formula);
     }
 
-    private Rule toWeightedLogicalRule(double weight, boolean squared) {
+    private Rule toWeightedLogicalRule(float weight, boolean squared) {
         return new WeightedLogicalRule(formula, weight, squared);
     }
 
@@ -119,7 +119,7 @@ public class RulePartial {
         return new UnweightedArithmeticRule(arithmeticExpression, filters);
     }
 
-    private Rule toWeightedArithmeticRule(double weight, boolean squared) {
+    private Rule toWeightedArithmeticRule(float weight, boolean squared) {
         if (filters == null) {
             return new WeightedArithmeticRule(arithmeticExpression, weight, squared);
         }

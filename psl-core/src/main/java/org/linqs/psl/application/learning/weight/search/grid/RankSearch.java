@@ -69,7 +69,7 @@ public class RankSearch extends BaseGridSearch {
     }
 
     @Override
-    protected void getWeights(double[] weights) {
+    protected void getWeights(float[] weights) {
         int[] ranks = StringUtils.splitInt(currentLocation, DELIM);
         assert(ranks.length == (mutableRules.size() + 1));
 
@@ -77,7 +77,7 @@ public class RankSearch extends BaseGridSearch {
 
         for (int i = 0; i < mutableRules.size(); i++) {
             // Add one because the permutation iterator starts at 0.
-            weights[i] = scale * (1.0 + ranks[i + 1]);
+            weights[i] = scale * (1.0f + ranks[i + 1]);
         }
     }
 

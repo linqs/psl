@@ -74,7 +74,7 @@ public class Hyperband extends WeightLearningApplication {
     @Override
     protected void doLearn() {
         double bestObjective = -1;
-        double[] bestWeights = null;
+        float[] bestWeights = null;
 
         String currentLocation = null;
 
@@ -95,7 +95,7 @@ public class Hyperband extends WeightLearningApplication {
 
             // Note that each config may get adjusted by internal weight learning methods.
             // (Not in the default behavior, but in child class behavior).
-            List<double[]> configs = chooseConfigs(bracketSize);
+            List<float[]> configs = chooseConfigs(bracketSize);
 
             for (int round = 0; round <= bracket; round++) {
                 int roundSize = configs.size();
@@ -105,7 +105,7 @@ public class Hyperband extends WeightLearningApplication {
                 log.debug("  Round {} / {} -- Size: {}, Budget: {}", round + 1, bracket + 1, roundSize, roundBudget);
 
                 PriorityQueue<RunResult> results = new PriorityQueue<RunResult>();
-                for (double[] config : configs) {
+                for (float[] config : configs) {
                     totalCost += roundBudget;
 
                     // Set the weights for the current round.
@@ -136,7 +136,7 @@ public class Hyperband extends WeightLearningApplication {
                 }
 
                 configs.clear();
-                for (int i = 0; i < (int)(Math.floor((double)roundSize / survival)); i++) {
+                for (int i = 0; i < (int)(Math.floor((float)roundSize / survival)); i++) {
                     configs.add(results.poll().weights);
                 }
             }
@@ -153,11 +153,11 @@ public class Hyperband extends WeightLearningApplication {
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }
 
-    private List<double[]> chooseConfigs(int bracketSize) {
-        List<double[]> configs = new ArrayList<double[]>(bracketSize);
+    private List<float[]> chooseConfigs(int bracketSize) {
+        List<float[]> configs = new ArrayList<float[]>(bracketSize);
 
         for (int i = 0; i < bracketSize; i++) {
-            double[] config = new double[mutableRules.size()];
+            float[] config = new float[mutableRules.size()];
 
             weightSampler.getRandomWeights(config);
 
@@ -175,21 +175,20 @@ public class Hyperband extends WeightLearningApplication {
      * This is a prime method for child classes to override.
      * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
      * if lower is better for that evaluator.
+     * @param weights
      */
-    protected double run(double[] weights) {
+    protected double run(float[] weights) {
         computeMPEState();
 
         evaluator.compute(trainingMap);
-        double score = -1.0 * evaluator.getNormalizedRepMetric();
-
-        return score;
+        return -1.0 * evaluator.getNormalizedRepMetric();
     }
 
     private static class RunResult implements Comparable<RunResult> {
-        public double[] weights;
+        public float[] weights;
         public double objective;
 
-        public RunResult(double[] weights, double objective) {
+        public RunResult(float[] weights, double objective) {
             this.weights = weights;
             this.objective = objective;
         }

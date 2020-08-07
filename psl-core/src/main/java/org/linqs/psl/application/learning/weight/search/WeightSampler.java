@@ -50,7 +50,7 @@ public class WeightSampler {
         }
     }
 
-    public void getRandomWeights(double[] weights) {
+    public void getRandomWeights(float[] weights) {
         if (searchDirichlet) {
             getDirichletRandomWeights(weights);
         } else {
@@ -58,19 +58,19 @@ public class WeightSampler {
         }
     }
 
-    private void getDirichletRandomWeights(double[] weights) {
+    private void getDirichletRandomWeights(float[] weights) {
         double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
 
         MathUtils.toUnit(dirichletSample);
 
         for (int i = 0; i < numWeights; i++) {
-            weights[i] = dirichletSample[i];
+            weights[i] = (float)dirichletSample[i];
         }
     }
 
-    private void getHypercubeRandomWeights(double[] weights) {
+    private void getHypercubeRandomWeights(float[] weights) {
         for (int i = 0; i < numWeights; i++) {
-            weights[i] = RandUtils.nextDouble();
+            weights[i] = RandUtils.nextFloat();
         }
     }
 }
