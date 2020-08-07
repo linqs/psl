@@ -220,29 +220,30 @@ public final class RandUtils {
         }
 
         scalingParameterD = alpha - 1.0 / 3.0;
-        scalingParameterC = 1 / Math.sqrt(9.0 * scalingParameterD);
+        scalingParameterC = 1.0 / (3.0 * Math.sqrt(scalingParameterD));
 
         do {
             do {
                 standardNormalRV = nextGaussian();
-                truncatedNormalRV = 1 + scalingParameterC * standardNormalRV;
+                truncatedNormalRV = 1.0 + scalingParameterC * standardNormalRV;
             } while (truncatedNormalRV <= 0);
             // truncatedNormalRV is a truncated normal distribution
             truncatedNormalRV = Math.pow(truncatedNormalRV, 3.0);
             uniformRV = nextDouble();
 
             if ((uniformRV < 1.0 - 0.0331 * Math.pow(standardNormalRV, 4.0)) ||
-                    (Math.log(uniformRV) < 0.5 * Math.pow(standardNormalRV, 2) + scalingParameterD * (1 - truncatedNormalRV + Math.log(truncatedNormalRV)))) {
-                gammaSample = scalingParameterD * truncatedNormalRV;
+                    (Math.log(uniformRV) < 0.5 * Math.pow(standardNormalRV, 2.0) + scalingParameterD * (1.0 - truncatedNormalRV + Math.log(truncatedNormalRV)))) {
+                gammaSample = scale * scalingParameterD * truncatedNormalRV;
                 break;
             }
         } while (true);
 
+        // If shape < 1 then transform Gamma(shape + 1, beta) to Gamma(shape, beta)
         if (transformFlag) {
             uniformRV = nextDouble();
             gammaSample = gammaSample * Math.pow(uniformRV, (1 / shape));
         }
 
-        return scale * gammaSample;
+        return gammaSample;
     }
 }

@@ -18,7 +18,6 @@
 package org.linqs.psl.util;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * Various static math utilities.
