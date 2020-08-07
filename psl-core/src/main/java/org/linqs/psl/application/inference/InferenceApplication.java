@@ -272,11 +272,11 @@ public abstract class InferenceApplication implements ModelApplication {
      * Normalize all weights to be in [0, 1].
      */
     protected void normalizeWeights() {
-        double max = 0.0;
+        float max = 0.0f;
         boolean hasWeightedRule = false;
 
         for (WeightedRule rule : IteratorUtils.filterClass(rules, WeightedRule.class)) {
-            double weight = rule.getWeight();
+            float weight = rule.getWeight();
             if (!hasWeightedRule || weight > max) {
                 max = weight;
                 hasWeightedRule = true;
@@ -292,7 +292,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
             float newWeight = 1.0f;
             if (!MathUtils.isZero(max)) {
-                newWeight = (float)(oldWeight / max);
+                newWeight = oldWeight / max;
             }
 
             log.debug("Normalizing rule weight (old weight: {}, new weight: {}): {}", oldWeight, newWeight, rule);
