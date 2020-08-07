@@ -53,7 +53,7 @@ public abstract class GaussianProcessKernel {
       * the same as the points).
       * The matrices will be modified.
       */
-    public float kernel(double[] point1, double[] point2, float[] buffer1, float[] buffer2, FloatMatrix matrixShell1, FloatMatrix matrixShell2) {
+    public float kernel(float[] point1, float[] point2, float[] buffer1, float[] buffer2, FloatMatrix matrixShell1, FloatMatrix matrixShell2) {
         assert(point1.length == point2.length);
         assert(buffer1.length == buffer2.length);
         assert(point1.length == buffer1.length);
@@ -72,7 +72,7 @@ public abstract class GaussianProcessKernel {
     /**
       * Compute the kernels, but allocate new buffer for the computation.
       */
-    public float kernel(double[] point1, double[] point2) {
+    public float kernel(float[] point1, float[] point2) {
         return kernel(point1, point2, new float[point1.length], new float[point2.length], new FloatMatrix(), new FloatMatrix());
     }
 }
