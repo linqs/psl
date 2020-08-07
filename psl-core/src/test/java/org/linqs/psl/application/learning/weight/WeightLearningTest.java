@@ -54,7 +54,7 @@ import java.util.Set;
 /**
  * General tests for all classes that implement WeightLearningApplication.
  * TODO(eriq): We have to disable some tests because they give different weights.
- *  But some are legitimetley different. We need more robust cases.
+ *  But some are legitimately different. We need more robust cases.
  */
 public abstract class WeightLearningTest {
     public static final String RULE_PRIOR = "prior";

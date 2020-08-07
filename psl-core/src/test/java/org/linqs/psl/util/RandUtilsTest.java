@@ -37,7 +37,7 @@ public class RandUtilsTest {
         // Set the random seed.
         RandUtils.seed(22);
 
-        // iterate over possible shape and scale parameters.
+        // Iterate over possible shape and scale parameters.
         for (double shape : shapes) {
             for (double scale : scales) {
                 // Draw numSamples random samples from gamma distribution.
@@ -118,7 +118,7 @@ public class RandUtilsTest {
                     assertEquals(expectedVariance, sampleVariance, 0.1);
                 }
 
-                // Assert that the sum of each sample adds to 1.0
+                // Assert that the sum of each sample adds to 1.0.
                 for (int i = 0; i < numSamples; i++) {
                     sampleSum = 0.0;
                     for (int j = 0; j < dimension; j++) {
