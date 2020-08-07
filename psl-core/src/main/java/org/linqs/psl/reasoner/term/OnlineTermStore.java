@@ -20,11 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
-/**
- * An interface for term stores that can handle some atom operations.
- */
 public interface OnlineTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
-
     public void addAtom(Predicate predicate, Constant[] arguments, float newValue, boolean readPartition);
 
     public void deleteAtom(Predicate predicate, Constant[] arguments);
