@@ -227,7 +227,7 @@ public final class RandUtils {
                 standardNormalRV = nextGaussian();
                 truncatedNormalRV = 1.0 + scalingParameterC * standardNormalRV;
             } while (truncatedNormalRV <= 0);
-            // truncatedNormalRV is a truncated normal distribution
+            // truncatedNormalRV is a truncated normal distribution.
             truncatedNormalRV = Math.pow(truncatedNormalRV, 3.0);
             uniformRV = nextDouble();
 
@@ -238,7 +238,7 @@ public final class RandUtils {
             }
         } while (true);
 
-        // If shape < 1 then transform Gamma(shape + 1, beta) to Gamma(shape, beta)
+        // If shape < 1 then transform Gamma(shape + 1, beta) to Gamma(shape, beta).
         if (transformFlag) {
             uniformRV = nextDouble();
             gammaSample = gammaSample * Math.pow(uniformRV, (1 / shape));
