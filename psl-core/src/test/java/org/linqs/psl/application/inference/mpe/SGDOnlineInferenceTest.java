@@ -18,123 +18,51 @@
 package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabaseTestUtil;
-import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.formula.Conjunction;
-import org.linqs.psl.model.formula.Implication;
-import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
     private Database inferDB;
-    private SGDOnlineInference inference;
 
     public SGDOnlineInferenceTest() {
         modelInfo = null;
         inferDB = null;
-        inference = null;
     }
 
-    /**
-     * Initialize a baseline model that we will be modifying with the online inference application
-     */
-    private void initBaselineModel() {
-        Map<String, StandardPredicate> baselinePredicates = new HashMap<String, StandardPredicate>();
-        List<Rule> baselineRules = new ArrayList<Rule>();
-        Map<StandardPredicate, List<TestModel.PredicateData>> baselineObservations = new HashMap<StandardPredicate, List<TestModel.PredicateData>>();
-        Map<StandardPredicate, List<TestModel.PredicateData>> baselineTargets = new HashMap<StandardPredicate, List<TestModel.PredicateData>>();
-        Map<StandardPredicate, List<TestModel.PredicateData>> baselineTruths = new HashMap<StandardPredicate, List<TestModel.PredicateData>>();
-
-        // Define Predicates
-        Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
-        predicatesInfo.put("Sim_Users", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
-        predicatesInfo.put("Rating", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
-
-        for (Map.Entry<String, ConstantType[]> predicateEntry : predicatesInfo.entrySet()) {
-            StandardPredicate predicate = StandardPredicate.get(predicateEntry.getKey(), predicateEntry.getValue());
-            baselinePredicates.put(predicateEntry.getKey(), predicate);
+    private void initModel() {
+        if (inferDB != null) {
+            inferDB.close();
+            inferDB = null;
         }
 
-        // Define Rules
-        // Rating(U1, M) && Sim_Users(U1, U2) => Rating(U2, M)
-        baselineRules.add(new WeightedLogicalRule(
-                new Implication(
-                        new Conjunction(
-                                new QueryAtom(baselinePredicates.get("Rating"), new Variable("A"), new Variable("M")),
-                                new QueryAtom(baselinePredicates.get("Sim_Users"), new Variable("A"), new Variable("B")),
-                                new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
-                        ),
-                        new QueryAtom(baselinePredicates.get("Rating"), new Variable("B"), new Variable("M"))
-                ),
-                1.0,
-                true));
+        if (modelInfo != null) {
+            modelInfo.dataStore.close();
+            modelInfo = null;
+        }
 
-        // Data
-
-        // Observed
-        // Rating
-        baselineObservations.put(baselinePredicates.get("Rating"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Avatar"})
-        )));
-
-        // Sim_Users
-        baselineObservations.put(baselinePredicates.get("Sim_Users"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Bob"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Bob", "Alice"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Alice"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Alice", "Eddie"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Eddie", "Bob"}),
-                new TestModel.PredicateData(0.0, new Object[]{"Bob", "Eddie"})
-        )));
-
-        // Targets
-        // Rating
-        baselineTargets.put(baselinePredicates.get("Rating"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(new Object[]{"Eddie", "Avatar"}),
-                new TestModel.PredicateData(new Object[]{"Bob", "Avatar"})
-        )));
-
-        // Truths
-        baselineTruths.put(baselinePredicates.get("Rating"), new ArrayList<TestModel.PredicateData>(Arrays.asList(
-                new TestModel.PredicateData(1.0, new Object[]{"Bob", "Avatar"}),
-                new TestModel.PredicateData(1.0, new Object[]{"Eddie", "Avatar"})
-        )));
-
-        DatabaseDriver driver = DatabaseTestUtil.getH2Driver();
-        modelInfo = TestModel.getModel(driver, baselinePredicates, baselineRules,
-                baselineObservations, baselineTargets, baselineTruths);
+        modelInfo = TestModel.getModel(true);
     }
 
     @Before
@@ -143,14 +71,16 @@ public class SGDOnlineInferenceTest {
 
         Options.ONLINE.set(true);
 
-        initBaselineModel();
+        initModel();
 
         // Close the predicates we are using.
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 
         inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition, toClose, modelInfo.observationPartition);
 
-        inference = new SGDOnlineInference(modelInfo.model.getRules(), inferDB);
+        // Start up inference on separate thread.
+        OnlineInferenceThread onlineInferenceThread = new OnlineInferenceThread();
+        onlineInferenceThread.start();
     }
 
     @After
@@ -171,17 +101,22 @@ public class SGDOnlineInferenceTest {
         }
     }
 
-    private void queueCommands(SGDOnlineInference inference, ArrayList<String> commands) {
-        OnlineAction action = null;
+    private void queueCommands(String commands) {
+        // Write commands to In.
+        InputStream testInput = new ByteArrayInputStream(commands.getBytes());
+        InputStream stdIn = System.in;
+        System.setIn(testInput);
 
-        for(String command : commands) {
-            try {
-                action = OnlineAction.parse(command);
-            } catch (OnlineActionException ex) {
-                throw new RuntimeException(ex);
-            }
-            inference.addOnlineActionForTesting(action);
+        // Start client to issue commands
+        OnlineClient.run();
+
+        // Close InputStream and reset In.
+        try {
+            testInput.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+        System.setIn(stdIn);
     }
 
     private GroundAtom getAtom(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
@@ -201,119 +136,161 @@ public class SGDOnlineInferenceTest {
         return termstore.getVariableValue(termstore.getVariableIndex(atom));
     }
 
+    /**
+     * Make sure that updates issued by client commands are made as expected.
+     */
     @Test
     public void testUpdateObservation() {
-        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "UPDATE\tSim_Users\tAlice\tEddie\t0.0",
-                "WRITE",
-                "STOP"));
+        String commands =
+                "UPDATE\tNice\tAlice\t0.0\n" +
+                "WRITE\n" +
+                "STOP\n" +
+                "Exit";
 
-        queueCommands(inference, commands);
-        inference.inference();
+        queueCommands(commands);
 
-        float atomValue = getAtomValue(inference, "Sim_Users", new String[]{"Alice", "Eddie"});
-        assertEquals(atomValue, 0.0, 0.01);
+        float atomValue = getAtomValue(inference, "Nice", new String[]{"Alice"});
+        assertEquals(0.0, atomValue, 0.01);
     }
 
-    @Test
-    public void testAddAtoms() {
-        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "ADD\tRead\tSim_Users\tConnor\tAlice\t1.0",
-                "ADD\tRead\tSim_Users\tAlice\tConnor\t1.0",
-                "ADD\tWrite\tRating\tConnor\tAvatar",
-                "WRITE",
-                "ADD\tWrite\tRating\tConnor\tSurfs Up\t1.0",
-                "STOP"));
+//    /**
+//     * Make sure that new atoms are added to model and are considered during inference.
+//     */
+//    @Test
+//    public void testAddAtoms() {
+//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+//                "ADD\tRead\tPerson\tConnor\t1.0",
+//                "ADD\tRead\tNice\tConnor\t0.01",
+//                "ADD\tWrite\tFriends\tConnor\tAlice",
+//                "ADD\tWrite\tFriends\tAlice\tConnor",
+//                "WRITE",
+//                "ADD\tWrite\tFriends\tConnor\tBob\t1.0",
+//                "ADD\tWrite\tFriends\tBob\tConnor\t1.0",
+//                "WRITE",
+//                "STOP"));
+//
+//        queueCommands(inference, commands);
+//        inference.inference();
+//
+//        StreamingTermStore termstore = (StreamingTermStore)inference.getTermStore();
+//
+//        // Check that new atoms were added to the model.
+//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Person", new String[]{"Connor"})));
+//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Nice", new String[]{"Connor"})));
+//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Connor", "Alice"})));
+//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Alice", "Connor"})));
+//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Connor", "Bob"})));
+//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Bob", "Connor"})));
+//
+//        // Check that atoms were Considered during inference
+//        float atomValue = getAtomValue(inference, "Friends", new String[]{"Connor", "Alice"});
+//        assertEquals(0.0, atomValue, 0.1);
+//    }
+//
+//    @Test
+//    public void testPageRewriting() {
+//        Options.STREAMING_TS_PAGE_SIZE.set(2);
+//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+//                "ADD\tRead\tSim_Users\tConnor\tAlice\t0.0",
+//                "ADD\tRead\tSim_Users\tAlice\tConnor\t0.0",
+//                "ADD\tWrite\tRating\tConnor\tAvatar",
+//                "WRITE",
+//                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
+//                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
+//                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
+//                "ADD\tWrite\tRating\tConnor\tSurfs Up",
+//                "WRITE",
+//                "STOP"));
+//
+//        queueCommands(inference, commands);
+//        inference.inference();
+//
+//        float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
+//        assertEquals(atomValue, 1.0, 0.01);
+//    }
 
-        queueCommands(inference, commands);
-        inference.inference();
+//    @Test
+//    public void testAtomDeleting() {
+//        // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
+//        //  The atom will not be deleted if there is an add and then a delete of the same atom before the atoms are
+//        //  activated. This behavior is also noted in streaming term store deleteAtom.
+//        /*
+//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+//                "DELETE\tRead\tSim_Users\tAlice\tEddie",
+//                "ADD\tRead\tSim_Users\tAlice\tEddie\t1.0",
+//                "DELETE\tRead\tSim_Users\tAlice\tEddie",
+//                "WRITE",
+//                "STOP"));
+//        */
+//
+//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+//                "DELETE\tRead\tSim_Users\tAlice\tEddie",
+//                "DELETE\tRead\tSim_Users\tEddie\tAlice",
+//                "WRITE",
+//                "STOP"));
+//        queueCommands(inference, commands);
+//
+//        @SuppressWarnings("unchecked")
+//        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
+//        int numTerms = 0;
+//        for (SGDObjectiveTerm term : termStore) {
+//            numTerms++;
+//        }
+//
+//        assertEquals(2.0, numTerms, 0.01);
+//
+//        inference.inference();
+//
+//        numTerms = 0;
+//        for (SGDObjectiveTerm term: termStore) {
+//            numTerms++;
+//        }
+//
+//        assertEquals(1.0, numTerms, 0.01);
+//    }
+//
+//    @Test
+//    public void testChangeAtomPartition() {
+//        Options.STREAMING_TS_PAGE_SIZE.set(4);
+//        setup();
+//
+//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
+//                "ADD\tRead\tSim_Users\tConnor\tAlice\t1.0",
+//                "ADD\tRead\tSim_Users\tAlice\tConnor\t1.0",
+//                "ADD\tWrite\tRating\tConnor\tAvatar",
+//                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
+//                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
+//                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
+//                "ADD\tWrite\tRating\tConnor\tSurfs Up",
+//                "ADD\tRead\tRating\tAlice\tAvatar\t0.5",
+//                "WRITE",
+//                "STOP"));
+//
+//        queueCommands(inference, commands);
+//        inference.inference();
+//        float atomValue = getAtomValue(inference, "Rating", new String[]{"Alice", "Avatar"});
+//        assertEquals(atomValue, 0.5, 0.01);
+//    }
 
-        float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
-        assertEquals(atomValue, 1.0, 0.01);
-    }
+    private class OnlineInferenceThread extends Thread {
+        SGDOnlineInference onlineInference;
 
-    @Test
-    public void testPageRewriting() {
-        Options.STREAMING_TS_PAGE_SIZE.set(2);
-        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "ADD\tRead\tSim_Users\tConnor\tAlice\t0.0",
-                "ADD\tRead\tSim_Users\tAlice\tConnor\t0.0",
-                "ADD\tWrite\tRating\tConnor\tAvatar",
-                "WRITE",
-                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
-                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
-                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
-                "ADD\tWrite\tRating\tConnor\tSurfs Up",
-                "WRITE",
-                "STOP"));
-
-        queueCommands(inference, commands);
-        inference.inference();
-
-        float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
-        assertEquals(atomValue, 1.0, 0.01);
-    }
-
-    @Test
-    public void testAtomDeleting() {
-        // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
-        //  The atom will not be deleted if there is an add and then a delete of the same atom before the atoms are
-        //  activated. This behavior is also noted in streaming term store deleteAtom.
-        /*
-        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "DELETE\tRead\tSim_Users\tAlice\tEddie",
-                "ADD\tRead\tSim_Users\tAlice\tEddie\t1.0",
-                "DELETE\tRead\tSim_Users\tAlice\tEddie",
-                "WRITE",
-                "STOP"));
-        */
-
-        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "DELETE\tRead\tSim_Users\tAlice\tEddie",
-                "DELETE\tRead\tSim_Users\tEddie\tAlice",
-                "WRITE",
-                "STOP"));
-        queueCommands(inference, commands);
-
-        @SuppressWarnings("unchecked")
-        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
-        int numTerms = 0;
-        for (SGDObjectiveTerm term : termStore) {
-            numTerms++;
+        public OnlineInferenceThread() {
+            // Constructor for OnlineInference applications calls initialize which starts up
+            // OnlineServer on separate thread.
+            onlineInference = new SGDOnlineInference(modelInfo.model.getRules(), inferDB);
         }
 
-        assertEquals(2.0, numTerms, 0.01);
-
-        inference.inference();
-
-        numTerms = 0;
-        for (SGDObjectiveTerm term: termStore) {
-            numTerms++;
+        @Override
+        public void run() {
+            onlineInference.inference();
         }
 
-        assertEquals(1.0, numTerms, 0.01);
-    }
-
-    @Test
-    public void testChangeAtomPartition() {
-        Options.STREAMING_TS_PAGE_SIZE.set(4);
-        setup();
-
-        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-                "ADD\tRead\tSim_Users\tConnor\tAlice\t1.0",
-                "ADD\tRead\tSim_Users\tAlice\tConnor\t1.0",
-                "ADD\tWrite\tRating\tConnor\tAvatar",
-                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
-                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
-                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
-                "ADD\tWrite\tRating\tConnor\tSurfs Up",
-                "ADD\tRead\tRating\tAlice\tAvatar\t0.5",
-                "WRITE",
-                "STOP"));
-
-        queueCommands(inference, commands);
-        inference.inference();
-        float atomValue = getAtomValue(inference, "Rating", new String[]{"Alice", "Avatar"});
-        assertEquals(atomValue, 0.5, 0.01);
+        public void close() {
+            if (onlineInference != null) {
+                onlineInference.close();
+                onlineInference = null;
+            }
+        }
     }
 }

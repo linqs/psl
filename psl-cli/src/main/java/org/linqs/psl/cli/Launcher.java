@@ -18,6 +18,7 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
