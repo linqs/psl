@@ -120,6 +120,9 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
 
             atomManager.getDatabase().commit(obsAtomCache, Partition.SPECIAL_READ_ID);
             atomManager.getDatabase().commit(rvAtomCache, Partition.SPECIAL_WRITE_ID);
+
+            // Only ground the rules for which there is a lazy target.
+            this.rules = new ArrayList<>(LazyGrounding.getLazyRules(this.rules, onlinePredicates));
         }
 
         this.pageSize = pageSize;
@@ -283,16 +286,25 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
     }
 
     private QueryResultIterable getLazyGroundingIterable() {
-        while (!rules.get(currentRule).supportsGroundingQueryRewriting() && currentRule < rules.size()) {
-            currentRule++;
+        QueryResultIterable queryResultIterable = null;
+
+        while (currentRule < rules.size()) {
+            // Find a rule that supports grounding query rewriting.
+            if (!rules.get(currentRule).supportsGroundingQueryRewriting()) {
+                currentRule++;
+            }
+
+            queryResultIterable = LazyGrounding.getLazyGroundingResults(rules.get(currentRule), onlinePredicates, atomManager.getDatabase());
+
+            // Check if there were any grounding results from query.
+            if (queryResultIterable != null) {
+                break;
+            } else {
+                currentRule++;
+            }
         }
 
-        if (currentRule >= rules.size()) {
-            // There are no more rules, we are done.
-            return null;
-        }
-
-        return LazyGrounding.getLazyGroundingResults(rules.get(currentRule), onlinePredicates, atomManager.getDatabase());
+        return queryResultIterable;
     }
 
     private void flushCache() {
