@@ -29,6 +29,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
@@ -49,6 +50,12 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
             int pageSize, int nextPage) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, nextPage);
 
+        // The initial iteration will not have any online components.
+        if (!parentStore.isLoaded()) {
+            onlinePredicates = null;
+            return;
+        }
+
         // Ready the new atoms in the atom manager for partial grounding.
         Set<GroundAtom> obsAtomCache = ((OnlineAtomManager)atomManager).flushNewObservedAtoms();
         Set<GroundAtom> rvAtomCache = ((OnlineAtomManager)atomManager).flushNewRandomVariableAtoms();
@@ -60,6 +67,9 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
         // Move all the new atoms over to special partitions that we can use for partial grounding.
         atomManager.getDatabase().commit(obsAtomCache, Partition.SPECIAL_READ_ID);
         atomManager.getDatabase().commit(rvAtomCache, Partition.SPECIAL_WRITE_ID);
+
+        // Only ground the rules for which there is a lazy target.
+        this.rules = new ArrayList<Rule>(LazyGrounding.getLazyRules(this.rules, onlinePredicates));
     }
 
     @Override
@@ -91,12 +101,14 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
             return;
         }
 
-        // Move all the new atoms out of the special partition and into the read/write partitions.
-        for (StandardPredicate onlinePredicate : onlinePredicates) {
-            atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,
-                    ((OnlineAtomManager)atomManager).getOnlineReadPartition());
-            atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID,
-                    atomManager.getDatabase().getWritePartition().getID());
+        if (parentStore.isLoaded()) {
+            // Move all the new atoms out of the special partition and into the read/write partitions.
+            for (StandardPredicate onlinePredicate : onlinePredicates) {
+                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,
+                        ((OnlineAtomManager)atomManager).getOnlineReadPartition());
+                atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID,
+                        atomManager.getDatabase().getWritePartition().getID());
+            }
         }
 
         super.close();
