@@ -65,9 +65,9 @@ public class Options {
 
     public static final Option ONLINE_READ_PARTITION = new Option(
         "onlineatommanager.read",
-        0,
-        "Partition to add new observations to.",
-        Option.FLAG_NON_NEGATIVE
+        -1,
+        "The partition to add new observations to."
+        + " If negative, the first read partition in the database will be used."
     );
 
     public static final Option ADMM_COMPUTE_PERIOD = new Option(

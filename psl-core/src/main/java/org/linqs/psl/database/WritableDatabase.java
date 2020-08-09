@@ -30,7 +30,7 @@ public interface WritableDatabase {
     /**
      * Removes the GroundAtom from the Database, if it exists.
      */
-    public boolean deleteAtom(GroundAtom a);
+    public boolean deleteAtom(GroundAtom atom);
 
     /**
      * Persists a RandomVariableAtom in this Database's write Partition.

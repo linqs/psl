@@ -109,7 +109,7 @@ public class DCDReasoner extends Reasoner {
 
         log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
                 iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termStore.size());
 
         termStore.syncAtoms();
 

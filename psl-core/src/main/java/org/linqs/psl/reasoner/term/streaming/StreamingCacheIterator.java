@@ -19,8 +19,6 @@ package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -34,8 +32,6 @@ import java.util.List;
  * In this case, pages will not be written to disk.
  */
 public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
-    private static final Logger log = LoggerFactory.getLogger(StreamingCacheIterator.class);
-
     protected StreamingTermStore<T> parentStore;
     protected int[] shuffleMap;
 
@@ -62,8 +58,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected boolean closed;
 
     protected int numPages;
-
-    private long deletedTermCheckTime;
 
     public StreamingCacheIterator(
             StreamingTermStore<T> parentStore, boolean readonly,
@@ -104,8 +98,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         // Note that we cannot pre-fetch.
         nextTerm = null;
-
-        deletedTermCheckTime = 0;
     }
 
     /**
@@ -122,26 +114,13 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
             return false;
         }
 
-        nextTerm = fetchNextTerm();
-
-        long start = System.currentTimeMillis();
-        if (nextTerm != null) {
-            // Keep going until a term that is not deleted is found.
-            while (parentStore.deletedTerm(nextTerm)) {
-                nextTerm = fetchNextTerm();
-                if (nextTerm == null) {
-                    deletedTermCheckTime += (System.currentTimeMillis() - start);
-                    close();
-                    return false;
-                }
+        do {
+            nextTerm = fetchNextTerm();
+            if (nextTerm == null) {
+                close();
+                return false;
             }
-        } else {
-            // No more pages, we are done.
-            deletedTermCheckTime += (System.currentTimeMillis() - start);
-            close();
-            return false;
-        }
-        deletedTermCheckTime += (System.currentTimeMillis() - start);
+        } while (parentStore.rejectCacheTerm(nextTerm));
 
         return true;
     }
@@ -246,7 +225,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         // no need to reallocate.
         volatileBuffer.clear();
 
-        int pageIndex = pageAccessOrder.get(currentPage);
+        int pageIndex = pageAccessOrder.get(currentPage).intValue();
         String volatilePagePath = parentStore.getVolatilePagePath(pageIndex);
 
         writeVolatilePage(volatilePagePath);
@@ -261,20 +240,22 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         flushCache();
 
+        // All the terms have been iterated over and the volitile buffer has been flushed,
+        // the term cache is now invalid.
+        termCache.clear();
+
         parentStore.cacheIterationComplete();
-
-        log.trace("Streaming Cache Iterator Non-Tombstoned Term Search Time: {}", deletedTermCheckTime);
     }
-
-    /**
-     * Write a cache page to disk.
-     * Unlike readPage, the child is responsible for undoing any shuffling via shuffleMap.
-     */
-    protected abstract void writeVolatilePage(String volatilePagePath);
 
     /**
      * Read a page and fill the termCache using freed terms from the termPool.
      * The child is responsible for all IO, but shuffling will be handled by the parent.
      */
     protected abstract void readPage(String termPagePath, String volatilePagePath);
+
+    /**
+     * Write a cache page to disk.
+     * Unlike readPage, the child is responsible for undoing any shuffling via shuffleMap.
+     */
+    protected abstract void writeVolatilePage(String volatilePagePath);
 }

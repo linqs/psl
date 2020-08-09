@@ -42,7 +42,11 @@ public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> 
     }
 
     @Override
-    protected boolean supportsRule(Rule rule) {
+    protected boolean supportsRule(Rule rule, boolean warnRules) {
+        if (!super.supportsRule(rule, warnRules)) {
+            return false;
+        }
+
         // Don't allow explicit priors.
         if (rule instanceof WeightedLogicalRule) {
             Set<Atom> atomSet = ((WeightedLogicalRule)rule).getFormula().getAtoms(new HashSet<Atom>());

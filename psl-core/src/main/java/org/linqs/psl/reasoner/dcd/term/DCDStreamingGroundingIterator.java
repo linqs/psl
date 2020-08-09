@@ -20,7 +20,6 @@ package org.linqs.psl.reasoner.dcd.term;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
 import org.linqs.psl.util.RuntimeStats;
@@ -37,7 +36,7 @@ import java.util.List;
  */
 public class DCDStreamingGroundingIterator extends StreamingGroundingIterator<DCDObjectiveTerm> {
     public DCDStreamingGroundingIterator(
-            DCDStreamingTermStore parentStore, List<? extends Rule> rules,
+            DCDStreamingTermStore parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, GroundAtom> termGenerator,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,

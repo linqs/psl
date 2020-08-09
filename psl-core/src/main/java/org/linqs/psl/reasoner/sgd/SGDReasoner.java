@@ -80,8 +80,8 @@ public class SGDReasoner extends Reasoner {
                 movement += term.minimize(iteration, termStore);
             }
 
-            if (termStore.getNumVariables() != 0) {
-                movement /= termStore.getNumVariables();
+            if (termStore.getNumRandomVariables() != 0) {
+                movement /= termStore.getNumRandomVariables();
             }
 
             long end = System.currentTimeMillis();
@@ -105,7 +105,7 @@ public class SGDReasoner extends Reasoner {
 
         log.info("Optimization completed in {} iterations. Objective: {}, Total Optimization Time: {}",
                 iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termStore.size());
 
         termStore.syncAtoms();
 

@@ -58,12 +58,12 @@ public class PersistedAtomManager extends AtomManager {
 
     private int persistedAtomCount;
 
-    public PersistedAtomManager(Database db) {
-        this(db, false);
+    public PersistedAtomManager(Database database) {
+        this(database, false);
     }
 
-    public PersistedAtomManager(Database db, boolean prebuiltCache) {
-        this(db, prebuiltCache, InitialValue.ATOM);
+    public PersistedAtomManager(Database database, boolean prebuiltCache) {
+        this(database, prebuiltCache, InitialValue.ATOM);
     }
 
     /**
@@ -71,8 +71,8 @@ public class PersistedAtomManager extends AtomManager {
      * @param prebuiltCache the database already has a populated atom cache, no need to build it again.
      * @param initialValueOnIllegalAccess the initial value to give an atom accessed illegally.
      */
-    public PersistedAtomManager(Database db, boolean prebuiltCache, InitialValue initialValueOnIllegalAccess) {
-        super(db);
+    public PersistedAtomManager(Database database, boolean prebuiltCache, InitialValue initialValueOnIllegalAccess) {
+        super(database);
 
         throwOnIllegalAccess = Options.PAM_THROW_ACCESS_EXCEPTION.getBoolean();
         warnOnIllegalAccess = !throwOnIllegalAccess;
@@ -80,7 +80,7 @@ public class PersistedAtomManager extends AtomManager {
         this.initialValueOnIllegalAccess = initialValueOnIllegalAccess;
 
         if (prebuiltCache) {
-            persistedAtomCount = db.getCachedRVACount();
+            persistedAtomCount = database.getCachedRVACount();
         } else {
             buildPersistedAtomCache();
         }
@@ -90,25 +90,25 @@ public class PersistedAtomManager extends AtomManager {
         persistedAtomCount = 0;
 
         // Iterate through all of the registered predicates in this database
-        for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
+        for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
             // Ignore any closed predicates, they will not return RandomVariableAtoms
-            if (db.isClosed(predicate)) {
+            if (database.isClosed(predicate)) {
                 // Make the database cache all the atoms from the closed predicates,
                 // but don't do anything with them now.
-                db.getAllGroundAtoms(predicate);
+                database.getAllGroundAtoms(predicate);
 
                 continue;
             }
 
             // First pull all the random variable atoms and mark them as persisted.
-            for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
+            for (RandomVariableAtom atom : database.getAllGroundRandomVariableAtoms(predicate)) {
                 atom.setPersisted(true);
                 persistedAtomCount++;
             }
 
             // Now pull all the observed atoms so they will get cached.
             // This will throw if any observed atoms were previously seen as RVAs.
-            db.getAllGroundObservedAtoms(predicate);
+            database.getAllGroundObservedAtoms(predicate);
         }
     }
 
@@ -116,7 +116,7 @@ public class PersistedAtomManager extends AtomManager {
     // then they will be responsible for synchronization.
     @Override
     public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-        GroundAtom atom = db.getAtom(predicate, arguments);
+        GroundAtom atom = database.getAtom(predicate, arguments);
         if (!(atom instanceof RandomVariableAtom)) {
             return atom;
         }
@@ -142,7 +142,7 @@ public class PersistedAtomManager extends AtomManager {
      * Commit all the atoms in this manager's persisted cache.
      */
     public void commitPersistedAtoms() {
-        db.commitCachedAtoms(true);
+        database.commitCachedAtoms(true);
     }
 
     public int getPersistedCount() {
@@ -150,7 +150,7 @@ public class PersistedAtomManager extends AtomManager {
     }
 
     public Iterable<RandomVariableAtom> getPersistedRVAtoms() {
-        return IteratorUtils.filter(db.getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+        return IteratorUtils.filter(database.getAllCachedRandomVariableAtoms(), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
             @Override
             public boolean keep(RandomVariableAtom atom) {
                 return atom.getPersisted();

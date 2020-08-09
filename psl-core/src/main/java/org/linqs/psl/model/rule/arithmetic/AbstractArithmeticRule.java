@@ -342,6 +342,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         for (int atomIndex = 0; atomIndex < resources.groundAtoms.length; atomIndex++) {
             GroundAtom atom = resources.queryAtoms.get(atomIndex).ground(
                     atomManager, queryRow, variableMap, resources.argumentBuffer[atomIndex]);
+            if (atom == null) {
+                return;
+            }
 
             resources.groundAtoms[atomIndex] = atom;
 
@@ -541,6 +544,10 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             }
 
             GroundAtom groundAtom = atom.ground(atomManager, queryRow, variableMap);
+            if (groundAtom == null) {
+                return false;
+            }
+
             return groundAtom.getValue() > 0.0f;
         } else if (filter instanceof Negation) {
             return !evalFilter(

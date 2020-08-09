@@ -28,13 +28,13 @@ import org.linqs.psl.model.term.Constant;
  * to underlying components.
  */
 public class SimpleAtomManager extends AtomManager {
-    public SimpleAtomManager(Database db) {
-        super(db);
+    public SimpleAtomManager(Database database) {
+        super(database);
     }
 
     @Override
     public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-        return db.getAtom(predicate, arguments);
+        return database.getAtom(predicate, arguments);
     }
 
     @Override

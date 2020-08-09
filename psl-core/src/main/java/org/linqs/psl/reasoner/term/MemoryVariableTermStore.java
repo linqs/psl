@@ -99,6 +99,16 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
+    public int getNumRandomVariables() {
+        return getNumVariables();
+    }
+
+    @Override
+    public int getNumObservedVariables() {
+        return 0;
+    }
+
+    @Override
     public boolean isLoaded() {
         return true;
     }
