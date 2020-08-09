@@ -70,6 +70,7 @@ public class SGDOnlineInferenceTest {
     public void cleanup() {
         if (onlineInferenceThread != null) {
             try {
+                // TODO(Charles): If test fails this will hang.
                 onlineInferenceThread.join();
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
@@ -128,8 +129,7 @@ public class SGDOnlineInferenceTest {
         return inference.getAtomManager().getAtom(predicate, arguments);
     }
 
-    private float getAtomValue(String predicateName, String[] argumentStrings) {
-        float atomValue = 0.0f;
+    private double getAtomValue(String predicateName, String[] argumentStrings) {
         String queryResult = null;
 
         String commands = "QUERY\t" + predicateName + "\t" + StringUtils.join("\t", argumentStrings) + "\n" +
@@ -142,7 +142,7 @@ public class SGDOnlineInferenceTest {
                 "(" + StringUtils.join(",", argumentStrings) + ")" + " does not exist.\n")) {
             return -1.0f;
         } else {
-            return Float.parseFloat(queryResult.split("\n")[0].split("=")[1]);
+            return Double.parseDouble(queryResult.split("\n")[0].split("=")[1]);
         }
     }
 
@@ -157,7 +157,8 @@ public class SGDOnlineInferenceTest {
 
         clientSession(commands);
 
-        assertEquals(0.0, getAtomValue("Nice", new String[]{"Alice"}), 0.01);
+        double atomValue = getAtomValue("Nice", new String[]{"Alice"});
+        assertEquals(0.0, atomValue, 0.01);
 
         clientSession("STOP\nEXIT");
     }
@@ -192,7 +193,7 @@ public class SGDOnlineInferenceTest {
 
         clientSession("STOP\nEXIT");
     }
-//
+
 //    @Test
 //    public void testPageRewriting() {
 //        Options.STREAMING_TS_PAGE_SIZE.set(2);

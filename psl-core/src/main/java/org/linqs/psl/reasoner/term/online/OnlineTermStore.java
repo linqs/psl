@@ -155,6 +155,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         GroundAtom groundAtom = atomManager.getAtom(predicate, arguments);
 
         variableValues[getVariableIndex(groundAtom)] = newValue;
+        groundAtom.setValue(newValue);
     }
 
     // TEST(eriq): New version of initialIterationComplete(). This call is very important (numPages).
