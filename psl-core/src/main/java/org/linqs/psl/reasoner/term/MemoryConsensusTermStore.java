@@ -86,7 +86,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public int getNumConsensusVariables() {
-        return store.getNumVariables();
+        return store.getNumRandomVariables();
     }
 
     public List<V> getLocalVariables(int consensusId) {

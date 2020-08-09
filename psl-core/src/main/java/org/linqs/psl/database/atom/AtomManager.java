@@ -42,7 +42,7 @@ import org.linqs.psl.model.term.Constant;
  * Atoms.
  */
 public abstract class AtomManager {
-    protected final Database db;
+    protected final Database database;
 
     /**
      * If the specific AtomManager supports access exceptions,
@@ -50,8 +50,8 @@ public abstract class AtomManager {
      */
     protected boolean enableAccessExceptions;
 
-    public AtomManager(Database db) {
-        this.db = db;
+    public AtomManager(Database database) {
+        this.database = database;
         this.enableAccessExceptions = true;
     }
 
@@ -60,6 +60,7 @@ public abstract class AtomManager {
      *
      * This method must call {@link Database#getAtom(Predicate, Constant...)}
      * to actually retrieve the GroundAtom.
+     * Atom managers reserve the right to reject any atom by returning null here.
      *
      * @param predicate the Predicate of the Atom
      * @param arguments the GroundTerms of the Atom
@@ -75,7 +76,7 @@ public abstract class AtomManager {
      * @return the query results exactly as returned by the Database
      */
     public ResultList executeQuery(DatabaseQuery query) {
-        return db.executeQuery(query);
+        return database.executeQuery(query);
     }
 
     /**
@@ -83,7 +84,7 @@ public abstract class AtomManager {
      * encapsulated Database.
      */
     public QueryResultIterable executeGroundingQuery(Formula formula) {
-        return db.executeGroundingQuery(formula);
+        return database.executeGroundingQuery(formula);
     }
 
     /**
@@ -94,11 +95,11 @@ public abstract class AtomManager {
      * @return TRUE if predicate is closed in the Database
      */
     public boolean isClosed(StandardPredicate predicate) {
-        return db.isClosed(predicate);
+        return database.isClosed(predicate);
     }
 
     public Database getDatabase() {
-        return db;
+        return database;
     }
 
     /**
@@ -115,14 +116,14 @@ public abstract class AtomManager {
      * Get the number of RandomVariableAtoms cached by the database.
      */
     public int getCachedRVACount() {
-        return db.getCachedRVACount();
+        return database.getCachedRVACount();
     }
 
     /**
      * Get the number of ObservedAtoms cached by the database.
      */
     public int getCachedObsCount() {
-        return db.getCachedObsCount();
+        return database.getCachedObsCount();
     }
 
     /**

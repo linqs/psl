@@ -20,10 +20,23 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.model.atom.GroundAtom;
 
 /**
- * An interface for term stores that can handle some atom operations.
+ * An interface for term stores that can handle some atom-level operations.
  */
 public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
+    /**
+     * Get the total number of variables tracked by this term store.
+     */
     int getNumVariables();
+
+    /**
+     * Get the total number of random variables tracked by this term store.
+     */
+    int getNumRandomVariables();
+
+    /**
+     * Get the total number of observed variables tracked by this term store.
+     */
+    int getNumObservedVariables();
 
     public Iterable<V> getVariables();
 

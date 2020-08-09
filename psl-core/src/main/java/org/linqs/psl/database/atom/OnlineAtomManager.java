@@ -32,54 +32,52 @@ import java.util.Set;
 
 /**
  * A persisted atom manager that will add new atoms in an online setting.
- * If activateAtoms() is called, then all online atoms above the activation threshold
- * (Options.LAM_ACTIVATION_THRESHOLD) will be instantiated as real atoms.
  */
 public class OnlineAtomManager extends PersistedAtomManager {
-    private static final float DEFAULT_UNOBSERVED_VALUE = 1.0f;
+    // Atoms that have been seen, but not yet involved in grounding.
+    private Set<GroundAtom> newObservedAtoms;
+    private Set<GroundAtom> newRandomVariableAtoms;
 
-    //Ground atoms that have been seen, but not instantiated.
-    private Set<GroundAtom> obsAtomBuffer;
-    private Set<GroundAtom> rvAtomBuffer;
+    /**
+     * The partition new observed atoms will be added to.
+     */
+    private int onlineReadPartition;
 
-    // The partition we will add new observed atoms to.
-    protected int onlineReadPartition;
+    public OnlineAtomManager(Database database) {
+        super(database);
 
-    public OnlineAtomManager(Database db) {
-        super(db);
-
-        if (!(db instanceof RDBMSDatabase)) {
+        if (!(database instanceof RDBMSDatabase)) {
             throw new IllegalArgumentException("OnlineAtomManagers require RDBMSDatabase.");
         }
 
-        obsAtomBuffer = new HashSet<GroundAtom>();
-        rvAtomBuffer = new HashSet<GroundAtom>();
+        newObservedAtoms = new HashSet<GroundAtom>();
+        newRandomVariableAtoms = new HashSet<GroundAtom>();
 
-        if (Options.ONLINE_READ_PARTITION.getString() == null) {
-            onlineReadPartition = db.getReadPartitions().get(0).getID();
-        } else {
-            onlineReadPartition = Options.ONLINE_READ_PARTITION.getInt();
+        onlineReadPartition = Options.ONLINE_READ_PARTITION.getInt();
+        if (onlineReadPartition < 0) {
+            onlineReadPartition = database.getReadPartitions().get(0).getID();
         }
     }
 
-    //TODO(connor) Check to see if atom exists in the database, throw error if it does
-    public synchronized ObservedAtom addObservedAtom(Predicate predicate, Float value, Constant... arguments) {
-        AtomCache cache = db.getCache();
-        ObservedAtom atom = cache.instantiateObservedAtom(predicate, arguments, value);
-
-        obsAtomBuffer.add(atom);
-
+    public ObservedAtom addObservedAtom(StandardPredicate predicate, float value, Constant... arguments) {
+        ObservedAtom atom = database.getCache().instantiateObservedAtom(predicate, arguments, value);
+        newObservedAtoms.add(atom);
         return atom;
     }
 
-    public synchronized RandomVariableAtom addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
-        AtomCache cache = db.getCache();
-        RandomVariableAtom atom = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
+    public RandomVariableAtom addRandomVariableAtom(StandardPredicate predicate, Constant... arguments) {
+        RandomVariableAtom atom = database.getCache().instantiateRandomVariableAtom(predicate, arguments, 1.0f);
+        newRandomVariableAtoms.add(atom);
         addToPersistedCache(atom);
-
-        rvAtomBuffer.add(atom);
-
         return atom;
+    }
+
+    public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
+        return database.hasAtom(predicate, arguments);
+    }
+
+    public boolean deleteAtom(GroundAtom atom) {
+        return database.deleteAtom(atom);
     }
 
     @Override
@@ -92,18 +90,24 @@ public class OnlineAtomManager extends PersistedAtomManager {
     }
 
     public synchronized Boolean hasNewAtoms() {
-        return (rvAtomBuffer.size() > 0) || (obsAtomBuffer.size() > 0);
+        return (newRandomVariableAtoms.size() > 0) || (newObservedAtoms.size() > 0);
     }
 
-    public synchronized Set<GroundAtom> flushNewObservedAtoms() {
-        Set<GroundAtom> obsAtomCache = new HashSet<GroundAtom>(obsAtomBuffer);
-        obsAtomBuffer.clear();
-        return obsAtomCache;
+    /**
+     * Return the existing new observed atoms and no longer consider them new.
+     */
+    public Set<GroundAtom> flushNewObservedAtoms() {
+        Set<GroundAtom> atoms = new HashSet<GroundAtom>(newObservedAtoms);
+        newObservedAtoms.clear();
+        return atoms;
     }
 
-    public synchronized Set<GroundAtom> flushNewRandomVariableAtoms() {
-        Set<GroundAtom> rvAtomCache = new HashSet<GroundAtom>(rvAtomBuffer);
-        rvAtomBuffer.clear();
-        return rvAtomCache;
+    /**
+     * Return the existing new random variable atoms and no longer consider them new.
+     */
+    public Set<GroundAtom> flushNewRandomVariableAtoms() {
+        Set<GroundAtom> atoms = new HashSet<GroundAtom>(newRandomVariableAtoms);
+        newRandomVariableAtoms.clear();
+        return atoms;
     }
 }

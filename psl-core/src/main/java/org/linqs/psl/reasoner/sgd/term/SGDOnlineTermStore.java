@@ -20,24 +20,18 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
-import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
+import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 
 import java.util.List;
 
-/**
- * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
- * Note that the iterators given by this class are meant to be exhausted (at least the first time).
- * Remember that this class will internally iterate over an unknown number of groundings.
- * So interrupting the iteration can cause the term count to be incorrect.
- */
-public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
-    public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager, SGDTermGenerator termGenerator) {
+public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
+    public SGDOnlineTermStore(List<Rule> rules, AtomManager atomManager, SGDTermGenerator termGenerator) {
         super(rules, atomManager, termGenerator);
     }
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
-        return new SGDStreamingGroundingIterator(
+        return new SGDOnlineGroundingIterator(
                 this, rules, atomManager, termGenerator,
                 termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }
@@ -54,5 +48,16 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
         return new SGDStreamingCacheIterator(
                 this, true, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
+    }
+
+    @Override
+    public boolean rejectCacheTerm(SGDObjectiveTerm term) {
+        for (int variableIndex : term.getVariableIndices()) {
+            if (deletedAtoms[variableIndex]) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

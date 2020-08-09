@@ -19,21 +19,15 @@ package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.OnlineTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
@@ -53,30 +47,32 @@ import java.util.Map;
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
  * Variables are kept in memory, but terms are kept on disk.
  */
-public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, GroundAtom>, OnlineTermStore<T, GroundAtom> {
+public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
-    protected List<WeightedRule> rules;
+    protected List<Rule> rules;
     protected AtomManager atomManager;
 
-    // Mapping from observed and random variable atoms to indices into the instance arrays.
+    // Keep track of variable indexes.
     protected Map<GroundAtom, Integer> variables;
+    // Since children we may delete variables, we need a variable specifically for the next index.
+    // (Otherwise, we could just use the size of the map as the next index.)
+    protected int nextVariableIndex;
 
-    // Matching arrays for variables and observations values and atoms.
-    private float[] variableValues;
-    // TODO (connor): Change variableAtoms to boolean array.
-    private GroundAtom[] variableAtoms;
-    private boolean[] deletedAtoms;
-    private int variableIndex;
-    private int numRandomVariables;
+    // Matching arrays for variables values and atoms.
+    protected float[] variableValues;
+    protected GroundAtom[] variableAtoms;
+
+    protected int numRandomVariableAtoms;
+    protected int numObservedAtoms;
 
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
 
     protected boolean initialRound;
-    protected Iterator<T> activeIterator;
+    protected StreamingIterator<T> activeIterator;
     protected long seenTermCount;
     protected int numPages;
 
@@ -123,51 +119,19 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      */
     protected int[] shuffleMap;
 
-    protected boolean online;
-
     public StreamingTermStore(List<Rule> rules, AtomManager atomManager,
             HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
-        online = Options.ONLINE.getBoolean();
         pageSize = Options.STREAMING_TS_PAGE_SIZE.getInt();
         pageDir = Options.STREAMING_TS_PAGE_LOCATION.getString();
         shufflePage = Options.STREAMING_TS_SHUFFLE_PAGE.getBoolean();
         randomizePageAccess = Options.STREAMING_TS_RANDOMIZE_PAGE_ACCESS.getBoolean();
         warnRules = Options.STREAMING_TS_WARN_RULES.getBoolean();
 
-        this.rules = new ArrayList<WeightedRule>();
+        this.rules = new ArrayList<Rule>();
         for (Rule rule : rules) {
-            if (!rule.isWeighted()) {
-                if (warnRules) {
-                    log.warn("Streaming term stores do not support hard constraints: " + rule);
-                }
-                continue;
+            if (supportsRule(rule, warnRules)) {
+                this.rules.add(rule);
             }
-
-            // HACK(eriq): This is not actually true,
-            //  but I am putting it in place for efficiency reasons.
-            if (((WeightedRule)rule).getWeight() < 0.0) {
-                if (warnRules) {
-                    log.warn("Streaming term stores do not support negative weights: " + rule);
-                }
-                continue;
-            }
-
-            if (!rule.supportsIndividualGrounding()) {
-                if (warnRules) {
-                    log.warn("Streaming term stores do not support rules that cannot individually ground (arithmetic rules with summations): " + rule);
-                }
-                continue;
-            }
-
-            if (!supportsRule(rule)) {
-                if (warnRules) {
-                    log.warn("Rule not supported: " + rule);
-                }
-
-                continue;
-            }
-
-            this.rules.add((WeightedRule)rule);
         }
 
         if (rules.size() == 0) {
@@ -177,18 +141,17 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
 
-        int atomCapacity = online ? atomManager.getCachedRVACount() + atomManager.getCachedObsCount() :
-                atomManager.getCachedRVACount();
-        ensureVariableCapacity(atomCapacity);
+        ensureVariableCapacity(estimateVariableCapacity());
+        numRandomVariableAtoms = 0;
+        numObservedAtoms = 0;
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
 
         initialRound = true;
         activeIterator = null;
+        seenTermCount = 0l;
         numPages = 0;
-        seenTermCount = 0;
-        variableIndex = 0;
 
         termBuffer = null;
         volatileBuffer = null;
@@ -205,32 +168,32 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         (new File(pageDir)).mkdirs();
     }
 
-    @Override
+    /**
+     * Does this term store have all terms loaded from the database.
+     * If true, users can specifically call noWriteIterator() for faster iteration.
+     */
     public boolean isLoaded() {
-        return !(initialRound || (online && ((OnlineAtomManager)atomManager).hasNewAtoms()));
-    }
-
-    public boolean isInitialRound() {
-        return initialRound;
-    }
-
-    public boolean isCachedAtom(GroundAtom atom) {
-        return variables.containsKey(atom);
+        return !initialRound;
     }
 
     @Override
     public int getNumVariables() {
-        return numRandomVariables;
+        return variables.size();
+    }
+
+    @Override
+    public int getNumRandomVariables() {
+        return numRandomVariableAtoms;
+    }
+
+    @Override
+    public int getNumObservedVariables() {
+        return numObservedAtoms;
     }
 
     @Override
     public Iterable<GroundAtom> getVariables() {
         return variables.keySet();
-    }
-
-    @Override
-    public GroundAtom[] getVariableAtoms() {
-        return variableAtoms;
     }
 
     @Override
@@ -245,44 +208,62 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public int getVariableIndex(GroundAtom variable) {
-        return variables.get(variable);
+        Integer index = variables.get(variable);
+        if (index == null) {
+            return -1;
+        }
+
+        return index.intValue();
     }
 
-    public boolean[] getDeletedAtoms() {
-        return deletedAtoms;
+    // TEST(eriq): I don't think this is necessary.
+    @Override
+    public GroundAtom[] getVariableAtoms() {
+        return variableAtoms;
     }
 
     @Override
     public void syncAtoms() {
-        for (int i = 0; i < variableIndex; i++) {
-            variableAtoms[i].setValue(variableValues[i]);
+        for (int i = 0; i < variables.size(); i++) {
+            if (variableAtoms[i] instanceof RandomVariableAtom) {
+                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            }
         }
     }
 
     @Override
     public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
-        if (isCachedAtom(atom)) {
+        if (variables.containsKey(atom)) {
             return atom;
         }
 
         // Got a new variable.
-        if (variableIndex >= variableAtoms.length) {
-            ensureVariableCapacity(variableAtoms.length * 2 + 1);
+
+        if (variables.size() >= variableAtoms.length) {
+            ensureVariableCapacity(variables.size() * 2);
         }
 
-        variables.put(atom, variableIndex);
-        variableValues[variableIndex] = atom.getValue();
-        variableAtoms[variableIndex] = atom;
-        variableIndex++;
+        variables.put(atom, nextVariableIndex);
+        variableValues[nextVariableIndex] = atom.getValue();
+        variableAtoms[nextVariableIndex] = atom;
+        nextVariableIndex++;
 
         if (atom instanceof RandomVariableAtom) {
-            numRandomVariables++;
+            numRandomVariableAtoms++;
+        } else {
+            numObservedAtoms++;
         }
 
         return atom;
     }
 
-    @Override
+    /**
+     * Estimate how many total variables this term store will need to track.
+     */
+    protected int estimateVariableCapacity() {
+        return atomManager.getCachedRVACount();
+    }
+
     public void ensureVariableCapacity(int capacity) {
         if (capacity < 0) {
             throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
@@ -292,14 +273,14 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             // If there are no variables, then (re-)allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
             variables = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
+            nextVariableIndex = 0;
 
             variableValues = new float[capacity];
             variableAtoms = new GroundAtom[capacity];
-            deletedAtoms = new boolean[capacity];
-        } else if (variableAtoms.length < capacity) {
+        } else if (variables.size() < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
-            if (capacity < variableAtoms.length * 2) {
-                capacity = variableAtoms.length * 2;
+            if (capacity < variables.size() * 2) {
+                capacity = variables.size() * 2;
             }
 
             // Reallocate and copy over variables.
@@ -309,12 +290,9 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
             variableValues = Arrays.copyOf(variableValues, capacity);
             variableAtoms = Arrays.copyOf(variableAtoms, capacity);
-            deletedAtoms = Arrays.copyOf(deletedAtoms, capacity);
         }
     }
 
-    // TODO(Charles): seenTermCount is not updated for deleted terms at this point so seenTermCount includes
-    // the number of deleted terms
     @Override
     public long size() {
         return seenTermCount;
@@ -333,58 +311,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     @Override
     public void ensureCapacity(long capacity) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean deletedTerm(T term) { return false; }
-
-    @Override
-    public void addAtom(Predicate predicate, Constant[] arguments, float newValue, boolean readPartition) {
-        GroundAtom atom;
-
-        if (atomManager.getDatabase().hasCachedAtom(new QueryAtom(predicate, arguments))) {
-            deleteAtom(predicate, arguments);
-        }
-
-        if (readPartition) {
-            atom = ((OnlineAtomManager)atomManager).addObservedAtom(predicate, newValue, arguments);
-        } else {
-            atom = ((OnlineAtomManager)atomManager).addRandomVariableAtom((StandardPredicate) predicate, arguments);
-        }
-
-        createLocalVariable(atom);
-    }
-
-    @Override
-    public void deleteAtom(Predicate predicate, Constant[] arguments) {
-        GroundAtom atom = atomManager.getAtom(predicate, arguments);
-
-        // TODO (Charles): If the atom being deleted has yet to be activated, for example
-        //  if optimization has not been called since there was an add then a delete of the same atom,
-        //  then the atom will have never of been added to variables, thus it will not be removed.
-        // TODO (Charles): If the atom being deleted has yet to be "created" by the createLocalVariable method,
-        //  then it will not exist in the variables map, and hence will not be deleted.
-        if (variables.containsKey(atom)) {
-            deletedAtoms[getVariableIndex(atom)] = true;
-            if (atom instanceof RandomVariableAtom) {
-                numRandomVariables--;
-            }
-            variables.remove(atom);
-        }
-
-        if (atomManager.getDatabase().hasCachedAtom(new QueryAtom(predicate, arguments))) {
-            atomManager.getDatabase().deleteAtom(atom);
-        }
-    }
-
-    @Override
-    public synchronized void updateAtom(Predicate predicate, Constant[] arguments, float newValue) {
-        // add the atom and newValue to the updates map for cache iterator
-        GroundAtom atom = atomManager.getAtom(predicate, arguments);
-        if (variables.containsKey(atom)) {
-            variableValues[getVariableIndex(atom)] = newValue;
-            variableAtoms[getVariableIndex(atom)].setValue(newValue);
-        }
     }
 
     public String getTermPagePath(int index) {
@@ -406,11 +332,12 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     /**
-     * A callback for the grounding iterator.
+     * A callback for the initial round iterator.
      * The ByterBuffers are here because of possible reallocation.
      */
     public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
         seenTermCount += termCount;
+
         this.numPages = numPages;
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
@@ -445,16 +372,17 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return activeIterator;
     }
 
-    @Override
-    public Iterator<T> iterator() {
+    /**
+     * Provide the iterator that will be used in iterator(), along with any additional setup.
+     * This method is used instead of just iterator() for type safety in child classes.
+     */
+    protected StreamingIterator<T> streamingIterator() {
         if (activeIterator != null) {
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
         }
 
         if (initialRound) {
             activeIterator = getGroundingIterator();
-        } else if (online && ((OnlineAtomManager)atomManager).hasNewAtoms()) {
-            activeIterator = IteratorUtils.join(getCacheIterator(), getGroundingIterator());
         } else {
             activeIterator = getCacheIterator();
         }
@@ -463,16 +391,27 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
+    public Iterator<T> iterator() {
+        return streamingIterator();
+    }
+
+    @Override
     public void clear() {
         initialRound = true;
+        seenTermCount = 0l;
         numPages = 0;
 
+        numRandomVariableAtoms = 0;
+        numObservedAtoms = 0;
+
         if (activeIterator != null) {
+            activeIterator.close();
             activeIterator = null;
         }
 
         if (variables != null) {
             variables.clear();
+            nextVariableIndex = 0;
         }
 
         if (termCache != null) {
@@ -488,7 +427,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void reset() {
-        for (int i = 0; i < variableIndex; i++) {
+        for (int i = 0; i < variables.size(); i++) {
             variableValues[i] = variableAtoms[i].getValue();
         }
     }
@@ -534,12 +473,51 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     /**
      * Check if this term store supports this rule.
+     * If the rule is not supported and |warnRules| is true, then a warning should be logged.
      * @return true if the rule is supported.
      */
-    protected abstract boolean supportsRule(Rule rule);
+    protected boolean supportsRule(Rule rule, boolean warnRules) {
+        if (!rule.isWeighted()) {
+            if (warnRules) {
+                log.warn("Streaming term stores do not support hard constraints: " + rule);
+            }
+
+            return false;
+        }
+
+        // HACK(eriq): This is not actually true, but I am putting it in place for efficiency reasons.
+        if (((WeightedRule)rule).getWeight() < 0.0) {
+            if (warnRules) {
+                log.warn("Streaming term stores do not support negative weights: " + rule);
+            }
+
+            return false;
+        }
+
+        if (!rule.supportsIndividualGrounding()) {
+            if (warnRules) {
+                log.warn("Streaming term stores do not support rules that cannot individually ground (arithmetic rules with summations): " + rule);
+            }
+
+            return false;
+        }
+
+        return true;
+    }
 
     /**
-     * Get an iterator that will perform grounding queries and write the initial pages to disk.
+     * Return true if the given term read from the cache is invalid.
+     * Under normal streaming circumstances this cannot happen,
+     * but children may encounter different situations (like online inference where atoms can be deleted).
+     */
+    public boolean rejectCacheTerm(T term) {
+        return false;
+    }
+
+    /**
+     * Get an iterator that will perform grounding queries and write pages to disk.
+     * By default, this is only called for the initial round of iteration,
+     * but children may override call this in different situations (like online inference).
      */
     protected abstract StreamingIterator<T> getGroundingIterator();
 
@@ -552,5 +530,4 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      * Get an iterator that will not write to disk.
      */
     protected abstract StreamingIterator<T> getNoWriteIterator();
-
 }
