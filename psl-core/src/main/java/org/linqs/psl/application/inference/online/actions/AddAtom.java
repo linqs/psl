@@ -21,6 +21,10 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 /**
  * Add a new atom to the model.
  * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
@@ -32,6 +36,7 @@ public class AddAtom extends OnlineAction {
     private float value;
 
     public AddAtom(String[] parts) {
+        this.outputStream = null;
         parse(parts);
     }
 
@@ -51,7 +56,21 @@ public class AddAtom extends OnlineAction {
         return arguments;
     }
 
-    @Override
+    private void writeObject(java.io.ObjectOutputStream outputStream) throws IOException {
+        outputStream.writeUTF(predicate.getName());
+        outputStream.writeUTF(partition);
+        outputStream.writeObject(arguments);
+        outputStream.writeFloat(value);
+    }
+
+    private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
+        predicate = StandardPredicate.get(inputStream.readUTF());
+        partition = inputStream.readUTF();
+        arguments = (Constant[])inputStream.readObject();
+        value = inputStream.readFloat();
+    }
+
+        @Override
     public String toString() {
         return String.format(
                 "ADD\t%s\t%s\t%s\t%f",

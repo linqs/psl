@@ -271,7 +271,7 @@ public abstract class InferenceTest {
     }
 
     /**
-     * Run inference multiple time for different initial values,
+     * Run inference multiple times for different initial values,
      * and expect them all to get the same answer.
      */
     @Test

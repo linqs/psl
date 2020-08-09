@@ -21,13 +21,15 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
-import java.io.Serializable;
+import java.io.*;
 
 /**
  * Base class for online actions.
  * All actions should be able to freely convert to and from strings.
  */
 public abstract class OnlineAction implements Serializable {
+    OutputStreamWriter outputStream;
+
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
@@ -39,10 +41,14 @@ public abstract class OnlineAction implements Serializable {
             return new AddAtom(parts);
         } else if (parts[0].equalsIgnoreCase("stop")) {
             return new Stop();
+        } else if (parts[0].equalsIgnoreCase("exit")) {
+            return new Exit();
         } else if (parts[0].equalsIgnoreCase("delete")) {
             return new DeleteAtom(parts);
         } else if (parts[0].equalsIgnoreCase("update")) {
             return new UpdateObservation(parts);
+        } else if (parts[0].equalsIgnoreCase("query")) {
+            return new QueryAtom(parts);
         } else if (parts[0].equalsIgnoreCase("write")) {
             return new WriteInferredPredicates(parts);
         } else {
@@ -76,6 +82,14 @@ public abstract class OnlineAction implements Serializable {
         }
 
         return new AtomInfo(predicate, arguments, value);
+    }
+
+    public void setOutputWriter(OutputStreamWriter outputStream) {
+        this.outputStream = outputStream;
+    }
+
+    public OutputStreamWriter getOutputWriter() {
+        return outputStream;
     }
 
     protected static class AtomInfo {

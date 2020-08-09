@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
-public class Stop extends OnlineAction {
-    public Stop() {
+public class Exit extends OnlineAction {
+    public Exit() {
         this.outputStream = null;
     }
 }

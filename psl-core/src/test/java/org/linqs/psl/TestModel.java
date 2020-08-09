@@ -80,7 +80,7 @@ public class TestModel {
      *
      * Data:
      *     - There are 5 people.
-     *     - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
+     *     - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugene is 0.0).
      *     - All Friendships are in the target partition.
      *     - All Friendships have a binary truth value in the truth partition.
      *

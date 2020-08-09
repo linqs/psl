@@ -21,6 +21,9 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
 /**
  * Update an existing observation from the model.
  * String format: UPDATE <predicate> <args> ... [value]
@@ -31,6 +34,7 @@ public class UpdateObservation extends OnlineAction {
     private float value;
 
     public UpdateObservation(String[] parts) {
+        this.outputStream = null;
         parse(parts);
     }
 
@@ -44,6 +48,18 @@ public class UpdateObservation extends OnlineAction {
 
     public Constant[] getArguments() {
         return arguments;
+    }
+
+    private void writeObject(java.io.ObjectOutputStream outputStream) throws IOException {
+        outputStream.writeUTF(predicate.getName());
+        outputStream.writeObject(arguments);
+        outputStream.writeFloat(value);
+    }
+
+    private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
+        predicate = StandardPredicate.get(inputStream.readUTF());
+        arguments = (Constant[])inputStream.readObject();
+        value = inputStream.readFloat();
     }
 
     @Override

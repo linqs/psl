@@ -25,15 +25,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 
 /**
- * Delete an atom from the existing model.
- * String format: DELETE <READ/WRITE> <predicate> <args> ...
+ * Update an existing observation from the model.
+ * String format: Query <predicate> <args> ... [value]
  */
-public class DeleteAtom extends OnlineAction {
+public class QueryAtom extends OnlineAction {
     private StandardPredicate predicate;
-    private String partition;
     private Constant[] arguments;
 
-    public DeleteAtom(String[] parts) {
+    public QueryAtom(String[] parts) {
         this.outputStream = null;
         parse(parts);
     }
@@ -42,51 +41,36 @@ public class DeleteAtom extends OnlineAction {
         return predicate;
     }
 
-    public String getPartitionName() {
-        return partition;
-    }
-
     public Constant[] getArguments() {
         return arguments;
     }
 
     private void writeObject(java.io.ObjectOutputStream outputStream) throws IOException {
         outputStream.writeUTF(predicate.getName());
-        outputStream.writeUTF(partition);
         outputStream.writeObject(arguments);
     }
 
     private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
         predicate = StandardPredicate.get(inputStream.readUTF());
-        partition = inputStream.readUTF();
         arguments = (Constant[])inputStream.readObject();
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DELETE\t%s\t%s\t%s",
-                partition, predicate.getName(), StringUtils.join("\t", arguments));
+                "Query\t%s\t%s",
+                predicate.getName(), StringUtils.join("\t", arguments));
     }
 
     private void parse(String[] parts) {
-        assert(parts[0].equalsIgnoreCase("delete"));
+        assert(parts[0].equalsIgnoreCase("query"));
 
-        if (parts.length < 4) {
+        if (parts.length < 2) {
             throw new IllegalArgumentException("Not enough arguments.");
         }
 
-        partition = parts[1].toUpperCase();
-        if (!(partition.equals("READ") || partition.equals("WRITE"))) {
-            throw new IllegalArgumentException("Expecting 'READ' or 'WRITE' for partition, got '" + parts[1] + "'.");
-        }
-
-        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 2);
+        AtomInfo atomInfo = parseAtom(parts, 1);
         predicate = atomInfo.predicate;
         arguments = atomInfo.arguments;
-
-        if (parts.length == (3 + predicate.getArity() + 1)) {
-            throw new IllegalArgumentException("Values cannot be supplied to DELETE actions.");
-        }
     }
 }

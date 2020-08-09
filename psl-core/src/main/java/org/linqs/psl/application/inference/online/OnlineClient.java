@@ -19,18 +19,20 @@ package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.actions.OnlineActionException;
+import org.linqs.psl.application.inference.online.actions.QueryAtom;
 import org.linqs.psl.config.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 
 /**
  * A client that takes input on stdin and passes it to the online host specified in configuration.
  */
 public class OnlineClient {
+    private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
+
     public static final String EXIT_STRING = "exit";
 
     // Static only.
@@ -43,33 +45,43 @@ public class OnlineClient {
     public static void run(String hostname, int port) {
         try (
                 Socket server = new Socket(hostname, port);
-                ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+                ObjectOutputStream outputStream = new ObjectOutputStream(server.getOutputStream());
+                BufferedReader inputReader = new BufferedReader(new InputStreamReader(server.getInputStream()));
                 BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
+            boolean exit = false;
             String userInput = null;
 
-            while (true) {
+            while (!exit) {
                 try {
+                    // Read next command.
                     userInput = stdin.readLine();
                     if (userInput == null) {
                         break;
                     }
 
+                    // Parse command.
                     userInput = userInput.trim();
                     if (userInput.equals("")) {
                         continue;
-                    } else if (userInput.equalsIgnoreCase(EXIT_STRING)) {
-                        break;
                     }
+                    exit = (userInput.equalsIgnoreCase(EXIT_STRING));
+                    OnlineAction onlineAction = OnlineAction.parse(userInput);
+                    outputStream.writeObject(onlineAction);
 
-                    out.writeObject(OnlineAction.parse(userInput));
+                    // Wait for query response and print to System.out before issuing next command.
+                    if (onlineAction.getClass() == QueryAtom.class) {
+                        System.out.println(inputReader.readLine());
+                    }
                 } catch (OnlineActionException ex) {
-                    System.err.println(String.format("Error parsing command: [%s].", userInput));
-                    System.err.println(ex);
-                    ex.printStackTrace(System.err);
+                    log.error(String.format("Error parsing command: [%s].", userInput));
+                    log.error(ex.getMessage());
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
             }
+
+            // Log server acknowledgement of exit
+            log.info(inputReader.readLine());
         } catch (IOException ex) {
             throw new RuntimeException(
                     String.format("Error establishing connection to the online server (%s:%d).", hostname, port),

@@ -22,18 +22,23 @@ import org.linqs.psl.application.inference.online.actions.AddAtom;
 import org.linqs.psl.application.inference.online.actions.DeleteAtom;
 import org.linqs.psl.application.inference.online.actions.Stop;
 import org.linqs.psl.application.inference.online.actions.UpdateObservation;
+import org.linqs.psl.application.inference.online.actions.QueryAtom;
 import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.OnlineTermStore;
 
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.List;
 
 public abstract class OnlineInference extends InferenceApplication {
@@ -86,11 +91,6 @@ public abstract class OnlineInference extends InferenceApplication {
         server.start();
     }
 
-    // TODO(Charles): This can be removed once testing with sockets is added.
-    public void addOnlineActionForTesting(OnlineAction action) {
-        server.addOnlineActionForTesting(action);
-    }
-
     protected void executeAction(OnlineAction action) {
         if (action.getClass() == AddAtom.class) {
             doAddAtom((AddAtom)action);
@@ -100,6 +100,8 @@ public abstract class OnlineInference extends InferenceApplication {
             doStop((Stop)action);
         } else if (action.getClass() == UpdateObservation.class) {
             doUpdateObservation((UpdateObservation)action);
+        } else if (action.getClass() == QueryAtom.class) {
+            doQueryAtom((QueryAtom)action);
         } else if (action.getClass() == WriteInferredPredicates.class) {
             doWriteInferredPredicates((WriteInferredPredicates)action);
         } else {
@@ -135,6 +137,32 @@ public abstract class OnlineInference extends InferenceApplication {
         } else {
             log.info("Writing inferred predicates to output stream.");
             database.outputRandomVariableAtoms();
+        }
+    }
+
+    protected void doQueryAtom(QueryAtom action) {
+        String queryString = null;
+
+        log.trace("Optimization Start");
+        objective = reasoner.optimize(termStore);
+        log.trace("Optimization Start");
+
+        // Write atom value to client.
+        OutputStreamWriter outputWriter = action.getOutputWriter();
+        GroundAtom atom = atomManager.getDatabase().getAtom(action.getPredicate(), false, action.getArguments());
+
+        if (atom == null) {
+            queryString = "Atom: " + action.getPredicate() +
+                    "(" + StringUtils.join(",", action.getArguments()) + ")" + " does not exist.\n";
+        } else {
+            queryString = atom.toStringWithValue() + "\n";
+        }
+
+        try {
+            outputWriter.write(queryString);
+            outputWriter.flush();
+        } catch (IOException e) {
+            log.error("Exception writing queried atom {}", atom.toString());
         }
     }
 

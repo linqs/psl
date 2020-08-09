@@ -19,7 +19,6 @@ package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.online.OnlineClient;
-import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -27,42 +26,26 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
+import org.linqs.psl.util.StringUtils;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
     private Database inferDB;
+    private OnlineInferenceThread onlineInferenceThread;
 
     public SGDOnlineInferenceTest() {
         modelInfo = null;
         inferDB = null;
-    }
-
-    private void initModel() {
-        if (inferDB != null) {
-            inferDB.close();
-            inferDB = null;
-        }
-
-        if (modelInfo != null) {
-            modelInfo.dataStore.close();
-            modelInfo = null;
-        }
-
-        modelInfo = TestModel.getModel(true);
     }
 
     @Before
@@ -71,7 +54,7 @@ public class SGDOnlineInferenceTest {
 
         Options.ONLINE.set(true);
 
-        initModel();
+        modelInfo = TestModel.getModel(true);
 
         // Close the predicates we are using.
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
@@ -79,12 +62,22 @@ public class SGDOnlineInferenceTest {
         inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition, toClose, modelInfo.observationPartition);
 
         // Start up inference on separate thread.
-        OnlineInferenceThread onlineInferenceThread = new OnlineInferenceThread();
+        onlineInferenceThread = new OnlineInferenceThread();
         onlineInferenceThread.start();
     }
 
     @After
     public void cleanup() {
+        if (onlineInferenceThread != null) {
+            try {
+                onlineInferenceThread.join();
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+
+            onlineInferenceThread.close();
+        }
+
         if (inferDB != null) {
             inferDB.close();
             inferDB = null;
@@ -94,29 +87,35 @@ public class SGDOnlineInferenceTest {
             modelInfo.dataStore.close();
             modelInfo = null;
         }
-
-        if (inference != null) {
-            inference.close();
-            inference = null;
-        }
     }
 
-    private void queueCommands(String commands) {
-        // Write commands to In.
-        InputStream testInput = new ByteArrayInputStream(commands.getBytes());
-        InputStream stdIn = System.in;
-        System.setIn(testInput);
+    private String clientSession(String commands) {
+        String sessionOutput = null;
 
-        // Start client to issue commands
-        OnlineClient.run();
+        try (
+                InputStream testInput = new ByteArrayInputStream(commands.getBytes());
+                ByteArrayOutputStream testOutput = new ByteArrayOutputStream()) {
 
-        // Close InputStream and reset In.
-        try {
-            testInput.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            // Set client In to string.
+            InputStream stdIn = System.in;
+            System.setIn(testInput);
+
+            // Set client Out to reader.
+            PrintStream stdOut = System.out;
+            System.setOut(new PrintStream(testOutput));
+
+            // Start client to issue commands
+            OnlineClient.run();
+            sessionOutput = testOutput.toString();
+
+            // Close InputStream and reset In.
+            System.setIn(stdIn);
+            System.setOut(stdOut);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
-        System.setIn(stdIn);
+
+        return sessionOutput;
     }
 
     private GroundAtom getAtom(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
@@ -129,11 +128,22 @@ public class SGDOnlineInferenceTest {
         return inference.getAtomManager().getAtom(predicate, arguments);
     }
 
-    private float getAtomValue(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
-        StreamingTermStore termstore = (StreamingTermStore)inference.getTermStore();
-        GroundAtom atom = getAtom(inference, predicateName, argumentStrings);
+    private float getAtomValue(String predicateName, String[] argumentStrings) {
+        float atomValue = 0.0f;
+        String queryResult = null;
 
-        return termstore.getVariableValue(termstore.getVariableIndex(atom));
+        String commands = "QUERY\t" + predicateName + "\t" + StringUtils.join("\t", argumentStrings) + "\n" +
+                "EXIT";
+
+        // Parse atom value
+        queryResult = clientSession(commands);
+
+        if (queryResult.split("\n")[0].equals("Atom: " + predicateName +
+                "(" + StringUtils.join(",", argumentStrings) + ")" + " does not exist.\n")) {
+            return -1.0f;
+        } else {
+            return Float.parseFloat(queryResult.split("\n")[0].split("=")[1]);
+        }
     }
 
     /**
@@ -143,49 +153,45 @@ public class SGDOnlineInferenceTest {
     public void testUpdateObservation() {
         String commands =
                 "UPDATE\tNice\tAlice\t0.0\n" +
-                "WRITE\n" +
-                "STOP\n" +
-                "Exit";
+                "EXIT";
 
-        queueCommands(commands);
+        clientSession(commands);
 
-        float atomValue = getAtomValue(inference, "Nice", new String[]{"Alice"});
-        assertEquals(0.0, atomValue, 0.01);
+        assertEquals(0.0, getAtomValue("Nice", new String[]{"Alice"}), 0.01);
+
+        clientSession("STOP\nEXIT");
     }
 
-//    /**
-//     * Make sure that new atoms are added to model and are considered during inference.
-//     */
-//    @Test
-//    public void testAddAtoms() {
-//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-//                "ADD\tRead\tPerson\tConnor\t1.0",
-//                "ADD\tRead\tNice\tConnor\t0.01",
-//                "ADD\tWrite\tFriends\tConnor\tAlice",
-//                "ADD\tWrite\tFriends\tAlice\tConnor",
-//                "WRITE",
-//                "ADD\tWrite\tFriends\tConnor\tBob\t1.0",
-//                "ADD\tWrite\tFriends\tBob\tConnor\t1.0",
-//                "WRITE",
-//                "STOP"));
-//
-//        queueCommands(inference, commands);
-//        inference.inference();
-//
-//        StreamingTermStore termstore = (StreamingTermStore)inference.getTermStore();
-//
-//        // Check that new atoms were added to the model.
-//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Person", new String[]{"Connor"})));
-//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Nice", new String[]{"Connor"})));
-//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Connor", "Alice"})));
-//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Alice", "Connor"})));
-//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Connor", "Bob"})));
-//        assertTrue(termstore.isCachedAtom(getAtom(inference, "Friends", new String[]{"Bob", "Connor"})));
-//
-//        // Check that atoms were Considered during inference
-//        float atomValue = getAtomValue(inference, "Friends", new String[]{"Connor", "Alice"});
-//        assertEquals(0.0, atomValue, 0.1);
-//    }
+    /**
+     * Make sure that new atoms are added to model and are considered during inference.
+     */
+    @Test
+    public void testAddAtoms() {
+        String commands = "ADD\tRead\tPerson\tConnor\t1.0\n" +
+                "ADD\tRead\tNice\tConnor\t0.01\n" +
+                "ADD\tWrite\tFriends\tConnor\tAlice\n" +
+                "ADD\tWrite\tFriends\tAlice\tConnor\n" +
+                "WRITE\n" +
+                "ADD\tWrite\tFriends\tConnor\tBob\t1.0\n" +
+                "ADD\tWrite\tFriends\tBob\tConnor\t1.0\n" +
+                "WRITE\n" +
+                "EXIT";
+
+        clientSession(commands);
+
+        // Check that new atoms were added to the model.
+        assertNotEquals(-1.0f, getAtomValue( "Person", new String[]{"Connor"}));
+        assertNotEquals(-1.0f, getAtomValue( "Nice", new String[]{"Connor"}));
+        assertNotEquals(-1.0f, getAtomValue( "Friends", new String[]{"Connor", "Alice"}));
+        assertNotEquals(-1.0f, getAtomValue( "Friends", new String[]{"Alice", "Connor"}));
+        assertNotEquals(-1.0f, getAtomValue( "Friends", new String[]{"Connor", "Bob"}));
+        assertNotEquals(-1.0f, getAtomValue( "Friends",  new String[]{"Bob", "Connor"}));
+
+        // Check that atoms were Considered during inference
+        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Connor", "Alice"}), 0.1);
+
+        clientSession("STOP\nEXIT");
+    }
 //
 //    @Test
 //    public void testPageRewriting() {
@@ -202,7 +208,7 @@ public class SGDOnlineInferenceTest {
 //                "WRITE",
 //                "STOP"));
 //
-//        queueCommands(inference, commands);
+//        clientSession(inference, commands);
 //        inference.inference();
 //
 //        float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
@@ -228,7 +234,7 @@ public class SGDOnlineInferenceTest {
 //                "DELETE\tRead\tSim_Users\tEddie\tAlice",
 //                "WRITE",
 //                "STOP"));
-//        queueCommands(inference, commands);
+//        clientSession(inference, commands);
 //
 //        @SuppressWarnings("unchecked")
 //        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
@@ -266,7 +272,7 @@ public class SGDOnlineInferenceTest {
 //                "WRITE",
 //                "STOP"));
 //
-//        queueCommands(inference, commands);
+//        clientSession(inference, commands);
 //        inference.inference();
 //        float atomValue = getAtomValue(inference, "Rating", new String[]{"Alice", "Avatar"});
 //        assertEquals(atomValue, 0.5, 0.01);

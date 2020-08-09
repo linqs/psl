@@ -17,15 +17,18 @@
  */
 package org.linqs.psl.application.inference.online;
 
+import org.linqs.psl.application.inference.online.actions.Exit;
 import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.config.Options;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
@@ -162,12 +165,16 @@ public class OnlineServer implements Closeable {
     private class ClientConnectionThread extends Thread {
         private Socket socket;
         private ObjectInputStream inputStream;
+        private BufferedOutputStream outputStream;
+        private OutputStreamWriter outputWriter;
 
         public ClientConnectionThread(Socket socket) {
             this.socket = socket;
 
             try {
                 inputStream = new ObjectInputStream(socket.getInputStream());
+                outputStream = new BufferedOutputStream(socket.getOutputStream());
+                outputWriter = new OutputStreamWriter(outputStream);
             } catch (IOException ex) {
                 close();
                 throw new RuntimeException(ex);
@@ -178,7 +185,15 @@ public class OnlineServer implements Closeable {
         public void run() {
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    queue.put((OnlineAction)inputStream.readObject());
+                    OnlineAction newAction = (OnlineAction)inputStream.readObject();
+                    newAction.setOutputWriter(outputWriter);
+                    if (newAction.getClass() == Exit.class) {
+                        // Acknowledge client exit.
+                        newAction.getOutputWriter().write("Session Closed\n");
+                        newAction.getOutputWriter().flush();
+                        break;
+                    }
+                    queue.put(newAction);
                 } catch (InterruptedException ex) {
                     break;
                 } catch (IOException ex) {
@@ -202,6 +217,16 @@ public class OnlineServer implements Closeable {
                 }
 
                 inputStream = null;
+            }
+
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException ex) {
+                    // Ignore.
+                }
+
+                outputStream = null;
             }
 
             if (socket != null) {

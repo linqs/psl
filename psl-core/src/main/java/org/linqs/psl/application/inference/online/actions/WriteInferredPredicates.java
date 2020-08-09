@@ -17,6 +17,12 @@
  */
 package org.linqs.psl.application.inference.online.actions;
 
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
 /**
  * Write out targets on the server side.
  * String format: WRITE [path]
@@ -25,6 +31,7 @@ public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
 
     public WriteInferredPredicates(String[] parts) {
+        this.outputStream = null;
         parse(parts);
     }
 
