@@ -149,20 +149,20 @@ public abstract class OnlineInference extends MPEInference {
 
         // Write atom value to client.
         OutputStreamWriter outputWriter = action.getOutputWriter();
-        GroundAtom atom = atomManager.getDatabase().getAtom(action.getPredicate(), false, action.getArguments());
 
-        if (atom == null) {
-            queryString = "Atom: " + action.getPredicate() +
+        if (!((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
+            queryString = "Atom: " + action.getPredicate().getName() +
                     "(" + StringUtils.join(",", action.getArguments()) + ")" + " does not exist.\n";
         } else {
-            queryString = atom.toStringWithValue() + "\n";
+            queryString = atomManager.getAtom(action.getPredicate(), action.getArguments()).toStringWithValue() + "\n";
         }
 
         try {
             outputWriter.write(queryString);
             outputWriter.flush();
         } catch (IOException e) {
-            log.error("Exception writing queried atom {}", atom.toString());
+            log.error("Exception writing queried atom {}", action.getPredicate().getName() +
+                    "(" + StringUtils.join(",", action.getArguments()) + ")");
         }
     }
 
