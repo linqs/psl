@@ -71,7 +71,7 @@ public class Formula2SQL {
     private final Map<Variable, Integer> projectionMap;
 
     private final List<Integer> partitions;
-    private final Atom lazyTarget;
+    private final Atom partialTarget;
 
     private int tableCounter;
 
@@ -98,15 +98,16 @@ public class Formula2SQL {
 
     /**
      * See above description.
-     * @param lazyTarget if this is non-null, then this formula will be treated as a partial grounding query.
-     *  This means that we will treat Partition.LAZY_PARTITION_ID as a valid partition, and this atom
-     *  will be exclusivley drawn from Partition.LAZY_PARTITION_ID.
-     *  We will do a DIRECT REFERENCE comparison against atoms in the formual to check for this specific one.
+
+     * @param partialTarget if this is non-null, then this formula will be treated as a partial grounding query.
+     * This means that we will treat special partitions (with a negative id) as valid partitions,
+     * and this atom will be exclusivley drawn from the special partitions.
+     * We will do a DIRECT REFERENCE comparison against atoms in the formual to check for this specific one.
      */
-    public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, Atom lazyTarget) {
+    public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, Atom partialTarget) {
         this.projection = projection;
         this.database = database;
-        this.lazyTarget = lazyTarget;
+        this.partialTarget = partialTarget;
 
         joins = new HashMap<Variable, String>();
         tableAliases = new HashMap<Atom, String>();
@@ -128,7 +129,7 @@ public class Formula2SQL {
         }
         partitions.add(database.getWritePartition().getID());
 
-        if (lazyTarget != null) {
+        if (partialTarget != null) {
             partitions.add(Partition.SPECIAL_WRITE_ID);
             partitions.add(Partition.SPECIAL_READ_ID);
         }
@@ -272,9 +273,9 @@ public class Formula2SQL {
         }
 
         // Make sure to limit the partitions.
-        // Most atoms get to choose from anywhere, lazy atoms can only come from the lazy partition.
+        // Most atoms get to choose from anywhere, partial atoms can only come from the special partitions.
         CustomSql partitionColumn = new CustomSql(tableAlias + "." + PredicateInfo.PARTITION_COLUMN_NAME);
-        if (atom == lazyTarget) {
+        if (atom == partialTarget) {
             query.addCondition(BinaryCondition.lessThan(partitionColumn, 0));
         } else {
             query.addCondition(new InCondition(partitionColumn, partitions));

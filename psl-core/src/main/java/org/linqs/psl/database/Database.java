@@ -27,8 +27,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Parallel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -84,8 +82,6 @@ import java.util.Set;
  * GroundAtoms with FunctionalPredicates.
  */
 public abstract class Database implements ReadableDatabase, WritableDatabase {
-    private static final Logger log = LoggerFactory.getLogger(Database.class);
-
     private static final String THREAD_QUERY_ATOM_KEY = Database.class.getName() + "::" + QueryAtom.class.getName();
 
     /**
@@ -349,7 +345,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
                 bufferedPredWriter.close();
             } catch (IOException ex) {
-                log.error("Exception writing predicate {}", predicate);
+                throw new RuntimeException("Error writing predicate " + predicate + ".", ex);
             }
         }
     }
