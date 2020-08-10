@@ -52,11 +52,6 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     @Override
-    public boolean isLoaded() {
-        return !(initialRound || ((OnlineAtomManager)atomManager).hasNewAtoms());
-    }
-
-    @Override
     public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
         atom = super.createLocalVariable(atom);
         deletedAtoms[nextVariableIndex - 1] = false;
