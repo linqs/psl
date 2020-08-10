@@ -69,6 +69,8 @@ public class SGDOnlineInferenceTest {
     @After
     public void cleanup() {
         if (onlineInferenceThread != null) {
+            clientSession("STOP\nEXIT");
+
             try {
                 // Will wait 5 seconds for thread to finish otherwise will interrupt.
                 onlineInferenceThread.join(5000);
@@ -132,12 +134,14 @@ public class SGDOnlineInferenceTest {
     private double getAtomValue(String predicateName, String[] argumentStrings) {
         String queryResult = null;
 
-        String commands = "QUERY\t" + predicateName + "\t" + StringUtils.join("\t", argumentStrings) + "\n" +
+        String commands =
+                "QUERY\t" + predicateName + "\t" + StringUtils.join("\t", argumentStrings) + "\n" +
                 "EXIT";
 
-        String nonExistentAtomResponse = "Atom: " + predicateName + "("
-                + StringUtils.join(",", argumentStrings) + ")"
-                + " does not exist.";
+        String nonExistentAtomResponse =
+                "Atom: " + predicateName + "(" +
+                StringUtils.join(",", argumentStrings) + ")" +
+                " does not exist.";
 
         // Parse atom value
         queryResult = clientSession(commands).split("\n")[0].replaceAll("'", "");
@@ -148,6 +152,15 @@ public class SGDOnlineInferenceTest {
         } else {
             return Double.parseDouble(queryResult.split("=")[1]);
         }
+    }
+
+    /**
+     * Test that a non-existent atom results in the expected server response.
+     */
+    @Test
+    public void testBadQuery() {
+        // Check that a non-existent new atom results in the expected server response.
+        assertEquals(-1.0, getAtomValue( "Friends",  new String[]{"Bob", "Bob"}), 0.1);
     }
 
     /**
@@ -163,8 +176,6 @@ public class SGDOnlineInferenceTest {
 
         double atomValue = getAtomValue("Nice", new String[]{"Alice"});
         assertEquals(0.0, atomValue, 0.01);
-
-        clientSession("STOP\nEXIT");
     }
 
     /**
@@ -179,9 +190,6 @@ public class SGDOnlineInferenceTest {
                 "EXIT";
 
         clientSession(commands);
-
-        // Check that a non-existent new atom results in the expected server response.
-        assertEquals(-1.0, getAtomValue( "Friends",  new String[]{"Bob", "Bob"}), 0.1);
 
         // Check that new atoms were added to the model.
         assertNotEquals(-1.0, getAtomValue( "Person", new String[]{"Connor"}));
@@ -208,10 +216,12 @@ public class SGDOnlineInferenceTest {
         assertEquals(0.0, getAtomValue( "Friends", new String[]{"Alice", "Connor"}), 0.1);
         assertEquals(0.0, getAtomValue( "Friends", new String[]{"Connor", "Bob"}), 0.1);
         assertEquals(0.0, getAtomValue( "Friends", new String[]{"Bob", "Connor"}), 0.1);
-
-        clientSession("STOP\nEXIT");
     }
 
+//    /**
+//     * Make sure that new atoms are added to model, are considered during inference, and
+//     * result in the expected groundings.
+//     */
 //    @Test
 //    public void testPageRewriting() {
 //        Options.STREAMING_TS_PAGE_SIZE.set(2);
@@ -233,46 +243,29 @@ public class SGDOnlineInferenceTest {
 //        assertEquals(atomValue, 1.0, 0.01);
 //    }
 
-//    @Test
-//    public void testAtomDeleting() {
-//        // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
-//        //  The atom will not be deleted if there is an add and then a delete of the same atom before the atoms are
-//        //  activated. This behavior is also noted in streaming term store deleteAtom.
-//        /*
-//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-//                "DELETE\tRead\tSim_Users\tAlice\tEddie",
-//                "ADD\tRead\tSim_Users\tAlice\tEddie\t1.0",
-//                "DELETE\tRead\tSim_Users\tAlice\tEddie",
-//                "WRITE",
-//                "STOP"));
-//        */
-//
-//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-//                "DELETE\tRead\tSim_Users\tAlice\tEddie",
-//                "DELETE\tRead\tSim_Users\tEddie\tAlice",
-//                "WRITE",
-//                "STOP"));
-//        clientSession(inference, commands);
-//
-//        @SuppressWarnings("unchecked")
-//        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)inference.getTermStore();
-//        int numTerms = 0;
-//        for (SGDObjectiveTerm term : termStore) {
-//            numTerms++;
-//        }
-//
-//        assertEquals(2.0, numTerms, 0.01);
-//
-//        inference.inference();
-//
-//        numTerms = 0;
-//        for (SGDObjectiveTerm term: termStore) {
-//            numTerms++;
-//        }
-//
-//        assertEquals(1.0, numTerms, 0.01);
-//    }
-//
+    @Test
+    public void testAtomDeleting() {
+        // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
+        //  The atom will not be deleted if there is an add and then a delete of the same atom before the atoms are
+        //  activated. This behavior is also noted in streaming term store deleteAtom.
+//        String commands =
+//                "DELETE\tRead\tNice\tAlice\n" +
+//                "ADD\tRead\tNice\tAlice\t1.0\n" +
+//                "DELETE\tRead\tNice\tAlice\n" +
+//                "EXIT";
+
+        String commands =
+                "DELETE\tRead\tNice\tAlice\n" +
+                "DELETE\tRead\tPerson\tAlice\n" +
+                "Exit";
+
+        clientSession(commands);
+
+        // Check that atoms were deleted from the model.
+        assertEquals(-1.0, getAtomValue( "Person", new String[]{"Alice"}), 0.1);
+        assertEquals(-1.0, getAtomValue( "Nice", new String[]{"Alice"}), 0.1);
+    }
+
 //    @Test
 //    public void testChangeAtomPartition() {
 //        Options.STREAMING_TS_PAGE_SIZE.set(4);
