@@ -47,8 +47,14 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
     }
 
     @Override
-    public ConstraintTerm getConstraintDefinition() {
-        return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
+    public ConstraintTerm getConstraintDefinition(boolean mergeConstants) {
+        // We have already built the function for this ground rule by merging constants.
+        // If we want that one, return it right away.
+        if (mergeConstants) {
+            return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
+        }
+
+        return new ConstraintTerm(getFunction(false), FunctionComparator.LTE, 0.0f);
     }
 
     @Override

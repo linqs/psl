@@ -74,8 +74,8 @@ public class UnweightedGroundArithmeticRule extends AbstractGroundArithmeticRule
     }
 
     @Override
-    public ConstraintTerm getConstraintDefinition() {
-        GeneralFunction sum = new GeneralFunction(false, false, coefficients.length, getObservationCount());
+    public ConstraintTerm getConstraintDefinition(boolean mergeConstants) {
+        GeneralFunction sum = new GeneralFunction(false, false, coefficients.length, mergeConstants);
 
         for (int i = 0; i < coefficients.length; i++) {
             // Skip any grounding only predicates.

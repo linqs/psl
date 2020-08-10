@@ -39,6 +39,12 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     private float c;
 
     public DCDTermGenerator() {
+        this(true);
+    }
+
+    public DCDTermGenerator(boolean mergeConstants) {
+        super(mergeConstants);
+
         c = Options.DCD_C.getFloat();
     }
 

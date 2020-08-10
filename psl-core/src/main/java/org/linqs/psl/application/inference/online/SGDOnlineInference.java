@@ -55,7 +55,7 @@ public class SGDOnlineInference extends OnlineInference {
 
     @Override
     protected TermGenerator createTermGenerator() {
-        return new SGDTermGenerator();
+        return new SGDTermGenerator(false);
     }
 
     @Override
