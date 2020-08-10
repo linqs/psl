@@ -169,8 +169,8 @@ public class PredicateInfo {
      * Create a prepared statement that deletes ground atoms that match all the arguments.
      * Note that we will only delete from the write partition.
      */
-    public PreparedStatement createDeleteStatement(Connection connection, int writePartition) {
-        return prepareSQL(connection, buildDeleteStatement(writePartition));
+    public PreparedStatement createDeleteStatement(Connection connection, List<Integer> partitions) {
+        return prepareSQL(connection, buildDeleteStatement(partitions));
     }
 
     /**
@@ -298,7 +298,7 @@ public class PredicateInfo {
     }
 
     private synchronized String buildCountAllStatement(List<Integer> partitions) {
-        String key = "countAll_" + partitions.toString();
+        String key = "countAll_" + ListUtils.join(",", partitions);
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
         }
@@ -324,7 +324,7 @@ public class PredicateInfo {
     }
 
     private synchronized String buildQueryAllStatement(List<Integer> partitions) {
-        String key = "queryAll_" + partitions.toString();
+        String key = "queryAll_" + ListUtils.join(",", partitions);
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
         }
@@ -356,7 +356,7 @@ public class PredicateInfo {
     }
 
     private synchronized String buildQueryStatement(List<Integer> readPartitions) {
-        String key = "query_" + readPartitions.toString();
+        String key = "query_" + ListUtils.join(",", readPartitions);
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
         }
@@ -407,8 +407,8 @@ public class PredicateInfo {
         return sql;
     }
 
-    private synchronized String buildDeleteStatement(int writePartition) {
-        String key = "delete_" + writePartition;
+    private synchronized String buildDeleteStatement(List<Integer> partitions) {
+        String key = "delete_" + ListUtils.join(",", partitions);
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
         }
@@ -416,8 +416,8 @@ public class PredicateInfo {
         DeleteQuery delete = new DeleteQuery(tableName);
         QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
 
-        // Only delete in the write partition.
-        delete.addCondition(BinaryCondition.greaterThanOrEq(new CustomSql(PARTITION_COLUMN_NAME), 0));
+        // Delete from any partition in this database.
+        delete.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
 
         // Set placeholders for the arguments.
         for (String colName : argCols) {

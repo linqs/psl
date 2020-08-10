@@ -39,7 +39,7 @@ import java.util.Set;
  *
  * All other types of Atoms are returned normally.
  *
- * getVariable() is thread-safe.
+ * getAtom() is thread-safe.
  */
 public class PersistedAtomManager extends AtomManager {
     private static final Logger log = LoggerFactory.getLogger(PersistedAtomManager.class);
@@ -160,10 +160,7 @@ public class PersistedAtomManager extends AtomManager {
 
     protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
         for (RandomVariableAtom atom : atoms) {
-            if (!atom.getPersisted()) {
-                atom.setPersisted(true);
-                persistedAtomCount++;
-            }
+            addToPersistedCache(atom);
         }
     }
 

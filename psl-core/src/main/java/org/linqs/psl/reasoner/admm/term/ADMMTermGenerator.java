@@ -29,7 +29,11 @@ import org.linqs.psl.reasoner.term.TermStore;
  */
 public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm, LocalVariable> {
     public ADMMTermGenerator() {
-        super();
+        this(true);
+    }
+
+    public ADMMTermGenerator(boolean mergeConstants) {
+        super(mergeConstants);
     }
 
     @Override

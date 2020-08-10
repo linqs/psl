@@ -17,10 +17,7 @@
  */
 package org.linqs.psl.reasoner.function;
 
-import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 
 /**
  * A general function that can handle various cases.
@@ -32,7 +29,13 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 public class GeneralFunction implements FunctionTerm {
     private final float[] coefficients;
     private final FunctionTerm[] terms;
-    private int size;
+
+    /**
+     * Whether to merge fixed values (like observed atoms) into the single constant.
+     */
+    private final boolean mergeConstants;
+
+    private short size;
 
     // All constants will get merged into this.
     private float constant;
@@ -45,18 +48,16 @@ public class GeneralFunction implements FunctionTerm {
     private boolean nonNegative;
     private boolean squared;
 
-    private boolean online = Options.ONLINE.getBoolean();
-
-    public GeneralFunction(boolean nonNegative, boolean squared, int rvaCount, int obsCount) {
-        // TODO: (Charles) "Online" Maybe should not be here.
-        int totalCount = online ? rvaCount + obsCount : rvaCount;
-        coefficients = new float[totalCount];
-        terms = new FunctionTerm[totalCount];
+    public GeneralFunction(boolean nonNegative, boolean squared, int maxSize, boolean mergeConstants) {
+        coefficients = new float[maxSize];
+        terms = new FunctionTerm[maxSize];
         size = 0;
         constant = 0.0f;
 
         this.nonNegative = nonNegative;
         this.squared = squared;
+        this.mergeConstants = mergeConstants;
+
         constantTerms = true;
         linearTerms = true;
     }
@@ -103,20 +104,19 @@ public class GeneralFunction implements FunctionTerm {
      */
     public void add(float coefficient, FunctionTerm term) {
         // Merge constants.
-        if (term.isConstant() && !online) {
+        if (mergeConstants && term.isConstant()) {
             constant += (coefficient * term.getValue());
+            return;
         }
 
-        if ((term instanceof RandomVariableAtom) || ((term instanceof ObservedAtom) && online)) {
-            if (size == terms.length) {
-                throw new IllegalStateException(
-                        "More than the max terms added to the function. Max: " + terms.length);
-            }
-
-            terms[size] = term;
-            coefficients[size] = coefficient;
-            size++;
+        if (size == terms.length) {
+            throw new IllegalStateException(
+                    "More than the max terms added to the function. Max: " + terms.length);
         }
+
+        terms[size] = term;
+        coefficients[size] = coefficient;
+        size++;
 
         constantTerms = constantTerms && term.isConstant();
         linearTerms = linearTerms && term.isLinear();

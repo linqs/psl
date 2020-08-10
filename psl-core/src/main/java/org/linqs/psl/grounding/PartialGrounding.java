@@ -17,15 +17,11 @@
  */
 package org.linqs.psl.grounding;
 
-import com.healthmarketscience.sqlbuilder.SelectQuery;
-import com.healthmarketscience.sqlbuilder.SetOperationQuery;
-import com.healthmarketscience.sqlbuilder.UnionQuery;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
@@ -38,32 +34,52 @@ import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+
+import com.healthmarketscience.sqlbuilder.SelectQuery;
+import com.healthmarketscience.sqlbuilder.SetOperationQuery;
+import com.healthmarketscience.sqlbuilder.UnionQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Static utilities for common {@link Model}-grounding tasks.
+ * A common interface for performing partial grounding.
+ * The general process for partial grounding is:
+ * 1) Identify new/updated atoms (referred to as "partial atoms") that all new groundings must contain at least one of.
+ * 2) Ensure these atoms are in the database.
+ * 3) Move these atoms to a "special" partition (see org.linqs.psl.database.Partition).
+ * 4) For each rule, form a union that where each query contains an instance of an atom that is forecd to come from the special partition.
+ * 5) Ground normally with that query.
+ * 6) Swap the partial atoms back to their normal partition.
  */
-public class LazyGrounding {
-    private static final Logger log = LoggerFactory.getLogger(LazyGrounding.class);
+public class PartialGrounding {
+    private static final Logger log = LoggerFactory.getLogger(PartialGrounding.class);
 
     // Static only.
-    private LazyGrounding() {}
+    private PartialGrounding() {}
 
-    public static Set<StandardPredicate> getLazyPredicates(Set<? extends GroundAtom> toActivate) {
-        Set<StandardPredicate> lazyPredicates = new HashSet<StandardPredicate>();
-        for (Atom atom : toActivate) {
+    /**
+     * Get the set of all standard predicates that will be used forming grounding queries.
+     */
+    public static Set<StandardPredicate> getPartialPredicates(Set<? extends GroundAtom> atoms) {
+        Set<StandardPredicate> partialPredicates = new HashSet<StandardPredicate>();
+        for (Atom atom : atoms) {
             if (atom.getPredicate() instanceof StandardPredicate) {
-                lazyPredicates.add((StandardPredicate) atom.getPredicate());
+                partialPredicates.add((StandardPredicate) atom.getPredicate());
             }
         }
-        return lazyPredicates;
+
+        return partialPredicates;
     }
 
-    public static Set<? extends Rule> getLazyRules(List<? extends Rule> rules, Set<? extends Predicate> lazyPredicates) {
-        Set<Rule> lazyRules = new HashSet<Rule>();
+    public static Set<? extends Rule> getPartialRules(List<? extends Rule> rules, Set<? extends Predicate> partialPredicates) {
+        Set<Rule> partialRules = new HashSet<Rule>();
 
         for (Rule rule : rules) {
             if (rule instanceof AbstractLogicalRule) {
@@ -71,16 +87,16 @@ public class LazyGrounding {
                 // query formula for the DNF because negated atoms will not
                 // be considered.
                 for (Atom atom : ((AbstractLogicalRule)rule).getNegatedDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
-                    if (lazyPredicates.contains(atom.getPredicate())) {
-                        lazyRules.add(rule);
+                    if (partialPredicates.contains(atom.getPredicate())) {
+                        partialRules.add(rule);
                         break;
                     }
                 }
             } else if (rule instanceof AbstractArithmeticRule) {
                 // Note that we do not bother checking the filters since those predicates must be closed.
                 for (Predicate predicate : ((AbstractArithmeticRule)rule).getBodyPredicates()) {
-                    if (lazyPredicates.contains(predicate)) {
-                        lazyRules.add(rule);
+                    if (partialPredicates.contains(predicate)) {
+                        partialRules.add(rule);
                         break;
                     }
                 }
@@ -89,16 +105,16 @@ public class LazyGrounding {
             }
         }
 
-        return lazyRules;
+        return partialRules;
     }
 
     /**
      * Complex arithmetic rules (ones with summations) require FULL regrounding.
      * Will drop all the ground rules originating from this rule and reground.
      */
-    public static void lazyComplexGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore,
-                                         AtomManager atomManager) {
-        log.trace(String.format("Complex lazy grounding on rule [%s]", rule));
+    public static void partialComplexGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore,
+            AtomManager atomManager) {
+        log.trace(String.format("Complex partial grounding on rule [%s]", rule));
 
         // Remove all existing ground rules.
         groundRuleStore.removeGroundRules(rule);
@@ -107,20 +123,20 @@ public class LazyGrounding {
         rule.groundAll(atomManager, groundRuleStore);
     }
 
-    public static void lazySimpleGround(Rule rule, Set<StandardPredicate> lazyPredicates,
-                                        GroundRuleStore groundRuleStore, AtomManager atomManager) {
+    public static void partialSimpleGround(Rule rule, Set<StandardPredicate> partialPredicates,
+            GroundRuleStore groundRuleStore, AtomManager atomManager) {
         Database db = atomManager.getDatabase();
         if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
 
         Formula formula = rule.getRewritableGroundingFormula();
-        QueryResultIterable groundingResults = getLazyGroundingResults(formula, lazyPredicates, db);
+        QueryResultIterable groundingResults = getPartialGroundingResults(formula, partialPredicates, db);
         if (groundingResults == null) {
             return;
         }
 
-        log.trace(String.format("Simple lazy grounding on rule: [%s], formula: [%s]", rule, formula));
+        log.trace(String.format("Simple partial grounding on rule: [%s], formula: [%s]", rule, formula));
 
         Iterator<Constant[]> groundingResultsIterator = groundingResults.iterator();
         List<GroundRule> groundRules = new ArrayList<GroundRule>();
@@ -136,45 +152,45 @@ public class LazyGrounding {
         }
     }
 
-    public static QueryResultIterable getLazyGroundingResults(Rule rule, Set<StandardPredicate> lazyPredicates, Database db) {
+    public static QueryResultIterable getPartialGroundingResults(Rule rule, Set<StandardPredicate> partialPredicates, Database db) {
         if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
 
         Formula formula = rule.getRewritableGroundingFormula();
-        return getLazyGroundingResults(formula, lazyPredicates, db);
+        return getPartialGroundingResults(formula, partialPredicates, db);
     }
 
-    private static List<Atom> getLazyTargets(Formula formula, Set<StandardPredicate> lazyPredicates) {
-        List<Atom> lazyTargets = new ArrayList<Atom>();
+    private static List<Atom> getPartialTargetAtoms(Formula formula, Set<StandardPredicate> partialPredicates) {
+        List<Atom> partialTargetAtoms = new ArrayList<Atom>();
 
-        // For every mention of a lazy predicate in this rule, we will need to get the grounding query
-        // with that specific predicate mention being the lazy target.
+        // For every mention of a partial predicate in this rule, we will need to get the grounding query
+        // with that specific predicate mention being the partial target.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            if (!lazyPredicates.contains(atom.getPredicate())) {
+            if (!partialPredicates.contains(atom.getPredicate())) {
                 continue;
             }
 
-            lazyTargets.add(atom);
+            partialTargetAtoms.add(atom);
         }
 
-        return lazyTargets;
+        return partialTargetAtoms;
     }
 
-    private static QueryResultIterable getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates,
-                                                      Database db) {
-        List<Atom> lazyTargets = getLazyTargets(formula, lazyPredicates);
+    private static QueryResultIterable getPartialGroundingResults(Formula formula, Set<StandardPredicate> partialPredicates,
+            Database db) {
+        List<Atom> partialTargetAtoms = getPartialTargetAtoms(formula, partialPredicates);
 
-        if (lazyTargets.size() == 0) {
+        if (partialTargetAtoms.size() == 0) {
             return null;
         } else {
             // Do the grounding query for this rule.
-            return lazyGroundIterable(formula, lazyTargets, db);
+            return partialGroundingIterable(formula, partialTargetAtoms, db);
         }
     }
 
-    private static QueryResultIterable lazyGroundIterable(Formula formula, List<Atom> lazyTargets, Database db) {
-        if (lazyTargets.size() == 0) {
+    private static QueryResultIterable partialGroundingIterable(Formula formula, List<Atom> partialTargetAtoms, Database db) {
+        if (partialTargetAtoms.size() == 0) {
             throw new IllegalArgumentException();
         }
 
@@ -185,8 +201,8 @@ public class LazyGrounding {
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Map<Variable, Integer> projectionMap = null;
 
-        for (Atom lazyTarget : lazyTargets) {
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, lazyTarget);
+        for (Atom partialTargetAtom : partialTargetAtoms) {
+            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, partialTargetAtom);
             queries.add(sqler.getQuery(formula));
 
             if (projectionMap == null) {

@@ -228,7 +228,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                 (new HashSet<Atom>(thisNegLiterals)).equals(new HashSet<Atom>(otherNegLiterals));
     }
 
-    protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms, short rvaCount);
+    /**
+     * Convert atoms into a concrete ground rule.
+     */
+    protected abstract AbstractGroundLogicalRule makeGroundRule(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms,
+            short rvaCount);
 
     private GroundRule groundInternal(Constant[] row, Map<Variable, Integer> variableMap,
             AtomManager atomManager, GroundingResources resources) {
@@ -284,7 +288,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             atomManager.reportAccessException(ex, resources.accessExceptionAtoms.iterator().next());
         }
 
-        return groundFormulaInstance(resources.positiveAtoms, resources.negativeAtoms, rvaCount);
+        return makeGroundRule(resources.positiveAtoms, resources.negativeAtoms, rvaCount);
     }
 
     private short createAtoms(AtomManager atomManager, Map<Variable, Integer> variableMap,

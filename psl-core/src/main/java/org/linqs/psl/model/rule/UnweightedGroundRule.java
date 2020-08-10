@@ -25,7 +25,14 @@ public interface UnweightedGroundRule extends GroundRule {
     @Override
     public UnweightedRule getRule();
 
-    public ConstraintTerm getConstraintDefinition();
+    /**
+     * Get a mathematical/functional definition of this constraint.
+     *
+     * If |mergeConstants| is true, then don't merge together constant terms (like observed atoms).
+     * Merging terms is generally encouraged, but certain inference methods (like online inference)
+     * may need direct access to these terms.
+     */
+    public ConstraintTerm getConstraintDefinition(boolean mergeConstants);
 
     /**
      * Returns the infeasibility of the truth values of this GroundRule's

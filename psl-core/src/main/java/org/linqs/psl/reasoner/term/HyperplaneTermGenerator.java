@@ -43,9 +43,10 @@ import java.util.Set;
 public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalAtom> implements TermGenerator<T, V> {
     private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
+    private boolean mergeConstants;
     private boolean invertNegativeWeight;
 
-    public HyperplaneTermGenerator() {
+    public HyperplaneTermGenerator(boolean mergeConstants) {
         invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
     }
 
@@ -106,7 +107,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      */
     public T createTerm(GroundRule groundRule, TermStore<T, V> termStore) {
         if (groundRule instanceof WeightedGroundRule) {
-            GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
+            GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition(mergeConstants);
             Hyperplane<V> hyperplane = processHyperplane(function, termStore);
             if (hyperplane == null) {
                 return null;
@@ -115,7 +116,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             // Non-negative functions have a hinge.
             return createLossTerm(termStore, function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
         } else if (groundRule instanceof UnweightedGroundRule) {
-            ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
+            ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition(mergeConstants);
             GeneralFunction function = constraint.getFunction();
             Hyperplane<V> hyperplane = processHyperplane(function, termStore);
             if (hyperplane == null) {

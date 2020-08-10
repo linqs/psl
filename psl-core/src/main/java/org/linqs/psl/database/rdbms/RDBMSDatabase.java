@@ -396,7 +396,7 @@ public class RDBMSDatabase extends Database {
     }
 
     private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
-        PreparedStatement statement = predicate.createDeleteStatement(connection, writeID);
+        PreparedStatement statement = predicate.createDeleteStatement(connection, allPartitionIDs);
 
         try {
             for (int i = 0; i < arguments.length; i++) {
