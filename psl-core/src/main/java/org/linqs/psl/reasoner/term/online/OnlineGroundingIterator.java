@@ -20,7 +20,7 @@ package org.linqs.psl.reasoner.term.online;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
-import org.linqs.psl.grounding.LazyGrounding;
+import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -37,6 +37,9 @@ import java.util.HashSet;
 /**
  * Iterate over all the new terms that come up from partial grounding.
  * This iterator will not attempt to fill up partial pages, and will always start on a fresh page.
+ *
+ * Note that not all rules can be grounded in an online fashion, and they will not participate in the online process.
+ * Specifically, arithmetic rules with summations.
  */
 public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends StreamingGroundingIterator<T> {
     // Predicates that are currently being used for grounding.
@@ -61,15 +64,15 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
         Set<GroundAtom> rvAtomCache = ((OnlineAtomManager)atomManager).flushNewRandomVariableAtoms();
 
         onlinePredicates = new HashSet<StandardPredicate>();
-        onlinePredicates.addAll(LazyGrounding.getLazyPredicates(obsAtomCache));
-        onlinePredicates.addAll(LazyGrounding.getLazyPredicates(rvAtomCache));
+        onlinePredicates.addAll(PartialGrounding.getPartialPredicates(obsAtomCache));
+        onlinePredicates.addAll(PartialGrounding.getPartialPredicates(rvAtomCache));
 
         // Move all the new atoms over to special partitions that we can use for partial grounding.
         atomManager.getDatabase().commit(obsAtomCache, Partition.SPECIAL_READ_ID);
         atomManager.getDatabase().commit(rvAtomCache, Partition.SPECIAL_WRITE_ID);
 
-        // Only ground the rules for which there is a lazy target.
-        this.rules = new ArrayList<Rule>(LazyGrounding.getLazyRules(this.rules, onlinePredicates));
+        // Only ground the rules for which there is a partial target.
+        this.rules = new ArrayList<Rule>(PartialGrounding.getPartialRules(this.rules, onlinePredicates));
     }
 
     @Override
@@ -87,7 +90,7 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
             return;
         }
 
-        queryIterable = LazyGrounding.getLazyGroundingResults(rules.get(currentRule), onlinePredicates, atomManager.getDatabase());
+        queryIterable = PartialGrounding.getPartialGroundingResults(rules.get(currentRule), onlinePredicates, atomManager.getDatabase());
         if (queryIterable == null) {
             return;
         }

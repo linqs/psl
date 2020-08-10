@@ -22,7 +22,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.LazyGrounding;
+import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
@@ -163,13 +163,13 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         // Collect the specific predicates that are targets in this lazy batch
         // and the rules associated with those predicates.
-        Set<StandardPredicate> lazyPredicates = LazyGrounding.getLazyPredicates(toActivate);
-        Set<? extends Rule> lazyRules = LazyGrounding.getLazyRules(rules, lazyPredicates);
+        Set<StandardPredicate> lazyPredicates = PartialGrounding.getPartialPredicates(toActivate);
+        Set<? extends Rule> lazyRules = PartialGrounding.getPartialRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
             // We will deal with these rules after we move the lazy atoms to the write partition.
             if (lazyRule.supportsGroundingQueryRewriting()) {
-                LazyGrounding.lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore, this);
+                PartialGrounding.partialSimpleGround(lazyRule, lazyPredicates, groundRuleStore, this);
             }
         }
 
@@ -182,7 +182,7 @@ public class LazyAtomManager extends PersistedAtomManager {
         // after we move the atoms to the write partition.
         for (Rule lazyRule : lazyRules) {
             if (!lazyRule.supportsGroundingQueryRewriting()) {
-                LazyGrounding.lazyComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore, this);
+                PartialGrounding.partialComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore, this);
             }
         }
     }
