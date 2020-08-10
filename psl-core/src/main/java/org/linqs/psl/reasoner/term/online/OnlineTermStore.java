@@ -44,9 +44,6 @@ import java.util.List;
  * Variables are kept in memory, but terms are kept on disk.
  */
 public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingTermStore<T> {
-    // TEST
-    private static final Logger log = LoggerFactory.getLogger(OnlineTermStore.class);
-
     protected boolean[] deletedAtoms;
 
     public OnlineTermStore(List<Rule> rules, AtomManager atomManager,
@@ -57,21 +54,6 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     @Override
     public boolean isLoaded() {
         return !(initialRound || ((OnlineAtomManager)atomManager).hasNewAtoms());
-    }
-
-    // TEST: Check uses.
-    public boolean isInitialRound() {
-        return initialRound;
-    }
-
-    // TEST: Check uses.
-    public boolean isCachedAtom(GroundAtom atom) {
-        return variables.containsKey(atom);
-    }
-
-    // TEST: Check uses.
-    public boolean[] getDeletedAtoms() {
-        return deletedAtoms;
     }
 
     @Override
@@ -157,9 +139,9 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         variableValues[getVariableIndex(groundAtom)] = newValue;
     }
 
-    // TEST(eriq): New version of initialIterationComplete(). This call is very important (numPages).
     public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
         seenTermCount += termCount;
+
         this.numPages = numPages;
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
