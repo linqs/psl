@@ -169,9 +169,16 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     /**
-     * Does this term store have all terms loaded from the database.
-     * If true, users can specifically call noWriteIterator() for faster iteration.
+     * Whether this is the first round of iteration.
+     * During the initial round, not all terms will be loaded into the cache
+     * (they will need to be grounded).
+     * If false, users can specifically call noWriteIterator() for faster iteration.
      */
+    public boolean isInitialRound() {
+        return initialRound;
+    }
+
+    @Override
     public boolean isLoaded() {
         return !initialRound;
     }
