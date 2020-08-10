@@ -246,7 +246,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         // Got a new variable.
 
-        if (variables.size() >= variableAtoms.length) {
+        if (nextVariableIndex >= variableAtoms.length) {
             ensureVariableCapacity(variables.size() * 2);
         }
 
