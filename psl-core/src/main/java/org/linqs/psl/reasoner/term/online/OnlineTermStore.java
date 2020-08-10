@@ -52,6 +52,11 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     @Override
+    public boolean isLoaded() {
+        return !(initialRound || ((OnlineAtomManager)atomManager).hasNewAtoms());
+    }
+
+    @Override
     public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
         atom = super.createLocalVariable(atom);
         deletedAtoms[nextVariableIndex - 1] = false;
@@ -83,7 +88,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     public void addAtom(StandardPredicate predicate, Constant[] arguments, float newValue, boolean readPartition) {
-        if (atomManager.getDatabase().hasCachedAtom(new QueryAtom(predicate, arguments))) {
+        if (((OnlineAtomManager)atomManager).hasAtom(predicate, arguments)) {
             deleteAtom(predicate, arguments);
         }
 
@@ -98,12 +103,12 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     public void deleteAtom(StandardPredicate predicate, Constant[] arguments) {
-        GroundAtom atom = atomManager.getAtom(predicate, arguments);
+        GroundAtom atom = ((OnlineAtomManager)atomManager).deleteAtom(predicate, arguments);
+
         if (atom == null) {
+            // Atom never existed.
             return;
         }
-
-        ((OnlineAtomManager)atomManager).deleteAtom(atom);
 
         int index = getVariableIndex(atom);
         if (index == -1) {

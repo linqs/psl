@@ -70,8 +70,8 @@ public class SGDOnlineInferenceTest {
     public void cleanup() {
         if (onlineInferenceThread != null) {
             try {
-                // TODO(Charles): If test fails this will hang.
-                onlineInferenceThread.join();
+                // Will wait 5 seconds for thread to finish otherwise will interrupt.
+                onlineInferenceThread.join(5000);
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
@@ -135,14 +135,18 @@ public class SGDOnlineInferenceTest {
         String commands = "QUERY\t" + predicateName + "\t" + StringUtils.join("\t", argumentStrings) + "\n" +
                 "EXIT";
 
-        // Parse atom value
-        queryResult = clientSession(commands);
+        String nonExistentAtomResponse = "Atom: " + predicateName + "("
+                + StringUtils.join(",", argumentStrings) + ")"
+                + " does not exist.";
 
-        if (queryResult.split("\n")[0].equals("Atom: " + predicateName +
-                "(" + StringUtils.join(",", argumentStrings) + ")" + " does not exist.\n")) {
-            return -1.0f;
+        // Parse atom value
+        queryResult = clientSession(commands).split("\n")[0].replaceAll("'", "");
+
+
+        if (queryResult.equalsIgnoreCase(nonExistentAtomResponse)) {
+            return -1.0;
         } else {
-            return Double.parseDouble(queryResult.split("\n")[0].split("=")[1]);
+            return Double.parseDouble(queryResult.split("=")[1]);
         }
     }
 
@@ -164,32 +168,46 @@ public class SGDOnlineInferenceTest {
     }
 
     /**
-     * Make sure that new atoms are added to model and are considered during inference.
+     * Make sure that new atoms are added to model, are considered during inference, and
+     * result in the expected groundings.
      */
     @Test
     public void testAddAtoms() {
-        String commands = "ADD\tRead\tPerson\tConnor\t1.0\n" +
+        String commands =
+                "ADD\tRead\tPerson\tConnor\t1.0\n" +
                 "ADD\tRead\tNice\tConnor\t0.01\n" +
-                "ADD\tWrite\tFriends\tConnor\tAlice\n" +
-                "ADD\tWrite\tFriends\tAlice\tConnor\n" +
-                "WRITE\n" +
-                "ADD\tWrite\tFriends\tConnor\tBob\t1.0\n" +
-                "ADD\tWrite\tFriends\tBob\tConnor\t1.0\n" +
-                "WRITE\n" +
                 "EXIT";
 
         clientSession(commands);
 
-        // Check that new atoms were added to the model.
-        assertNotEquals(-1.0f, getAtomValue( "Person", new String[]{"Connor"}));
-        assertNotEquals(-1.0f, getAtomValue( "Nice", new String[]{"Connor"}));
-        assertNotEquals(-1.0f, getAtomValue( "Friends", new String[]{"Connor", "Alice"}));
-        assertNotEquals(-1.0f, getAtomValue( "Friends", new String[]{"Alice", "Connor"}));
-        assertNotEquals(-1.0f, getAtomValue( "Friends", new String[]{"Connor", "Bob"}));
-        assertNotEquals(-1.0f, getAtomValue( "Friends",  new String[]{"Bob", "Connor"}));
+        // Check that a non-existent new atom results in the expected server response.
+        assertEquals(-1.0, getAtomValue( "Friends",  new String[]{"Bob", "Bob"}), 0.1);
 
-        // Check that atoms were Considered during inference
+        // Check that new atoms were added to the model.
+        assertNotEquals(-1.0, getAtomValue( "Person", new String[]{"Connor"}));
+        assertNotEquals(-1.0, getAtomValue( "Nice", new String[]{"Connor"}));
+
+        // Check that new atoms were not yet added to the model.
+        assertEquals(-1.0, getAtomValue( "Friends", new String[]{"Connor", "Alice"}), 0.1);
+        assertEquals(-1.0, getAtomValue( "Friends", new String[]{"Alice", "Connor"}), 0.1);
+        assertEquals(-1.0, getAtomValue( "Friends", new String[]{"Connor", "Bob"}), 0.1);
+        assertEquals(-1.0, getAtomValue( "Friends",  new String[]{"Bob", "Connor"}), 0.1);
+
+        // Add write atoms to model.
+        commands =
+                "ADD\tWrite\tFriends\tAlice\tConnor\n" +
+                "ADD\tWrite\tFriends\tConnor\tAlice\n" +
+                "ADD\tWrite\tFriends\tConnor\tBob\n" +
+                "ADD\tWrite\tFriends\tBob\tConnor\n" +
+                "EXIT";
+
+        clientSession(commands);
+
+        // Check that atoms were considered during inference.
         assertEquals(0.0, getAtomValue( "Friends", new String[]{"Connor", "Alice"}), 0.1);
+        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Alice", "Connor"}), 0.1);
+        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Connor", "Bob"}), 0.1);
+        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Bob", "Connor"}), 0.1);
 
         clientSession("STOP\nEXIT");
     }
@@ -197,8 +215,7 @@ public class SGDOnlineInferenceTest {
 //    @Test
 //    public void testPageRewriting() {
 //        Options.STREAMING_TS_PAGE_SIZE.set(2);
-//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-//                "ADD\tRead\tSim_Users\tConnor\tAlice\t0.0",
+//        String commands = "ADD\tRead\tSim_Users\tConnor\tAlice\t0.0",
 //                "ADD\tRead\tSim_Users\tAlice\tConnor\t0.0",
 //                "ADD\tWrite\tRating\tConnor\tAvatar",
 //                "WRITE",

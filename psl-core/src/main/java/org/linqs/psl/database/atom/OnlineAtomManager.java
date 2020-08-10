@@ -76,13 +76,37 @@ public class OnlineAtomManager extends PersistedAtomManager {
         return database.hasAtom(predicate, arguments);
     }
 
-    public boolean deleteAtom(GroundAtom atom) {
-        return database.deleteAtom(atom);
+    public GroundAtom deleteAtom(StandardPredicate predicate, Constant... arguments) {
+        GroundAtom atom = null;
+
+        if (database.hasAtom(predicate, arguments)) {
+            atom = database.getAtom(predicate, arguments);
+            database.deleteAtom(atom);
+        }
+
+        return atom;
+    }
+
+    @Override
+    public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+        GroundAtom atom = super.getAtom(predicate, arguments);
+
+        // Make sure atom was not deleted due to access exception, if so return null.
+        if (atom instanceof RandomVariableAtom) {
+            if (!database.hasAtom(((RandomVariableAtom)atom).getPredicate(), atom.getArguments())) {
+                atom = null;
+            }
+        }
+
+        return atom;
     }
 
     @Override
     public void reportAccessException(RuntimeException ex, GroundAtom offendingAtom) {
         // OnlineAtomManger does not have access exceptions.
+        if (offendingAtom instanceof RandomVariableAtom) {
+            deleteAtom(((RandomVariableAtom)offendingAtom).getPredicate(), offendingAtom.getArguments());
+        }
     }
 
     public int getOnlineReadPartition() {

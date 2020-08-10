@@ -54,7 +54,7 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, nextPage);
 
         // The initial iteration will not have any online components.
-        if (!parentStore.isLoaded()) {
+        if (parentStore.isInitialRound()) {
             onlinePredicates = null;
             return;
         }
@@ -78,7 +78,7 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
     @Override
     protected void startGroundingQuery() {
         // If the term store has not been initially loaded (initial round), then just do normal grounding.
-        if (!parentStore.isLoaded()) {
+        if (parentStore.isInitialRound()) {
             super.startGroundingQuery();
             return;
         }
@@ -104,7 +104,7 @@ public abstract class OnlineGroundingIterator<T extends ReasonerTerm> extends St
             return;
         }
 
-        if (parentStore.isLoaded()) {
+        if (!parentStore.isInitialRound()) {
             // Move all the new atoms out of the special partition and into the read/write partitions.
             for (StandardPredicate onlinePredicate : onlinePredicates) {
                 atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,
