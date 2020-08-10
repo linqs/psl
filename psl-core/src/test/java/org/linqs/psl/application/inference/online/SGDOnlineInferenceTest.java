@@ -97,19 +97,19 @@ public class SGDOnlineInferenceTest {
                 InputStream testInput = new ByteArrayInputStream(commands.getBytes());
                 ByteArrayOutputStream testOutput = new ByteArrayOutputStream()) {
 
-            // Set client In to string.
+            // Set client in to string.
             InputStream stdIn = System.in;
             System.setIn(testInput);
 
-            // Set client Out to reader.
+            // Set client out to reader.
             PrintStream stdOut = System.out;
             System.setOut(new PrintStream(testOutput));
 
-            // Start client to issue commands
+            // Start client to issue commands.
             OnlineClient.run();
             sessionOutput = testOutput.toString();
 
-            // Close InputStream and reset In.
+            // Close InputStream and reset in.
             System.setIn(stdIn);
             System.setOut(stdOut);
         } catch (IOException ex) {

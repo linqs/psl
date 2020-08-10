@@ -80,7 +80,7 @@ public class OnlineClient {
                 }
             }
 
-            // Log server acknowledgement of exit
+            // Log server acknowledgement of exit.
             log.info(inputReader.readLine());
         } catch (IOException ex) {
             throw new RuntimeException(
