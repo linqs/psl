@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.linqs.psl.application.inference.mpe.MPEInference;
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.actions.AddAtom;
 import org.linqs.psl.application.inference.online.actions.DeleteAtom;
 import org.linqs.psl.application.inference.online.actions.Stop;
@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.List;
 
-public abstract class OnlineInference extends MPEInference {
+public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
     private OnlineServer server;
