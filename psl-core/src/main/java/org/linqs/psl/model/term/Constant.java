@@ -22,7 +22,7 @@ import java.io.Serializable;
 /**
  * An element in the universe over which a PSL program is grounded.
  */
-public abstract class Constant implements Term, Serializable {
+public abstract class Constant implements Serializable, Term {
     public String toString() {
         return "'" + rawToString() + "'";
     }
