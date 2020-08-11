@@ -21,4 +21,9 @@ public class Stop extends OnlineAction {
     public Stop() {
         this.outputStream = null;
     }
+
+    @Override
+    public String toString() {
+        return "STOP";
+    }
 }

@@ -66,7 +66,8 @@ public class UpdateObservation extends OnlineAction {
     public String toString() {
         return String.format(
                 "UPDATE\t%s\t%s\t%f",
-                predicate.getName(), StringUtils.join("\t", arguments), value);
+                predicate.getName(), StringUtils.join("\t", arguments).replace("'", ""),
+                value);
     }
 
     private void parse(String[] parts) {

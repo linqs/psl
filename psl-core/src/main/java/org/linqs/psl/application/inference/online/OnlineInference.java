@@ -29,11 +29,10 @@ import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
-
 import org.linqs.psl.util.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +128,7 @@ public abstract class OnlineInference extends InferenceApplication {
     protected void doWriteInferredPredicates(WriteInferredPredicates action) {
         log.trace("Optimization Start");
         objective = reasoner.optimize(termStore);
-        log.trace("Optimization Start");
+        log.trace("Optimization End");
 
         if (action.getOutputDirectoryPath() != null) {
             log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
@@ -141,28 +140,27 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doQueryAtom(QueryAtom action) {
-        String queryString = null;
-
         log.trace("Optimization Start");
         objective = reasoner.optimize(termStore);
-        log.trace("Optimization Start");
+        log.trace("Optimization End");
 
         // Write atom value to client.
         OutputStreamWriter outputWriter = action.getOutputWriter();
 
+        String response = null;
         if (!((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
-            queryString = "Atom: " + action.getPredicate().getName() +
-                    "(" + StringUtils.join(",", action.getArguments()) + ")" + " does not exist.\n";
+            response = String.format("Atom: %s(%s) does not exist.",
+                    action.getPredicate().getName(),
+                    StringUtils.join(", ", action.getArguments()));
         } else {
-            queryString = atomManager.getAtom(action.getPredicate(), action.getArguments()).toStringWithValue() + "\n";
+            response = atomManager.getAtom(action.getPredicate(), action.getArguments()).toStringWithValue();
         }
 
         try {
-            outputWriter.write(queryString);
+            outputWriter.write(response + "\n");
             outputWriter.flush();
-        } catch (IOException e) {
-            log.error("Exception writing queried atom {}", action.getPredicate().getName() +
-                    "(" + StringUtils.join(",", action.getArguments()) + ")");
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 

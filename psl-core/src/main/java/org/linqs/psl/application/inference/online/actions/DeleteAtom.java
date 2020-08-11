@@ -66,7 +66,8 @@ public class DeleteAtom extends OnlineAction {
     public String toString() {
         return String.format(
                 "DELETE\t%s\t%s\t%s",
-                partition, predicate.getName(), StringUtils.join("\t", arguments));
+                partition, predicate.getName(),
+                StringUtils.join("\t", arguments).replace("'", ""));
     }
 
     private void parse(String[] parts) {

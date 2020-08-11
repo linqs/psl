@@ -74,7 +74,9 @@ public class AddAtom extends OnlineAction {
     public String toString() {
         return String.format(
                 "ADD\t%s\t%s\t%s\t%f",
-                partition, predicate.getName(), StringUtils.join("\t", arguments), value);
+                partition, predicate.getName(),
+                StringUtils.join("\t", arguments).replace("'", ""),
+                value);
     }
 
     private void parse(String[] parts) {

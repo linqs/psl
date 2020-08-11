@@ -59,7 +59,8 @@ public class QueryAtom extends OnlineAction {
     public String toString() {
         return String.format(
                 "Query\t%s\t%s",
-                predicate.getName(), StringUtils.join("\t", arguments));
+                predicate.getName(),
+                StringUtils.join("\t", arguments).replace("'", ""));
     }
 
     private void parse(String[] parts) {
