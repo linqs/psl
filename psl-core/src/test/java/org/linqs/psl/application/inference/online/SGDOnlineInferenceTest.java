@@ -121,16 +121,6 @@ public class SGDOnlineInferenceTest {
         return sessionOutput;
     }
 
-    private GroundAtom getAtom(SGDOnlineInference inference, String predicateName, String[] argumentStrings) {
-        Constant[] arguments = new Constant[argumentStrings.length];
-        for (int i = 0; i < arguments.length; i++) {
-            arguments[i] = new UniqueStringID(argumentStrings[i]);
-        }
-
-        Predicate predicate = Predicate.get(predicateName);
-        return inference.getAtomManager().getAtom(predicate, arguments);
-    }
-
     private double getAtomValue(String predicateName, String[] argumentStrings) {
         String queryResult = null;
 
