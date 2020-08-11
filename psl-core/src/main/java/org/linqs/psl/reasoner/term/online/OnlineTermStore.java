@@ -54,7 +54,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     @Override
     public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
         atom = super.createLocalVariable(atom);
-        deletedAtoms[nextVariableIndex - 1] = false;
+        deletedAtoms[totalVariableCount - 1] = false;
         return atom;
     }
 
@@ -130,7 +130,6 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         }
 
         GroundAtom groundAtom = atomManager.getAtom(predicate, arguments);
-
         variableValues[getVariableIndex(groundAtom)] = newValue;
     }
 

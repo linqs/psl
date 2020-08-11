@@ -57,9 +57,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     // Keep track of variable indexes.
     protected Map<GroundAtom, Integer> variables;
+
+    // The count of all seen variables (dead and alive).
     // Since children we may delete variables, we need a variable specifically for the next index.
     // (Otherwise, we could just use the size of the map as the next index.)
-    protected int nextVariableIndex;
+    protected int totalVariableCount;
 
     // Matching arrays for variables values and atoms.
     protected float[] variableValues;
@@ -185,7 +187,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public int getNumVariables() {
-        return variables.size();
+        return totalVariableCount;
     }
 
     @Override
@@ -231,7 +233,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public void syncAtoms() {
-        for (int i = 0; i < variables.size(); i++) {
+        for (int i = 0; i < totalVariableCount; i++) {
             if (variableAtoms[i] instanceof RandomVariableAtom) {
                 ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
             }
@@ -246,14 +248,14 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         // Got a new variable.
 
-        if (variables.size() >= variableAtoms.length) {
-            ensureVariableCapacity(variables.size() * 2);
+        if (totalVariableCount >= variableAtoms.length) {
+            ensureVariableCapacity(totalVariableCount * 2);
         }
 
-        variables.put(atom, nextVariableIndex);
-        variableValues[nextVariableIndex] = atom.getValue();
-        variableAtoms[nextVariableIndex] = atom;
-        nextVariableIndex++;
+        variables.put(atom, totalVariableCount);
+        variableValues[totalVariableCount] = atom.getValue();
+        variableAtoms[totalVariableCount] = atom;
+        totalVariableCount++;
 
         if (atom instanceof RandomVariableAtom) {
             numRandomVariableAtoms++;
@@ -276,18 +278,18 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
 
-        if (variables == null || variables.size() == 0) {
+        if (variables == null || totalVariableCount == 0) {
             // If there are no variables, then (re-)allocate the variable storage.
             // The default load factor for Java HashSets is 0.75.
             variables = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
-            nextVariableIndex = 0;
+            totalVariableCount = 0;
 
             variableValues = new float[capacity];
             variableAtoms = new GroundAtom[capacity];
-        } else if (variables.size() < capacity) {
+        } else if (totalVariableCount < capacity) {
             // Don't bother with small reallocations, if we are reallocating make a lot of room.
-            if (capacity < variables.size() * 2) {
-                capacity = variables.size() * 2;
+            if (capacity < totalVariableCount * 2) {
+                capacity = totalVariableCount * 2;
             }
 
             // Reallocate and copy over variables.
@@ -418,7 +420,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         if (variables != null) {
             variables.clear();
-            nextVariableIndex = 0;
+            totalVariableCount = 0;
         }
 
         if (termCache != null) {
@@ -432,9 +434,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         SystemUtils.recursiveDelete(pageDir);
     }
 
+    // TODO(eriq): There is a potential null pointer here with deleted atoms.
+    //  The issue becomes subsumed without tombstones (nulling the atom instead).
     @Override
     public void reset() {
-        for (int i = 0; i < variables.size(); i++) {
+        for (int i = 0; i < totalVariableCount; i++) {
             variableValues[i] = variableAtoms[i].getValue();
         }
     }
