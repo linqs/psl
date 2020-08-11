@@ -29,6 +29,8 @@ public interface TermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVa
 
     /**
      * Create a ReasonerTerm from the ground rule.
+     * Note that the term will NOT be added to the term store.
+     * The store is just needed for creating variables.
      */
     public T createTerm(GroundRule groundRule, TermStore<T, V> termStore);
 }

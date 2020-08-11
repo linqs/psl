@@ -346,7 +346,7 @@ public class Launcher {
             evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
         } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
             learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
-        } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT)) {
+        } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
             runOnlineClient();
         } else {
             throw new IllegalArgumentException("No valid operation provided.");
@@ -405,7 +405,7 @@ public class Launcher {
 
         if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) &&
                 !givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN) &&
-                !givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT)) {
+                !givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
             System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
             helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;

@@ -226,7 +226,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         return index.intValue();
     }
 
-    // TEST(eriq): I don't think this is necessary.
     @Override
     public GroundAtom[] getVariableAtoms() {
         return variableAtoms;

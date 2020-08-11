@@ -20,7 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.model.atom.GroundAtom;
 
 /**
- * An interface for term stores that can handle some atom-level operations.
+ * An interface for term stores that can handle some variable-level operations.
  */
 public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends TermStore<T, V> {
     /**
@@ -53,9 +53,9 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public float[] getVariableValues();
 
     /**
-     * Get the index that matches up to getAtomValues().
+     * Get the index that matches up to getVariableValues().
      */
-    public int getVariableIndex(V atom);
+    public int getVariableIndex(V variable);
 
     /**
      * Get the variable for the given index.

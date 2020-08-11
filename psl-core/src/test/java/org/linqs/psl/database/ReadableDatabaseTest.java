@@ -64,7 +64,7 @@ public class ReadableDatabaseTest {
                 assertNotNull(db.getAtom(predicate, arg));
             }
         };
-        testHelper(function, "getVariable");
+        testHelper(function, "getAtom");
     }
 
     @Test

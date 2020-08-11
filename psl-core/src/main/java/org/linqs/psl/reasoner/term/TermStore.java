@@ -75,7 +75,7 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
     public void ensureCapacity(long capacity);
 
     /**
-     * Ensure that the underlying structures can have the required atom capacity.
+     * Ensure that the underlying structures can have the required variable capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      * Not all term stores will even manage variables.
@@ -83,7 +83,7 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
     public void ensureVariableCapacity(int capacity);
 
     /**
-     * Create a atom local to a specific reasoner term.
+     * Create a variable local to a specific reasoner term.
      */
     public V createLocalVariable(GroundAtom atom);
 
