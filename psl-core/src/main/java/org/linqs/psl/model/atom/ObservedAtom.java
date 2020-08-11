@@ -21,16 +21,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
 /**
- * A {@link GroundAtom} with a fixed truth value.
- * <p>
- * Circumstances that cause a GroundAtom to be instantiated as an ObservedAtom include
- * <ul>
- *  <li>its Predicate is a StandardPredicate and closed in the Atom's Database</li>
- *  <li>its Predicate is a FunctionalPredicate</li>
- *  <li>its Predicate is a StandardPredicate and it is persisted in one of its
- *  Database's read-only Partitions</li>
- * </ul>
- * Other reasons may exist for specific Database implementations.
+ * A GroundAtom with a fixed truth value.
  */
 public class ObservedAtom extends GroundAtom {
     /**
@@ -38,6 +29,16 @@ public class ObservedAtom extends GroundAtom {
      */
     public ObservedAtom(Predicate predicate, Constant[] args, float value) {
         super(predicate, args, value);
+    }
+
+    /**
+     * DO NOT USE without explicit permission from the head developer.
+     * This method just sets the truth value of this atom.
+     * However, observed atoms are supposed to have a fixed value.
+     * This can only be used is VERY specific situations and with a considerable amount of preparation.
+     */
+    public void _assumeValue(float newValue) {
+         value = newValue;
     }
 
     @Override

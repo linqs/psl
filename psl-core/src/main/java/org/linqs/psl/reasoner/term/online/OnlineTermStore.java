@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term.online;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -142,6 +143,21 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         initialRound = false;
         activeIterator = null;
+    }
+
+    /**
+     * In addition to the typical behavior of setting values for random variable atoms,
+     * also set the values for observed atoms.
+     */
+    @Override
+    public void syncAtoms() {
+        for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] instanceof RandomVariableAtom) {
+                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            } else {
+                ((ObservedAtom)variableAtoms[i])._assumeValue(variableValues[i]);
+            }
+        }
     }
 
     @Override
