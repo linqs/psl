@@ -83,8 +83,8 @@ public class DCDReasoner extends Reasoner {
 
             // If we are truncating every step, then the variables are already in valid state.
             if (!truncateEveryStep) {
-                for (GroundAtom variable : termStore.getVariables()) {
-                    variable.setValue(Math.max(Math.min(variable.getValue(), 1.0f), 0.0f));
+                for (int i = 0; i < termStore.getNumVariables(); i++) {
+                    variableValues[i] = Math.max(0.0f, Math.min(1.0f, variableValues[i]));
                 }
             }
 

@@ -66,7 +66,7 @@ public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> 
     @Override
     protected StreamingIterator<DCDObjectiveTerm> getGroundingIterator() {
         return new DCDStreamingGroundingIterator(
-                this, this.rules, atomManager, termGenerator,
+                this, rules, atomManager, termGenerator,
                 termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }
 

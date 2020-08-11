@@ -24,7 +24,7 @@ import java.lang.reflect.Array;
 /**
  * Information representing a raw hyperplane.
  */
-public class Hyperplane<E extends ReasonerLocalAtom> {
+public class Hyperplane<E extends ReasonerLocalVariable> {
     private E[] variables;
     private float[] coefficients;
     private int size;
@@ -32,17 +32,17 @@ public class Hyperplane<E extends ReasonerLocalAtom> {
 
     @SuppressWarnings("unchecked")
     public Hyperplane(Class<E> localVariableClass, int maxSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxSize), new float[maxSize], constant, 0);
+        this((E[])Array.newInstance(localVariableClass, maxSize) , new float[maxSize], constant, 0);
     }
 
-    public Hyperplane(E[] variables, float[] coefficients, float constant, int index) {
+    public Hyperplane(E[] variables, float[] coefficients, float constant, int size) {
         this.variables = variables;
         this.coefficients = coefficients;
         this.constant = constant;
-        this.size = index;
+        this.size = size;
     }
 
-    public void addVariable(E variable, float coefficient) {
+    public void addTerm(E variable, float coefficient) {
         variables[size] = variable;
         coefficients[size] = coefficient;
         size++;
@@ -52,27 +52,25 @@ public class Hyperplane<E extends ReasonerLocalAtom> {
         return size;
     }
 
-
     public E getVariable(int index) {
-        if (index >= this.size) {
-            throw new IndexOutOfBoundsException("Tried to access atom at index " + index + ", but only " + this.size + " exist.");
+        if (index >= size) {
+            throw new IndexOutOfBoundsException("Tried to access variable at index " + index + ", but only " + size + " exist.");
         }
 
         return variables[index];
     }
 
-
     public float getCoefficient(int index) {
-        if (index >= this.size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + this.size + " exist.");
+        if (index >= size) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
         }
 
         return coefficients[index];
     }
 
     public void appendCoefficient(int index, float value) {
-        if (index >= this.size) {
-            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + this.size + " exist.");
+        if (index >= size) {
+            throw new IndexOutOfBoundsException("Tried to access coefficient at index " + index + ", but only " + size + " exist.");
         }
 
         coefficients[index] += value;

@@ -39,7 +39,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
     private short size;
     private float[] coefficients;
-    private int[] indices;
+    private int[] variableIndexes;
 
     public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore,
             boolean squared,
@@ -51,10 +51,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
-        indices = new int[size];
-        GroundAtom[] atoms = hyperplane.getVariables();
+        variableIndexes = new int[size];
+        GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
-            indices[i] = termStore.getVariableIndex(atoms[i]);
+            variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
 
         adjustedWeight = weight * c;
@@ -76,7 +76,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[indices[i]];
+            value += coefficients[i] * variableValues[variableIndexes[i]];
         }
 
         value -= constant;
@@ -91,13 +91,13 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(boolean truncateEveryStep, float[] values, GroundAtom[] variableAtoms) {
+    public void minimize(boolean truncateEveryStep, float[] variableValues, GroundAtom[] variableAtoms) {
         if (squared) {
-            float gradient = computeGradient(values);
+            float gradient = computeGradient(variableValues);
             gradient += lagrange / (2.0f * adjustedWeight);
-            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, values, variableAtoms);
+            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, variableValues, variableAtoms);
         } else {
-            minimize(truncateEveryStep, computeGradient(values), adjustedWeight, values, variableAtoms);
+            minimize(truncateEveryStep, computeGradient(variableValues), adjustedWeight, variableValues, variableAtoms);
         }
     }
 
@@ -106,17 +106,17 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    private float computeGradient(float[] values) {
+    private float computeGradient(float[] variableValues) {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            val += values[indices[i]] * coefficients[i];
+            val += variableValues[variableIndexes[i]] * coefficients[i];
         }
 
         return constant - val;
     }
 
-    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] values, GroundAtom[] variableAtoms) {
+    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] variableValues, GroundAtom[] variableAtoms) {
         float pg = gradient;
         if (MathUtils.isZero(lagrange)) {
             pg = Math.min(0.0f, gradient);
@@ -133,15 +133,15 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float pa = lagrange;
         lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
-            if (variableAtoms[indices[i]] instanceof ObservedAtom) {
+            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
                 continue;
             }
 
-            float val = values[indices[i]] - ((lagrange - pa) * coefficients[i]);
+            float val = variableValues[variableIndexes[i]] - ((lagrange - pa) * coefficients[i]);
             if (truncateEveryStep) {
                 val = Math.max(0.0f, Math.min(1.0f, val));
             }
-            values[indices[i]] = val;
+            variableValues[variableIndexes[i]] = val;
         }
     }
 
@@ -174,7 +174,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(indices[i]);
+            fixedBuffer.putInt(variableIndexes[i]);
         }
     }
 
@@ -191,12 +191,12 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         // Make sure that there is enough room for all these variableIndexes.
         if (coefficients.length < size) {
             coefficients = new float[size];
-            indices = new int[size];
+            variableIndexes = new int[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            indices[i] = fixedBuffer.getInt();
+            variableIndexes[i] = fixedBuffer.getInt();
         }
 
         lagrange = volatileBuffer.getFloat();
@@ -215,7 +215,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
             builder.append("(");
             builder.append(coefficients[i]);
             builder.append(" * ");
-            builder.append(indices[i]);
+            builder.append(variableIndexes[i]);
             builder.append(")");
 
             if (i != size - 1) {

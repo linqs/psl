@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term.online;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -44,8 +45,6 @@ import java.util.List;
  * Variables are kept in memory, but terms are kept on disk.
  */
 public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingTermStore<T> {
-    protected boolean[] deletedAtoms;
-
     public OnlineTermStore(List<Rule> rules, AtomManager atomManager,
             HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
         super(rules, atomManager, termGenerator);
@@ -57,27 +56,8 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     @Override
-    public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
-        atom = super.createLocalVariable(atom);
-        deletedAtoms[nextVariableIndex - 1] = false;
-        return atom;
-    }
-
-    @Override
     protected int estimateVariableCapacity() {
         return atomManager.getCachedRVACount() + atomManager.getCachedObsCount();
-    }
-
-    @Override
-    public void ensureVariableCapacity(int capacity) {
-        super.ensureVariableCapacity(capacity);
-
-        if (deletedAtoms == null) {
-            deletedAtoms = new boolean[variableAtoms.length];
-        } else if (deletedAtoms.length != variableAtoms.length) {
-            // A resize happened in the super call.
-            deletedAtoms = Arrays.copyOf(deletedAtoms, variableAtoms.length);
-        }
     }
 
     // Note(Charles): This number is unreliable once any online actions are processed.
@@ -119,7 +99,6 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         variableValues[index] = -1.0f;
         variableAtoms[index] = null;
-        deletedAtoms[index] = true;
 
         if (atom instanceof RandomVariableAtom) {
             numRandomVariableAtoms--;
@@ -135,9 +114,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         }
 
         GroundAtom groundAtom = atomManager.getAtom(predicate, arguments);
-
         variableValues[getVariableIndex(groundAtom)] = newValue;
-        groundAtom.setValue(newValue);
     }
 
     public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
@@ -149,6 +126,25 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         initialRound = false;
         activeIterator = null;
+    }
+
+    /**
+     * In addition to the typical behavior of setting values for random variable atoms,
+     * also set the values for observed atoms.
+     */
+    @Override
+    public void syncAtoms() {
+        for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
+            if (variableAtoms[i] instanceof RandomVariableAtom) {
+                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            } else {
+                ((ObservedAtom)variableAtoms[i])._assumeValue(variableValues[i]);
+            }
+        }
     }
 
     @Override

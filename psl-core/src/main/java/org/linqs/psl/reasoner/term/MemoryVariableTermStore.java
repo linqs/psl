@@ -114,18 +114,14 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public synchronized V createLocalVariable(GroundAtom atom) {
-        if (atom instanceof RandomVariableAtom) {
-            return createLocalAtom((RandomVariableAtom)atom) ;
-        } else {
-            // Memory variable termstore does not keep track of observations
-            return null;
+    public synchronized V createLocalVariable(GroundAtom groundAtom) {
+        if (!(groundAtom instanceof RandomVariableAtom)) {
+            throw new IllegalArgumentException("MemoryVariableTermStores do not keep track of observed atoms (" + groundAtom + ").");
         }
-    }
 
-    private synchronized V createLocalAtom(RandomVariableAtom atom) {
+        RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
+
         V variable = convertAtomToVariable(atom);
-
         if (variables.containsKey(variable)) {
             return variable;
         }

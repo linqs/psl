@@ -57,28 +57,29 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public synchronized V createLocalVariable(GroundAtom atom) {
-        if(atom instanceof RandomVariableAtom) {
-            numLocalVariables++;
-
-            store.createLocalVariable(atom);
-            int consensusId = store.getVariableIndex((RandomVariableAtom)atom);
-
-            // The underlying store should not give us an index that is more than one larger than the current highest.
-            assert(consensusId <= localVariables.size());
-
-            if (consensusId == localVariables.size()) {
-                localVariables.add(new ArrayList<V>());
-            }
-
-            V localVariable = createLocalVariableInternal(consensusId, (float) atom.getValue());
-            localVariables.get(consensusId).add(localVariable);
-
-            return localVariable;
-        } else {
-            // MemoryConsensusTermStore does not keep track of observed atoms
-            return null;
+    public synchronized V createLocalVariable(GroundAtom groundAtom) {
+        if (!(groundAtom instanceof RandomVariableAtom)) {
+            throw new IllegalArgumentException("MemoryConsensusTermStores do not keep track of observed atoms (" + groundAtom + ").");
         }
+
+        RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
+
+        numLocalVariables++;
+
+        store.createLocalVariable(atom);
+        int consensusId = store.getVariableIndex(atom);
+
+        // The underlying store should not give us an index that is more than one larger than the current highest.
+        assert(consensusId <= localVariables.size());
+
+        if (consensusId == localVariables.size()) {
+            localVariables.add(new ArrayList<V>());
+        }
+
+        V localVariable = createLocalVariableInternal(consensusId, (float)atom.getValue());
+        localVariables.get(consensusId).add(localVariable);
+
+        return localVariable;
     }
 
     public long getNumLocalVariables() {
