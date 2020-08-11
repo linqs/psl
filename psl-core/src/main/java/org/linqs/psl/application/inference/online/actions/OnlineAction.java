@@ -21,7 +21,8 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
-import java.io.*;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
 
 /**
  * Base class for online actions.
