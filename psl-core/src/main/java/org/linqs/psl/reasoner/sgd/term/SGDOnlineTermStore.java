@@ -53,7 +53,7 @@ public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
     @Override
     public boolean rejectCacheTerm(SGDObjectiveTerm term) {
         for (int variableIndex : term.getVariableIndices()) {
-            if (deletedAtoms[variableIndex]) {
+            if (variableAtoms[variableIndex] == null) {
                 return true;
             }
         }

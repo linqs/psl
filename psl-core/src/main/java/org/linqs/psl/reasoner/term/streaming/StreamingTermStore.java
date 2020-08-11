@@ -64,6 +64,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected int totalVariableCount;
 
     // Matching arrays for variables values and atoms.
+    // If the atom is null, then it has been deleted by a child.
     protected float[] variableValues;
     protected GroundAtom[] variableAtoms;
 
@@ -234,6 +235,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     @Override
     public void syncAtoms() {
         for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
             if (variableAtoms[i] instanceof RandomVariableAtom) {
                 ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
             }
@@ -434,11 +439,13 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         SystemUtils.recursiveDelete(pageDir);
     }
 
-    // TODO(eriq): There is a potential null pointer here with deleted atoms.
-    //  The issue becomes subsumed without tombstones (nulling the atom instead).
     @Override
     public void reset() {
         for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
             variableValues[i] = variableAtoms[i].getValue();
         }
     }

@@ -45,35 +45,14 @@ import java.util.List;
  * Variables are kept in memory, but terms are kept on disk.
  */
 public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingTermStore<T> {
-    protected boolean[] deletedAtoms;
-
     public OnlineTermStore(List<Rule> rules, AtomManager atomManager,
             HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
         super(rules, atomManager, termGenerator);
     }
 
     @Override
-    public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
-        atom = super.createLocalVariable(atom);
-        deletedAtoms[totalVariableCount - 1] = false;
-        return atom;
-    }
-
-    @Override
     protected int estimateVariableCapacity() {
         return atomManager.getCachedRVACount() + atomManager.getCachedObsCount();
-    }
-
-    @Override
-    public void ensureVariableCapacity(int capacity) {
-        super.ensureVariableCapacity(capacity);
-
-        if (deletedAtoms == null) {
-            deletedAtoms = new boolean[variableAtoms.length];
-        } else if (deletedAtoms.length != variableAtoms.length) {
-            // A resize happened in the super call.
-            deletedAtoms = Arrays.copyOf(deletedAtoms, variableAtoms.length);
-        }
     }
 
     // Note(Charles): This number is unreliable once any online actions are processed.
@@ -115,7 +94,6 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         variableValues[index] = -1.0f;
         variableAtoms[index] = null;
-        deletedAtoms[index] = true;
 
         if (atom instanceof RandomVariableAtom) {
             numRandomVariableAtoms--;
@@ -152,6 +130,10 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     @Override
     public void syncAtoms() {
         for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
             if (variableAtoms[i] instanceof RandomVariableAtom) {
                 ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
             } else {

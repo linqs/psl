@@ -67,5 +67,9 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
      */
     public void syncAtoms();
 
+    /**
+     * Get all the vairables tracked by this term store.
+     * Note that variables are allowed to be null if they have been deleted.
+     */
     public GroundAtom[] getVariableAtoms();
 }
