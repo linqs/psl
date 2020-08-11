@@ -22,7 +22,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 /**
  * An interface for term stores that can handle some atom-level operations.
  */
-public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends TermStore<T, V> {
+public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends TermStore<T, V> {
     /**
      * Get the total number of variables (dead or alive) tracked by this term store.
      * The number here must coincide with the size (not length) of the array returned by getVariableValues().

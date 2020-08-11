@@ -25,7 +25,7 @@ import java.util.Iterator;
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalAtom> extends Iterable<T> {
+public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends Iterable<T> {
     /**
      * Add a term to the store that was generated from the given ground rule.
      */

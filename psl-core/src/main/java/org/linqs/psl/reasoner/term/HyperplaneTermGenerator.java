@@ -42,7 +42,7 @@ import java.util.Set;
 /**
  * A base term generator for terms that come from hyperplanes.
  */
-public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalAtom> implements TermGenerator<T, V> {
+public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
     private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
     private boolean mergeConstants;
