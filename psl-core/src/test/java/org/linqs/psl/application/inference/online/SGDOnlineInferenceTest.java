@@ -218,31 +218,6 @@ public class SGDOnlineInferenceTest {
         assertEquals(0.0, getAtomValue( "Friends", new String[]{"Bob", "Connor"}), 0.1);
     }
 
-//    /**
-//     * Make sure that new atoms are added to model, are considered during inference, and
-//     * result in the expected groundings.
-//     */
-//    @Test
-//    public void testPageRewriting() {
-//        Options.STREAMING_TS_PAGE_SIZE.set(2);
-//        String commands = "ADD\tRead\tSim_Users\tConnor\tAlice\t0.0",
-//                "ADD\tRead\tSim_Users\tAlice\tConnor\t0.0",
-//                "ADD\tWrite\tRating\tConnor\tAvatar",
-//                "WRITE",
-//                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
-//                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
-//                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
-//                "ADD\tWrite\tRating\tConnor\tSurfs Up",
-//                "WRITE",
-//                "STOP"));
-//
-//        clientSession(inference, commands);
-//        inference.inference();
-//
-//        float atomValue = getAtomValue(inference, "Rating", new String[]{"Connor", "Avatar"});
-//        assertEquals(atomValue, 1.0, 0.01);
-//    }
-
     @Test
     public void testAtomDeleting() {
         // TODO (Charles): This order of commands will catch a behavior where there may be an unexpected outcome.
@@ -266,28 +241,16 @@ public class SGDOnlineInferenceTest {
         assertEquals(-1.0, getAtomValue( "Nice", new String[]{"Alice"}), 0.1);
     }
 
-//    @Test
-//    public void testChangeAtomPartition() {
-//        Options.STREAMING_TS_PAGE_SIZE.set(4);
-//        setup();
-//
-//        ArrayList<String> commands = new ArrayList<String>(Arrays.asList(
-//                "ADD\tRead\tSim_Users\tConnor\tAlice\t1.0",
-//                "ADD\tRead\tSim_Users\tAlice\tConnor\t1.0",
-//                "ADD\tWrite\tRating\tConnor\tAvatar",
-//                "ADD\tRead\tSim_Users\tConnor\tBob\t1.0",
-//                "ADD\tRead\tSim_Users\tBob\tConnor\t1.0",
-//                "ADD\tRead\tRating\tBob\tSurfs Up\t0.5",
-//                "ADD\tWrite\tRating\tConnor\tSurfs Up",
-//                "ADD\tRead\tRating\tAlice\tAvatar\t0.5",
-//                "WRITE",
-//                "STOP"));
-//
-//        clientSession(inference, commands);
-//        inference.inference();
-//        float atomValue = getAtomValue(inference, "Rating", new String[]{"Alice", "Avatar"});
-//        assertEquals(atomValue, 0.5, 0.01);
-//    }
+    @Test
+    public void testChangeAtomPartition() {
+        String commands =
+                "ADD\tRead\tFriends\tAlice\tBob\t0.5\n" +
+                "EXIT";
+
+        clientSession(commands);
+
+        assertEquals(0.5, getAtomValue("Friends", new String[]{"Alice", "Bob"}), 0.01);
+    }
 
     private class OnlineInferenceThread extends Thread {
         SGDOnlineInference onlineInference;
