@@ -18,25 +18,25 @@
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.TestModel;
-import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.util.StringUtils;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
