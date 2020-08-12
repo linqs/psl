@@ -70,7 +70,7 @@ public class AddAtom extends OnlineAction {
         value = inputStream.readFloat();
     }
 
-        @Override
+    @Override
     public String toString() {
         return String.format(
                 "ADD\t%s\t%s\t%s\t%f",

@@ -47,6 +47,8 @@ public class OnlineServer implements Closeable {
     private ServerConnectionThread serverThread;
     private BlockingQueue<OnlineAction> queue;
 
+    //TODO(Charles): Map between actions UUID and clients.
+
     public OnlineServer() {
         serverThread = new ServerConnectionThread();
         queue = new LinkedBlockingQueue<OnlineAction>();
@@ -73,14 +75,7 @@ public class OnlineServer implements Closeable {
         }
     }
 
-    // TODO(Charles): This can be removed once testing with sockets is added.
-    public void addOnlineActionForTesting(OnlineAction action) {
-        try {
-            queue.put(action);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
+    //TODO(Charles): Callback after action execution.
 
     @Override
     public void close() {

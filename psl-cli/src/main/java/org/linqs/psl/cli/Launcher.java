@@ -336,6 +336,7 @@ public class Launcher {
 
     private void runOnlineClient() {
         log.info("Starting online PSL client.");
+        // TODO(Charles): OnlineCLI client. Parses onlineActions from stdin and parses responses and outputs and prints to stdout.
         OnlineClient.run();
         log.info("Online PSL client closed.");
     }

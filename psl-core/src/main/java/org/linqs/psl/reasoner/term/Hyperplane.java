@@ -32,7 +32,7 @@ public class Hyperplane<E extends ReasonerLocalVariable> {
 
     @SuppressWarnings("unchecked")
     public Hyperplane(Class<E> localVariableClass, int maxSize, float constant) {
-        this((E[])Array.newInstance(localVariableClass, maxSize) , new float[maxSize], constant, 0);
+        this((E[])Array.newInstance(localVariableClass, maxSize), new float[maxSize], constant, 0);
     }
 
     public Hyperplane(E[] variables, float[] coefficients, float constant, int size) {

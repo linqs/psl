@@ -21,6 +21,7 @@ import org.linqs.psl.application.inference.online.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.actions.OnlineActionException;
 import org.linqs.psl.application.inference.online.actions.QueryAtom;
 import org.linqs.psl.config.Options;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,8 @@ public class OnlineClient {
 
     // Static only.
     private OnlineClient() {}
+
+    // TODO(Charles): Run with streams as parameters.
 
     public static void run() {
         run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt());
@@ -69,7 +72,10 @@ public class OnlineClient {
                     }
                     exit = (userInput.equalsIgnoreCase(EXIT_STRING));
                     OnlineAction onlineAction = OnlineAction.parse(userInput);
+                    //TODO(Charles): onlineAction.toString
                     outputStream.writeObject(onlineAction);
+
+                    // TODO(Charles): Wait for server to acknowledge action received.
 
                     // Wait for query response and print to System.out before issuing next command.
                     if (onlineAction.getClass() == QueryAtom.class) {
@@ -92,3 +98,7 @@ public class OnlineClient {
         }
     }
 }
+
+// TODO(Charles): Message class with UUID that add id to each message.
+
+// TODO(Charles): Threads for

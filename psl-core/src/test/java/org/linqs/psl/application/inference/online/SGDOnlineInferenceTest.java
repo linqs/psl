@@ -122,6 +122,7 @@ public class SGDOnlineInferenceTest {
     }
 
     private double getAtomValue(String predicateName, String[] argumentStrings) {
+        // TODO(Charles): OnlineResponse objects QueryResponse, Success, Fail.
         String queryResult = null;
 
         String commands =
@@ -135,7 +136,6 @@ public class SGDOnlineInferenceTest {
 
         // Parse atom value
         queryResult = clientSession(commands).split("\n")[0].replaceAll("'", "");
-
 
         if (queryResult.equalsIgnoreCase(nonExistentAtomResponse)) {
             return -1.0;
@@ -174,11 +174,13 @@ public class SGDOnlineInferenceTest {
      */
     @Test
     public void testAddAtoms() {
+        // TODO(Charles): Queries in initial command.
         String commands =
                 "ADD\tRead\tPerson\tConnor\t1.0\n" +
                 "ADD\tRead\tNice\tConnor\t0.01\n" +
                 "EXIT";
 
+        //TODO(Charles): Pass expected values with queries.
         clientSession(commands);
 
         // Check that new atoms were added to the model.
