@@ -41,8 +41,6 @@ import java.util.List;
  * (reasoners, term stores, etc) can be used via the InferenceApplication config options.
  */
 public class MPEInference extends InferenceApplication {
-    private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
-
     public MPEInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         super(rules, db, relaxHardConstraints);
     }

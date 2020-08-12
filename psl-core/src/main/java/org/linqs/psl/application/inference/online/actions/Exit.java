@@ -21,4 +21,9 @@ public class Exit extends OnlineAction {
     public Exit() {
         this.outputStream = null;
     }
+
+    @Override
+    public String toString() {
+        return "EXIT";
+    }
 }

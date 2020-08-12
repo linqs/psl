@@ -129,13 +129,10 @@ public class SGDOnlineInferenceTest {
                 "QUERY\t" + predicateName + "\t" + StringUtils.join("\t", argumentStrings) + "\n" +
                 "EXIT";
 
-        String nonExistentAtomResponse =
-                "Atom: " + predicateName + "(" +
-                StringUtils.join(",", argumentStrings) + ")" +
-                " does not exist.";
+        String nonExistentAtomResponse = String.format("Atom: %s('%s') does not exist.", predicateName, StringUtils.join("', '", argumentStrings));
 
         // Parse atom value
-        queryResult = clientSession(commands).split("\n")[0].replaceAll("'", "");
+        queryResult = clientSession(commands).trim();
 
         if (queryResult.equalsIgnoreCase(nonExistentAtomResponse)) {
             return -1.0;
