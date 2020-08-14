@@ -67,44 +67,4 @@ public abstract class OnlineAction extends OnlineMessage {
      * Parse the delimited client command.
      */
     protected abstract void parse(String[] parts);
-
-    /**
-     * Parse an atom.
-     * The given starting index should point to the predicate.
-     */
-    protected AtomInfo parseAtom(String[] parts, int startIndex) {
-        StandardPredicate predicate = StandardPredicate.get(parts[startIndex]);
-        if (predicate == null) {
-            throw new IllegalArgumentException("Unknown predicate: " + parts[startIndex] + ".");
-        }
-
-        // The final +1 is for the optional value.
-        if (parts.length > (startIndex + 1 + predicate.getArity() + 1)) {
-            throw new IllegalArgumentException("Too many arguments.");
-        }
-
-        float value = 1.0f;
-        if (parts.length == (startIndex + 1 + predicate.getArity() + 1)) {
-            value = Float.valueOf(parts[parts.length - 1]);
-        }
-
-        Constant[] arguments = new Constant[predicate.getArity()];
-        for (int i = 0; i < arguments.length; i++) {
-            arguments[i] = ConstantType.getConstant(parts[startIndex + 1 + i], predicate.getArgumentType(i));
-        }
-
-        return new AtomInfo(predicate, arguments, value);
-    }
-
-    protected static class AtomInfo {
-        public StandardPredicate predicate;
-        public Constant[] arguments;
-        public float value;
-
-        public AtomInfo(StandardPredicate predicate, Constant[] arguments, float value) {
-            this.predicate = predicate;
-            this.arguments = arguments;
-            this.value = value;
-        }
-    }
 }

@@ -340,8 +340,7 @@ public class Launcher {
     private void runOnlineClient() {
         ArrayList<OnlineResponse> onlineResponses = new ArrayList<OnlineResponse>();
         log.info("Starting OnlinePSL client.");
-        // TODO(Charles): OnlineCLI client. Parses onlineActions from stdin and parses responses and outputs and prints to stdout.
-        onlineResponses = OnlineClient.run();
+        onlineResponses = OnlineClient.run(System.in, System.out);
         log.info("OnlinePSL client closed.");
     }
 

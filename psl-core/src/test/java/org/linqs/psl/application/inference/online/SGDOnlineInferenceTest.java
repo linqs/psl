@@ -99,8 +99,9 @@ public class SGDOnlineInferenceTest {
         ArrayList<OnlineResponse> sessionOutput = null;
 
         try (
-                InputStream testInput = new ByteArrayInputStream(commands.getBytes())) {
-            sessionOutput = OnlineClient.run(testInput);
+                InputStream testInput = new ByteArrayInputStream(commands.getBytes());
+                PrintStream testOut = new PrintStream(new ByteArrayOutputStream())) {
+            sessionOutput = OnlineClient.run(testInput, testOut);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }

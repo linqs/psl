@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -47,32 +48,28 @@ public class OnlineClient {
     // Static only.
     private OnlineClient() {}
 
-    public static ArrayList<OnlineResponse> run() {
-        return run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt(), System.in);
+    public static ArrayList<OnlineResponse> run(InputStream in, PrintStream out) {
+        return run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt(), in, out);
     }
 
-    public static ArrayList<OnlineResponse> run(InputStream in) {
-        return run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt(), in);
-    }
-
-    public static ArrayList<OnlineResponse> run(String hostname, int port, InputStream in) {
+    public static ArrayList<OnlineResponse> run(String hostname, int port, InputStream in, PrintStream out) {
         ArrayList<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
 
         try (
                 Socket server = new Socket(hostname, port);
-                ObjectOutputStream outputStream = new ObjectOutputStream(server.getOutputStream());
-                ObjectInputStream inputStream = new ObjectInputStream(server.getInputStream());
-                BufferedReader stdin = new BufferedReader(new InputStreamReader(in))) {
+                ObjectOutputStream socketOutputStream = new ObjectOutputStream(server.getOutputStream());
+                ObjectInputStream socketInputStream = new ObjectInputStream(server.getInputStream());
+                BufferedReader commandReader = new BufferedReader(new InputStreamReader(in))) {
             boolean exit = false;
             String userInput = null;
 
-            ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, inputStream, serverResponses);
+            ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, socketInputStream, out, serverResponses);
             serverConnectionThread.start();
 
             while (!exit) {
                 try {
                     // Read next command.
-                    userInput = stdin.readLine();
+                    userInput = commandReader.readLine();
                     if (userInput == null) {
                         break;
                     }
@@ -85,7 +82,7 @@ public class OnlineClient {
                     exit = (userInput.equalsIgnoreCase(EXIT_STRING));
 
                     OnlineAction onlineAction = OnlineAction.getAction(userInput);
-                    outputStream.writeObject(onlineAction.toString());
+                    socketOutputStream.writeObject(onlineAction.toString());
 
                 } catch (OnlineActionException ex) {
                     log.error(String.format("Error parsing command: [%s].", userInput));
@@ -113,12 +110,14 @@ public class OnlineClient {
      */
     private static class ServerConnectionThread extends Thread {
         private ObjectInputStream inputStream;
+        private PrintStream out;
         private Socket socket;
         private ArrayList<OnlineResponse> serverResponses;
 
-        public ServerConnectionThread(Socket socket, ObjectInputStream inputStream, ArrayList<OnlineResponse> serverResponses) {
+        public ServerConnectionThread(Socket socket, ObjectInputStream inputStream, PrintStream out, ArrayList<OnlineResponse> serverResponses) {
             this.socket = socket;
             this.inputStream = inputStream;
+            this.out = out;
             this.serverResponses = serverResponses;
         }
 
@@ -136,7 +135,9 @@ public class OnlineClient {
                     throw new RuntimeException(ex);
                 }
 
+
                 serverResponses.add(OnlineResponse.getResponse(serverMessage.getMessage()));
+                out.println(serverMessage.getMessage());
             }
         }
     }
