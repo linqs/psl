@@ -15,13 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.actions;
+package org.linqs.psl.application.inference.online.messages.actions;
 
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.StringUtils;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.util.UUID;
 
 /**
  * Write out targets on the server side.
@@ -30,9 +28,8 @@ import java.io.ObjectInputStream;
 public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
 
-    public WriteInferredPredicates(String[] parts) {
-        this.outputStream = null;
-        parse(parts);
+    public WriteInferredPredicates(UUID actionID, String clientCommand) {
+        super(actionID, clientCommand);
     }
 
     public String getOutputDirectoryPath() {
@@ -40,15 +37,18 @@ public class WriteInferredPredicates extends OnlineAction {
     }
 
     @Override
-    public String toString() {
+    public void setMessage(String newMessage) {
+        parse(newMessage.split("\t"));
+
         if (outputDirectoryPath == null) {
-            return "WRITE";
+            message = String.format("WRITE");
         } else {
-            return String.format("WRITE\t%s", outputDirectoryPath);
+            message = String.format("WRITE\t%s", outputDirectoryPath);
         }
     }
 
-    private void parse(String[] parts) throws IllegalArgumentException {
+    @Override
+    protected void parse(String[] parts) throws IllegalArgumentException {
         assert(parts[0].equalsIgnoreCase("write"));
 
         if (parts.length > 2) {

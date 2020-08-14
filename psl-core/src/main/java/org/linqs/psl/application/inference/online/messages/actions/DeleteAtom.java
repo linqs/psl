@@ -15,29 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.actions;
+package org.linqs.psl.application.inference.online.messages.actions;
 
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.UUID;
 
 /**
- * Add a new atom to the model.
- * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
+ * Delete an atom from the existing model.
+ * String format: UUID DELETE <READ/WRITE> <predicate> <args> ...
  */
-public class AddAtom extends OnlineAction {
+public class DeleteAtom extends OnlineAction {
     private StandardPredicate predicate;
     private String partition;
     private Constant[] arguments;
-    private float value;
 
-    public AddAtom(String[] parts) {
-        this.outputStream = null;
-        parse(parts);
+    public DeleteAtom(UUID actionID, String clientCommand) {
+        super(actionID, clientCommand);
     }
 
     public StandardPredicate getPredicate() {
@@ -48,39 +44,23 @@ public class AddAtom extends OnlineAction {
         return partition;
     }
 
-    public float getValue() {
-        return value;
-    }
-
     public Constant[] getArguments() {
         return arguments;
     }
 
-    private void writeObject(java.io.ObjectOutputStream outputStream) throws IOException {
-        outputStream.writeUTF(predicate.getName());
-        outputStream.writeUTF(partition);
-        outputStream.writeObject(arguments);
-        outputStream.writeFloat(value);
-    }
+    @Override
+    public void setMessage(String newMessage) {
+        parse(newMessage.split("\t"));
 
-    private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
-        predicate = StandardPredicate.get(inputStream.readUTF());
-        partition = inputStream.readUTF();
-        arguments = (Constant[])inputStream.readObject();
-        value = inputStream.readFloat();
+        message = String.format(
+                "DELETE\t%s\t%s\t%s",
+                partition, predicate.getName(),
+                StringUtils.join("\t", arguments).replace("'", ""));
     }
 
     @Override
-    public String toString() {
-        return String.format(
-                "ADD\t%s\t%s\t%s\t%f",
-                partition, predicate.getName(),
-                StringUtils.join("\t", arguments).replace("'", ""),
-                value);
-    }
-
-    private void parse(String[] parts) {
-        assert(parts[0].equalsIgnoreCase("add"));
+    protected void parse(String[] parts) {
+        assert(parts[0].equalsIgnoreCase("delete"));
 
         if (parts.length < 4) {
             throw new IllegalArgumentException("Not enough arguments.");
@@ -94,6 +74,9 @@ public class AddAtom extends OnlineAction {
         OnlineAction.AtomInfo atomInfo = parseAtom(parts, 2);
         predicate = atomInfo.predicate;
         arguments = atomInfo.arguments;
-        value = atomInfo.value;
+
+        if (parts.length == (3 + predicate.getArity() + 1)) {
+            throw new IllegalArgumentException("Values cannot be supplied to DELETE actions.");
+        }
     }
 }

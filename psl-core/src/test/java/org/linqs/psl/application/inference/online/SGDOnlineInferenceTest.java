@@ -18,6 +18,8 @@
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.TestModel;
+import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
+import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -32,6 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -69,11 +72,11 @@ public class SGDOnlineInferenceTest {
     @After
     public void cleanup() {
         if (onlineInferenceThread != null) {
-            clientSession("STOP\nEXIT");
+            clientSession("STOP");
 
             try {
-                // Will wait 5 seconds for thread to finish otherwise will interrupt.
-                onlineInferenceThread.join(5000);
+                // Will wait 10 seconds for thread to finish otherwise will interrupt.
+                onlineInferenceThread.join(10000);
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
@@ -92,28 +95,12 @@ public class SGDOnlineInferenceTest {
         }
     }
 
-    private String clientSession(String commands) {
-        String sessionOutput = null;
+    private ArrayList<OnlineResponse> clientSession(String commands) {
+        ArrayList<OnlineResponse> sessionOutput = null;
 
         try (
-                InputStream testInput = new ByteArrayInputStream(commands.getBytes());
-                ByteArrayOutputStream testOutput = new ByteArrayOutputStream()) {
-
-            // Set client in to string.
-            InputStream stdIn = System.in;
-            System.setIn(testInput);
-
-            // Set client out to reader.
-            PrintStream stdOut = System.out;
-            System.setOut(new PrintStream(testOutput));
-
-            // Start client to issue commands.
-            OnlineClient.run();
-            sessionOutput = testOutput.toString();
-
-            // Close InputStream and reset in.
-            System.setIn(stdIn);
-            System.setOut(stdOut);
+                InputStream testInput = new ByteArrayInputStream(commands.getBytes())) {
+            sessionOutput = OnlineClient.run(testInput);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -121,24 +108,20 @@ public class SGDOnlineInferenceTest {
         return sessionOutput;
     }
 
-    private double getAtomValue(String predicateName, String[] argumentStrings) {
-        // TODO(Charles): OnlineResponse objects QueryResponse, Success, Fail.
-        String queryResult = null;
+    private void assertAtomValues(String commands, double[] values) {
+        ArrayList<OnlineResponse> onlineResponses = null;
 
-        String commands =
-                "QUERY\t" + predicateName + "\t" + StringUtils.join("\t", argumentStrings) + "\n" +
-                "EXIT";
+        onlineResponses = clientSession(commands);
 
-        String nonExistentAtomResponse = String.format("Atom: %s('%s') does not exist.", predicateName, StringUtils.join("', '", argumentStrings));
-
-        // Parse atom value
-        queryResult = clientSession(commands).trim();
-
-        if (queryResult.equalsIgnoreCase(nonExistentAtomResponse)) {
-            return -1.0;
-        } else {
-            return Double.parseDouble(queryResult.split("=")[1]);
+        int i = 0;
+        for (OnlineResponse onlineResponse : onlineResponses) {
+            if (onlineResponse instanceof QueryAtomResponse) {
+                assertEquals(values[i], ((QueryAtomResponse)onlineResponse).getAtomValue(), 0.1);
+                i++;
+            }
         }
+
+        assertEquals(i, values.length);
     }
 
     /**
@@ -147,7 +130,7 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testBadQuery() {
         // Check that a non-existent new atom results in the expected server response.
-        assertEquals(-1.0, getAtomValue( "Friends",  new String[]{"Bob", "Bob"}), 0.1);
+        assertAtomValues( "Query\tFriends\tBob\tBob\nExit", new double[] {-1.0});
     }
 
     /**
@@ -157,12 +140,10 @@ public class SGDOnlineInferenceTest {
     public void testUpdateObservation() {
         String commands =
                 "UPDATE\tNice\tAlice\t0.0\n" +
+                "Query\tNice\tAlice\n" +
                 "EXIT";
 
-        clientSession(commands);
-
-        double atomValue = getAtomValue("Nice", new String[]{"Alice"});
-        assertEquals(0.0, atomValue, 0.01);
+        assertAtomValues( commands, new double[] {0.0});
     }
 
     /**
@@ -171,40 +152,28 @@ public class SGDOnlineInferenceTest {
      */
     @Test
     public void testAddAtoms() {
-        // TODO(Charles): Queries in initial command.
         String commands =
                 "ADD\tRead\tPerson\tConnor\t1.0\n" +
                 "ADD\tRead\tNice\tConnor\t0.01\n" +
-                "EXIT";
-
-        //TODO(Charles): Pass expected values with queries.
-        clientSession(commands);
-
-        // Check that new atoms were added to the model.
-        assertNotEquals(-1.0, getAtomValue( "Person", new String[]{"Connor"}));
-        assertNotEquals(-1.0, getAtomValue( "Nice", new String[]{"Connor"}));
-
-        // Check that new atoms were not yet added to the model.
-        assertEquals(-1.0, getAtomValue( "Friends", new String[]{"Connor", "Alice"}), 0.1);
-        assertEquals(-1.0, getAtomValue( "Friends", new String[]{"Alice", "Connor"}), 0.1);
-        assertEquals(-1.0, getAtomValue( "Friends", new String[]{"Connor", "Bob"}), 0.1);
-        assertEquals(-1.0, getAtomValue( "Friends",  new String[]{"Bob", "Connor"}), 0.1);
-
-        // Add write atoms to model.
-        commands =
+                "Query\tPerson\tConnor\n" +
+                "Query\tNice\tConnor\n" +
+                "Query\tFriends\tConnor\tAlice\n" +
+                "Query\tFriends\tConnor\tBob\n" +
+                "Query\tFriends\tAlice\tConnor\n" +
+                "Query\tFriends\tBob\tConnor\n" +
                 "ADD\tWrite\tFriends\tAlice\tConnor\n" +
                 "ADD\tWrite\tFriends\tConnor\tAlice\n" +
                 "ADD\tWrite\tFriends\tConnor\tBob\n" +
                 "ADD\tWrite\tFriends\tBob\tConnor\n" +
+                "Query\tFriends\tConnor\tAlice\n" +
+                "Query\tFriends\tAlice\tConnor\n" +
+                "Query\tFriends\tConnor\tBob\n" +
+                "Query\tFriends\tBob\tConnor\n" +
                 "EXIT";
 
-        clientSession(commands);
+        double[] values = {1.0, 0.01, -1.0, -1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0};
 
-        // Check that atoms were considered during inference.
-        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Connor", "Alice"}), 0.1);
-        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Alice", "Connor"}), 0.1);
-        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Connor", "Bob"}), 0.1);
-        assertEquals(0.0, getAtomValue( "Friends", new String[]{"Bob", "Connor"}), 0.1);
+        assertAtomValues(commands, values);
     }
 
     @Test
@@ -221,32 +190,31 @@ public class SGDOnlineInferenceTest {
         String commands =
                 "DELETE\tRead\tNice\tAlice\n" +
                 "DELETE\tRead\tPerson\tAlice\n" +
+                "Query\tPerson\tAlice\n" +
+                "Query\tNice\tAlice\n" +
                 "Exit";
 
-        clientSession(commands);
+        double[] values = {-1.0, -1.0};
 
-        // Check that atoms were deleted from the model.
-        assertEquals(-1.0, getAtomValue( "Person", new String[]{"Alice"}), 0.1);
-        assertEquals(-1.0, getAtomValue( "Nice", new String[]{"Alice"}), 0.1);
+        assertAtomValues(commands, values);
     }
 
     @Test
     public void testChangeAtomPartition() {
         String commands =
                 "ADD\tRead\tFriends\tAlice\tBob\t0.5\n" +
+                "Query\tFriends\tAlice\tBob\n" +
                 "EXIT";
 
-        clientSession(commands);
+        double[] values = {0.5};
 
-        assertEquals(0.5, getAtomValue("Friends", new String[]{"Alice", "Bob"}), 0.01);
+        assertAtomValues(commands, values);
     }
 
     private class OnlineInferenceThread extends Thread {
         SGDOnlineInference onlineInference;
 
         public OnlineInferenceThread() {
-            // Constructor for OnlineInference applications calls initialize which starts up
-            // OnlineServer on separate thread.
             onlineInference = new SGDOnlineInference(modelInfo.model.getRules(), inferDB);
         }
 

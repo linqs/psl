@@ -18,26 +18,25 @@
 package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.online.actions.AddAtom;
-import org.linqs.psl.application.inference.online.actions.DeleteAtom;
-import org.linqs.psl.application.inference.online.actions.Stop;
-import org.linqs.psl.application.inference.online.actions.UpdateObservation;
-import org.linqs.psl.application.inference.online.actions.QueryAtom;
-import org.linqs.psl.application.inference.online.actions.WriteInferredPredicates;
-import org.linqs.psl.application.inference.online.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.actions.OnlineActionException;
+import org.linqs.psl.application.inference.online.messages.actions.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.UpdateObservation;
+import org.linqs.psl.application.inference.online.messages.actions.QueryAtom;
+import org.linqs.psl.application.inference.online.messages.actions.WriteInferredPredicates;
+import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
+import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
+import org.linqs.psl.application.inference.online.messages.actions.OnlineActionException;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
-import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.List;
 
 public abstract class OnlineInference extends InferenceApplication {
@@ -106,6 +105,8 @@ public abstract class OnlineInference extends InferenceApplication {
         } else {
             throw new OnlineActionException("Unknown action: " + action.getClass().getName() + ".");
         }
+
+        server.onActionExecution(action, new ActionStatus(action, true, ""));
     }
 
     protected void doAddAtom(AddAtom action) {
@@ -126,6 +127,8 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void doWriteInferredPredicates(WriteInferredPredicates action) {
+        String response = null;
+
         log.trace("Optimization Start");
         objective = reasoner.optimize(termStore);
         log.trace("Optimization End");
@@ -133,35 +136,26 @@ public abstract class OnlineInference extends InferenceApplication {
         if (action.getOutputDirectoryPath() != null) {
             log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
             database.outputRandomVariableAtoms(action.getOutputDirectoryPath());
+            response = "Wrote inferred predicates to file: " + action.getOutputDirectoryPath();
         } else {
             log.info("Writing inferred predicates to output stream.");
             database.outputRandomVariableAtoms();
+            response = "Wrote inferred predicates to output stream.";
         }
     }
 
     protected void doQueryAtom(QueryAtom action) {
+        double atomValue = -1.0;
+
         log.trace("Optimization Start");
         objective = reasoner.optimize(termStore);
         log.trace("Optimization End");
 
-        // Write atom value to client.
-        OutputStreamWriter outputWriter = action.getOutputWriter();
-
-        String response = null;
-        if (!((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
-            response = String.format("Atom: %s(%s) does not exist.",
-                    action.getPredicate().getName(),
-                    StringUtils.join(", ", action.getArguments()));
-        } else {
-            response = atomManager.getAtom(action.getPredicate(), action.getArguments()).toStringWithValue();
+        if (((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
+            atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
         }
 
-        try {
-            outputWriter.write(response + "\n");
-            outputWriter.flush();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
     }
 
     @Override
@@ -178,8 +172,10 @@ public abstract class OnlineInference extends InferenceApplication {
             try {
                 executeAction(action);
             } catch (OnlineActionException ex) {
+                server.onActionExecution(action, new ActionStatus(action, false, ex.getMessage()));
                 log.warn("Exception when executing action: " + action, ex);
             } catch (RuntimeException ex) {
+                server.onActionExecution(action, new ActionStatus(action, false, ex.getMessage()));
                 throw new RuntimeException("Critically failed to run command. Last seen command: " + action, ex);
             }
         }

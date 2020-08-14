@@ -15,15 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.actions;
+package org.linqs.psl.application.inference.online.messages.actions;
 
-public class Exit extends OnlineAction {
-    public Exit() {
-        this.outputStream = null;
+public class OnlineActionException extends RuntimeException {
+    public OnlineActionException(String message) {
+        super(message);
     }
 
-    @Override
-    public String toString() {
-        return "EXIT";
+    public OnlineActionException(String message, Exception ex) {
+        super(message, ex);
     }
 }

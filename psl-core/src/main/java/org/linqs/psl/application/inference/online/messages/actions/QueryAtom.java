@@ -15,26 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.actions;
+package org.linqs.psl.application.inference.online.messages.actions;
 
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.util.UUID;
 
 /**
- * Update an existing observation from the model.
- * String format: Query <predicate> <args> ... [value]
+ * Query an existing observation from the model.
+ * String format: UUID Query <predicate> <args> ...
  */
 public class QueryAtom extends OnlineAction {
     private StandardPredicate predicate;
     private Constant[] arguments;
 
-    public QueryAtom(String[] parts) {
-        this.outputStream = null;
-        parse(parts);
+    public QueryAtom(UUID actionID, String clientCommand) {
+        super(actionID, clientCommand);
     }
 
     public StandardPredicate getPredicate() {
@@ -45,25 +43,18 @@ public class QueryAtom extends OnlineAction {
         return arguments;
     }
 
-    private void writeObject(java.io.ObjectOutputStream outputStream) throws IOException {
-        outputStream.writeUTF(predicate.getName());
-        outputStream.writeObject(arguments);
-    }
-
-    private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
-        predicate = StandardPredicate.get(inputStream.readUTF());
-        arguments = (Constant[])inputStream.readObject();
-    }
-
     @Override
-    public String toString() {
-        return String.format(
+    public void setMessage(String newMessage) {
+        parse(newMessage.split("\t"));
+
+        message = String.format(
                 "Query\t%s\t%s",
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""));
     }
 
-    private void parse(String[] parts) {
+    @Override
+    protected void parse(String[] parts) {
         assert(parts[0].equalsIgnoreCase("query"));
 
         if (parts.length < 2) {

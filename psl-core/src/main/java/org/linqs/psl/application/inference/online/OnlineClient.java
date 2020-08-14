@@ -17,19 +17,24 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.linqs.psl.application.inference.online.actions.OnlineAction;
-import org.linqs.psl.application.inference.online.actions.OnlineActionException;
-import org.linqs.psl.application.inference.online.actions.QueryAtom;
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
+import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.actions.OnlineActionException;
+import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.EOFException;
+import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 
 /**
  * A client that takes input on stdin and passes it to the online host specified in configuration.
@@ -42,20 +47,27 @@ public class OnlineClient {
     // Static only.
     private OnlineClient() {}
 
-    // TODO(Charles): Run with streams as parameters.
-
-    public static void run() {
-        run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt());
+    public static ArrayList<OnlineResponse> run() {
+        return run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt(), System.in);
     }
 
-    public static void run(String hostname, int port) {
+    public static ArrayList<OnlineResponse> run(InputStream in) {
+        return run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt(), in);
+    }
+
+    public static ArrayList<OnlineResponse> run(String hostname, int port, InputStream in) {
+        ArrayList<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
+
         try (
                 Socket server = new Socket(hostname, port);
                 ObjectOutputStream outputStream = new ObjectOutputStream(server.getOutputStream());
-                BufferedReader inputReader = new BufferedReader(new InputStreamReader(server.getInputStream()));
-                BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
+                ObjectInputStream inputStream = new ObjectInputStream(server.getInputStream());
+                BufferedReader stdin = new BufferedReader(new InputStreamReader(in))) {
             boolean exit = false;
             String userInput = null;
+
+            ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, inputStream, serverResponses);
+            serverConnectionThread.start();
 
             while (!exit) {
                 try {
@@ -71,16 +83,10 @@ public class OnlineClient {
                         continue;
                     }
                     exit = (userInput.equalsIgnoreCase(EXIT_STRING));
-                    OnlineAction onlineAction = OnlineAction.parse(userInput);
-                    //TODO(Charles): onlineAction.toString
-                    outputStream.writeObject(onlineAction);
 
-                    // TODO(Charles): Wait for server to acknowledge action received.
+                    OnlineAction onlineAction = OnlineAction.getAction(userInput);
+                    outputStream.writeObject(onlineAction.toString());
 
-                    // Wait for query response and print to System.out before issuing next command.
-                    if (onlineAction.getClass() == QueryAtom.class) {
-                        System.out.println(inputReader.readLine());
-                    }
                 } catch (OnlineActionException ex) {
                     log.error(String.format("Error parsing command: [%s].", userInput));
                     log.error(ex.getMessage());
@@ -89,16 +95,50 @@ public class OnlineClient {
                 }
             }
 
-            // Log server acknowledgement of exit.
-            log.info(inputReader.readLine());
+            // Wait for serverConnectionThread.
+            serverConnectionThread.join();
+
         } catch (IOException ex) {
             throw new RuntimeException(
-                    String.format("Error establishing connection to the online server (%s:%d).", hostname, port),
-                    ex);
+                    String.format("Error establishing connection to the online server (%s:%d).", hostname, port), ex);
+        } catch (InterruptedException ex) {
+            log.error("Client session interrupted");
+        }
+
+        return serverResponses;
+    }
+
+    /**
+     * Private class for reading OnlineResponse objects sent from server
+     */
+    private static class ServerConnectionThread extends Thread {
+        private ObjectInputStream inputStream;
+        private Socket socket;
+        private ArrayList<OnlineResponse> serverResponses;
+
+        public ServerConnectionThread(Socket socket, ObjectInputStream inputStream, ArrayList<OnlineResponse> serverResponses) {
+            this.socket = socket;
+            this.inputStream = inputStream;
+            this.serverResponses = serverResponses;
+        }
+
+        @Override
+        public void run() {
+            OnlineMessage serverMessage = null;
+
+            while (socket.isConnected() && !isInterrupted()) {
+                try {
+                    serverMessage = OnlineMessage.getOnlineMessage(inputStream.readObject().toString());
+                } catch (EOFException ex) {
+                    // Done.
+                    break;
+                } catch (IOException | ClassNotFoundException ex) {
+                    throw new RuntimeException(ex);
+                }
+
+                serverResponses.add(OnlineResponse.getResponse(serverMessage.getMessage()));
+            }
         }
     }
 }
 
-// TODO(Charles): Message class with UUID that add id to each message.
-
-// TODO(Charles): Threads for

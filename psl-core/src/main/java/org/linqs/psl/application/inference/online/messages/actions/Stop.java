@@ -15,15 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.actions;
+package org.linqs.psl.application.inference.online.messages.actions;
+
+import java.util.UUID;
 
 public class Stop extends OnlineAction {
-    public Stop() {
-        this.outputStream = null;
+
+    public Stop(UUID actionID, String clientCommand) {
+        super(actionID, clientCommand);
     }
 
     @Override
-    public String toString() {
-        return "STOP";
+    public void setMessage(String newMessage) {
+        parse(newMessage.split("\t"));
+
+        message = "STOP";
+    }
+
+    @Override
+    protected void parse(String[] parts) {
+        assert(parts[0].equalsIgnoreCase("stop"));
     }
 }

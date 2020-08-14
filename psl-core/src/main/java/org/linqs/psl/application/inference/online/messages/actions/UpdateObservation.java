@@ -15,14 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.actions;
+package org.linqs.psl.application.inference.online.messages.actions;
 
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.util.UUID;
 
 /**
  * Update an existing observation from the model.
@@ -33,9 +32,8 @@ public class UpdateObservation extends OnlineAction {
     private Constant[] arguments;
     private float value;
 
-    public UpdateObservation(String[] parts) {
-        this.outputStream = null;
-        parse(parts);
+    public UpdateObservation(UUID actionID, String clientCommand) {
+        super(actionID, clientCommand);
     }
 
     public StandardPredicate getPredicate() {
@@ -50,27 +48,18 @@ public class UpdateObservation extends OnlineAction {
         return arguments;
     }
 
-    private void writeObject(java.io.ObjectOutputStream outputStream) throws IOException {
-        outputStream.writeUTF(predicate.getName());
-        outputStream.writeObject(arguments);
-        outputStream.writeFloat(value);
-    }
-
-    private void readObject(ObjectInputStream inputStream) throws ClassNotFoundException, IOException {
-        predicate = StandardPredicate.get(inputStream.readUTF());
-        arguments = (Constant[])inputStream.readObject();
-        value = inputStream.readFloat();
-    }
-
     @Override
-    public String toString() {
-        return String.format(
+    public void setMessage(String newMessage) {
+        parse(newMessage.split("\t"));
+
+        message = String.format(
                 "UPDATE\t%s\t%s\t%f",
                 predicate.getName(), StringUtils.join("\t", arguments).replace("'", ""),
                 value);
     }
 
-    private void parse(String[] parts) {
+    @Override
+    protected void parse(String[] parts) {
         assert(parts[0].equalsIgnoreCase("update"));
 
         if (parts.length < 3) {

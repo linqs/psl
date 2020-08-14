@@ -19,6 +19,7 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.OnlineClient;
+import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -54,6 +55,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Set;
 
 /**
@@ -200,6 +202,7 @@ public class Launcher {
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
+        inferenceApplication.close();
         log.info("Inference Complete");
 
         // Output the results.
@@ -335,10 +338,11 @@ public class Launcher {
     }
 
     private void runOnlineClient() {
-        log.info("Starting online PSL client.");
+        ArrayList<OnlineResponse> onlineResponses = new ArrayList<OnlineResponse>();
+        log.info("Starting OnlinePSL client.");
         // TODO(Charles): OnlineCLI client. Parses onlineActions from stdin and parses responses and outputs and prints to stdout.
-        OnlineClient.run();
-        log.info("Online PSL client closed.");
+        onlineResponses = OnlineClient.run();
+        log.info("OnlinePSL client closed.");
     }
 
     private void runPSL(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates) {

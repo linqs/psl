@@ -17,22 +17,27 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.linqs.psl.application.inference.online.actions.Exit;
-import org.linqs.psl.application.inference.online.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
+import org.linqs.psl.application.inference.online.messages.actions.Exit;
+import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.actions.Stop;
+import org.linqs.psl.application.inference.online.messages.responses.ActionAcknowledgement;
+import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
+import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.OutputStreamWriter;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -47,11 +52,12 @@ public class OnlineServer implements Closeable {
     private ServerConnectionThread serverThread;
     private BlockingQueue<OnlineAction> queue;
 
-    //TODO(Charles): Map between actions UUID and clients.
+    private HashMap<UUID, ClientConnectionThread> messageIDConnectionMap;
 
     public OnlineServer() {
         serverThread = new ServerConnectionThread();
         queue = new LinkedBlockingQueue<OnlineAction>();
+        messageIDConnectionMap = new HashMap<UUID, ClientConnectionThread>();
     }
 
     /**
@@ -67,15 +73,44 @@ public class OnlineServer implements Closeable {
      * If no action is already enqueued, this method will block indefinitely until an action is available.
      */
     public OnlineAction getAction() {
-        try {
-            return queue.take();
-        } catch (InterruptedException ex) {
-            log.warn("Interrupted while taking an online action from the queue.", ex);
-            return null;
+        OnlineAction nextAction = null;
+
+        while (nextAction == null) {
+            try {
+                nextAction = queue.take();
+            } catch (InterruptedException ex) {
+                log.warn("Interrupted while taking an online action from the queue.", ex);
+                return null;
+            }
+
+            if (nextAction instanceof Exit) {
+                onActionExecution(nextAction, new ActionStatus(nextAction, true, "Session Closed."));
+                nextAction = null;
+            }
         }
+
+        return nextAction;
     }
 
-    //TODO(Charles): Callback after action execution.
+    public void onActionExecution(OnlineAction action, OnlineResponse onlineResponse) {
+        ClientConnectionThread clientConnectionThread = messageIDConnectionMap.get(action.getIdentifier());
+        ObjectOutputStream outputStream = clientConnectionThread.outputStream;
+
+        try {
+            outputStream.writeObject(onlineResponse.toString());
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        if (action instanceof Exit || action instanceof Stop) {
+            // Interrupt waiting thread to finish closing.
+            serverThread.close(clientConnectionThread);
+        }
+
+        if (onlineResponse instanceof ActionStatus) {
+            messageIDConnectionMap.remove(action.getIdentifier());
+        }
+    }
 
     @Override
     public void close() {
@@ -96,7 +131,7 @@ public class OnlineServer implements Closeable {
      */
     private class ServerConnectionThread extends Thread {
         private ServerSocket socket;
-        private Set<ClientConnectionThread> clientConnections;
+        private HashSet<ClientConnectionThread> clientConnections;
 
         public ServerConnectionThread() {
             clientConnections = new HashSet<ClientConnectionThread>();
@@ -135,13 +170,21 @@ public class OnlineServer implements Closeable {
             close();
         }
 
+        public void close(ClientConnectionThread clientConnectionThread) {
+            // Wake up waiting thread.
+            synchronized (clientConnectionThread) {
+                clientConnectionThread.notify();
+            }
+
+            clientConnections.remove(clientConnectionThread);
+        }
+
         public void close() {
             if (clientConnections != null) {
                 for (ClientConnectionThread clientConnection : clientConnections) {
-                    clientConnection.close();
+                    close(clientConnection);
                 }
 
-                clientConnections.clear();
                 clientConnections = null;
             }
 
@@ -158,18 +201,16 @@ public class OnlineServer implements Closeable {
     }
 
     private class ClientConnectionThread extends Thread {
-        private Socket socket;
-        private ObjectInputStream inputStream;
-        private BufferedOutputStream outputStream;
-        private OutputStreamWriter outputWriter;
+        public Socket socket;
+        public ObjectInputStream inputStream;
+        public ObjectOutputStream outputStream;
 
         public ClientConnectionThread(Socket socket) {
             this.socket = socket;
 
             try {
                 inputStream = new ObjectInputStream(socket.getInputStream());
-                outputStream = new BufferedOutputStream(socket.getOutputStream());
-                outputWriter = new OutputStreamWriter(outputStream);
+                outputStream = new ObjectOutputStream(socket.getOutputStream());
             } catch (IOException ex) {
                 close();
                 throw new RuntimeException(ex);
@@ -178,52 +219,45 @@ public class OnlineServer implements Closeable {
 
         @Override
         public void run() {
+            OnlineMessage clientMessage = null;
             while (socket.isConnected() && !isInterrupted()) {
                 try {
-                    OnlineAction newAction = (OnlineAction)inputStream.readObject();
-                    newAction.setOutputWriter(outputWriter);
-                    if (newAction.getClass() == Exit.class) {
-                        // Acknowledge client exit.
-                        newAction.getOutputWriter().write("Session Closed\n");
-                        newAction.getOutputWriter().flush();
+                    clientMessage = OnlineMessage.getOnlineMessage(inputStream.readObject().toString());
+                    OnlineAction newAction = OnlineAction.getAction(clientMessage.getIdentifier(), clientMessage.getMessage());
+
+                    // Acknowledge new action received.
+                    outputStream.writeObject(new ActionAcknowledgement(newAction).toString());
+
+                    // Queue new action.
+                    queue.put(newAction);
+                    messageIDConnectionMap.put(newAction.getIdentifier(), this);
+
+                    if (newAction instanceof Exit || newAction instanceof Stop) {
+                        // Break loop.
                         break;
                     }
-                    queue.put(newAction);
                 } catch (InterruptedException ex) {
                     break;
-                } catch (IOException ex) {
+                } catch (IOException | ClassNotFoundException ex) {
                     close();
                     throw new RuntimeException(ex);
-                } catch (ClassNotFoundException ex) {
-                    close();
-                    throw new RuntimeException(ex);
+                }
+            }
+
+            // Wait until actions are finished executing before closing socket.
+            // The onActionExecution callback will interrupt wait when the exit action is finished executing.
+            synchronized(this) {
+                try {
+                    this.wait();
+                } catch (InterruptedException ex) {
+                    // Ignore.
                 }
             }
 
             close();
         }
 
-        public void close() {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException ex) {
-                    // Ignore.
-                }
-
-                inputStream = null;
-            }
-
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (IOException ex) {
-                    // Ignore.
-                }
-
-                outputStream = null;
-            }
-
+        public synchronized void close() {
             if (socket != null) {
                 try {
                     socket.close();

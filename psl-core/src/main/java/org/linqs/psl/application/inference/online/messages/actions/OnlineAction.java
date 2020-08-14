@@ -15,47 +15,58 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.actions;
+package org.linqs.psl.application.inference.online.messages.actions;
 
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
-import java.io.OutputStreamWriter;
-import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Base class for online actions.
  * All actions should be able to freely convert to and from strings.
  */
-public abstract class OnlineAction implements Serializable {
-    OutputStreamWriter outputStream;
+public abstract class OnlineAction extends OnlineMessage {
+
+    public OnlineAction(UUID identifier, String clientCommand) {
+        super(identifier, clientCommand);
+    }
 
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
-    public static OnlineAction parse(String clientCommand) {
-        String[] parts = clientCommand.split("\t");
+    public static OnlineAction getAction(String clientCommand) {
+        return getAction(UUID.randomUUID(), clientCommand);
+    }
 
-        parts[0] = parts[0].trim();
-        if (parts[0].equalsIgnoreCase("add")) {
-            return new AddAtom(parts);
-        } else if (parts[0].equalsIgnoreCase("stop")) {
-            return new Stop();
-        } else if (parts[0].equalsIgnoreCase("exit")) {
-            return new Exit();
-        } else if (parts[0].equalsIgnoreCase("delete")) {
-            return new DeleteAtom(parts);
-        } else if (parts[0].equalsIgnoreCase("update")) {
-            return new UpdateObservation(parts);
-        } else if (parts[0].equalsIgnoreCase("query")) {
-            return new QueryAtom(parts);
-        } else if (parts[0].equalsIgnoreCase("write")) {
-            return new WriteInferredPredicates(parts);
+    public static OnlineAction getAction(UUID actionID, String clientCommand) {
+        String actionClass = clientCommand.split("\t")[0].trim();
+
+        if (actionClass.equalsIgnoreCase("add")) {
+            return new AddAtom(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("stop")) {
+            return new Stop(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("exit")) {
+            return new Exit(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("delete")) {
+            return new DeleteAtom(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("update")) {
+            return new UpdateObservation(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("query")) {
+            return new QueryAtom(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("write")) {
+            return new WriteInferredPredicates(actionID, clientCommand);
         } else {
-            throw new IllegalArgumentException("Unknown online action: '" + parts[0] + "'.");
+            throw new IllegalArgumentException("Unknown online action: '" + actionClass + "'.");
         }
     }
+
+    /**
+     * Parse the delimited client command.
+     */
+    protected abstract void parse(String[] parts);
 
     /**
      * Parse an atom.
@@ -83,14 +94,6 @@ public abstract class OnlineAction implements Serializable {
         }
 
         return new AtomInfo(predicate, arguments, value);
-    }
-
-    public void setOutputWriter(OutputStreamWriter outputStream) {
-        this.outputStream = outputStream;
-    }
-
-    public OutputStreamWriter getOutputWriter() {
-        return outputStream;
     }
 
     protected static class AtomInfo {
