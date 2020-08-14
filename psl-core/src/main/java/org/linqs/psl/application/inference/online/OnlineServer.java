@@ -35,11 +35,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A class that handles establishing a server socket and waiting for client connections.
@@ -52,12 +52,12 @@ public class OnlineServer implements Closeable {
     private ServerConnectionThread serverThread;
     private BlockingQueue<OnlineAction> queue;
 
-    private HashMap<UUID, ClientConnectionThread> messageIDConnectionMap;
+    private ConcurrentHashMap<UUID, ClientConnectionThread> messageIDConnectionMap;
 
     public OnlineServer() {
         serverThread = new ServerConnectionThread();
         queue = new LinkedBlockingQueue<OnlineAction>();
-        messageIDConnectionMap = new HashMap<UUID, ClientConnectionThread>();
+        messageIDConnectionMap = new ConcurrentHashMap<UUID, ClientConnectionThread>();
     }
 
     /**
@@ -94,24 +94,21 @@ public class OnlineServer implements Closeable {
 
     public void onActionExecution(OnlineAction action, OnlineResponse onlineResponse) {
         ClientConnectionThread clientConnectionThread = messageIDConnectionMap.get(action.getIdentifier());
+        ObjectOutputStream outputStream = clientConnectionThread.outputStream;
 
-        if (clientConnectionThread != null) {
-            ObjectOutputStream outputStream = clientConnectionThread.outputStream;
+        try {
+            outputStream.writeObject(onlineResponse.toString());
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
 
-            try {
-                outputStream.writeObject(onlineResponse.toString());
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+        if (action instanceof Exit || action instanceof Stop) {
+            // Interrupt waiting thread to finish closing.
+            serverThread.close(clientConnectionThread);
+        }
 
-            if (action instanceof Exit || action instanceof Stop) {
-                // Interrupt waiting thread to finish closing.
-                serverThread.close(clientConnectionThread);
-            }
-
-            if (onlineResponse instanceof ActionStatus) {
-                messageIDConnectionMap.remove(action.getIdentifier());
-            }
+        if (onlineResponse instanceof ActionStatus) {
+            messageIDConnectionMap.remove(action.getIdentifier());
         }
     }
 
@@ -232,8 +229,8 @@ public class OnlineServer implements Closeable {
                     outputStream.writeObject(new ActionAcknowledgement(newAction).toString());
 
                     // Queue new action.
-                    queue.put(newAction);
                     messageIDConnectionMap.put(newAction.getIdentifier(), this);
+                    queue.put(newAction);
 
                     if (newAction instanceof Exit || newAction instanceof Stop) {
                         // Break loop.
