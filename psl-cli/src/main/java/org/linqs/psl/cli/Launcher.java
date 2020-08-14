@@ -338,9 +338,8 @@ public class Launcher {
     }
 
     private void runOnlineClient() {
-        ArrayList<OnlineResponse> onlineResponses = new ArrayList<OnlineResponse>();
         log.info("Starting OnlinePSL client.");
-        onlineResponses = OnlineClient.run(System.in, System.out);
+        OnlineClient.run(System.in, System.out);
         log.info("OnlinePSL client closed.");
     }
 
