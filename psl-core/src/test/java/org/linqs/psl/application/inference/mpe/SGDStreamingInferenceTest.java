@@ -19,12 +19,20 @@ package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.InferenceTest;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
+
+import org.junit.After;
 
 import java.util.List;
 
 public class SGDStreamingInferenceTest extends InferenceTest {
+    @After
+    public void cleanup() {
+        Options.SGD_LEARNING_RATE.clear();
+    }
+
     @Override
     protected InferenceApplication getInference(List<Rule> rules, Database db) {
         return new SGDStreamingInference(rules, db);
@@ -34,5 +42,11 @@ public class SGDStreamingInferenceTest extends InferenceTest {
     public void testLogicalTautologyTrivial() {
         // Streaming methods cannot use this test since it requires
         // ground rules and terms to be kept in memory.
+    }
+
+    @Override
+    public void initialValueTest() {
+        Options.SGD_LEARNING_RATE.set(10.0);
+        super.initialValueTest();
     }
 }

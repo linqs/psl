@@ -41,20 +41,19 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     public ADMMObjectiveTerm createLossTerm(TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
         if (isHinge && isSquared) {
-            return new SquaredHingeLossTerm(groundRule, hyperplane);
+            return ADMMObjectiveTerm.createSquaredHingeLossTerm(hyperplane, groundRule);
         } else if (isHinge && !isSquared) {
-            return new HingeLossTerm(groundRule, hyperplane);
+            return ADMMObjectiveTerm.createHingeLossTerm(hyperplane, groundRule);
         } else if (!isHinge && isSquared) {
-            hyperplane.setConstant(0.0f);
-            return new SquaredLinearLossTerm(groundRule, hyperplane);
+            return ADMMObjectiveTerm.createSquaredLinearLossTerm(hyperplane, groundRule);
         } else {
-            return new LinearLossTerm(groundRule, hyperplane);
+            return ADMMObjectiveTerm.createLinearLossTerm(hyperplane, groundRule);
         }
     }
 
     @Override
     public ADMMObjectiveTerm createLinearConstraintTerm(TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
             GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
-        return new LinearConstraintTerm(groundRule, hyperplane, comparator);
+        return ADMMObjectiveTerm.createLinearConstraintTerm(hyperplane, groundRule, comparator);
     }
 }

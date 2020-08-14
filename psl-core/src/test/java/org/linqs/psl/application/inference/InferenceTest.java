@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import org.linqs.psl.TestModel;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
@@ -38,8 +39,10 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -49,6 +52,11 @@ import java.util.Set;
 
 public abstract class InferenceTest {
     protected abstract InferenceApplication getInference(List<Rule> rules, Database db);
+
+    @After
+    public void cleanup() {
+        Options.INFERENCE_INITIAL_VARIABLE_VALUE.clear();
+    }
 
     /**
      * A quick test that only checks to see if the inference method is running.
@@ -260,5 +268,39 @@ public abstract class InferenceTest {
         }
 
         assertEquals(preInferenceTotalValue, postInferenceTotalValue, 0.001f);
+    }
+
+    /**
+     * Run inference multiple time for different initial values,
+     * and expect them all to get the same answer.
+     */
+    @Test
+    public void initialValueTest() {
+        TestModel.ModelInformation info = TestModel.getModel();
+
+        double oldObjective = 0.0f;
+        InitialValue oldInitialValue = null;
+
+        for (InitialValue initialValue : InitialValue.values()) {
+            Options.INFERENCE_INITIAL_VARIABLE_VALUE.set(initialValue.toString());
+
+            Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+            Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+            InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+            double objective = inference.inference();
+            inference.close();
+            inferDB.close();
+
+            if (oldInitialValue != null) {
+                assertEquals(
+                        String.format("Found differing values for two initial values: %s (%f) vs %s (%f).",
+                        oldInitialValue, oldObjective, initialValue, objective),
+                        objective, oldObjective, 0.05);
+            }
+
+            oldObjective = objective;
+            oldInitialValue = initialValue;
+        }
     }
 }

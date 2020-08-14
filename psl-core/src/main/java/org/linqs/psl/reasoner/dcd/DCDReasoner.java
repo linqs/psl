@@ -49,7 +49,7 @@ public class DCDReasoner extends Reasoner {
     }
 
     @Override
-    public void optimize(TermStore baseTermStore) {
+    public double optimize(TermStore baseTermStore) {
         if (!(baseTermStore instanceof VariableTermStore)) {
             throw new IllegalArgumentException("DCDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -106,11 +106,13 @@ public class DCDReasoner extends Reasoner {
             }
         }
 
-        termStore.syncAtoms();
-
         log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
                 iteration - 1, objective, totalTime);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+
+        termStore.syncAtoms();
+
+        return objective;
     }
 
     private boolean breakOptimization(int iteration, double objective, double oldObjective) {

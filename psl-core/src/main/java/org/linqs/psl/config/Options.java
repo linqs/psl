@@ -56,14 +56,14 @@ public class Options {
 
     public static final Option ADMM_EPSILON_ABS = new Option(
         "admmreasoner.epsilonabs",
-        1e-5f,
+        1e-5,
         "Absolute error component of stopping criteria.",
         Option.FLAG_POSITIVE
     );
 
     public static final Option ADMM_EPSILON_REL = new Option(
         "admmreasoner.epsilonrel",
-        1e-3f,
+        1e-3,
         "Relative error component of stopping criteria.",
         Option.FLAG_POSITIVE
     );
@@ -477,7 +477,7 @@ public class Options {
 
     public static final Option MEMORY_TS_INITIAL_SIZE = new Option(
         "memorytermstore.initialsize",
-        10000,
+        10000l,
         "The initial size for the memory store.",
         Option.FLAG_NON_NEGATIVE
     );
