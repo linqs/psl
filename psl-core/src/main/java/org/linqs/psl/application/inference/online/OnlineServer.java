@@ -94,21 +94,24 @@ public class OnlineServer implements Closeable {
 
     public void onActionExecution(OnlineAction action, OnlineResponse onlineResponse) {
         ClientConnectionThread clientConnectionThread = messageIDConnectionMap.get(action.getIdentifier());
-        ObjectOutputStream outputStream = clientConnectionThread.outputStream;
 
-        try {
-            outputStream.writeObject(onlineResponse.toString());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        if (clientConnectionThread != null) {
+            ObjectOutputStream outputStream = clientConnectionThread.outputStream;
 
-        if (action instanceof Exit || action instanceof Stop) {
-            // Interrupt waiting thread to finish closing.
-            serverThread.close(clientConnectionThread);
-        }
+            try {
+                outputStream.writeObject(onlineResponse.toString());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
 
-        if (onlineResponse instanceof ActionStatus) {
-            messageIDConnectionMap.remove(action.getIdentifier());
+            if (action instanceof Exit || action instanceof Stop) {
+                // Interrupt waiting thread to finish closing.
+                serverThread.close(clientConnectionThread);
+            }
+
+            if (onlineResponse instanceof ActionStatus) {
+                messageIDConnectionMap.remove(action.getIdentifier());
+            }
         }
     }
 
