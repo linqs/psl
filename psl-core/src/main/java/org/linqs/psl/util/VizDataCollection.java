@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPOutputStream;
 
 public class VizDataCollection {
     private static final Logger log = LoggerFactory.getLogger(VizDataCollection.class);
@@ -48,23 +49,27 @@ public class VizDataCollection {
     public static void outputJSON() {
         String[] keyNames = {"truthMap", "rules", "groundRules", "groundAtoms"};
         JSONObject fullJson = new JSONObject(vizData, keyNames);
+        String prettyPrintedFullJSON = fullJson.toString(4);
 
         PrintStream stream = System.out;
-        boolean closeStream = false;
 
         if (outputPath != null) {
             try {
                 stream = new PrintStream(outputPath);
-                closeStream = true;
+                if (outputPath.endsWith(".gz")) {
+                    GZIPOutputStream gzipStream = new GZIPOutputStream(stream, true);
+                    byte[] jsonByteArray = prettyPrintedFullJSON.getBytes();
+                    gzipStream.write(jsonByteArray, 0, jsonByteArray.length);
+                    gzipStream.close();
+                } else {
+                    stream.println(prettyPrintedFullJSON);
+                }
+                stream.close();
             } catch (IOException ex) {
                 throw new RuntimeException();
             }
-        }
-
-        stream.println(fullJson.toString(4));
-
-        if (closeStream) {
-            stream.close();
+        } else {
+            stream.println(prettyPrintedFullJSON);
         }
     }
 
@@ -98,16 +103,6 @@ public class VizDataCollection {
         vizData.truthMap.put(groundAtomID, truthVal);
     }
 
-    public static void collectModelRules(List<Rule> rules) {
-        for (Rule rule : rules) {
-            String ruleStringID = Integer.toString(System.identityHashCode(rule));
-            Map<String, Object> ruleElementItem = new HashMap<String, Object>();
-            ruleElementItem.put("text", rule.getName());
-            ruleElementItem.put("weighted", rule.isWeighted());
-            vizData.rules.put(ruleStringID, ruleElementItem);
-        }
-    }
-
     public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String strGroundRuleId = Integer.toString(System.identityHashCode(groundRule));
@@ -138,13 +133,19 @@ public class VizDataCollection {
             atomCount++;
         }
 
+        // Adds a rule element to RuleMap
+        String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
+        Map<String, Object> rulesElementItem = new HashMap<String, Object>();
+        rulesElementItem.put("text", parentRule.getName());
+        rulesElementItem.put("weighted", parentRule.isWeighted());
+        vizData.rules.put(ruleStringID, rulesElementItem);
+
         // Adds a groundRule element to Ground Rule Map.
         Map<String, String> varConstMap = new HashMap<String, String>();
         for (Map.Entry<Variable, Integer> entry : variableMap.entrySet()) {
             varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
         }
 
-        String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
         Map<String, Object> constants = new HashMap<String, Object>();

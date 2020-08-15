@@ -260,7 +260,6 @@ public class Launcher {
         }
         truthDatabase.close();
 
-        VizDataCollection.collectModelRules(model.getRules());
         VizDataCollection.dissatisfactionPerGroundRule(inferenceApplication.getGroundRuleStore());
     }
 
