@@ -49,7 +49,6 @@ public class VizDataCollection {
     public static void outputJSON() {
         String[] keyNames = {"truthMap", "rules", "groundRules", "groundAtoms"};
         JSONObject fullJson = new JSONObject(vizData, keyNames);
-        String prettyPrintedFullJSON = fullJson.toString(4);
 
         PrintStream stream = System.out;
 
@@ -58,18 +57,18 @@ public class VizDataCollection {
                 stream = new PrintStream(outputPath);
                 if (outputPath.endsWith(".gz")) {
                     GZIPOutputStream gzipStream = new GZIPOutputStream(stream, true);
-                    byte[] jsonByteArray = prettyPrintedFullJSON.getBytes();
+                    byte[] jsonByteArray = fullJson.toString().getBytes();
                     gzipStream.write(jsonByteArray, 0, jsonByteArray.length);
                     gzipStream.close();
                 } else {
-                    stream.println(prettyPrintedFullJSON);
+                    stream.println(fullJson.toString());
                 }
                 stream.close();
             } catch (IOException ex) {
                 throw new RuntimeException();
             }
         } else {
-            stream.println(prettyPrintedFullJSON);
+            stream.println(fullJson.toString());
         }
     }
 
