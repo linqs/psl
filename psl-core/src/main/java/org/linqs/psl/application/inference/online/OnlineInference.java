@@ -19,6 +19,7 @@ package org.linqs.psl.application.inference.online;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.messages.actions.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.ObserveAtom;
 import org.linqs.psl.application.inference.online.messages.actions.DeleteAtom;
 import org.linqs.psl.application.inference.online.messages.actions.Stop;
 import org.linqs.psl.application.inference.online.messages.actions.UpdateObservation;
@@ -31,9 +32,11 @@ import org.linqs.psl.application.inference.online.messages.actions.OnlineActionE
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,43 +93,64 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected void executeAction(OnlineAction action) {
+        String response = null;
+
         if (action.getClass() == AddAtom.class) {
             doAddAtom((AddAtom)action);
         } else if (action.getClass() == DeleteAtom.class) {
-            doDeleteAtom((DeleteAtom)action);
+            response = doDeleteAtom((DeleteAtom)action);
         } else if (action.getClass() == Stop.class) {
-            doStop((Stop)action);
+            response = doStop((Stop)action);
         } else if (action.getClass() == UpdateObservation.class) {
-            doUpdateObservation((UpdateObservation)action);
+            response = doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == QueryAtom.class) {
-            doQueryAtom((QueryAtom)action);
+            response = doQueryAtom((QueryAtom)action);
         } else if (action.getClass() == WriteInferredPredicates.class) {
-            doWriteInferredPredicates((WriteInferredPredicates)action);
+            response = doWriteInferredPredicates((WriteInferredPredicates)action);
         } else {
             throw new OnlineActionException("Unknown action: " + action.getClass().getName() + ".");
         }
 
-        server.onActionExecution(action, new ActionStatus(action, true, ""));
+        server.onActionExecution(action, new ActionStatus(action, true, response));
     }
 
-    protected void doAddAtom(AddAtom action) {
+    protected String doAddAtom(AddAtom action) {
         boolean readPartition = (action.getPartitionName().equalsIgnoreCase("READ"));
-        ((OnlineTermStore)termStore).addAtom(action.getPredicate(), action.getArguments(), action.getValue(), readPartition);
+        GroundAtom atom = ((OnlineTermStore)termStore).addAtom(action.getPredicate(), action.getArguments(), action.getValue(), readPartition);
+
+        return String.format("Added atom: %s", atom.toStringWithValue());
     }
 
-    protected void doDeleteAtom(DeleteAtom action) {
-        ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
+
+    protected String doDeleteAtom(DeleteAtom action) {
+        GroundAtom atom = ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
+
+        if (atom !=null) {
+            return String.format("Deleted atom: %s", atom.toString());
+        } else {
+            return String.format("Atom: %s(%s) did not exist in model.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
     }
 
-    protected void doStop(Stop action) {
+    protected String doStop(Stop action) {
         stopped = true;
+
+        return "OnlinePSL inference stopped.";
     }
 
-    protected void doUpdateObservation(UpdateObservation action) {
-        ((OnlineTermStore)termStore).updateAtom(action.getPredicate(), action.getArguments(), action.getValue());
+    protected String doUpdateObservation(UpdateObservation action) {
+        GroundAtom atom = ((OnlineTermStore)termStore).updateAtom(action.getPredicate(), action.getArguments(), action.getValue());
+
+        if (atom !=null) {
+            return String.format("Updated atom: %s", atom.toStringWithValue());
+        } else {
+            return String.format("Atom: %s(%s) did not exist in model.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
     }
 
-    protected void doWriteInferredPredicates(WriteInferredPredicates action) {
+    protected String doWriteInferredPredicates(WriteInferredPredicates action) {
         String response = null;
 
         log.trace("Optimization Start");
@@ -142,9 +166,11 @@ public abstract class OnlineInference extends InferenceApplication {
             database.outputRandomVariableAtoms();
             response = "Wrote inferred predicates to output stream.";
         }
+
+        return response;
     }
 
-    protected void doQueryAtom(QueryAtom action) {
+    protected String doQueryAtom(QueryAtom action) {
         double atomValue = -1.0;
 
         log.trace("Optimization Start");
@@ -156,6 +182,14 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
+
+        if (atomValue == -1.0) {
+            return String.format("Atom: %s(%s) not found.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        } else {
+            return String.format("Atom: %s(%s) found. Returned to client.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
     }
 
     @Override

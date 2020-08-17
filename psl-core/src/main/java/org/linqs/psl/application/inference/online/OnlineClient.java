@@ -45,6 +45,8 @@ public class OnlineClient {
 
     public static final String EXIT_STRING = "exit";
 
+    public static final int NUM_CONNECTION_RETRIES = 5;
+
     // Static only.
     private OnlineClient() {}
 
@@ -53,53 +55,68 @@ public class OnlineClient {
     }
 
     public static ArrayList<OnlineResponse> run(String hostname, int port, InputStream in, PrintStream out) {
+        Boolean serverConnected = false;
         ArrayList<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
 
-        try (
-                Socket server = new Socket(hostname, port);
-                ObjectOutputStream socketOutputStream = new ObjectOutputStream(server.getOutputStream());
-                ObjectInputStream socketInputStream = new ObjectInputStream(server.getInputStream());
-                BufferedReader commandReader = new BufferedReader(new InputStreamReader(in))) {
-            boolean exit = false;
-            String userInput = null;
+        int i = 0;
+        while (!serverConnected) {
+            try (
+                    Socket server = new Socket(hostname, port);
+                    ObjectOutputStream socketOutputStream = new ObjectOutputStream(server.getOutputStream());
+                    ObjectInputStream socketInputStream = new ObjectInputStream(server.getInputStream());
+                    BufferedReader commandReader = new BufferedReader(new InputStreamReader(in))) {
+                boolean exit = false;
+                String userInput = null;
 
-            ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, socketInputStream, out, serverResponses);
-            serverConnectionThread.start();
+                serverConnected = true;
 
-            while (!exit) {
-                try {
-                    // Read next command.
-                    userInput = commandReader.readLine();
-                    if (userInput == null) {
-                        break;
+                ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, socketInputStream, out, serverResponses);
+                serverConnectionThread.start();
+
+                while (!exit) {
+                    try {
+                        // Read next command.
+                        userInput = commandReader.readLine();
+                        if (userInput == null) {
+                            break;
+                        }
+
+                        // Parse command.
+                        userInput = userInput.trim();
+                        if (userInput.equals("")) {
+                            continue;
+                        }
+                        exit = (userInput.equalsIgnoreCase(EXIT_STRING));
+
+                        OnlineAction onlineAction = OnlineAction.getAction(userInput);
+                        socketOutputStream.writeObject(onlineAction.toString());
+
+                    } catch (OnlineActionException ex) {
+                        log.error(String.format("Error parsing command: [%s].", userInput));
+                        log.error(ex.getMessage());
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
                     }
-
-                    // Parse command.
-                    userInput = userInput.trim();
-                    if (userInput.equals("")) {
-                        continue;
-                    }
-                    exit = (userInput.equalsIgnoreCase(EXIT_STRING));
-
-                    OnlineAction onlineAction = OnlineAction.getAction(userInput);
-                    socketOutputStream.writeObject(onlineAction.toString());
-
-                } catch (OnlineActionException ex) {
-                    log.error(String.format("Error parsing command: [%s].", userInput));
-                    log.error(ex.getMessage());
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
                 }
+
+                // Wait for serverConnectionThread.
+                serverConnectionThread.join();
+
+            } catch (IOException ex) {
+                i ++;
+                if (i < NUM_CONNECTION_RETRIES) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    throw new RuntimeException(
+                            String.format("Error establishing connection to the online server (%s:%d).", hostname, port), ex);
+                }
+            } catch (InterruptedException ex) {
+                log.error("Client session interrupted");
             }
-
-            // Wait for serverConnectionThread.
-            serverConnectionThread.join();
-
-        } catch (IOException ex) {
-            throw new RuntimeException(
-                    String.format("Error establishing connection to the online server (%s:%d).", hostname, port), ex);
-        } catch (InterruptedException ex) {
-            log.error("Client session interrupted");
         }
 
         return serverResponses;
