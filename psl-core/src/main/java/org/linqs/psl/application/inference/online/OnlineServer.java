@@ -34,13 +34,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -136,10 +135,12 @@ public class OnlineServer implements Closeable {
      * The thread that waits for client connections.
      */
     private class ServerConnectionThread extends Thread {
+        private File tmpFile;
         private ServerSocket socket;
         private HashSet<ClientConnectionThread> clientConnections;
 
         public ServerConnectionThread() {
+            tmpFile = null;
             clientConnections = new HashSet<ClientConnectionThread>();
 
             int port = Options.ONLINE_PORT_NUMBER.getInt();
@@ -150,7 +151,7 @@ public class OnlineServer implements Closeable {
                 throw new RuntimeException("Could not establish socket on port " + port + ".", ex);
             }
 
-            // TODO: Drop lock file to notify server is ready to accept clients.
+            createServerTempFile();
             log.info("Online server started on port " + port + ".");
         }
 
@@ -200,6 +201,16 @@ public class OnlineServer implements Closeable {
                 }
 
                 socket = null;
+            }
+        }
+
+        private void createServerTempFile() {
+            try {
+                File tmpFile = File.createTempFile("OnlinePSLServer", ".tmp");
+                tmpFile.deleteOnExit();
+                log.info("Temporary server config file at: " + tmpFile.getAbsolutePath());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
             }
         }
     }
