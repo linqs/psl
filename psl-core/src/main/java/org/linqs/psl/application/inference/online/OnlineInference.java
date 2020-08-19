@@ -33,6 +33,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 
@@ -96,7 +97,9 @@ public abstract class OnlineInference extends InferenceApplication {
         String response = null;
 
         if (action.getClass() == AddAtom.class) {
-            doAddAtom((AddAtom)action);
+            response = doAddAtom((AddAtom)action);
+        } else if (action.getClass() == ObserveAtom.class) {
+            response = doObserveAtom((ObserveAtom)action);
         } else if (action.getClass() == DeleteAtom.class) {
             response = doDeleteAtom((DeleteAtom)action);
         } else if (action.getClass() == Stop.class) {
@@ -121,6 +124,11 @@ public abstract class OnlineInference extends InferenceApplication {
         return String.format("Added atom: %s", atom.toStringWithValue());
     }
 
+    protected String doObserveAtom(ObserveAtom action) {
+        ObservedAtom atom = ((OnlineTermStore)termStore).observeAtom(action.getPredicate(), action.getArguments(), action.getValue());
+
+        return String.format("Observed atom: %s", atom.toStringWithValue());
+    }
 
     protected String doDeleteAtom(DeleteAtom action) {
         GroundAtom atom = ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
@@ -181,6 +189,7 @@ public abstract class OnlineInference extends InferenceApplication {
             atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
         }
 
+        // TODO: Combine query response with status.
         server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
 
         if (atomValue == -1.0) {

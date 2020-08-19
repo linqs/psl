@@ -23,7 +23,6 @@ import org.linqs.psl.application.inference.online.messages.responses.QueryAtomRe
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.util.StringUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,13 +33,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class SGDOnlineInferenceTest {
     private TestModel.ModelInformation modelInfo;
@@ -83,6 +80,7 @@ public class SGDOnlineInferenceTest {
             }
 
             onlineInferenceThread.close();
+            onlineInferenceThread = null;
         }
 
         if (inferDB != null) {
@@ -201,6 +199,12 @@ public class SGDOnlineInferenceTest {
         assertAtomValues(commands, values);
     }
 
+    /**
+     * There are three ways to effectively change the partition of an atom.
+     * 1. Delete and then Add an atom.
+     * 2. Add an atom with predicates and arguments that already exists in the model but with a different partition.
+     * 3. Using the Observe or Unobserve actions for random variables and observation respectively. (preferred).
+     */
     @Test
     public void testChangeAtomPartition() {
         String commands =
@@ -209,6 +213,29 @@ public class SGDOnlineInferenceTest {
                 "EXIT";
 
         double[] values = {0.5};
+
+        assertAtomValues(commands, values);
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        commands =
+                "DELETE\tWrite\tFriends\tAlice\tBob\n" +
+                "ADD\tRead\tFriends\tAlice\tBob\t0.5\n" +
+                "Query\tFriends\tAlice\tBob\n" +
+                "EXIT";
+
+        assertAtomValues(commands, values);
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        commands =
+                "OBSERVE\tFriends\tAlice\tBob\t0.5\n" +
+                "Query\tFriends\tAlice\tBob\n" +
+                "EXIT";
 
         assertAtomValues(commands, values);
     }

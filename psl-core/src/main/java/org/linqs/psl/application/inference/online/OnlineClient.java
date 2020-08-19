@@ -59,77 +59,61 @@ public class OnlineClient {
     }
 
     public static List<OnlineResponse> run(String hostname, int port, InputStream in, PrintStream out) {
-        Boolean serverConnected = false;
         ArrayList<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
 
-        int i = 0;
-        while (!serverConnected) {
-            try (
-                    Socket server = new Socket(hostname, port);
-                    ObjectOutputStream socketOutputStream = new ObjectOutputStream(server.getOutputStream());
-                    ObjectInputStream socketInputStream = new ObjectInputStream(server.getInputStream());
-                    BufferedReader commandReader = new BufferedReader(new InputStreamReader(in))) {
-                boolean exit = false;
-                String userInput = null;
+        try (
+                Socket server = new Socket(hostname, port);
+                ObjectOutputStream socketOutputStream = new ObjectOutputStream(server.getOutputStream());
+                ObjectInputStream socketInputStream = new ObjectInputStream(server.getInputStream());
+                BufferedReader commandReader = new BufferedReader(new InputStreamReader(in))) {
+            boolean exit = false;
+            String userInput = null;
 
-                serverConnected = true;
+            // Get model information from server.
+            ModelInformation modelInformation = null;
+            try {
+                modelInformation = (ModelInformation)OnlineResponse.getResponse(
+                        OnlineMessage.getOnlineMessage(socketInputStream.readObject().toString()).getMessage());
+            } catch (IOException | ClassNotFoundException ex) {
+                throw new RuntimeException(ex);
+            }
 
-                // Get model information from server.
-                ModelInformation modelInformation = null;
+            // Startup serverConnectionThread for reading server responses.
+            ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, socketInputStream, out, serverResponses);
+            serverConnectionThread.start();
+
+            // Read and parse userInput to send actions to server.
+            while (!exit) {
                 try {
-                    modelInformation = (ModelInformation)OnlineResponse.getResponse(
-                            OnlineMessage.getOnlineMessage(socketInputStream.readObject().toString()).getMessage());
-                } catch (IOException | ClassNotFoundException ex) {
+                    // Read next command.
+                    userInput = commandReader.readLine();
+                    if (userInput == null) {
+                        break;
+                    }
+
+                    // Parse command.
+                    userInput = userInput.trim();
+                    if (userInput.equals("")) {
+                        continue;
+                    }
+                    exit = (userInput.equalsIgnoreCase(EXIT_STRING));
+
+                    OnlineAction onlineAction = OnlineAction.getAction(userInput);
+                    socketOutputStream.writeObject(onlineAction.toString());
+                } catch (OnlineActionException ex) {
+                    log.error(String.format("Error parsing command: [%s].", userInput));
+                    log.error(ex.getMessage());
+                } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
-
-                // Startup serverConnectionThread for reading server responses.
-                ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, socketInputStream, out, serverResponses);
-                serverConnectionThread.start();
-
-                // Read and parse userInput to send actions to server.
-                while (!exit) {
-                    try {
-                        // Read next command.
-                        userInput = commandReader.readLine();
-                        if (userInput == null) {
-                            break;
-                        }
-
-                        // Parse command.
-                        userInput = userInput.trim();
-                        if (userInput.equals("")) {
-                            continue;
-                        }
-                        exit = (userInput.equalsIgnoreCase(EXIT_STRING));
-
-                        OnlineAction onlineAction = OnlineAction.getAction(userInput);
-                        socketOutputStream.writeObject(onlineAction.toString());
-                    } catch (OnlineActionException ex) {
-                        log.error(String.format("Error parsing command: [%s].", userInput));
-                        log.error(ex.getMessage());
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
-
-                // Wait for serverConnectionThread.
-                serverConnectionThread.join();
-            } catch (IOException ex) {
-                i ++;
-                if (i < NUM_CONNECTION_RETRIES) {
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    throw new RuntimeException(
-                            String.format("Error establishing connection to the online server (%s:%d).", hostname, port), ex);
-                }
-            } catch (InterruptedException ex) {
-                log.error("Client session interrupted");
             }
+
+            // Wait for serverConnectionThread.
+            serverConnectionThread.join();
+        } catch(IOException ex) {
+            throw new RuntimeException(ex);
+        } catch (InterruptedException ex) {
+            log.error("Client session interrupted");
         }
 
         return serverResponses;
@@ -167,7 +151,7 @@ public class OnlineClient {
                 }
 
                 serverResponses.add(OnlineResponse.getResponse(serverMessage.getMessage()));
-                out.println(serverMessage.getMessage());
+                // out.println(serverMessage.getMessage());
             }
         }
     }

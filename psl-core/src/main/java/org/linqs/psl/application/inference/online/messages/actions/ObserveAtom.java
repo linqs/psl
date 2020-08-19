@@ -27,22 +27,17 @@ import java.util.UUID;
  * Add a new atom to the model.
  * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
  */
-public class AddAtom extends OnlineAction {
+public class ObserveAtom extends OnlineAction {
     private StandardPredicate predicate;
-    private String partition;
     private Constant[] arguments;
     private float value;
 
-    public AddAtom(UUID identifier, String clientCommand) {
+    public ObserveAtom(UUID identifier, String clientCommand) {
         super(identifier, clientCommand);
     }
 
     public StandardPredicate getPredicate() {
         return predicate;
-    }
-
-    public String getPartitionName() {
-        return partition;
     }
 
     public float getValue() {
@@ -58,8 +53,7 @@ public class AddAtom extends OnlineAction {
         parse(newMessage.split("\t"));
 
         message = String.format(
-                "ADD\t%s\t%s\t%s\t%f",
-                partition,
+                "OBSERVE\t%s\t%s\t%f",
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""),
                 value);
@@ -67,18 +61,13 @@ public class AddAtom extends OnlineAction {
 
     @Override
     protected void parse(String[] parts) {
-        assert(parts[0].equalsIgnoreCase("add"));
+        assert(parts[0].equalsIgnoreCase("observe"));
 
-        if (parts.length < 4) {
+        if (parts.length < 3) {
             throw new IllegalArgumentException("Not enough arguments.");
         }
 
-        partition = parts[1].toUpperCase();
-        if (!(partition.equals("READ") || partition.equals("WRITE"))) {
-            throw new IllegalArgumentException("Expecting 'READ' or 'WRITE' for partition, got '" + parts[1] + "'.");
-        }
-
-        OnlineAction.AtomInfo atomInfo = parseAtom(parts, 2);
+        AtomInfo atomInfo = parseAtom(parts, 1);
         predicate = atomInfo.predicate;
         arguments = atomInfo.arguments;
         value = atomInfo.value;

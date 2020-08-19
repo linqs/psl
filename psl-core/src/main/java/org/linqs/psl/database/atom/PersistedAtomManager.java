@@ -56,7 +56,7 @@ public class PersistedAtomManager extends AtomManager {
      */
     private InitialValue initialValueOnIllegalAccess;
 
-    private int persistedAtomCount;
+    protected int persistedAtomCount;
 
     public PersistedAtomManager(Database database) {
         this(database, false);

@@ -82,6 +82,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
         if (database.hasAtom(predicate, arguments)) {
             atom = database.getAtom(predicate, arguments);
             database.deleteAtom(atom);
+            if (atom instanceof RandomVariableAtom) {
+                persistedAtomCount--;
+            }
         }
 
         return atom;

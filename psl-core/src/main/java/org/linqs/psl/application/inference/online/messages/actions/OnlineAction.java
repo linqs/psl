@@ -37,6 +37,7 @@ public abstract class OnlineAction extends OnlineMessage {
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
+    // TODO: Move to online message.
     public static OnlineAction getAction(String clientCommand) {
         return getAction(UUID.randomUUID(), clientCommand);
     }
@@ -46,6 +47,8 @@ public abstract class OnlineAction extends OnlineMessage {
 
         if (actionClass.equalsIgnoreCase("add")) {
             return new AddAtom(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("observe")) {
+            return new ObserveAtom(actionID, clientCommand);
         } else if (actionClass.equalsIgnoreCase("stop")) {
             return new Stop(actionID, clientCommand);
         } else if (actionClass.equalsIgnoreCase("exit")) {
