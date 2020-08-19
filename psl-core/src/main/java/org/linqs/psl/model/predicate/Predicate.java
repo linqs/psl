@@ -21,6 +21,7 @@ import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -105,6 +106,10 @@ public abstract class Predicate {
 
     public static Predicate get(String name)  {
         return predicates.get(name.toUpperCase());
+    }
+
+    public static Collection<Predicate> getAll() {
+        return predicates.values();
     }
 
     /**

@@ -21,10 +21,10 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
-import java.io.Serializable;
 import java.util.UUID;
 
-public class OnlineMessage implements Serializable {
+// TODO: OnlineMessage as strictly wrapper rather than parent.
+public class OnlineMessage {
     private UUID identifier;
     protected String message;
 
@@ -65,6 +65,7 @@ public class OnlineMessage implements Serializable {
      * Parse an atom.
      * The given starting index should point to the predicate.
      */
+    // TODO: Static.
     protected AtomInfo parseAtom(String[] parts, int startIndex) {
         StandardPredicate predicate = StandardPredicate.get(parts[startIndex]);
         if (predicate == null) {

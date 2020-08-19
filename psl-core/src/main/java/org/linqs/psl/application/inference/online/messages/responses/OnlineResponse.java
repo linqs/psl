@@ -33,6 +33,7 @@ public abstract class OnlineResponse extends OnlineMessage {
     /**
      * Construct an OnlineAction given the name and necessary information.
      */
+    // TODO: Move to online message.
     public static OnlineResponse getResponse(String serverResponse) {
         return getResponse(UUID.randomUUID(), serverResponse);
     }
@@ -42,6 +43,8 @@ public abstract class OnlineResponse extends OnlineMessage {
 
         if (responseClass.equalsIgnoreCase("ActionACK")) {
             return new ActionAcknowledgement(identifier, serverResponse);
+        } else if (responseClass.equalsIgnoreCase("ModelInfo")) {
+            return new ModelInformation(identifier, serverResponse);
         } else if (responseClass.equalsIgnoreCase("ActionStatus")) {
             return new ActionStatus(identifier, serverResponse);
         } else if (responseClass.equalsIgnoreCase("Query")) {

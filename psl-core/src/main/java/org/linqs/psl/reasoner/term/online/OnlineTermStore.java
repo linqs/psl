@@ -61,13 +61,13 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     // Note(Charles): This number is unreliable once any online actions are processed.
-    //  Becaure of the nature of streaming storage, we will not know what terms are deleted until we iterate over them.
+    //  Because of the nature of streaming storage, we will not know what terms are deleted until we iterate over them.
     @Override
     public long size() {
         return seenTermCount;
     }
 
-    public void addAtom(StandardPredicate predicate, Constant[] arguments, float newValue, boolean readPartition) {
+    public GroundAtom addAtom(StandardPredicate predicate, Constant[] arguments, float newValue, boolean readPartition) {
         if (((OnlineAtomManager)atomManager).hasAtom(predicate, arguments)) {
             deleteAtom(predicate, arguments);
         }
@@ -80,19 +80,50 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         }
 
         createLocalVariable(atom);
+
+        return atom;
     }
 
-    public void deleteAtom(StandardPredicate predicate, Constant[] arguments) {
+    public ObservedAtom observeAtom(StandardPredicate predicate, Constant[] arguments, float newValue) {
+        QueryAtom atom = new QueryAtom(predicate, arguments);
+        if (!variables.containsKey(atom)) {
+            // Atom does not exist in current model.
+            return null;
+        }
+
+        GroundAtom groundAtom = atomManager.getAtom(predicate, arguments);
+
+        if (!(groundAtom instanceof RandomVariableAtom)) {
+            // Atom does not exist in current model as random variable.
+            return null;
+        }
+
+        // Delete the random variable atom from the atom manager.
+        ((OnlineAtomManager)atomManager).deleteAtom(predicate, arguments);
+
+        // Create observed atom with same predicates and arguments as the existing random variable atom.
+        ObservedAtom observedAtom = ((OnlineAtomManager)atomManager).addObservedAtom(predicate, newValue, arguments);
+        variableAtoms[getVariableIndex(observedAtom)] = observedAtom;
+        variableValues[getVariableIndex(observedAtom)] = newValue;
+
+        numRandomVariableAtoms--;
+        numObservedAtoms++;
+
+        return observedAtom;
+    }
+
+    public GroundAtom deleteAtom(StandardPredicate predicate, Constant[] arguments) {
         GroundAtom atom = ((OnlineAtomManager)atomManager).deleteAtom(predicate, arguments);
 
         if (atom == null) {
             // Atom never existed.
-            return;
+            return null;
         }
 
         int index = getVariableIndex(atom);
         if (index == -1) {
-            return;
+            // Atom never used in any terms.
+            return atom;
         }
 
         variables.remove(atom);
@@ -105,16 +136,20 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         } else {
             numObservedAtoms--;
         }
+
+        return atom;
     }
 
-    public synchronized void updateAtom(StandardPredicate predicate, Constant[] arguments, float newValue) {
+    public synchronized GroundAtom updateAtom(StandardPredicate predicate, Constant[] arguments, float newValue) {
         QueryAtom atom = new QueryAtom(predicate, arguments);
         if (!variables.containsKey(atom)) {
-            return;
+            return null;
         }
 
         GroundAtom groundAtom = atomManager.getAtom(predicate, arguments);
         variableValues[getVariableIndex(groundAtom)] = newValue;
+
+        return groundAtom;
     }
 
     public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
@@ -161,7 +196,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
     /**
      * A thin wrapper around an Iterator to turn it into a StreamingIterator.
-     * The internal interator should call close() on itself when out of items.
+     * The internal iterator should call close() on itself when out of items.
      */
     private static class StreamingJoinIterator<E extends ReasonerTerm> implements StreamingIterator<E> {
         private Iterator<E> iterator;

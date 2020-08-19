@@ -20,9 +20,11 @@ package org.linqs.psl.application.inference.online;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineActionException;
+import org.linqs.psl.application.inference.online.messages.responses.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
 
+import org.linqs.psl.model.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A client that takes input on stdin and passes it to the online host specified in configuration.
@@ -48,13 +51,14 @@ public class OnlineClient {
     public static final int NUM_CONNECTION_RETRIES = 5;
 
     // Static only.
+    //TODO: On server socket connection get model from server.
     private OnlineClient() {}
 
-    public static ArrayList<OnlineResponse> run(InputStream in, PrintStream out) {
+    public static List<OnlineResponse> run(InputStream in, PrintStream out) {
         return run(Options.ONLINE_HOST.getString(), Options.ONLINE_PORT_NUMBER.getInt(), in, out);
     }
 
-    public static ArrayList<OnlineResponse> run(String hostname, int port, InputStream in, PrintStream out) {
+    public static List<OnlineResponse> run(String hostname, int port, InputStream in, PrintStream out) {
         Boolean serverConnected = false;
         ArrayList<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
 
@@ -70,9 +74,20 @@ public class OnlineClient {
 
                 serverConnected = true;
 
+                // Get model information from server.
+                ModelInformation modelInformation = null;
+                try {
+                    modelInformation = (ModelInformation)OnlineResponse.getResponse(
+                            OnlineMessage.getOnlineMessage(socketInputStream.readObject().toString()).getMessage());
+                } catch (IOException | ClassNotFoundException ex) {
+                    throw new RuntimeException(ex);
+                }
+
+                // Startup serverConnectionThread for reading server responses.
                 ServerConnectionThread serverConnectionThread = new ServerConnectionThread(server, socketInputStream, out, serverResponses);
                 serverConnectionThread.start();
 
+                // Read and parse userInput to send actions to server.
                 while (!exit) {
                     try {
                         // Read next command.
@@ -90,7 +105,6 @@ public class OnlineClient {
 
                         OnlineAction onlineAction = OnlineAction.getAction(userInput);
                         socketOutputStream.writeObject(onlineAction.toString());
-
                     } catch (OnlineActionException ex) {
                         log.error(String.format("Error parsing command: [%s].", userInput));
                         log.error(ex.getMessage());
@@ -101,7 +115,6 @@ public class OnlineClient {
 
                 // Wait for serverConnectionThread.
                 serverConnectionThread.join();
-
             } catch (IOException ex) {
                 i ++;
                 if (i < NUM_CONNECTION_RETRIES) {
@@ -123,8 +136,9 @@ public class OnlineClient {
     }
 
     /**
-     * Private class for reading OnlineResponse objects sent from server
+     * Private class for reading OnlineResponse objects sent from server.
      */
+    // TODO: ArrayList -> List
     private static class ServerConnectionThread extends Thread {
         private ObjectInputStream inputStream;
         private PrintStream out;
@@ -151,7 +165,6 @@ public class OnlineClient {
                 } catch (IOException | ClassNotFoundException ex) {
                     throw new RuntimeException(ex);
                 }
-
 
                 serverResponses.add(OnlineResponse.getResponse(serverMessage.getMessage()));
                 out.println(serverMessage.getMessage());

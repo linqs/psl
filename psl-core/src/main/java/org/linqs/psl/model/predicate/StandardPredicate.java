@@ -49,7 +49,7 @@ public class StandardPredicate extends Predicate {
     }
 
     /**
-     * The an existing standard predicate (or null if none with this name exists).
+     * Get the existing standard predicate (or null if none with this name exists).
      * If the predicate exists, but is not a StandardPredicate, an exception will be thrown.
      */
     public static StandardPredicate get(String name) {

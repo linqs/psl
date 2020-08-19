@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -95,8 +96,8 @@ public class SGDOnlineInferenceTest {
         }
     }
 
-    private ArrayList<OnlineResponse> clientSession(String commands) {
-        ArrayList<OnlineResponse> sessionOutput = null;
+    private List<OnlineResponse> clientSession(String commands) {
+        List<OnlineResponse> sessionOutput = null;
 
         try (
                 InputStream testInput = new ByteArrayInputStream(commands.getBytes());
@@ -110,7 +111,7 @@ public class SGDOnlineInferenceTest {
     }
 
     private void assertAtomValues(String commands, double[] values) {
-        ArrayList<OnlineResponse> onlineResponses = null;
+        List<OnlineResponse> onlineResponses = null;
 
         onlineResponses = clientSession(commands);
 

@@ -23,9 +23,12 @@ import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.Stop;
 import org.linqs.psl.application.inference.online.messages.responses.ActionAcknowledgement;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
+import org.linqs.psl.application.inference.online.messages.responses.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
 
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +36,11 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -104,7 +110,7 @@ public class OnlineServer implements Closeable {
 
         if (action instanceof Exit || action instanceof Stop) {
             // Interrupt waiting thread to finish closing.
-            serverThread.close(clientConnectionThread);
+            serverThread.closeClient(clientConnectionThread);
         }
 
         if (onlineResponse instanceof ActionStatus) {
@@ -144,6 +150,7 @@ public class OnlineServer implements Closeable {
                 throw new RuntimeException("Could not establish socket on port " + port + ".", ex);
             }
 
+            // TODO: Drop lock file to notify server is ready to accept clients.
             log.info("Online server started on port " + port + ".");
         }
 
@@ -170,19 +177,16 @@ public class OnlineServer implements Closeable {
             close();
         }
 
-        public void close(ClientConnectionThread clientConnectionThread) {
+        public void closeClient(ClientConnectionThread clientConnectionThread) {
             // Wake up waiting thread.
-            synchronized (clientConnectionThread) {
-                clientConnectionThread.notify();
-            }
-
+            clientConnectionThread.close();
             clientConnections.remove(clientConnectionThread);
         }
 
         public void close() {
             if (clientConnections != null) {
                 for (ClientConnectionThread clientConnection : clientConnections) {
-                    close(clientConnection);
+                    closeClient(clientConnection);
                 }
 
                 clientConnections = null;
@@ -215,46 +219,51 @@ public class OnlineServer implements Closeable {
                 close();
                 throw new RuntimeException(ex);
             }
+
+            // Send Client model information for action validation.
+            ArrayList<StandardPredicate> standardPredicates = new ArrayList<StandardPredicate>();
+            for (Predicate predicate : Predicate.getAll()) {
+                if (predicate instanceof StandardPredicate) {
+                    standardPredicates.add((StandardPredicate)predicate);
+                }
+            }
+
+            try {
+                outputStream.writeObject(new ModelInformation(standardPredicates.toArray(new StandardPredicate[]{})).toString());
+            } catch (IOException ex) {
+                close();
+                throw new RuntimeException(ex);
+            }
         }
 
         @Override
         public void run() {
             OnlineMessage clientMessage = null;
+            OnlineAction newAction = null;
             while (socket.isConnected() && !isInterrupted()) {
                 try {
                     clientMessage = OnlineMessage.getOnlineMessage(inputStream.readObject().toString());
-                    OnlineAction newAction = OnlineAction.getAction(clientMessage.getIdentifier(), clientMessage.getMessage());
+                    newAction = OnlineAction.getAction(clientMessage.getIdentifier(), clientMessage.getMessage());
 
                     // Acknowledge new action received.
                     outputStream.writeObject(new ActionAcknowledgement(newAction).toString());
+                } catch (IOException | ClassNotFoundException ex) {
+                    throw new RuntimeException(ex);
+                }
 
+                try {
                     // Queue new action.
                     messageIDConnectionMap.put(newAction.getIdentifier(), this);
                     queue.put(newAction);
-
-                    if (newAction instanceof Exit || newAction instanceof Stop) {
-                        // Break loop.
-                        break;
-                    }
                 } catch (InterruptedException ex) {
                     break;
-                } catch (IOException | ClassNotFoundException ex) {
-                    close();
-                    throw new RuntimeException(ex);
+                }
+
+                if (newAction instanceof Exit || newAction instanceof Stop) {
+                    // Break loop.
+                    break;
                 }
             }
-
-            // Wait until actions are finished executing before closing socket.
-            // The onActionExecution callback will interrupt wait when the exit action is finished executing.
-            synchronized(this) {
-                try {
-                    this.wait();
-                } catch (InterruptedException ex) {
-                    // Ignore.
-                }
-            }
-
-            close();
         }
 
         public synchronized void close() {
