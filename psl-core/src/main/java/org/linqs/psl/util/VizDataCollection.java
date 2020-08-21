@@ -117,18 +117,6 @@ public class VizDataCollection {
         }
     }
 
-    public static List<String> matchAll(Pattern p, String targetString) {
-        List<String> matches = new ArrayList<String>();
-        Matcher m = p.matcher(targetString);
-        while (m.find()) {
-          matches.add(m.group());
-          System.out.println(m.group());
-          System.out.println(m.start());
-          System.out.println(m.end());
-        }
-        return matches;
-    }
-
     public static String createLogicalGroundRule(AbstractLogicalRule parentRule, Map<String, String> varConstMap) {
         // Create patterns to find predicates / constants and label to be placed on them.
         Pattern predicatePattern = Pattern.compile("\\w+\\s*\\(");
@@ -206,7 +194,7 @@ public class VizDataCollection {
 
         createLogicalGroundRule(parentRule, varConstMap);
 
-        System.out.println("<------------------->");
+        //TODO: Now that we have the non-DNF rule, insert it into data file with new design
 
         // Adds a groundAtom element to RuleMap
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
