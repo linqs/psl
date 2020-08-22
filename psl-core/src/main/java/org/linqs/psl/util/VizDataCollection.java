@@ -6,8 +6,9 @@ import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
@@ -109,10 +110,13 @@ public class VizDataCollection {
     public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String strGroundRuleId = Integer.toString(System.identityHashCode(groundRule));
+            Map<String, Object> groundRuleObj = vizData.groundRules.get(strGroundRuleId);
             if (groundRule instanceof WeightedGroundRule) {
-                Map<String, Object> groundRuleObj = vizData.groundRules.get(strGroundRuleId);
                 WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
                 groundRuleObj.put("dissatisfaction", weightedGroundRule.getIncompatibility());
+            } else {
+                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule) groundRule;
+                groundRuleObj.put("dissatisfaction", unweightedGroundRule.getInfeasibility());
             }
         }
     }
@@ -160,7 +164,7 @@ public class VizDataCollection {
     }
 
     // TODO: Arithmetic Ground Rules Collection
-    public static synchronized void addGroundRule(AbstractLogicalRule parentRule,
+    public static synchronized void addGroundRule(AbstractRule parentRule,
             GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
 
         //TEST NOTE
