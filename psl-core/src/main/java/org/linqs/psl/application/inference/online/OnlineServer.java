@@ -21,7 +21,6 @@ import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.application.inference.online.messages.actions.Stop;
-import org.linqs.psl.application.inference.online.messages.responses.ActionAcknowledgement;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
@@ -255,9 +254,6 @@ public class OnlineServer implements Closeable {
                 try {
                     clientMessage = OnlineMessage.getOnlineMessage(inputStream.readObject().toString());
                     newAction = OnlineAction.getAction(clientMessage.getIdentifier(), clientMessage.getMessage());
-
-                    // Acknowledge new action received.
-                    outputStream.writeObject(new ActionAcknowledgement(newAction).toString());
                 } catch (IOException | ClassNotFoundException ex) {
                     throw new RuntimeException(ex);
                 }

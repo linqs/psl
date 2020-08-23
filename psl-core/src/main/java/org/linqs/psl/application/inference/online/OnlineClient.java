@@ -48,10 +48,7 @@ public class OnlineClient {
 
     public static final String EXIT_STRING = "exit";
 
-    public static final int NUM_CONNECTION_RETRIES = 5;
-
     // Static only.
-    //TODO: On server socket connection get model from server.
     private OnlineClient() {}
 
     public static List<OnlineResponse> run(InputStream in, PrintStream out) {
@@ -59,7 +56,7 @@ public class OnlineClient {
     }
 
     public static List<OnlineResponse> run(String hostname, int port, InputStream in, PrintStream out) {
-        ArrayList<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
+        List<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
 
         try (
                 Socket server = new Socket(hostname, port);
@@ -122,14 +119,13 @@ public class OnlineClient {
     /**
      * Private class for reading OnlineResponse objects sent from server.
      */
-    // TODO: ArrayList -> List
     private static class ServerConnectionThread extends Thread {
         private ObjectInputStream inputStream;
         private PrintStream out;
         private Socket socket;
-        private ArrayList<OnlineResponse> serverResponses;
+        private List<OnlineResponse> serverResponses;
 
-        public ServerConnectionThread(Socket socket, ObjectInputStream inputStream, PrintStream out, ArrayList<OnlineResponse> serverResponses) {
+        public ServerConnectionThread(Socket socket, ObjectInputStream inputStream, PrintStream out, List<OnlineResponse> serverResponses) {
             this.socket = socket;
             this.inputStream = inputStream;
             this.out = out;
@@ -151,7 +147,6 @@ public class OnlineClient {
                 }
 
                 serverResponses.add(OnlineResponse.getResponse(serverMessage.getMessage()));
-                // out.println(serverMessage.getMessage());
             }
         }
     }

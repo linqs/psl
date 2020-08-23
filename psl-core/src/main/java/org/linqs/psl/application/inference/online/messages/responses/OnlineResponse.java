@@ -41,9 +41,7 @@ public abstract class OnlineResponse extends OnlineMessage {
     public static OnlineResponse getResponse(UUID identifier, String serverResponse) {
         String responseClass = serverResponse.split("\t")[0].trim();
 
-        if (responseClass.equalsIgnoreCase("ActionACK")) {
-            return new ActionAcknowledgement(identifier, serverResponse);
-        } else if (responseClass.equalsIgnoreCase("ModelInfo")) {
+        if (responseClass.equalsIgnoreCase("ModelInfo")) {
             return new ModelInformation(identifier, serverResponse);
         } else if (responseClass.equalsIgnoreCase("ActionStatus")) {
             return new ActionStatus(identifier, serverResponse);
