@@ -16,10 +16,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.FilterOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
@@ -48,9 +50,6 @@ public class VizDataCollection {
     }
 
     public static void outputJSON() {
-        String[] keyNames = {"truthMap", "rules", "groundRules", "groundAtoms"};
-        JSONObject fullJson = new JSONObject(vizData, keyNames);
-
         PrintStream stream = System.out;
 
         if (outputPath != null) {
@@ -58,18 +57,76 @@ public class VizDataCollection {
                 stream = new PrintStream(outputPath);
                 if (outputPath.endsWith(".gz")) {
                     GZIPOutputStream gzipStream = new GZIPOutputStream(stream, true);
-                    byte[] jsonByteArray = fullJson.toString().getBytes();
-                    gzipStream.write(jsonByteArray, 0, jsonByteArray.length);
+                    writeToStream(gzipStream);
                     gzipStream.close();
                 } else {
-                    stream.println(fullJson.toString());
+                    writeToStream(stream);
                 }
                 stream.close();
             } catch (IOException ex) {
                 throw new RuntimeException();
             }
         } else {
-            stream.println(fullJson.toString());
+            writeToStream(stream);
+        }
+    }
+    // Write to stream with JSON formatting.
+    private static void writeToStream(FilterOutputStream stream) {
+        // JSON format reference: https://www.json.org/json-en.html.
+        try {
+            stream.write("{".getBytes());
+            // Write each map as a JSON object, each JSON object is comma delimited.
+            writeMap(vizData.truthMap, stream, "truthMap");
+            stream.write(",".getBytes());
+            writeMap(stream, vizData.rules, "rules");
+            stream.write(",".getBytes());
+            writeMap(stream, vizData.groundRules, "groundRules");
+            stream.write(",".getBytes());
+            writeMap(stream, vizData.groundAtoms, "groundAtoms");
+
+            stream.write("}".getBytes());
+        } catch (IOException ex) {
+            throw new RuntimeException();
+        }
+    }
+    // Write map to stream with JSON formatting.
+    private static void writeMap(FilterOutputStream stream, Map<String, Map<String, Object>> map, String key) {
+        try {
+            // Each key must be string formatted.
+            stream.write((" \"" + key + "\" :{").getBytes());
+
+            Iterator<Map.Entry<String, Map<String, Object>>> iterator = map.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, Map<String, Object>> entry = iterator.next();
+                JSONObject jsonObject = new JSONObject(entry.getValue());
+                stream.write((" \"" + entry.getKey() + "\" :" + jsonObject.toString()).getBytes());
+                if (iterator.hasNext()) {
+                    stream.write(",".getBytes());
+                }
+            }
+            stream.write("}".getBytes());
+        } catch (IOException ex) {
+            throw new RuntimeException();
+        }
+    }
+    // Write map to stream with JSON formatting.
+    private static void writeMap(Map<String, Float> map, FilterOutputStream stream, String key) {
+        try {
+            // Each key must be string formatted.
+            stream.write((" \"" + key + "\" :{").getBytes());
+
+            Iterator<Map.Entry<String, Float>> iterator = map.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, Float> entry = iterator.next();
+                stream.write((" \"" + entry.getKey() + "\" :" + entry.getValue()).getBytes());
+                if (iterator.hasNext()) {
+                    stream.write(",".getBytes());
+                }
+            }
+
+            stream.write("}".getBytes());
+        } catch (IOException ex) {
+            throw new RuntimeException();
         }
     }
 
@@ -116,7 +173,7 @@ public class VizDataCollection {
             }
         }
     }
-    // TODO: Arithmetic Ground Rules Collection
+
     public static synchronized void addGroundRule(AbstractRule parentRule,
             GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
         if (groundRule == null) {
@@ -136,7 +193,7 @@ public class VizDataCollection {
             atomCount++;
         }
 
-        // Adds a rule element to RuleMap
+        // Adds a rule element to RuleMap.
         String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
         Map<String, Object> rulesElementItem = new HashMap<String, Object>();
         rulesElementItem.put("text", parentRule.getName());
