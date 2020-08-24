@@ -212,10 +212,10 @@ public class PartialGrounding {
         } else {
             // Build subsetIterable so that only only one atom can come from a special partition at a time.
             subsetIterable = new ArrayList<boolean[]>();
-            for (int i=0; i < allPartialTargetAtoms.size(); i ++) {
+            for (int i=0; i < allPartialTargetAtoms.size(); i++) {
                 boolean[] subset = new boolean[allPartialTargetAtoms.size()];
                 subset[i] = true;
-                ((ArrayList<boolean[]>)subsetIterable).add(subset);
+                ((List<boolean[]>)subsetIterable).add(subset);
             }
         }
 
@@ -223,6 +223,7 @@ public class PartialGrounding {
             partialTargetAtoms.clear();
             partialTargetIndex = 0;
             num_partial_targets = 0;
+
             // Build partialTargetAtoms atom array.
             for (boolean bool : partialTargetAtomSubset) {
                 if (bool) {

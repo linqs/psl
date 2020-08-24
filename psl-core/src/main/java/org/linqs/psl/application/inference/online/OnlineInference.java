@@ -142,7 +142,7 @@ public abstract class OnlineInference extends InferenceApplication {
     protected String doDeleteAtom(DeleteAtom action) {
         GroundAtom atom = ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
 
-        if (atom !=null) {
+        if (atom != null) {
             modelUpdates = true;
             return String.format("Deleted atom: %s", atom.toString());
         } else {
@@ -208,13 +208,17 @@ public abstract class OnlineInference extends InferenceApplication {
         }
     }
 
+    /**
+     * Optimize if there were any new or deleted atoms since last optimization.
+     */
     private void doOptimize() {
-        // Optimize if there were any new or deleted atoms since last optimization.
-        if (modelUpdates) {
-            log.trace("Optimization Start");
-            objective = reasoner.optimize(termStore);
-            log.trace("Optimization End");
+        if (!modelUpdates) {
+            return;
         }
+
+        log.trace("Optimization Start");
+        objective = reasoner.optimize(termStore);
+        log.trace("Optimization End");
 
         modelUpdates = false;
     }
