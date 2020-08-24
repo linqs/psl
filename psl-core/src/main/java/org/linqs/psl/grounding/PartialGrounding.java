@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.grounding;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
@@ -38,6 +39,7 @@ import org.linqs.psl.model.term.VariableTypeMap;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.SetOperationQuery;
 import com.healthmarketscience.sqlbuilder.UnionQuery;
+import org.linqs.psl.util.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,8 +191,8 @@ public class PartialGrounding {
         }
     }
 
-    private static QueryResultIterable partialGroundingIterable(Formula formula, List<Atom> partialTargetAtoms, Database db) {
-        if (partialTargetAtoms.size() == 0) {
+    private static QueryResultIterable partialGroundingIterable(Formula formula, List<Atom> allPartialTargetAtoms, Database db) {
+        if (allPartialTargetAtoms.size() == 0) {
             throw new IllegalArgumentException();
         }
 
@@ -200,9 +202,42 @@ public class PartialGrounding {
 
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Map<Variable, Integer> projectionMap = null;
+        List<Atom> partialTargetAtoms = new ArrayList<Atom>();
+        Iterable<boolean[]> subsetIterable = null;
+        int partialTargetIndex = 0;
+        int num_partial_targets = 0;
 
-        for (Atom partialTargetAtom : partialTargetAtoms) {
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, partialTargetAtom);
+        if (Options.PARTIAL_GROUNDING_POWERSET.getBoolean()) {
+            subsetIterable = IteratorUtils.powerset(allPartialTargetAtoms.size());
+        } else {
+            // Build subsetIterable so that only only one atom can come from a special partition at a time.
+            subsetIterable = new ArrayList<boolean[]>();
+            for (int i=0; i < allPartialTargetAtoms.size(); i ++) {
+                boolean[] subset = new boolean[allPartialTargetAtoms.size()];
+                subset[i] = true;
+                ((ArrayList<boolean[]>)subsetIterable).add(subset);
+            }
+        }
+
+        for (boolean[] partialTargetAtomSubset : subsetIterable) {
+            partialTargetAtoms.clear();
+            partialTargetIndex = 0;
+            num_partial_targets = 0;
+            // Build partialTargetAtoms atom array.
+            for (boolean bool : partialTargetAtomSubset) {
+                if (bool) {
+                    partialTargetAtoms.add(allPartialTargetAtoms.get(partialTargetIndex));
+                    num_partial_targets++;
+                }
+
+                partialTargetIndex++;
+            }
+            // Skip empty-set subset of allPartialTargetAtoms.
+            if (num_partial_targets == 0) {
+                continue;
+            }
+
+            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, partialTargetAtoms);
             queries.add(sqler.getQuery(formula));
 
             if (projectionMap == null) {
