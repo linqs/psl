@@ -127,7 +127,12 @@ public abstract class OnlineInference extends InferenceApplication {
     protected String doObserveAtom(ObserveAtom action) {
         ObservedAtom atom = ((OnlineTermStore)termStore).observeAtom(action.getPredicate(), action.getArguments(), action.getValue());
 
-        return String.format("Observed atom: %s", atom.toStringWithValue());
+        if (atom !=null) {
+            return String.format("Observed atom: %s", atom.toStringWithValue());
+        } else {
+            return String.format("Random Variable Atom: %s(%s) did not exist in model.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
     }
 
     protected String doDeleteAtom(DeleteAtom action) {
