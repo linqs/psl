@@ -48,6 +48,7 @@ public abstract class OnlineInference extends InferenceApplication {
 
     private OnlineServer server;
     private boolean stopped;
+    private boolean modelUpdates;
     private double objective;
 
     protected OnlineInference(List<Rule> rules, Database database) {
@@ -61,6 +62,7 @@ public abstract class OnlineInference extends InferenceApplication {
     @Override
     protected void initialize() {
         stopped = false;
+        modelUpdates = true;
         objective = 0.0;
 
         startServer();
@@ -121,6 +123,7 @@ public abstract class OnlineInference extends InferenceApplication {
         boolean readPartition = (action.getPartitionName().equalsIgnoreCase("READ"));
         GroundAtom atom = ((OnlineTermStore)termStore).addAtom(action.getPredicate(), action.getArguments(), action.getValue(), readPartition);
 
+        modelUpdates = true;
         return String.format("Added atom: %s", atom.toStringWithValue());
     }
 
@@ -128,6 +131,7 @@ public abstract class OnlineInference extends InferenceApplication {
         ObservedAtom atom = ((OnlineTermStore)termStore).observeAtom(action.getPredicate(), action.getArguments(), action.getValue());
 
         if (atom !=null) {
+            modelUpdates = true;
             return String.format("Observed atom: %s", atom.toStringWithValue());
         } else {
             return String.format("Random Variable Atom: %s(%s) did not exist in model.",
@@ -139,6 +143,7 @@ public abstract class OnlineInference extends InferenceApplication {
         GroundAtom atom = ((OnlineTermStore)termStore).deleteAtom(action.getPredicate(), action.getArguments());
 
         if (atom !=null) {
+            modelUpdates = true;
             return String.format("Deleted atom: %s", atom.toString());
         } else {
             return String.format("Atom: %s(%s) did not exist in model.",
@@ -156,6 +161,7 @@ public abstract class OnlineInference extends InferenceApplication {
         GroundAtom atom = ((OnlineTermStore)termStore).updateAtom(action.getPredicate(), action.getArguments(), action.getValue());
 
         if (atom !=null) {
+            modelUpdates = true;
             return String.format("Updated atom: %s", atom.toStringWithValue());
         } else {
             return String.format("Atom: %s(%s) did not exist in model.",
@@ -166,9 +172,7 @@ public abstract class OnlineInference extends InferenceApplication {
     protected String doWriteInferredPredicates(WriteInferredPredicates action) {
         String response = null;
 
-        log.trace("Optimization Start");
-        objective = reasoner.optimize(termStore);
-        log.trace("Optimization End");
+        doOptimize();
 
         if (action.getOutputDirectoryPath() != null) {
             log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
@@ -186,9 +190,7 @@ public abstract class OnlineInference extends InferenceApplication {
     protected String doQueryAtom(QueryAtom action) {
         double atomValue = -1.0;
 
-        log.trace("Optimization Start");
-        objective = reasoner.optimize(termStore);
-        log.trace("Optimization End");
+        doOptimize();
 
         if (((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
             atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
@@ -206,10 +208,21 @@ public abstract class OnlineInference extends InferenceApplication {
         }
     }
 
+    private void doOptimize() {
+        // Optimize if there were any new or deleted atoms since last optimization.
+        if (modelUpdates) {
+            log.trace("Optimization Start");
+            objective = reasoner.optimize(termStore);
+            log.trace("Optimization End");
+        }
+
+        modelUpdates = false;
+    }
+
     @Override
     public double internalInference() {
         // Initial round of inference.
-        objective = reasoner.optimize(termStore);
+        doOptimize();
 
         while (!stopped) {
             OnlineAction action = server.getAction();
