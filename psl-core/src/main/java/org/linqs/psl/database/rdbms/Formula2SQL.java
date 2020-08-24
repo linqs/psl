@@ -279,6 +279,7 @@ public class Formula2SQL {
             query.addCondition(BinaryCondition.lessThan(partitionColumn, 0));
         } else {
             query.addCondition(new InCondition(partitionColumn, partitions));
+            query.addCondition(BinaryCondition.greaterThanOrEq(partitionColumn, 0));
         }
 
         tableCounter++;
