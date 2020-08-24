@@ -101,8 +101,8 @@ public class Formula2SQL {
 
      * @param partialTarget if this is non-null, then this formula will be treated as a partial grounding query.
      * This means that we will treat special partitions (with a negative id) as valid partitions,
-     * and this atom will be exclusivley drawn from the special partitions.
-     * We will do a DIRECT REFERENCE comparison against atoms in the formual to check for this specific one.
+     * and this atom will be exclusively drawn from the special partitions.
+     * We will do a DIRECT REFERENCE comparison against atoms in the formula to check for this specific one.
      */
     public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, Atom partialTarget) {
         this.projection = projection;
@@ -122,17 +122,12 @@ public class Formula2SQL {
             query.addAllColumns();
         }
 
-        // Query all of the read (and the write) partition(s) belonging to the database
+        // Query all of the read (and the write) partition(s) belonging to the database.
         partitions = new ArrayList<Integer>(database.getReadPartitions().size() + 1);
         for (Partition partition : database.getReadPartitions()) {
             partitions.add(partition.getID());
         }
         partitions.add(database.getWritePartition().getID());
-
-        if (partialTarget != null) {
-            partitions.add(Partition.SPECIAL_WRITE_ID);
-            partitions.add(Partition.SPECIAL_READ_ID);
-        }
     }
 
     public List<Atom> getFunctionalAtoms() {
@@ -279,14 +274,13 @@ public class Formula2SQL {
             query.addCondition(BinaryCondition.lessThan(partitionColumn, 0));
         } else {
             query.addCondition(new InCondition(partitionColumn, partitions));
-            query.addCondition(BinaryCondition.greaterThanOrEq(partitionColumn, 0));
         }
 
         tableCounter++;
     }
 
     /**
-     * Recursively traverse a formual to build a query from it.
+     * Recursively traverse a formula to build a query from it.
      */
     private void traverse(Formula formula) {
         if (formula instanceof Conjunction) {
