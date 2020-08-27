@@ -23,12 +23,14 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.ArrayUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -60,13 +62,10 @@ public class SGDReasoner extends Reasoner {
 
         termStore.initForOptimization();
 
-        double objective = -1.0;
+        long termCount = 0;
+        double objective = Double.POSITIVE_INFINITY;
         double oldObjective = Double.POSITIVE_INFINITY;
-
-        if (printInitialObj && log.isTraceEnabled()) {
-            objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}", 0, objective, 0.0f, 0, 0);
-        }
+        float[] oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
 
         int iteration = 1;
         long totalTime = 0;
@@ -76,7 +75,13 @@ public class SGDReasoner extends Reasoner {
             // Keep track of the mean movement of the random variables.
             float movement = 0.0f;
 
+            oldObjective = objective;
+            termCount = 0;
+            objective = 0;
+            System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
             for (SGDObjectiveTerm term : termStore) {
+                termCount++;
+                objective += term.evaluate(oldVariableValues);
                 movement += term.minimize(iteration, termStore);
             }
 
@@ -85,34 +90,32 @@ public class SGDReasoner extends Reasoner {
             }
 
             long end = System.currentTimeMillis();
-
-            oldObjective = objective;
-            objective = computeObjective(termStore);
-            totalTime += end - start;
+            totalTime += System.currentTimeMillis() - start;
 
             if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
-                        iteration, objective, movement, (end - start), totalTime);
+                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
+                        iteration - 1, objective, objective / termCount, movement, (end - start), totalTime);
             }
 
             iteration++;
             termStore.iterationComplete();
 
-            if (breakOptimization(iteration, objective, oldObjective, movement)) {
+            if (breakOptimization(iteration, objective, oldObjective, movement, termCount)) {
                 break;
             }
         }
 
-        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimization Time: {}",
-                iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termStore.size());
+        objective = computeObjective(termStore);
+        log.info("Optimization completed in {} iterations. Objective: {}, Normalized Objective: {}, Total Optimization Time: {}",
+                iteration, objective, objective / termCount, totalTime);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
 
         termStore.syncAtoms();
 
         return objective;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement) {
+    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement, long termCount) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
@@ -129,14 +132,14 @@ public class SGDReasoner extends Reasoner {
         }
 
         // Break if the objective has not changed.
-        if (objectiveBreak && MathUtils.equals(objective, oldObjective, tolerance)) {
+        if (objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
             return true;
         }
 
         return false;
     }
 
-    public double computeObjective(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+    private double computeObjective(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         double objective = 0.0;
 
         // If possible, use a readonly iterator.
