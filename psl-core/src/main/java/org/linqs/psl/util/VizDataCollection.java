@@ -49,91 +49,82 @@ public class VizDataCollection {
         runtime.addShutdownHook(new ShutdownHook());
     }
 
-    public static void outputJSON() {
-        PrintStream stream = System.out;
+    public static void outputJSON() throws IOException {
+        FilterOutputStream stream = System.out;
 
         if (outputPath != null) {
             try {
-                stream = new PrintStream(outputPath);
-                if (outputPath.endsWith(".gz")) {
-                    GZIPOutputStream gzipStream = new GZIPOutputStream(stream, true);
-                    writeToStream(gzipStream);
-                    gzipStream.close();
-                } else {
-                    writeToStream(stream);
-                }
-                stream.close();
+                stream = new GZIPOutputStream(new PrintStream(outputPath));
             } catch (IOException ex) {
-                throw new RuntimeException();
+                throw new RuntimeException(ex);
             }
-        } else {
-            writeToStream(stream);
+        }
+
+        writeToStream(stream);
+
+        if (outputPath != null) {
+            stream.close();
         }
     }
-    // Write to stream with JSON formatting.
-    private static void writeToStream(FilterOutputStream stream) {
+
+    /**
+     * Write to stream with JSON formatting.
+     */
+    private static void writeToStream(FilterOutputStream stream) throws IOException {
         // JSON format reference: https://www.json.org/json-en.html.
-        try {
-            stream.write("{".getBytes());
-            // Write each map as a JSON object, each JSON object is comma delimited.
-            writeMap(vizData.truthMap, stream, "truthMap");
-            stream.write(",".getBytes());
-            writeMap(stream, vizData.rules, "rules");
-            stream.write(",".getBytes());
-            writeMap(stream, vizData.groundRules, "groundRules");
-            stream.write(",".getBytes());
-            writeMap(stream, vizData.groundAtoms, "groundAtoms");
+        stream.write("{ \"truthMap\" :".getBytes());
 
-            stream.write("}".getBytes());
-        } catch (IOException ex) {
-            throw new RuntimeException();
-        }
+        // Write each map as a JSON object, each JSON object is comma delimited.
+        writeMap(stream, vizData.truthMap, "truthMap");
+        stream.write(", \"rules\" :".getBytes());
+        writeMap(stream, vizData.rules, "rules");
+        stream.write(", \"groundRules\" :".getBytes());
+        writeMap(stream, vizData.groundRules, "groundRules");
+        stream.write(", \"groundAtoms\" :".getBytes());
+        writeMap(stream, vizData.groundAtoms, "groundAtoms");
+
+        stream.write('}');
     }
-    // Write map to stream with JSON formatting.
-    private static void writeMap(FilterOutputStream stream, Map<String, Map<String, Object>> map, String key) {
-        try {
-            // Each key must be string formatted.
-            stream.write((" \"" + key + "\" :{").getBytes());
 
-            Iterator<Map.Entry<String, Map<String, Object>>> iterator = map.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, Map<String, Object>> entry = iterator.next();
-                JSONObject jsonObject = new JSONObject(entry.getValue());
-                stream.write((" \"" + entry.getKey() + "\" :" + jsonObject.toString()).getBytes());
-                if (iterator.hasNext()) {
-                    stream.write(",".getBytes());
-                }
-            }
-            stream.write("}".getBytes());
-        } catch (IOException ex) {
-            throw new RuntimeException();
-        }
-    }
-    // Write map to stream with JSON formatting.
-    private static void writeMap(Map<String, Float> map, FilterOutputStream stream, String key) {
-        try {
-            // Each key must be string formatted.
-            stream.write((" \"" + key + "\" :{").getBytes());
+    /**
+     * Write map to stream with JSON formatting.
+     */
+    @SuppressWarnings("unchecked")
+    private static void writeMap(FilterOutputStream stream, Object map, String z) throws IOException {
+        stream.write('{');
 
-            Iterator<Map.Entry<String, Float>> iterator = map.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, Float> entry = iterator.next();
-                stream.write((" \"" + entry.getKey() + "\" :" + entry.getValue()).getBytes());
-                if (iterator.hasNext()) {
-                    stream.write(",".getBytes());
-                }
+        Map<String, Object> stringObjMap = (Map<String, Object>) map;
+        Iterator<Map.Entry<String, Object>> iterator = stringObjMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, Object> entry = iterator.next();
+            stream.write((" \"" + entry.getKey() + "\" :").getBytes());
+
+            // Values of the map will either be a Float or Map
+            if (entry.getValue() instanceof Float) {
+                stream.write(entry.getValue().toString().getBytes());
+            } else {
+                // Assumption that the JSON Objects carry small amounts of data
+                Map<String, Object> data = (Map<String, Object>) entry.getValue();
+                JSONObject jsonObject = new JSONObject(data);
+                stream.write(jsonObject.toString().getBytes());
             }
 
-            stream.write("}".getBytes());
-        } catch (IOException ex) {
-            throw new RuntimeException();
+            if (iterator.hasNext()) {
+                stream.write(',');
+            }
         }
+
+        stream.write('}');
     }
 
     private static class ShutdownHook extends Thread {
         @Override
         public void run() {
-            outputJSON();
+            try {
+                outputJSON();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 
@@ -154,7 +145,10 @@ public class VizDataCollection {
     public static void setOutputPath(String path) {
         outputPath = path;
     }
-    // Takes in a prediction truth pair and adds it to the Truth Map.
+
+    /**
+     * Takes in a prediction truth pair and adds it to the Truth Map.
+     */
     public static void addTruth(GroundAtom target, float truthVal ) {
         String groundAtomID = Integer.toString(System.identityHashCode(target));
         vizData.truthMap.put(groundAtomID, truthVal);
@@ -167,13 +161,11 @@ public class VizDataCollection {
             if (groundRule instanceof WeightedGroundRule) {
                 WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
                 groundRuleObj.put("dissatisfaction", weightedGroundRule.getIncompatibility());
-            } else {
-                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule) groundRule;
-                groundRuleObj.put("dissatisfaction", unweightedGroundRule.getInfeasibility());
             }
         }
     }
 
+    // TODO: Collect Abstract Arithmetic Ground  Rules
     public static synchronized void addGroundRule(AbstractRule parentRule,
             GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
         if (groundRule == null) {
