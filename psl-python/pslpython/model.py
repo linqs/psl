@@ -121,13 +121,13 @@ class Model(object):
         self._rules.append(rule)
         return self
 
-    def infer(self, method = '', additional_cli_optons = [], psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
+    def infer(self, method = '', additional_cli_options = [], psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
         """
         Run inference on this model.
 
         Args:
             method: The inference method to use.
-            additional_cli_optons: Additional options to pass direcly to the CLI.
+            additional_cli_options: Additional options to pass direcly to the CLI.
                                    Here you would do things like select a database backend.
             psl_config: Configuration passed directly to the PSL core code.
                         https://github.com/eriq-augustine/psl/wiki/Configuration-Options
@@ -160,7 +160,7 @@ class Model(object):
         cli_options.append('--output')
         cli_options.append(inferred_dir)
 
-        cli_options += additional_cli_optons
+        cli_options += additional_cli_options
 
         self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger)
         results = self._collect_inference_results(inferred_dir)
@@ -170,14 +170,14 @@ class Model(object):
 
         return results
 
-    def learn(self, method = '', additional_cli_optons = [], psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
+    def learn(self, method = '', additional_cli_options = [], psl_config = {}, jvm_options = [], logger = None, temp_dir = None, cleanup_temp = True):
         """
         Run weight learning on this model.
         The new weights will be applied to this model.
 
         Args:
             method: The weight learning method to use.
-            additional_cli_optons: Additional options to pass direcly to the CLI.
+            additional_cli_options: Additional options to pass direcly to the CLI.
                                    Here you would do things like select a database backend.
             psl_config: Configuration passed directly to the PSL core code.
                         https://github.com/eriq-augustine/psl/wiki/Configuration-Options
@@ -204,7 +204,7 @@ class Model(object):
         if (method != ''):
             cli_options.append(method)
 
-        cli_options += additional_cli_optons
+        cli_options += additional_cli_options
 
         self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger)
         self._fetch_new_weights(rules_file_path)
