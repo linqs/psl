@@ -22,6 +22,7 @@ import org.linqs.psl.application.inference.online.messages.actions.AddAtom;
 import org.linqs.psl.application.inference.online.messages.actions.ObserveAtom;
 import org.linqs.psl.application.inference.online.messages.actions.DeleteAtom;
 import org.linqs.psl.application.inference.online.messages.actions.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.Sync;
 import org.linqs.psl.application.inference.online.messages.actions.UpdateObservation;
 import org.linqs.psl.application.inference.online.messages.actions.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.actions.WriteInferredPredicates;
@@ -106,6 +107,8 @@ public abstract class OnlineInference extends InferenceApplication {
             response = doDeleteAtom((DeleteAtom)action);
         } else if (action.getClass() == Stop.class) {
             response = doStop((Stop)action);
+        } else if (action.getClass() == Sync.class) {
+            response = doSync((Sync)action);
         } else if (action.getClass() == UpdateObservation.class) {
             response = doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == QueryAtom.class) {
@@ -155,6 +158,11 @@ public abstract class OnlineInference extends InferenceApplication {
         stopped = true;
 
         return "OnlinePSL inference stopped.";
+    }
+
+    protected String doSync(Sync action) {
+        doOptimize();
+        return "OnlinePSL inference synced.";
     }
 
     protected String doUpdateObservation(UpdateObservation action) {

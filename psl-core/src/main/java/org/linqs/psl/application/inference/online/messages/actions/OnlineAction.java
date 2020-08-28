@@ -51,6 +51,8 @@ public abstract class OnlineAction extends OnlineMessage {
             return new ObserveAtom(actionID, clientCommand);
         } else if (actionClass.equalsIgnoreCase("stop")) {
             return new Stop(actionID, clientCommand);
+        } else if (actionClass.equalsIgnoreCase("sync")) {
+            return new Sync(actionID, clientCommand);
         } else if (actionClass.equalsIgnoreCase("exit")) {
             return new Exit(actionID, clientCommand);
         } else if (actionClass.equalsIgnoreCase("delete")) {
