@@ -3,6 +3,7 @@ package org.linqs.psl.util;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -101,6 +102,7 @@ public class VizDataCollection {
     public static void setOutputPath(String path) {
         outputPath = path;
     }
+
     // Takes in a prediction truth pair and adds it to the Truth Map.
     public static void addTruth(GroundAtom target, float truthVal ) {
         String groundAtomID = Integer.toString(System.identityHashCode(target));
@@ -121,7 +123,7 @@ public class VizDataCollection {
         }
     }
 
-    public static String createLogicalGroundRule(AbstractLogicalRule parentRule, Map<String, String> varConstMap) {
+    public static String createLogicalGroundRule(AbstractRule parentRule, Map<String, String> varConstMap) {
         // Create patterns to find predicates / constants and label to be placed on them.
         Pattern predicatePattern = Pattern.compile("\\w+\\s*\\(");
         Pattern constantPattern = Pattern.compile("\\'\\w+\\'");
@@ -163,29 +165,30 @@ public class VizDataCollection {
         return createdGroundRule;
     }
 
-    // TODO: Arithmetic Ground Rules Collection
+
+    // Decorates a given linear combination
+    public static ArrayList<Object> decorateGroundAtomList(String[] linearCombination, GroundRule groundRule) {
+        ArrayList<Object> decoratedList = new ArrayList<Object>();
+        for (int i = 0; i < linearCombination.length; i++) {
+            String prev = "";
+            if ((i-1) > -1) prev = linearCombination[i-1];
+            for (GroundAtom atom : groundRule.getAtoms()){
+                if (linearCombination[i].contains(atom.toString())) {
+                    if (prev.matches("-?\\d+\\.\\d+")){
+                        Integer[] groundAtom = {System.identityHashCode(atom), (int) Double.parseDouble(linearCombination[i-1])};
+                        decoratedList.add(groundAtom);
+                    }
+                    else {
+                        decoratedList.add(System.identityHashCode(atom));
+                    }
+                }
+            }
+        }
+        return decoratedList;
+    }
+
     public static synchronized void addGroundRule(AbstractRule parentRule,
             GroundRule groundRule, Map<Variable, Integer> variableMap,  Constant[] constantsList) {
-
-        //TEST NOTE
-        // Arithmetic ground rules will be in non-DNF
-        // normal ground rules will be in dnf
-
-        //TODO:
-        // So maybe when we pass into this function we can have a flag saying if its an
-        // arithmetic or not (or just check the type duh).
-        // If not, we parse how we normally have been doing it (rely on constant map)
-        // If so, then we just parse over non-DNF ground rule
-
-        //This would mean parseing on the parent / ground rule and trying to
-        // recreate as that is just a system for doing this without constant map
-
-        //This should solve parsing problems
-
-        //TODO:
-        // We will also have to think of a way to keep the ID system intact
-        // as our interaction systems rely on those
-
         if (groundRule == null) {
             return;
         }
@@ -196,9 +199,45 @@ public class VizDataCollection {
             varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
         }
 
-        createLogicalGroundRule(parentRule, varConstMap);
+        // Get the Non-DNF ground rule
+        String groundRuleString;
+        if (parentRule instanceof AbstractLogicalRule) {
+            groundRuleString = createLogicalGroundRule(parentRule, varConstMap);
+        }
+        else {
+            groundRuleString = groundRule.baseToString();
+        }
 
-        //TODO: Now that we have the non-DNF rule, insert it into data file with new design
+        // Get the operator of the ground rule string
+        Pattern opPattern = Pattern.compile("\\)\\s?([=>><]+)\\s?");
+        Matcher opMatcher = opPattern.matcher(groundRuleString);
+        String operator = "";
+        while (opMatcher.find()) {
+            operator = opMatcher.group(1);
+        }
+
+        // Split the string into lhs and rhs via the found operator
+        String lhsGroundRule;
+        String rhsGroundRule;
+        if (operator != "") {
+            String[] splitGroundRule = groundRuleString.split(operator);
+            lhsGroundRule = splitGroundRule[0];
+            rhsGroundRule = splitGroundRule[1];
+        }
+        else {
+            lhsGroundRule = groundRuleString;
+            rhsGroundRule = "";
+        }
+
+        // Split the sides into their atoms
+        String[] lhsList;
+        String[] rhsList;
+        lhsList = lhsGroundRule.split("\\s[&+*/-]\\s");
+        rhsList = rhsGroundRule.split("\\s[&+*/-]\\s");
+
+        //  Gather atoms via getAtoms, and create pairs if needed
+        ArrayList<Object> lhsDecoratedList = decorateGroundAtomList(lhsList, groundRule);
+        ArrayList<Object> rhsDecoratedList = decorateGroundAtomList(rhsList, groundRule);
 
         // Adds a groundAtom element to RuleMap
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
@@ -220,17 +259,12 @@ public class VizDataCollection {
         rulesElementItem.put("weighted", parentRule.isWeighted());
         vizData.rules.put(ruleStringID, rulesElementItem);
 
+        // Adds a groundRule element to RuleMap
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
-        Map<String, Object> constants = new HashMap<String, Object>();
-        for (Map.Entry varConstElement : varConstMap.entrySet()) {
-          String key = (String)varConstElement.getKey();
-          String val = (String)varConstElement.getValue();
-          constants.put(key,val);
-        }
-
-        groundRulesElement.put("constants", constants);
-        groundRulesElement.put("groundAtoms", atomHashList);
+        groundRulesElement.put("lhs", lhsDecoratedList);
+        groundRulesElement.put("rhs", rhsDecoratedList);
+        groundRulesElement.put("operator", operator);
         String groundRuleStringID = Integer.toString(System.identityHashCode(groundRule));
         vizData.groundRules.put(groundRuleStringID, groundRulesElement);
     }
