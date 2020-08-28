@@ -254,6 +254,7 @@ public class OnlineServer implements Closeable {
                 try {
                     clientMessage = OnlineMessage.getOnlineMessage(inputStream.readObject().toString());
                     newAction = OnlineAction.getAction(clientMessage.getIdentifier(), clientMessage.getMessage());
+                    log.trace("Received action: " + newAction);
                 } catch (IOException | ClassNotFoundException ex) {
                     throw new RuntimeException(ex);
                 }

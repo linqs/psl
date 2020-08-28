@@ -96,6 +96,7 @@ public class OnlineClient {
                     exit = (userInput.equalsIgnoreCase(EXIT_STRING));
 
                     OnlineAction onlineAction = OnlineAction.getAction(userInput);
+                    log.trace("Sending action: " + onlineAction);
                     socketOutputStream.writeObject(onlineAction.toString());
                 } catch (OnlineActionException ex) {
                     log.error(String.format("Error parsing command: [%s].", userInput));
