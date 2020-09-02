@@ -74,6 +74,8 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
     /**
      * Construct function definition representing the ground rule's dissatisfaction.
+     * The function returned from this will never be squared.
+     * Child classes that have squaring information are responsible for setting that.
      */
     protected GeneralFunction getFunction(boolean mergeConstants) {
         // nonNegative refers to having a hinge at 0 (i.e. max(0.0, X)).

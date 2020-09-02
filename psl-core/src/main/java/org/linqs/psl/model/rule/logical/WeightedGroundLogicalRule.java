@@ -63,7 +63,10 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
             return dissatisfaction;
         }
 
-        return getFunction(false);
+        GeneralFunction function = getFunction(false);
+        function.setSquared(((WeightedLogicalRule)rule).isSquared());
+
+        return function;
     }
 
     @Override
