@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -61,8 +62,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public int[] getVariableIndices() {
-        return variableIndexes;
+    public int getVariableIndex(int i) {
+        return variableIndexes[i];
     }
 
     @Override

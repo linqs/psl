@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
@@ -52,12 +53,20 @@ public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
 
     @Override
     public boolean rejectCacheTerm(SGDObjectiveTerm term) {
-        for (int variableIndex : term.getVariableIndices()) {
-            if (variableAtoms[variableIndex] == null) {
+        boolean allObservedAtoms = true;
+
+        for (int i=0; i < term.size(); i++) {
+            if (variableAtoms[term.getVariableIndex(i)] == null) {
                 return true;
+            }
+
+            // If a random variable atom is present in the term,
+            // then the term contributes to optimization and should not be rejected.
+            if (variableAtoms[term.getVariableIndex(i)] instanceof RandomVariableAtom) {
+                allObservedAtoms = false;
             }
         }
 
-        return false;
+        return allObservedAtoms;
     }
 }
