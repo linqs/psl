@@ -2,33 +2,39 @@ package org.linqs.psl.util;
 
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.rule.AbstractRule;
-import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.formula.AbstractBranchFormula;
+import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.formula.Disjunction;
+import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.formula.Implication;
+import org.linqs.psl.model.formula.Negation;
+import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.arithmetic.AbstractGroundArithmeticRule;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.FilterOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 public class VizDataCollection {
@@ -168,68 +174,54 @@ public class VizDataCollection {
         }
     }
 
-    public static String createLogicalGroundRule(AbstractRule parentRule, Map<String, String> varConstMap) {
-        // Create patterns to find predicates / constants and label to be placed on them.
-        Pattern predicatePattern = Pattern.compile("\\w+\\s*\\(");
-        Pattern constantPattern = Pattern.compile("\\'\\w+\\'");
-        String nonVariableLabel = "__0_";
-
-        // Find all instances of predicates and constants in the parent rule.
-        Matcher predicateMatcher = predicatePattern.matcher(parentRule.getName());
-        Matcher constantMatcher = constantPattern.matcher(parentRule.getName());
-
-        // Collect indices for all predicates and constants so we can label them.
-        ArrayList<Integer> indicies = new ArrayList<Integer>();
-        while (predicateMatcher.find()) {
-            indicies.add(predicateMatcher.start());
-        }
-        while (constantMatcher.find()) {
-            indicies.add(constantMatcher.start());
-        }
-
-        //Sort in descending order so we can places labels with collected indicies.
-        Collections.sort(indicies, Collections.reverseOrder());
-
-        // Apply the lables to a copy of the parent rule.
-        String createdGroundRule = parentRule.getName();
-        for (int index : indicies){
-            createdGroundRule = createdGroundRule.substring(0,index) + nonVariableLabel + createdGroundRule.substring(index);
-        }
-
-        // Replace all variables in the labeled parent rule.
-        for (Map.Entry<String, String> entry : varConstMap.entrySet()) {
-            String re = "\\b"+entry.getKey()+"\\b";
-            // Add surrounding single quotes to variables;
-            String constant = "\'" + entry.getValue() + "\'";
-            createdGroundRule = createdGroundRule.replaceAll(re, constant);
-        }
-
-        // Get rid of all labels.
-        createdGroundRule = createdGroundRule.replaceAll(nonVariableLabel, "");
-
-        return createdGroundRule;
-    }
-
-
-    // Decorates a given linear combination
-    public static ArrayList<Object> decorateGroundAtomList(String[] linearCombination, GroundRule groundRule) {
-        ArrayList<Object> decoratedList = new ArrayList<Object>();
-        for (int i = 0; i < linearCombination.length; i++) {
-            String prev = "";
-            if ((i-1) > -1) prev = linearCombination[i-1];
-            for (GroundAtom atom : groundRule.getAtoms()){
-                if (linearCombination[i].contains(atom.toString())) {
-                    if (prev.matches("-?\\d+\\.\\d+")){
-                        Integer[] groundAtom = {System.identityHashCode(atom), (int) Double.parseDouble(linearCombination[i-1])};
-                        decoratedList.add(groundAtom);
-                    }
-                    else {
-                        decoratedList.add(System.identityHashCode(atom));
-                    }
+    public static Object decorateFormula(String groundAtom, GroundRule groundRule, boolean negation){
+        for (GroundAtom atom : groundRule.getAtoms()) {
+            if (groundAtom.contains(atom.toString())){
+                if (negation) {
+                    Integer[] groundAtomObj = {System.identityHashCode(atom), 1};
+                    return groundAtomObj;
+                }
+                else {
+                    return System.identityHashCode(atom);
                 }
             }
         }
-        return decoratedList;
+        return null;
+    }
+
+    public static String parseAtom (Formula f, Map<String, String> varConstMap) {
+        Atom atom = (Atom) f;
+        String groundedAtom = atom.toString();
+        Term[] arguments = atom.getArguments();
+        for (Term t : arguments){
+            if (t instanceof Variable) {
+                String replacement = "\'" + varConstMap.get(t.toString()) + "\'";
+                groundedAtom = groundedAtom.replace(t.toString(), replacement);
+            }
+        }
+        return groundedAtom;
+    }
+
+    public static ArrayList<Object> parseFormula(Formula f, Map<String, String> varConstMap, GroundRule groundRule, boolean negation) {
+        ArrayList<Object> groundAtoms = new ArrayList<Object>();
+        if (f instanceof QueryAtom){
+            String groundedAtom = parseAtom(f, varConstMap);
+            Object decoratedFormula = decorateFormula(groundedAtom, groundRule, negation);
+            if (decoratedFormula != null) {
+                groundAtoms.add(decoratedFormula);
+            }
+        }
+        else {
+            AbstractBranchFormula branchFormula = (AbstractBranchFormula) f;
+            for (int i = 0; i < branchFormula.length(); i++){
+                String groundedAtom = parseAtom(branchFormula.get(i), varConstMap);
+                Object decoratedFormula = decorateFormula(groundedAtom, groundRule, negation);
+                if (decoratedFormula != null) {
+                    groundAtoms.add(decoratedFormula);
+                }
+            }
+        }
+        return groundAtoms;
     }
 
     public static synchronized void addGroundRule(AbstractRule parentRule,
@@ -246,43 +238,56 @@ public class VizDataCollection {
 
         // Get the Non-DNF ground rule
         String groundRuleString;
-        if (parentRule instanceof AbstractLogicalRule) {
-            groundRuleString = createLogicalGroundRule(parentRule, varConstMap);
-        }
-        else {
-            groundRuleString = groundRule.baseToString();
-        }
-
-        // Get the operator of the ground rule string
-        Pattern opPattern = Pattern.compile("\\)\\s?([=>><]+)\\s?");
-        Matcher opMatcher = opPattern.matcher(groundRuleString);
+        ArrayList<Object> lhs = new ArrayList<Object>();
+        ArrayList<Object> rhs = new ArrayList<Object>();
         String operator = "";
-        while (opMatcher.find()) {
-            operator = opMatcher.group(1);
-        }
+        if (parentRule instanceof AbstractLogicalRule) {
+            AbstractLogicalRule abstractLogicalParent = (AbstractLogicalRule) parentRule;
+            Formula formula = abstractLogicalParent.getFormula();
+            boolean negationFlag = false;
+            if (formula instanceof Implication) {
+                operator = ">>";
+                Implication implication = (Implication) formula;
+                Formula body = implication.getBody();
+                Formula head = implication.getHead();
+                if (body instanceof Negation) {
+                    Negation negation = (Negation) body;
+                    body = negation.getFormula();
+                    negationFlag = true;
+                }
+                lhs = parseFormula(body, varConstMap, groundRule, negationFlag);
+                if (head instanceof Negation) {
+                    Negation negation = (Negation) head;
+                    head = negation.getFormula();
+                    negationFlag = true;
+                }
+                rhs = parseFormula(head, varConstMap, groundRule, negationFlag);
+            }
+            else if (formula instanceof Conjunction || formula instanceof Disjunction){
+                lhs = parseFormula(formula, varConstMap, groundRule, negationFlag);
+            }
+            else if (formula instanceof Negation){
+                Negation negation = (Negation) formula;
+                Formula negationFormula = negation.getFormula();
+                negationFlag = true;
+                lhs = parseFormula(negationFormula, varConstMap, groundRule, negationFlag);
+            }
+        } else {
+            AbstractGroundArithmeticRule abstractArithmetic = (AbstractGroundArithmeticRule) groundRule;
+            GroundAtom[] orderedAtoms = abstractArithmetic.getOrderedAtoms();
+            float[] coefficients = abstractArithmetic.getCoefficients();
 
-        // Split the string into lhs and rhs via the found operator
-        String lhsGroundRule;
-        String rhsGroundRule;
-        if (operator != "") {
-            String[] splitGroundRule = groundRuleString.split(operator);
-            lhsGroundRule = splitGroundRule[0];
-            rhsGroundRule = splitGroundRule[1];
+            for (int i = 0; i < orderedAtoms.length; i++) {
+                if (i < coefficients.length) {
+                    Integer[] atomObject = {System.identityHashCode(orderedAtoms[i]), (int) coefficients[i]};
+                    lhs.add(atomObject);
+                }
+                else {
+                    lhs.add(System.identityHashCode(orderedAtoms[i]));
+                }
+            }
+            operator = abstractArithmetic.getComparator().toString();
         }
-        else {
-            lhsGroundRule = groundRuleString;
-            rhsGroundRule = "";
-        }
-
-        // Split the sides into their atoms
-        String[] lhsList;
-        String[] rhsList;
-        lhsList = lhsGroundRule.split("\\s[&+*/-]\\s");
-        rhsList = rhsGroundRule.split("\\s[&+*/-]\\s");
-
-        //  Gather atoms via getAtoms, and create pairs if needed
-        ArrayList<Object> lhsDecoratedList = decorateGroundAtomList(lhsList, groundRule);
-        ArrayList<Object> rhsDecoratedList = decorateGroundAtomList(rhsList, groundRule);
 
         // Adds a groundAtom element to RuleMap
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
@@ -301,14 +306,20 @@ public class VizDataCollection {
         String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
         Map<String, Object> rulesElementItem = new HashMap<String, Object>();
         rulesElementItem.put("text", parentRule.getName());
-        rulesElementItem.put("weighted", parentRule.isWeighted());
+        if (parentRule instanceof WeightedRule) {
+            WeightedRule weightedParentRule = (WeightedRule) parentRule;
+            rulesElementItem.put("weighted", weightedParentRule.getWeight());
+        }
+        else {
+            rulesElementItem.put("weighted", null);
+        }
         vizData.rules.put(ruleStringID, rulesElementItem);
 
         // Adds a groundRule element to RuleMap
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
-        groundRulesElement.put("lhs", lhsDecoratedList);
-        groundRulesElement.put("rhs", rhsDecoratedList);
+        groundRulesElement.put("lhs", lhs);
+        groundRulesElement.put("rhs", rhs);
         groundRulesElement.put("operator", operator);
         String groundRuleStringID = Integer.toString(System.identityHashCode(groundRule));
         vizData.groundRules.put(groundRuleStringID, groundRulesElement);
