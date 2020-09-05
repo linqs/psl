@@ -63,25 +63,29 @@ public class SGDReasoner extends Reasoner {
         termStore.initForOptimization();
 
         long termCount = 0;
+        float movement = 0.0f;
         double objective = Double.POSITIVE_INFINITY;
+
+        // Starting the second round of iteration, keep track of the old objective.
+        // Note that the number of variables may change in the first iteration (since grounding happens then).
         double oldObjective = Double.POSITIVE_INFINITY;
-        float[] oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+        float[] oldVariableValues = null;
 
         int iteration = 1;
         long totalTime = 0;
         while (true) {
             long start = System.currentTimeMillis();
 
-            // Keep track of the mean movement of the random variables.
-            float movement = 0.0f;
-
-            oldObjective = objective;
             termCount = 0;
-            objective = 0;
-            System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+            movement = 0.0f;
+            objective = 0.0;
+
             for (SGDObjectiveTerm term : termStore) {
+                if (oldVariableValues != null) {
+                    objective += term.evaluate(oldVariableValues);
+                }
+
                 termCount++;
-                objective += term.evaluate(oldVariableValues);
                 movement += term.minimize(iteration, termStore);
             }
 
@@ -102,6 +106,15 @@ public class SGDReasoner extends Reasoner {
 
             if (breakOptimization(iteration, objective, oldObjective, movement, termCount)) {
                 break;
+            }
+
+            // Keep track of the old variables for a deferred objective computation.
+            if (oldVariableValues == null) {
+                oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+                oldObjective = Double.POSITIVE_INFINITY;
+            } else {
+                System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+                oldObjective = objective;
             }
         }
 
@@ -132,7 +145,7 @@ public class SGDReasoner extends Reasoner {
         }
 
         // Break if the objective has not changed.
-        if (objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
+        if (oldObjective != Double.POSITIVE_INFINITY && objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
             return true;
         }
 
