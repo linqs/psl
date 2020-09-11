@@ -201,8 +201,17 @@ public class VizDataCollection {
         Term[] arguments = atom.getArguments();
         for (Term t : arguments){
             if (t instanceof Variable) {
-                String replacement = "\'" + varConstMap.get(t.toString()) + "\'";
-                groundedAtom = groundedAtom.replace(t.toString(), replacement);
+                // Only want to replace terms, to do so make sure they are in a parenthesis.
+                String leftVarParen = "(" + t.toString();
+                String rightVarParen = t.toString() + ")";
+                if (groundedAtom.contains(leftVarParen)) {
+                    String replacement = "(\'" + varConstMap.get(t.toString()) + "\'";
+                    groundedAtom = groundedAtom.replace(leftVarParen, replacement);
+                }
+                else if (groundedAtom.contains(rightVarParen)) {
+                    String replacement = "\'" + varConstMap.get(t.toString()) + "\')";
+                    groundedAtom = groundedAtom.replace(rightVarParen, replacement);
+                }
             }
         }
         return groundedAtom;
