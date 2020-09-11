@@ -163,6 +163,7 @@ public class VizDataCollection {
         vizData.truthMap.put(groundAtomID, truthVal);
     }
 
+    // Adds a ground rules dissatisfaction / infeasibility.
     public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String strGroundRuleId = Integer.toString(System.identityHashCode(groundRule));
@@ -170,10 +171,14 @@ public class VizDataCollection {
             if (groundRule instanceof WeightedGroundRule) {
                 WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
                 groundRuleObj.put("dissatisfaction", weightedGroundRule.getIncompatibility());
+            } else {
+                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule) groundRule;
+                groundRuleObj.put("dissatisfaction", unweightedGroundRule.getInfeasibility());
             }
         }
     }
 
+    // Decorates an entry in a Formula to have constants or negations marked.
     public static Object decorateFormula(String groundAtom, GroundRule groundRule, boolean negation){
         for (GroundAtom atom : groundRule.getAtoms()) {
             if (groundAtom.contains(atom.toString())){
@@ -189,6 +194,7 @@ public class VizDataCollection {
         return null;
     }
 
+    // Parses through an atom object, and fills out variables with their proper values.
     public static String parseAtom (Formula f, Map<String, String> varConstMap) {
         Atom atom = (Atom) f;
         String groundedAtom = atom.toString();
@@ -202,6 +208,7 @@ public class VizDataCollection {
         return groundedAtom;
     }
 
+    // Parses through a formula object, and creates the needed object for vizData object consumption.
     public static ArrayList<Object> parseFormula(Formula f, Map<String, String> varConstMap, GroundRule groundRule, boolean negation) {
         ArrayList<Object> groundAtoms = new ArrayList<Object>();
         if (f instanceof QueryAtom){
@@ -236,7 +243,7 @@ public class VizDataCollection {
             varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
         }
 
-        // Get the Non-DNF ground rule
+        // Captures the lhs and rhs of a ground rule in order to add to the vizData object.
         String groundRuleString;
         ArrayList<Object> lhs = new ArrayList<Object>();
         ArrayList<Object> rhs = new ArrayList<Object>();
@@ -289,7 +296,7 @@ public class VizDataCollection {
             operator = abstractArithmetic.getComparator().toString();
         }
 
-        // Adds a groundAtom element to RuleMap
+        // Adds a groundAtom element to the vizData object.
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
         HashSet<GroundAtom> atomSet = new HashSet<GroundAtom>(groundRule.getAtoms());
         int atomCount = 0;
@@ -302,7 +309,7 @@ public class VizDataCollection {
             atomCount++;
         }
 
-        // Adds a rule element to RuleMap.
+        // Adds a rule element to the vizData object.
         String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
         Map<String, Object> rulesElementItem = new HashMap<String, Object>();
         rulesElementItem.put("text", parentRule.getName());
@@ -315,7 +322,7 @@ public class VizDataCollection {
         }
         vizData.rules.put(ruleStringID, rulesElementItem);
 
-        // Adds a groundRule element to RuleMap
+        // Adds a groundRule element to the vizData object.
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
         groundRulesElement.put("lhs", lhs);

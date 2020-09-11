@@ -57,6 +57,7 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.Parallel;
+import org.linqs.psl.util.VizDataCollection;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
@@ -289,6 +290,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         groundSingleNonSummationRule(constants, variableMap, atomManager, resources);
 
         results.addAll(resources.groundRules);
+        if (Options.CLI_VIZ.getBoolean()) {
+            for (GroundRule groundRule : resources.groundRules) {
+                VizDataCollection.addGroundRule(this, groundRule, variableMap, constants);
+            }
+        }
         resources.groundRules.clear();
         resources.accessExceptionAtoms.clear();
     }
@@ -310,6 +316,11 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         groundSingleSummationRule(constants, variableMap, atomManager, resources);
 
         results.addAll(resources.groundRules);
+        if (Options.CLI_VIZ.getBoolean()) {
+            for (GroundRule groundRule : resources.groundRules) {
+                VizDataCollection.addGroundRule(this, groundRule, variableMap, constants);
+            }
+        }
         resources.groundRules.clear();
         resources.accessExceptionAtoms.clear();
     }
@@ -337,8 +348,18 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         ResultList results = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false));
         Map<Variable, Integer> variableMap = results.getVariableMap();
 
+        int priorResourcesSize = resources.groundRules.size();
         for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
             groundSingleNonSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            int postGroundingResourcesSize = resources.groundRules.size();
+            // Checking the size of the resources allows us to verify if a grounding occured or not.
+            if (Options.CLI_VIZ.getBoolean()) {
+                if (postGroundingResourcesSize != priorResourcesSize) {
+                    GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
+                    VizDataCollection.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
+                }
+            }
+            priorResourcesSize = resources.groundRules.size();
         }
 
         int count = resources.groundRules.size();
@@ -411,8 +432,18 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         ResultList results = database.executeQuery(rawQuery);
         Map<Variable, Integer> variableMap = results.getVariableMap();
 
+        int priorResourcesSize = resources.groundRules.size();
         for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
             groundSingleSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            int postGroundingResourcesSize = resources.groundRules.size();
+            // Checking the size of the resources allows us to verify if a grounding occured or not.
+            if (Options.CLI_VIZ.getBoolean()) {
+                if (postGroundingResourcesSize != priorResourcesSize) {
+                    GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
+                    VizDataCollection.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
+                }
+            }
+            priorResourcesSize = resources.groundRules.size();
         }
 
         int count = resources.groundRules.size();
