@@ -295,7 +295,7 @@ public class VizDataCollection {
 
             for (int i = 0; i < orderedAtoms.length; i++) {
                 if (i < coefficients.length) {
-                    Integer[] atomObject = {System.identityHashCode(orderedAtoms[i]), (int) coefficients[i]};
+                    Object[] atomObject = {System.identityHashCode(orderedAtoms[i]), coefficients[i]};
                     lhs.add(atomObject);
                 }
                 else {
