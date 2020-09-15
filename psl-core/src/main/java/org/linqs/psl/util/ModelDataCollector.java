@@ -181,8 +181,7 @@ public class ModelDataCollector {
                 if (negation) {
                     Integer[] groundAtomObj = {System.identityHashCode(atom), 1};
                     return groundAtomObj;
-                }
-                else {
+                } else {
                     return System.identityHashCode(atom);
                 }
             }
@@ -203,8 +202,7 @@ public class ModelDataCollector {
                 if (groundedAtom.contains(leftVarParen)) {
                     String replacement = "(\'" + varConstMap.get(t.toString()) + "\'";
                     groundedAtom = groundedAtom.replace(leftVarParen, replacement);
-                }
-                else if (groundedAtom.contains(rightVarParen)) {
+                } else if (groundedAtom.contains(rightVarParen)) {
                     String replacement = "\'" + varConstMap.get(t.toString()) + "\')";
                     groundedAtom = groundedAtom.replace(rightVarParen, replacement);
                 }
@@ -222,8 +220,7 @@ public class ModelDataCollector {
             if (decoratedFormula != null) {
                 groundAtoms.add(decoratedFormula);
             }
-        }
-        else {
+        } else {
             AbstractBranchFormula branchFormula = (AbstractBranchFormula) f;
             for (int i = 0; i < branchFormula.length(); i++){
                 String groundedAtom = parseAtom(branchFormula.get(i), varConstMap);
@@ -274,11 +271,9 @@ public class ModelDataCollector {
                     negationFlag = true;
                 }
                 rhs = parseFormula(head, varConstMap, groundRule, negationFlag);
-            }
-            else if (formula instanceof Conjunction || formula instanceof Disjunction){
+            } else if (formula instanceof Conjunction || formula instanceof Disjunction){
                 lhs = parseFormula(formula, varConstMap, groundRule, negationFlag);
-            }
-            else if (formula instanceof Negation){
+            } else if (formula instanceof Negation){
                 Negation negation = (Negation) formula;
                 Formula negationFormula = negation.getFormula();
                 negationFlag = true;
@@ -293,8 +288,7 @@ public class ModelDataCollector {
                 if (i < coefficients.length) {
                     Object[] atomObject = {System.identityHashCode(orderedAtoms[i]), coefficients[i]};
                     lhs.add(atomObject);
-                }
-                else {
+                } else {
                     lhs.add(System.identityHashCode(orderedAtoms[i]));
                 }
             }
@@ -321,8 +315,7 @@ public class ModelDataCollector {
         if (parentRule instanceof WeightedRule) {
             WeightedRule weightedParentRule = (WeightedRule) parentRule;
             rulesElementItem.put("weighted", weightedParentRule.getWeight());
-        }
-        else {
+        } else {
             rulesElementItem.put("weighted", null);
         }
         modelData.rules.put(ruleStringID, rulesElementItem);
