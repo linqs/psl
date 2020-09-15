@@ -175,7 +175,6 @@ public class Hyperband extends WeightLearningApplication {
      * This is a prime method for child classes to override.
      * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
      * if lower is better for that evaluator.
-     * @param weights
      */
     protected double run(float[] weights) {
         computeMPEState();

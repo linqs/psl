@@ -90,13 +90,13 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     @Override
     protected void doLearn() {
         double bestObjective = -1.0;
-        boolean nonZero = false;
         float[] bestWeights = new float[mutableRules.size()];
         float[] weights = new float[mutableRules.size()];
         float[] unitWeightVector = new float[mutableRules.size()];
 
         String unitConfiguration = null;
 
+        boolean nonZero = false;
         for (int iteration = 0; iteration < numLocations; iteration++) {
             if (!chooseNextLocation()) {
                 log.debug("Stopping search.");
@@ -110,7 +110,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             getWeights(weights);
             System.arraycopy(weights, 0, unitWeightVector, 0, weights.length);
 
-            // ensure that there is at least one non-zero weight.
+            // Check that there is at least one non-zero weight.
             for (int i = 0; i < weights.length; i++) {
                 if (weights[i] > 0.0) {
                     nonZero = true;

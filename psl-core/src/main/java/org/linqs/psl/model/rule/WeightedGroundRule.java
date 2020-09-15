@@ -30,13 +30,11 @@ public interface WeightedGroundRule extends GroundRule {
      * Returns the Weight of this WeightedGroundRule.
      * Until setWeight() is called, this GroundRule's weight is the current weight of its parent Rule.
      * After it is called, it remains the most recent Weight set by setWeight().
-     * @return
      */
     public float getWeight();
 
     /**
      * Sets a weight for this WeightedGroundRule.
-     * @param weight
      */
     public void setWeight(float weight);
 

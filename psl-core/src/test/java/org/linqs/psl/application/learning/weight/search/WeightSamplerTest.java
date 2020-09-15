@@ -28,7 +28,6 @@ import static org.junit.Assert.assertTrue;
  * Test weight sampler class, which samples weight configurations from various distributions.
  */
 public class WeightSamplerTest {
-
     /**
      * Test sampling weight configurations from a Dirichlet distribution.
      */
@@ -48,7 +47,7 @@ public class WeightSamplerTest {
         Options.WLA_SEARCH_DIRICHLET.set(true);
 
         // Iterate over possible number of weights.
-        for (int dimension: numWeights) {
+        for (int dimension : numWeights) {
             weightSampler = new WeightSampler(dimension);
             weightSamples = new float[numSamples][dimension];
 
