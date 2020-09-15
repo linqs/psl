@@ -156,14 +156,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     @Override
     public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
-        GroundRule groundRule = ground(constants, variableMap, atomManager);
-
-        // Visualization runtime argument is specified.
-        if (Options.CLI_VIZ.getBoolean()) {
-            ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
-        }
-
-        results.add(groundRule);
+        results.add(ground(constants, variableMap, atomManager));
     }
 
     private GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager) {
@@ -173,7 +166,12 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         }
         GroundingResources resources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
 
-        return groundInternal(constants, variableMap, atomManager, resources);
+        GroundRule groundRule = groundInternal(constants, variableMap, atomManager, resources);
+        if (groundRule != null && resources.collectData) {
+            ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
+        }
+
+        return groundRule;
     }
 
     public int groundAll(QueryResultIterable groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
@@ -348,6 +346,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         // Atoms that cause trouble for the atom manager.
         public Set<GroundAtom> accessExceptionAtoms;
 
+        public boolean collectData;
+
         // Allocate up-front some buffers for grounding QueryAtoms into.
         public Constant[][] positiveAtomArgs;
         public Constant[][] negativeAtomArgs;
@@ -356,6 +356,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             positiveAtoms = new ArrayList<GroundAtom>(4);
             negativeAtoms = new ArrayList<GroundAtom>(4);
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
+
+            Boolean collectDataOption = (Boolean)Options.CLI_VIZ.getUnlogged();
+            collectData = (collectDataOption != null && collectDataOption.booleanValue());
 
             int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
 

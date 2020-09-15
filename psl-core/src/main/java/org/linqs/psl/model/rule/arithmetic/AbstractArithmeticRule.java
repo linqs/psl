@@ -290,7 +290,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         groundSingleNonSummationRule(constants, variableMap, atomManager, resources);
 
         results.addAll(resources.groundRules);
-        if (Options.CLI_VIZ.getBoolean()) {
+        if (resources.collectData) {
             for (GroundRule groundRule : resources.groundRules) {
                 ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
             }
@@ -316,11 +316,12 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         groundSingleSummationRule(constants, variableMap, atomManager, resources);
 
         results.addAll(resources.groundRules);
-        if (Options.CLI_VIZ.getBoolean()) {
+        if (resources.collectData) {
             for (GroundRule groundRule : resources.groundRules) {
                 ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
             }
         }
+
         resources.groundRules.clear();
         resources.accessExceptionAtoms.clear();
     }
@@ -353,7 +354,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             groundSingleNonSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
             int postGroundingResourcesSize = resources.groundRules.size();
             // Checking the size of the resources allows us to verify if a grounding occured or not.
-            if (Options.CLI_VIZ.getBoolean()) {
+            if (resources.collectData) {
                 if (postGroundingResourcesSize != priorResourcesSize) {
                     GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
                     ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
@@ -437,7 +438,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             groundSingleSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
             int postGroundingResourcesSize = resources.groundRules.size();
             // Checking the size of the resources allows us to verify if a grounding occured or not.
-            if (Options.CLI_VIZ.getBoolean()) {
+            if (resources.collectData) {
                 if (postGroundingResourcesSize != priorResourcesSize) {
                     GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
                     ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
@@ -981,6 +982,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         // Atoms that cause trouble for the atom manager.
         public Set<GroundAtom> accessExceptionAtoms;
 
+        public boolean collectData;
+
         // Shared resources.
 
         public List<QueryAtom> queryAtoms;
@@ -1013,6 +1016,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         public GroundingResources() {
             groundRules = new ArrayList<GroundRule>();
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
+
+            Boolean collectDataOption = (Boolean)Options.CLI_VIZ.getUnlogged();
+            collectData = (collectDataOption != null && collectDataOption.booleanValue());
         }
 
         public void parseExpression(ArithmeticRuleExpression expression, boolean computeCoefficients) {
