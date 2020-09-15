@@ -42,9 +42,9 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.ModelDataCollector;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
-import org.linqs.psl.util.VizDataCollection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +160,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         // Visualization runtime argument is specified.
         if (Options.CLI_VIZ.getBoolean()) {
-            VizDataCollection.addGroundRule(this, groundRule, variableMap, constants);
+            ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
         }
 
         results.add(groundRule);

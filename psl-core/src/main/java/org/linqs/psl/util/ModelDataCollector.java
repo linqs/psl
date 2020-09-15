@@ -37,11 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
-public class VizDataCollection {
-    private static final Logger log = LoggerFactory.getLogger(VizDataCollection.class);
+public class ModelDataCollector {
+    private static final Logger log = LoggerFactory.getLogger(ModelDataCollector.class);
 
     private static Runtime runtime = null;
-    private static VisualizationData vizData = null;
+    private static ModelData modelData = null;
 
     private static String outputPath = null;
 
@@ -49,32 +49,32 @@ public class VizDataCollection {
         init();
     }
 
-    private VizDataCollection() {}
+    private ModelDataCollector() {}
 
     private static synchronized void init() {
         if (runtime != null) {
             return;
         }
-        vizData = new VisualizationData();
+        modelData = new ModelData();
         runtime = Runtime.getRuntime();
         runtime.addShutdownHook(new ShutdownHook());
     }
 
-    public static void outputJSON() throws IOException {
+    public static void outputJSON() {
         FilterOutputStream stream = System.out;
 
-        if (outputPath != null) {
-            try {
+        try {
+            if (outputPath != null) {
                 stream = new GZIPOutputStream(new PrintStream(outputPath));
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
             }
-        }
 
-        writeToStream(stream);
+            writeToStream(stream);
 
-        if (outputPath != null) {
-            stream.close();
+            if (outputPath != null) {
+                stream.close();
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not write to path: " + outputPath, ex);
         }
     }
 
@@ -82,40 +82,40 @@ public class VizDataCollection {
      * Write to stream with JSON formatting.
      */
     private static void writeToStream(FilterOutputStream stream) throws IOException {
-        // JSON format reference: https://www.json.org/json-en.html.
-        stream.write("{ \"truthMap\" :".getBytes());
+        stream.write("{\"truthMap\":".getBytes());
 
         // Write each map as a JSON object, each JSON object is comma delimited.
-        writeMap(stream, vizData.truthMap, "truthMap");
-        stream.write(", \"rules\" :".getBytes());
-        writeMap(stream, vizData.rules, "rules");
-        stream.write(", \"groundRules\" :".getBytes());
-        writeMap(stream, vizData.groundRules, "groundRules");
-        stream.write(", \"groundAtoms\" :".getBytes());
-        writeMap(stream, vizData.groundAtoms, "groundAtoms");
+        writeMap(stream, modelData.truthMap);
+        stream.write(",\"rules\":".getBytes());
+        writeMap(stream, modelData.rules);
+        stream.write(",\"groundRules\":".getBytes());
+        writeMap(stream, modelData.groundRules);
+        stream.write(",\"groundAtoms\":".getBytes());
+        writeMap(stream, modelData.groundAtoms);
 
         stream.write('}');
     }
 
     /**
      * Write map to stream with JSON formatting.
+     * Assumption for optimizing write buffer: Map values use small amount of memory 
      */
-    @SuppressWarnings("unchecked")
-    private static void writeMap(FilterOutputStream stream, Object map, String z) throws IOException {
+    private static void writeMap(FilterOutputStream stream, Object map) throws IOException {
         stream.write('{');
 
-        Map<String, Object> stringObjMap = (Map<String, Object>) map;
+        @SuppressWarnings("unchecked")
+        Map<String, Object> stringObjMap = (Map<String, Object>)map;
         Iterator<Map.Entry<String, Object>> iterator = stringObjMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, Object> entry = iterator.next();
-            stream.write((" \"" + entry.getKey() + "\" :").getBytes());
+            stream.write(("\"" + entry.getKey() + "\":").getBytes());
 
-            // Values of the map will either be a Float or Map
+            // Values of the map will either be a Float or Map.
             if (entry.getValue() instanceof Float) {
                 stream.write(entry.getValue().toString().getBytes());
             } else {
-                // Assumption that the JSON Objects carry small amounts of data
-                Map<String, Object> data = (Map<String, Object>) entry.getValue();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>)entry.getValue();
                 JSONObject jsonObject = new JSONObject(data);
                 stream.write(jsonObject.toString().getBytes());
             }
@@ -131,21 +131,17 @@ public class VizDataCollection {
     private static class ShutdownHook extends Thread {
         @Override
         public void run() {
-            try {
-                outputJSON();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+            outputJSON();
         }
     }
 
-    public static class VisualizationData {
+    public static class ModelData {
         public Map<String, Float> truthMap;
         public Map<String, Map<String, Object>> rules;
         public Map<String, Map<String, Object>> groundRules;
         public Map<String, Map<String, Object>> groundAtoms;
 
-        public VisualizationData() {
+        public ModelData() {
             truthMap = new HashMap<String, Float>();
             rules = new HashMap<String, Map<String, Object>>();
             groundRules = new HashMap<String, Map<String, Object>>();
@@ -160,14 +156,14 @@ public class VizDataCollection {
     // Takes in a prediction truth pair and adds it to the Truth Map.
     public static void addTruth(GroundAtom target, float truthVal ) {
         String groundAtomID = Integer.toString(System.identityHashCode(target));
-        vizData.truthMap.put(groundAtomID, truthVal);
+        modelData.truthMap.put(groundAtomID, truthVal);
     }
 
     // Adds a ground rules dissatisfaction / infeasibility.
     public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String strGroundRuleId = Integer.toString(System.identityHashCode(groundRule));
-            Map<String, Object> groundRuleObj = vizData.groundRules.get(strGroundRuleId);
+            Map<String, Object> groundRuleObj = modelData.groundRules.get(strGroundRuleId);
             if (groundRule instanceof WeightedGroundRule) {
                 WeightedGroundRule weightedGroundRule = (WeightedGroundRule) groundRule;
                 groundRuleObj.put("dissatisfaction", weightedGroundRule.getIncompatibility());
@@ -217,7 +213,7 @@ public class VizDataCollection {
         return groundedAtom;
     }
 
-    // Parses through a formula object, and creates the needed object for vizData object consumption.
+    // Parses through a formula object, and creates the needed object for modelData object consumption.
     public static ArrayList<Object> parseFormula(Formula f, Map<String, String> varConstMap, GroundRule groundRule, boolean negation) {
         ArrayList<Object> groundAtoms = new ArrayList<Object>();
         if (f instanceof QueryAtom){
@@ -252,7 +248,7 @@ public class VizDataCollection {
             varConstMap.put(entry.getKey().toString(), constantsList[entry.getValue()].rawToString());
         }
 
-        // Captures the lhs and rhs of a ground rule in order to add to the vizData object.
+        // Captures the lhs and rhs of a ground rule in order to add to the modelData object.
         String groundRuleString;
         ArrayList<Object> lhs = new ArrayList<Object>();
         ArrayList<Object> rhs = new ArrayList<Object>();
@@ -305,7 +301,7 @@ public class VizDataCollection {
             operator = abstractArithmetic.getComparator().toString();
         }
 
-        // Adds a groundAtom element to the vizData object.
+        // Adds a groundAtom element to the modelData object.
         ArrayList<Integer> atomHashList = new ArrayList<Integer>();
         HashSet<GroundAtom> atomSet = new HashSet<GroundAtom>(groundRule.getAtoms());
         int atomCount = 0;
@@ -314,11 +310,11 @@ public class VizDataCollection {
             Map<String, Object> groundAtomElement = new HashMap<String, Object>();
             groundAtomElement.put("text", groundAtom.toString());
             groundAtomElement.put("prediction", groundAtom.getValue());
-            vizData.groundAtoms.put(Integer.toString(System.identityHashCode(groundAtom)), groundAtomElement);
+            modelData.groundAtoms.put(Integer.toString(System.identityHashCode(groundAtom)), groundAtomElement);
             atomCount++;
         }
 
-        // Adds a rule element to the vizData object.
+        // Adds a rule element to the modelData object.
         String ruleStringID = Integer.toString(System.identityHashCode(parentRule));
         Map<String, Object> rulesElementItem = new HashMap<String, Object>();
         rulesElementItem.put("text", parentRule.getName());
@@ -329,15 +325,15 @@ public class VizDataCollection {
         else {
             rulesElementItem.put("weighted", null);
         }
-        vizData.rules.put(ruleStringID, rulesElementItem);
+        modelData.rules.put(ruleStringID, rulesElementItem);
 
-        // Adds a groundRule element to the vizData object.
+        // Adds a groundRule element to the modelData object.
         Map<String, Object> groundRulesElement = new HashMap<String, Object>();
         groundRulesElement.put("ruleID", Integer.parseInt(ruleStringID));
         groundRulesElement.put("lhs", lhs);
         groundRulesElement.put("rhs", rhs);
         groundRulesElement.put("operator", operator);
         String groundRuleStringID = Integer.toString(System.identityHashCode(groundRule));
-        vizData.groundRules.put(groundRuleStringID, groundRulesElement);
+        modelData.groundRules.put(groundRuleStringID, groundRulesElement);
     }
 }

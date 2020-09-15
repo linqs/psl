@@ -45,10 +45,10 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
+import org.linqs.psl.util.ModelDataCollector;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
-import org.linqs.psl.util.VizDataCollection;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -252,7 +252,7 @@ public class Launcher {
 
         // Collect prediction and truth values for each target.
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
-            VizDataCollection.addTruth(entry.getKey(), entry.getValue().getValue());
+            ModelDataCollector.addTruth(entry.getKey(), entry.getValue().getValue());
         }
 
         if (closePredictionDB) {
@@ -260,7 +260,7 @@ public class Launcher {
         }
         truthDatabase.close();
 
-        VizDataCollection.dissatisfactionPerGroundRule(inferenceApplication.getGroundRuleStore());
+        ModelDataCollector.dissatisfactionPerGroundRule(inferenceApplication.getGroundRuleStore());
     }
 
     private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
@@ -442,7 +442,7 @@ public class Launcher {
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
             Options.CLI_VIZ.set(true);
-            VizDataCollection.setOutputPath(parsedOptions.getOptionValue(CommandLineLoader.OPTION_VISUALIZATION));
+            ModelDataCollector.setOutputPath(parsedOptions.getOptionValue(CommandLineLoader.OPTION_VISUALIZATION));
         }
 
         // Inference

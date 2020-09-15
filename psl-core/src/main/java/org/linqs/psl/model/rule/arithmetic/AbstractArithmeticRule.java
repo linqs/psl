@@ -56,8 +56,8 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.util.ModelDataCollector;
 import org.linqs.psl.util.Parallel;
-import org.linqs.psl.util.VizDataCollection;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
@@ -292,7 +292,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         results.addAll(resources.groundRules);
         if (Options.CLI_VIZ.getBoolean()) {
             for (GroundRule groundRule : resources.groundRules) {
-                VizDataCollection.addGroundRule(this, groundRule, variableMap, constants);
+                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
             }
         }
         resources.groundRules.clear();
@@ -318,7 +318,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         results.addAll(resources.groundRules);
         if (Options.CLI_VIZ.getBoolean()) {
             for (GroundRule groundRule : resources.groundRules) {
-                VizDataCollection.addGroundRule(this, groundRule, variableMap, constants);
+                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
             }
         }
         resources.groundRules.clear();
@@ -356,7 +356,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             if (Options.CLI_VIZ.getBoolean()) {
                 if (postGroundingResourcesSize != priorResourcesSize) {
                     GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
-                    VizDataCollection.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
+                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
                 }
             }
             priorResourcesSize = resources.groundRules.size();
@@ -440,7 +440,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             if (Options.CLI_VIZ.getBoolean()) {
                 if (postGroundingResourcesSize != priorResourcesSize) {
                     GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
-                    VizDataCollection.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
+                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
                 }
             }
             priorResourcesSize = resources.groundRules.size();
