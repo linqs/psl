@@ -21,20 +21,13 @@ import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
 
 /**
  * Hyperband, but the weights chosen are used as initial weights for further weight learning.
@@ -74,7 +67,7 @@ public class InitialWeightHyperband extends Hyperband {
     }
 
     @Override
-    protected double run(double[] weights) {
+    protected double run(float[] weights) {
         // Just have the internal WLA learn and run (eval) in those learn weights.
         internalWLA.learn();
 

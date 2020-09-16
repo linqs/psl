@@ -125,6 +125,21 @@ public class DiscreteEvaluator extends Evaluator {
     }
 
     @Override
+    public double getBestRepScore() {
+        switch (representative) {
+            case F1:
+            case POSITIVE_PRECISION:
+            case NEGATIVE_PRECISION:
+            case POSITIVE_RECALL:
+            case NEGATIVE_RECALL:
+            case ACCURACY:
+                return 1.0;
+            default:
+                throw new IllegalStateException("Unknown representative metric: " + representative);
+        }
+    }
+
+    @Override
     public boolean isHigherRepBetter() {
         return true;
     }

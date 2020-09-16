@@ -284,7 +284,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public WeightedLogicalRule visitWeightedLogicalRule(WeightedLogicalRuleContext ctx) {
-        Double w = visitWeightExpression(ctx.weightExpression());
+        Float w = visitWeightExpression(ctx.weightExpression());
         Formula f = visitLogicalRuleExpression(ctx.logicalRuleExpression());
         Boolean sq = false;
         if (ctx.EXPONENT_EXPRESSION() != null) {
@@ -387,7 +387,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public WeightedArithmeticRule visitWeightedArithmeticRule(WeightedArithmeticRuleContext ctx) {
-        Double w = visitWeightExpression(ctx.weightExpression());
+        Float w = visitWeightExpression(ctx.weightExpression());
         ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
         Map<SummationVariable, Formula> filterClauses = new HashMap<SummationVariable, Formula>();
         for (int i = 0; i < ctx.filterClause().size(); i++) {
@@ -774,8 +774,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     }
 
     @Override
-    public Double visitWeightExpression(WeightExpressionContext ctx) {
-        return Double.parseDouble(ctx.number().getText());
+    public Float visitWeightExpression(WeightExpressionContext ctx) {
+        return Float.parseFloat(ctx.number().getText());
     }
 
     @Override
@@ -855,8 +855,8 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     }
 
     @Override
-    public Double visitNumber(NumberContext ctx) {
-        return Double.parseDouble(ctx.getText());
+    public Float visitNumber(NumberContext ctx) {
+        return Float.parseFloat(ctx.getText());
     }
 
     private static class ArithmeticCoefficientOperand {

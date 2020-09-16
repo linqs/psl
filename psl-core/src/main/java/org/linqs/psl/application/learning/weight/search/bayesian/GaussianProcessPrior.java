@@ -1,15 +1,14 @@
-package org.linqs.psl.application.learning.weight.bayesian;
+package org.linqs.psl.application.learning.weight.search.bayesian;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.search.WeightSampler;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.ListUtils;
-import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
-import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -38,8 +37,20 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private List<WeightConfig> exploredConfigs;
     private FloatMatrix blasYKnown;
 
-    private float initialWeightValue;
-    private float initialStdValue;
+    private float initialMetricValue;
+    private float initialMetricStd;
+
+    private WeightSampler weightSampler;
+
+    /**
+     * This variable represents whether or not the provided weight
+     * configuration is used as the first point for exploration.
+     */
+    private boolean useProvidedWeight;
+
+    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
+        this(model.getRules(), rvDB, observedDB);
+    }
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
@@ -49,15 +60,14 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         exploration = Options.WLA_GPP_EXPLORATION.getFloat();
         randomConfigsOnly = Options.WLA_GPP_RANDOM_CONFIGS_ONLY.getBoolean();
         earlyStopping = Options.WLA_GPP_EARLY_STOPPING.getBoolean();
+        useProvidedWeight = Options.WLA_GPP_USE_PROVIDED_WEIGHT.getBoolean();
 
-        initialWeightValue = Options.WLA_GPP_INITIAL_WEIGHT_VALUE.getFloat();
-        initialStdValue = Options.WLA_GPP_INITIAL_WEIGHT_STD.getFloat();
+        initialMetricValue = Float.NEGATIVE_INFINITY;
+        initialMetricStd = Float.POSITIVE_INFINITY;
 
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
-    }
 
-    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
+        weightSampler = new WeightSampler(mutableRules.size());
     }
 
     private void reset() {
@@ -86,8 +96,20 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         this.blasYKnown = blasYKnown;
     }
 
+    private void setInitialConfigValAndStd(WeightConfig initialConfig) {
+        float initialStd = (float)evaluator.getNormalizedMaxRepMetric() - initialConfig.valueAndStd.value;
+
+        for (int i = 0; i < configs.size(); i++) {
+            WeightConfig config = configs.get(i);
+            config.valueAndStd.value = initialConfig.valueAndStd.value;
+            config.valueAndStd.std = initialStd;
+        }
+    }
+
     @Override
     protected void doLearn() {
+        String currentLocation = null;
+
         // Very important to define a good kernel.
         kernel = new SquaredExpKernel();
 
@@ -96,28 +118,39 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         List<Float> exploredFnVal = new ArrayList<Float>();
 
         WeightConfig bestConfig = null;
-        double bestVal = 0.0;
+        float bestVal = Float.NEGATIVE_INFINITY;
         boolean allStdSmall = false;
 
         int iteration = 0;
         while (iteration < maxIterations && configs.size() > 0 && !(earlyStopping && allStdSmall)) {
-            int nextPoint = getNextPoint(configs, iteration);
+            int nextPoint = (iteration == 0) ? 0 : getNextPoint(configs);
             WeightConfig config = configs.get(nextPoint);
 
             exploredConfigs.add(config);
             configs.remove(nextPoint);
+
+            // Set the current location.
+            currentLocation = StringUtils.join(DELIM, config.config);
+
+            log.trace("Weights: {}", config.config);
 
             float fnVal = (float)getFunctionValue(config);
             exploredFnVal.add(fnVal);
             config.valueAndStd.value = fnVal;
             config.valueAndStd.std = 0.0f;
 
+            log.debug("Weights: {} -- objective: {}", currentLocation, fnVal);
+
+            if (iteration == 0) {
+                setInitialConfigValAndStd(config);
+            }
+
             if (bestConfig == null || fnVal > bestVal) {
                 bestVal = fnVal;
                 bestConfig = config;
             }
 
-            log.info(String.format("Iteration %d -- Config Picked: %s, Curent Best Config: %s.", (iteration + 1), exploredConfigs.get(iteration), bestConfig));
+            log.info(String.format("Iteration %d -- Config Picked: %s, Current Best Config: %s.", (iteration + 1), exploredConfigs.get(iteration), bestConfig));
 
             int numKnown = exploredFnVal.size();
             knownDataStdInv = FloatMatrix.zeroes(numKnown, numKnown);
@@ -214,41 +247,50 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs) / numMutableRules);
 
+        // Create configuration with weights in the user provided model file.
+        WeightConfig userProvidedConfig = new WeightConfig(new float[numMutableRules]);
+        for (int i = 0; i < numMutableRules; i++) {
+            userProvidedConfig.config[i] = (float)mutableRules.get(i).getWeight();
+        }
+
         // If systematic generation of points will lead to not a reasonable exploration of space,
         // then just pick random points in space and hope it is better than being systematic.
-
         if (randomConfigsOnly) {
             log.debug("Generating random configs.");
-            return getRandomConfigs();
-        }
-
-        if (numPerSplit < 5) {
-            log.warn("Note not picking random points and large number of rules will yield bad exploration.");
-        }
-
-        float inc = max / numPerSplit;
-        float[] configArray = new float[numMutableRules];
-        Arrays.fill(configArray, min);
-        WeightConfig config = new WeightConfig(configArray);
-
-        boolean done = false;
-        while (!done) {
-            int i = 0;
-            configs.add(new WeightConfig(config));
-            for (int j = 0; j < numMutableRules; j++) {
-                if (config.config[i] < max) {
-                    config.config[i] += inc;
-                    break;
-                }
-
-                if (i == numMutableRules - 1) {
-                    done = true;
-                    break;
-                }
-
-                config.config[i] = min;
-                i++;
+            configs = getRandomConfigs();
+        } else {
+            if (numPerSplit < 5) {
+                log.warn("Note that not picking random points for a model with a large number of rules will result in poor exploration of the weight space.");
             }
+
+            float inc = max / numPerSplit;
+            float[] configArray = new float[numMutableRules];
+            Arrays.fill(configArray, min);
+            WeightConfig config = new WeightConfig(configArray);
+            boolean done = false;
+            while (!done) {
+                int i = 0;
+                configs.add(new WeightConfig(config));
+                for (int j = 0; j < numMutableRules; j++) {
+                    if (config.config[i] < max) {
+                        config.config[i] += inc;
+                        break;
+                    }
+
+                    if (i == numMutableRules - 1) {
+                        done = true;
+                        break;
+                    }
+
+                    config.config[i] = min;
+                    i++;
+                }
+            }
+        }
+
+        // Add the user provided weight configuration to the head of the list.
+        if (useProvidedWeight) {
+            configs.add(0, userProvidedConfig);
         }
 
         return configs;
@@ -257,13 +299,13 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private List<WeightConfig> getRandomConfigs() {
         int numMutableRules = this.mutableRules.size();
         List<WeightConfig> configs = new ArrayList<WeightConfig>();
+
         for (int i = 0; i < maxConfigs; i++) {
             WeightConfig curConfig = new WeightConfig(new float[numMutableRules]);
-            for (int j = 0; j < numMutableRules; j++) {
-                curConfig.config[j] = (RandUtils.nextInt(MAX_RAND_INT_VAL) + 1) / (float)(MAX_RAND_INT_VAL + 1);
-            }
+            weightSampler.getRandomWeights(curConfig.config);
             configs.add(curConfig);
         }
+
         return configs;
     }
 
@@ -311,9 +353,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     // Exploration strategy
-    protected int getNextPoint(List<WeightConfig> configs, int iteration) {
+    protected int getNextPoint(List<WeightConfig> configs) {
         int bestConfig = -1;
-        float curBestVal = -Float.MAX_VALUE;
+        float curBestVal = Float.NEGATIVE_INFINITY;
+
         for (int i = 0; i < configs.size(); i++) {
             float curVal = (configs.get(i).valueAndStd.value / exploration) + configs.get(i).valueAndStd.std;
             if (bestConfig == -1 || curVal > curBestVal) {
@@ -330,7 +373,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         float std;
 
         public ValueAndStd() {
-            this(initialWeightValue, initialStdValue);
+            this(initialMetricValue, initialMetricStd);
         }
 
         public ValueAndStd(float value, float std) {
@@ -344,7 +387,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         public ValueAndStd valueAndStd;
 
         public WeightConfig(float[] config) {
-            this(config, initialWeightValue, initialStdValue);
+            this(config, initialMetricValue, initialMetricStd);
         }
 
         public WeightConfig(WeightConfig config) {

@@ -22,16 +22,13 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
@@ -53,14 +50,9 @@ public class Hyperband extends WeightLearningApplication {
     public static final double MIN_BUDGET_PROPORTION = 0.001;
     public static final int MIN_BRACKET_SIZE = 1;
 
-    // TODO(eriq): Config
-    public static final double MEAN = 0.50;
-    public static final double VARIANCE = 0.10;
-
     private final int survival;
 
-    private double bestObjective;
-    private double[] bestWeights;
+    private WeightSampler weightSampler;
 
     private int numBrackets;
     private int baseBracketSize;
@@ -72,6 +64,8 @@ public class Hyperband extends WeightLearningApplication {
     public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
+        weightSampler = new WeightSampler(mutableRules.size());
+
         survival = Options.WLA_HB_SURVIVAL.getInt();
         numBrackets = Options.WLA_HB_NUM_BRACKETS.getInt();
         baseBracketSize = Options.WLA_HB_BRACKET_SIZE.getInt();
@@ -80,7 +74,9 @@ public class Hyperband extends WeightLearningApplication {
     @Override
     protected void doLearn() {
         double bestObjective = -1;
-        double[] bestWeights = null;
+        float[] bestWeights = null;
+
+        String currentLocation = null;
 
         // The total cost used vs one full round of inference.
         double totalCost = 0.0;
@@ -99,7 +95,7 @@ public class Hyperband extends WeightLearningApplication {
 
             // Note that each config may get adjusted by internal weight learning methods.
             // (Not in the default behavior, but in child class behavior).
-            List<double[]> configs = chooseConfigs(bracketSize);
+            List<float[]> configs = chooseConfigs(bracketSize);
 
             for (int round = 0; round <= bracket; round++) {
                 int roundSize = configs.size();
@@ -109,7 +105,7 @@ public class Hyperband extends WeightLearningApplication {
                 log.debug("  Round {} / {} -- Size: {}, Budget: {}", round + 1, bracket + 1, roundSize, roundBudget);
 
                 PriorityQueue<RunResult> results = new PriorityQueue<RunResult>();
-                for (double[] config : configs) {
+                for (float[] config : configs) {
                     totalCost += roundBudget;
 
                     // Set the weights for the current round.
@@ -117,13 +113,19 @@ public class Hyperband extends WeightLearningApplication {
                         mutableRules.get(i).setWeight(config[i]);
                     }
 
+                    // Set the current location.
+                    currentLocation = StringUtils.join(DELIM, config);
+
+                    log.trace("Weights: {}", config);
+
                     // The weights have changed, so we are no longer in an MPE state.
                     inMPEState = false;
 
                     double objective = run(config);
                     RunResult result = new RunResult(config, objective);
-
                     results.add(result);
+
+                    log.debug("Weights: {} -- objective: {}", currentLocation, objective);
 
                     if (bestWeights == null || objective < bestObjective) {
                         bestObjective = objective;
@@ -134,7 +136,7 @@ public class Hyperband extends WeightLearningApplication {
                 }
 
                 configs.clear();
-                for (int i = 0; i < (int)(Math.floor((double)roundSize / survival)); i++) {
+                for (int i = 0; i < (int)(Math.floor((float)roundSize / survival)); i++) {
                     configs.add(results.poll().weights);
                 }
             }
@@ -151,16 +153,13 @@ public class Hyperband extends WeightLearningApplication {
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }
 
-    private List<double[]> chooseConfigs(int bracketSize) {
-        List<double[]> configs = new ArrayList<double[]>(bracketSize);
+    private List<float[]> chooseConfigs(int bracketSize) {
+        List<float[]> configs = new ArrayList<float[]>(bracketSize);
 
         for (int i = 0; i < bracketSize; i++) {
-            double[] config = new double[mutableRules.size()];
+            float[] config = new float[mutableRules.size()];
 
-            for (int weightIndex = 0; weightIndex < mutableRules.size(); weightIndex++) {
-                // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-                config[weightIndex] = RandUtils.nextDouble() * Math.sqrt(VARIANCE) + MEAN;
-            }
+            weightSampler.getRandomWeights(config);
 
             configs.add(config);
         }
@@ -177,20 +176,18 @@ public class Hyperband extends WeightLearningApplication {
      * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
      * if lower is better for that evaluator.
      */
-    protected double run(double[] weights) {
+    protected double run(float[] weights) {
         computeMPEState();
 
         evaluator.compute(trainingMap);
-        double score = -1.0 * evaluator.getNormalizedRepMetric();
-
-        return score;
+        return -1.0 * evaluator.getNormalizedRepMetric();
     }
 
     private static class RunResult implements Comparable<RunResult> {
-        public double[] weights;
+        public float[] weights;
         public double objective;
 
-        public RunResult(double[] weights, double objective) {
+        public RunResult(float[] weights, double objective) {
             this.weights = weights;
             this.objective = objective;
         }

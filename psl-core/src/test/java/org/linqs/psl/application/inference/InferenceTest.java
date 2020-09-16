@@ -115,7 +115,7 @@ public abstract class InferenceTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         ));
 
@@ -155,7 +155,7 @@ public abstract class InferenceTest {
         // Nice(A) + Nice(B) >= 1.0
         info.model.addRule(new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
-                1.0,
+                1.0f,
                 true
         ));
 
@@ -187,7 +187,7 @@ public abstract class InferenceTest {
                 new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")),
                 new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         ));
 

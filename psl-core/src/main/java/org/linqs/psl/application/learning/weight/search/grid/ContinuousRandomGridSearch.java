@@ -17,11 +17,11 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
+import org.linqs.psl.application.learning.weight.search.WeightSampler;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.util.RandUtils;
 
 import java.util.List;
 
@@ -29,13 +29,7 @@ import java.util.List;
  * A grid search that just randomly samples from a continuous grid [0, 1).
  */
 public class ContinuousRandomGridSearch extends BaseGridSearch {
-    public static final int SCALE_FACTOR = 10;
-
-    private double baseWeight;
-    private double variance;
-
-    private int scaleOrder;
-    private int currentScale;
+    private WeightSampler weightSampler;
 
     public ContinuousRandomGridSearch(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -44,34 +38,15 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     public ContinuousRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
-        scaleOrder = Options.WLA_CRGS_SCALE_ORDERS.getInt();
-        currentScale = 0;
+        weightSampler = new WeightSampler(mutableRules.size());
 
         numLocations = Options.WLA_CRGS_MAX_LOCATIONS.getInt();
-        baseWeight = Options.WLA_CRGS_BASE_WEIGHT.getDouble();
-        variance = Options.WLA_CRGS_VARIANCE.getDouble();
     }
 
     @Override
-    protected void getWeights(double[] weights) {
-        if (currentScale == 0) {
-            // Random choice.
-            for (int i = 0; i < mutableRules.size(); i++) {
-                // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-                weights[i] = RandUtils.nextDouble() * Math.sqrt(variance) + baseWeight;
-            }
-        } else {
-            // Scale current by SCALE_FACTOR.
-            for (int i = 0; i < mutableRules.size(); i++) {
-                // Rand give Gaussian with mean = 0.0 and variance = 1.0.
-                weights[i] *= 10;
-            }
-        }
-
-        currentScale++;
-        if (currentScale > scaleOrder) {
-            currentScale = 0;
-        }
+    protected void getWeights(float[] weights) {
+        // Random choice.
+        weightSampler.getRandomWeights(weights);
     }
 
     @Override

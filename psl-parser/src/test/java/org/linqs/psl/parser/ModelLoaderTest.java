@@ -269,7 +269,7 @@ public class ModelLoaderTest {
             "0: Single(B) >> Single(B)\n" +
             "0.5: Single(C) >> Single(C)\n" +
             "999999: Single(D) >> Single(D)\n" +
-            "9999999999: Single(E) >> Single(E)\n" +
+            "9999999: Single(E) >> Single(E)\n" +
             "0000000001: Single(F) >> Single(F)\n" +
             "0.001: Single(G) >> Single(G)\n" +
             "0.00000001: Single(H) >> Single(H)\n" +
@@ -284,7 +284,7 @@ public class ModelLoaderTest {
             "0.0: SINGLE(B) >> SINGLE(B)",
             "0.5: SINGLE(C) >> SINGLE(C)",
             "999999.0: SINGLE(D) >> SINGLE(D)",
-            "9.999999999E9: SINGLE(E) >> SINGLE(E)",
+            "9999999.0: SINGLE(E) >> SINGLE(E)",
             "1.0: SINGLE(F) >> SINGLE(F)",
             "0.001: SINGLE(G) >> SINGLE(G)",
             "1.0E-8: SINGLE(H) >> SINGLE(H)",
@@ -664,7 +664,7 @@ public class ModelLoaderTest {
             PSLTest.assertStringEquals(unweightedExpected[i], unweightedRule.toString(), true,
                     String.format("Unweighted rule %d string mismatch", i));
 
-            Rule weightedRule = partial.toRule(5.0, true);
+            Rule weightedRule = partial.toRule(5.0f, true);
             PSLTest.assertStringEquals(weightedExpected[i], weightedRule.toString(), true,
                     String.format("Weighted rule %d string mismatch", i));
         }

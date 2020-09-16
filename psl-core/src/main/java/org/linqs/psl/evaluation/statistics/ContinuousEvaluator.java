@@ -91,6 +91,17 @@ public class ContinuousEvaluator extends Evaluator {
     }
 
     @Override
+    public double getBestRepScore() {
+        switch (representative) {
+            case MAE:
+            case MSE:
+                return 0.0;
+            default:
+                throw new IllegalStateException("Unknown representative metric: " + representative);
+        }
+    }
+
+    @Override
     public boolean isHigherRepBetter() {
         return false;
     }

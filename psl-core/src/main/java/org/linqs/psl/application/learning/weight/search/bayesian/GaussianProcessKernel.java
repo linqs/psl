@@ -1,11 +1,7 @@
-package org.linqs.psl.application.learning.weight.bayesian;
+package org.linqs.psl.application.learning.weight.search.bayesian;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.util.FloatMatrix;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * All kernel methods MUST be threadsafe.
@@ -52,7 +48,7 @@ public abstract class GaussianProcessKernel {
 
     /**
       * Compute the kernel, but use buffers provided by the caller.
-      * The use of the buffers must be theadsafe and there are no requirements or guarentees on the
+      * The use of the buffers must be theadsafe and there are no requirements or guarantees on the
       * contents of the buffers before/after invocation (except that they are sized
       * the same as the points).
       * The matrices will be modified.
@@ -63,8 +59,8 @@ public abstract class GaussianProcessKernel {
         assert(point1.length == buffer1.length);
 
         for (int i = 0; i < point1.length; i++) {
-            buffer1[i] = point1[i];
-            buffer2[i] = point2[i];
+            buffer1[i] = (float)point1[i];
+            buffer2[i] = (float)point2[i];
         }
 
         matrixShell1.assume(buffer1, buffer1.length, 1);

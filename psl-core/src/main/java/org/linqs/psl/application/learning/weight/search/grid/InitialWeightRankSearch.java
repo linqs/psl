@@ -69,7 +69,7 @@ public class InitialWeightRankSearch extends RankSearch {
     }
 
     @Override
-    protected double inspectLocation(double[] weights) {
+    protected double inspectLocation(float[] weights) {
         // Just have the internal WLA learn and then get the loss as the score.
         internalWLA.learn();
 
