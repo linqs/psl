@@ -656,6 +656,18 @@ public class Options {
         "The period (in ms) of stats collection."
     );
 
+    public static final Option WLA_SEARCH_DIRICHLET = new Option(
+        "search.dirichlet",
+        true,
+        "Whether or not to perform search based weight learning using Dirichlet distributed weights."
+    );
+
+    public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(
+        "search.dirichletalpha",
+        0.05,
+        "The alpha parameter for the dirichlet distribution of the weight sampler."
+    );
+
     public static final Option SGD_LEARNING_RATE = new Option(
         "sgd.learningrate",
         1.0f,
@@ -791,18 +803,6 @@ public class Options {
         "The evaluator to use during weight learning."
         + " Not all weight learning methods will use the evaluator for decision making,"
         + " but even those will typically output an evaluator score each iteration."
-    );
-
-    public static final Option WLA_SEARCH_DIRICHLET = new Option(
-            "search.dirichlet",
-            true,
-            "Whether or not to perform search based weight learning using Dirichlet distributed weights."
-    );
-
-    public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(
-            "search.dirichletalpha",
-            0.05,
-            "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
     public static final Option WLA_RANDOM_WEIGHTS = new Option(

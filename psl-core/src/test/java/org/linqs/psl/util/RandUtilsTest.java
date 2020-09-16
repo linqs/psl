@@ -17,12 +17,11 @@
  */
 package org.linqs.psl.util;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 
-public class RandUtilsTest {
+import org.junit.Test;
 
+public class RandUtilsTest {
     @Test
     public void testNextGamma() {
         int numSamples = 10000;
