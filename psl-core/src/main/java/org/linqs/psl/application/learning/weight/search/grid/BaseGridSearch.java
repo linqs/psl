@@ -22,12 +22,10 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.Math;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,12 +58,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected Map<String, Double> objectives;
 
     /**
-     * The objectives at each location.
-     * The default implementation does not actually need this, but children may.
-     */
-    protected Map<String, String> exploredConfigurations;
-
-    /**
      * The current location we are investigating.
      * The exact representation is up to the implementing child class.
      */
@@ -82,7 +74,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         numLocations = maxNumLocations;
 
         objectives = new HashMap<String, Double>();
-        exploredConfigurations = new HashMap<String, String>();
 
         currentLocation = null;
     }
@@ -93,8 +84,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         float[] bestWeights = new float[mutableRules.size()];
         float[] weights = new float[mutableRules.size()];
         float[] unitWeightVector = new float[mutableRules.size()];
-
-        String unitConfiguration = null;
 
         boolean nonZero = false;
         for (int iteration = 0; iteration < numLocations; iteration++) {
@@ -122,14 +111,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
                 MathUtils.toUnit(unitWeightVector);
             }
 
-            // Check if we have explored this configuration before.
-            unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
-            if (exploredConfigurations.containsKey(unitConfiguration)) {
-                log.debug("Weights: {} already explored via: {} Skipping", currentLocation,
-                        exploredConfigurations.get(unitConfiguration));
-                continue;
-            }
-
             for (int i = 0; i < mutableRules.size(); i++) {
                 mutableRules.get(i).setWeight(weights[i]);
             }
@@ -143,7 +124,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
             // Log this location.
             objectives.put(currentLocation, new Double(objective));
-            exploredConfigurations.put(unitConfiguration, StringUtils.join(DELIM, weights));
 
             if (iteration == 0 || objective < bestObjective) {
                 bestObjective = objective;

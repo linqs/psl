@@ -29,7 +29,6 @@ import java.util.List;
  * A grid search that just randomly samples from a continuous grid [0, 1).
  */
 public class ContinuousRandomGridSearch extends BaseGridSearch {
-
     private WeightSampler weightSampler;
 
     public ContinuousRandomGridSearch(Model model, Database rvDB, Database observedDB) {

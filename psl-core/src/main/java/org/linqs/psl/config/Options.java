@@ -660,6 +660,7 @@ public class Options {
         "search.dirichlet",
         true,
         "Whether or not to perform search based weight learning using Dirichlet distributed weights."
+        + " Note that setting this option to false will increase the likelihood of repeated weight configuration samples."
     );
 
     public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(
