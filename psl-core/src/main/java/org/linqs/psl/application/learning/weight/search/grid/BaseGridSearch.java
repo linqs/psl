@@ -122,11 +122,6 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
                 MathUtils.toUnit(unitWeightVector);
             }
 
-            // Round each weight to 5 decimal places.
-            for(int i = 0; i < unitWeightVector.length; i ++) {
-                unitWeightVector[i] = (float)(Math.round(unitWeightVector[i] * 100000.0) / 100000.0);
-            }
-
             // Check if we have explored this configuration before.
             unitConfiguration = StringUtils.join(DELIM, unitWeightVector);
             if (exploredConfigurations.containsKey(unitConfiguration)) {

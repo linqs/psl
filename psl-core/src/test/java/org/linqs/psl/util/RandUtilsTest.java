@@ -48,14 +48,14 @@ public class RandUtilsTest {
                 sampleMean = 0.0;
                 sampleVariance = 0.0;
                 expectedMean = shape * scale;
-                expectedVariance = shape * Math.pow(scale, 2);
+                expectedVariance = shape * Math.pow(scale, 2.0);
 
                 for (int i = 0; i < numSamples; i++) {
                     sampleMean += gammaSamples[i] / numSamples;
                 }
 
                 for (int i = 0; i < numSamples; i++) {
-                    sampleVariance += Math.pow(gammaSamples[i] - expectedMean, 2) / (numSamples);
+                    sampleVariance += Math.pow(gammaSamples[i] - expectedMean, 2.0) / (numSamples);
                 }
 
                 // Assert that various statistics of the distribution are as expected.
@@ -109,7 +109,7 @@ public class RandUtilsTest {
                     }
 
                     for (int j = 0; j < numSamples; j++) {
-                        sampleVariance += Math.pow(dirichletSamples[j][i] - expectedMean, 2) / (numSamples);
+                        sampleVariance += Math.pow(dirichletSamples[j][i] - expectedMean, 2.0) / (numSamples);
                     }
 
                     // Assert that various statistics of the distribution are as expected.

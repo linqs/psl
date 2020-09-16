@@ -34,7 +34,7 @@ public class WeightSampler {
     private double[] dirichletAlphas;
 
     /**
-     * The number of weights
+     * The number of weights.
      */
     private int numWeights;
 

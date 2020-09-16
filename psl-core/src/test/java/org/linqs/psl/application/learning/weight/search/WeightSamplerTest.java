@@ -17,12 +17,12 @@
  */
 package org.linqs.psl.application.learning.weight.search;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.util.RandUtils;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test weight sampler class, which samples weight configurations from various distributions.
@@ -111,7 +111,7 @@ public class WeightSamplerTest {
                 }
 
                 for (int j = 0; j < numSamples; j++) {
-                    sampleVariance += Math.pow(weightSamples[j][i] - 0.5, 2) / (numSamples);
+                    sampleVariance += Math.pow(weightSamples[j][i] - 0.5, 2.0) / (numSamples);
                 }
 
                 // Assert that various statistics of the distribution are as expected.

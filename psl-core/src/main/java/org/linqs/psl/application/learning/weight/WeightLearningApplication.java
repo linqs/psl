@@ -43,8 +43,8 @@ import java.util.List;
 public abstract class WeightLearningApplication implements ModelApplication {
     /**
      * The delimiter to separate rule weights (and location ids).
-     * Note that we cannot use ',' because our configuration infrastructure will try
-     * interpret it as a list of strings.
+     * Note that we cannot use ',' because our configuration infrastructure
+     * will try to interpret it as a list of strings.
      */
     public static final String DELIM = ":";
 

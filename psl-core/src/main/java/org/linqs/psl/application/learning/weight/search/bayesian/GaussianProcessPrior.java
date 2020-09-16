@@ -43,8 +43,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private WeightSampler weightSampler;
 
     /**
-     * This variable represents whether or not the provided weight configuration is used as the first point for
-     * exploration.
+     * This variable represents whether or not the provided weight
+     * configuration is used as the first point for exploration.
      */
     private boolean useProvidedWeight;
 
@@ -247,7 +247,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         int numPerSplit = (int)Math.exp(Math.log(maxConfigs) / numMutableRules);
 
-        // Create user provided configuration for weights in the user provided model file.
+        // Create configuration with weights in the user provided model file.
         WeightConfig userProvidedConfig = new WeightConfig(new float[numMutableRules]);
         for (int i = 0; i < numMutableRules; i++) {
             userProvidedConfig.config[i] = (float)mutableRules.get(i).getWeight();
@@ -289,8 +289,6 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
 
         // Add the user provided weight configuration to the head of the list.
-        // This is accessed in the getNextPoint method and assumes that the initial
-        // iteration will always select the first config in configs.
         if (useProvidedWeight) {
             configs.add(0, userProvidedConfig);
         }
