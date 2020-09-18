@@ -357,7 +357,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             negativeAtoms = new ArrayList<GroundAtom>(4);
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
 
-            Boolean collectDataOption = (Boolean)Options.CLI_VIZ.getUnlogged();
+            Boolean collectDataOption = (Boolean)Options.CLI_MODEL_DATA_COLLECTION.getUnlogged();
             collectData = (collectDataOption != null && collectDataOption.booleanValue());
 
             int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();

@@ -55,26 +55,28 @@ public class ModelDataCollector {
         if (runtime != null) {
             return;
         }
+
         modelData = new ModelData();
         runtime = Runtime.getRuntime();
         runtime.addShutdownHook(new ShutdownHook());
     }
 
     public static void outputJSON() {
-        FilterOutputStream stream = System.out;
 
         try {
-            if (outputPath != null) {
-                stream = new GZIPOutputStream(new PrintStream(outputPath));
+            if (outputPath == null) {
+                throw new RuntimeException();
             }
 
+            GZIPOutputStream stream = new GZIPOutputStream(new PrintStream(outputPath));
             writeToStream(stream);
-
-            if (outputPath != null) {
-                stream.close();
-            }
+            stream.close();
         } catch (IOException ex) {
-            throw new RuntimeException("Could not write to path: " + outputPath, ex);
+            if (outputPath == null) {
+                throw new RuntimeException("Path not specified for output file.");
+            } else {
+                throw new RuntimeException("Could not write to path: " + outputPath, ex);
+            }
         }
     }
 
@@ -82,15 +84,22 @@ public class ModelDataCollector {
      * Write to stream with JSON formatting.
      */
     private static void writeToStream(FilterOutputStream stream) throws IOException {
-        stream.write("{\"truthMap\":".getBytes());
-
         // Write each map as a JSON object, each JSON object is comma delimited.
+        stream.write('{');
+
+        stream.write("\"truthMap\":".getBytes());
         writeMap(stream, modelData.truthMap);
-        stream.write(",\"rules\":".getBytes());
+        stream.write(',');
+
+        stream.write("\"rules\":".getBytes());
         writeMap(stream, modelData.rules);
-        stream.write(",\"groundRules\":".getBytes());
+        stream.write(',');
+
+        stream.write("\"groundRules\":".getBytes());
         writeMap(stream, modelData.groundRules);
-        stream.write(",\"groundAtoms\":".getBytes());
+        stream.write(',');
+
+        stream.write("\"groundAtoms\":".getBytes());
         writeMap(stream, modelData.groundAtoms);
 
         stream.write('}');

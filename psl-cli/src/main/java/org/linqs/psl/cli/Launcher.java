@@ -216,7 +216,7 @@ public class Launcher {
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL_DATA_COLLECTION)) {
             modelDataCollection(model, inferenceApplication, dataStore, database, closedPredicates);
         }
 
@@ -440,9 +440,9 @@ public class Launcher {
         // Load model
         Model model = loadModel(dataStore);
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VISUALIZATION)) {
-            Options.CLI_VIZ.set(true);
-            ModelDataCollector.setOutputPath(parsedOptions.getOptionValue(CommandLineLoader.OPTION_VISUALIZATION));
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL_DATA_COLLECTION)) {
+            Options.CLI_MODEL_DATA_COLLECTION.set(true);
+            ModelDataCollector.setOutputPath(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL_DATA_COLLECTION));
         }
 
         // Inference

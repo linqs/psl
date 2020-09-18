@@ -214,8 +214,8 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-     public static final Option CLI_VIZ = new Option(
-        "cli.viz",
+     public static final Option CLI_MODEL_DATA_COLLECTION = new Option(
+        "cli.mode.data.collection",
         false,
         "Include visualization data collection."
     );
