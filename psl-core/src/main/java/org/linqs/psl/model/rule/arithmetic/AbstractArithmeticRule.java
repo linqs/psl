@@ -1017,7 +1017,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             groundRules = new ArrayList<GroundRule>();
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
 
-            Boolean collectDataOption = (Boolean)Options.CLI_VIZ.getUnlogged();
+            Boolean collectDataOption = (Boolean)Options.CLI_MODEL_DATA_COLLECTION.getUnlogged();
             collectData = (collectDataOption != null && collectDataOption.booleanValue());
         }
 
