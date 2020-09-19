@@ -98,7 +98,7 @@ public class ModelDataCollector {
 
     /**
      * Write map to stream with JSON formatting.
-     * Assumption for optimizing write buffer: Map values use small amount of memory 
+     * Assumption for optimizing write buffer: Map values use small amount of memory
      */
     private static void writeMap(FilterOutputStream stream, Object map) throws IOException {
         stream.write('{');
@@ -188,6 +188,9 @@ public class ModelDataCollector {
         }
         return null;
     }
+
+    //TODO: Get arguments, use the atom manager, give it a predicate and arguments, then it will give you a ground atom
+    // This will change some other functions and change collection.
 
     // Parses through an atom object, and fills out variables with their proper values.
     public static String parseAtom (Formula f, Map<String, String> varConstMap) {
