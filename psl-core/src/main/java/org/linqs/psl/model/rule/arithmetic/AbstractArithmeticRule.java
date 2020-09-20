@@ -286,7 +286,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         Boolean collectDataOption = (Boolean)Options.CLI_MODEL_DATA_COLLECTION.getUnlogged();
         if (collectDataOption != null && collectDataOption.booleanValue()) {
             for (GroundRule groundRule : results) {
-                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
+                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants, atomManager);
             }
         }
     }
@@ -353,7 +353,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             if (resources.collectData) {
                 if (postGroundingResourcesSize != priorResourcesSize) {
                     GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
-                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
+                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex), atomManager);
                 }
             }
             priorResourcesSize = resources.groundRules.size();
@@ -437,7 +437,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             if (resources.collectData) {
                 if (postGroundingResourcesSize != priorResourcesSize) {
                     GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
-                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex));
+                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex), atomManager);
                 }
             }
             priorResourcesSize = resources.groundRules.size();

@@ -12,6 +12,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.arithmetic.AbstractGroundArithmeticRule;
 import org.linqs.psl.model.rule.GroundRule;
@@ -186,81 +187,56 @@ public class ModelDataCollector {
     }
 
     // Decorates an entry in a Formula to have constants or negations marked.
-    public static Object decorateFormula(String groundAtom, GroundRule groundRule, boolean negation){
-        // for (GroundAtom atom : groundRule.getAtoms()) {
+    public static Object decorateFormula(GroundAtom groundAtom, GroundRule groundRule, boolean negation) {
         if (negation) {
-            Integer[] groundAtomObj = {System.identityHashCode(atom), 1};
-            return groundAtomObj;
-        } else {
-            return System.identityHashCode(atom);
+            return new Integer[] {System.identityHashCode(groundAtom), 1};
         }
-        // }
-        return null;
+
+        return System.identityHashCode(groundAtom);
     }
 
-    //TODO: Get arguments, use the atom manager, give it a predicate and arguments, then it will give you a ground atom
-    // This will change some other functions and change collection.
-
     // Parses through an atom object, and fills out variables with their proper values.
-    public static String parseAtom (Formula f, Map<Variable, Constant> varConstMap, AtomManager atomManager) {
-        Atom atom = (Atom) f;
-        // System.out.println(atom);
+    public static GroundAtom parseAtom (Formula formula, Map<Variable, Constant> varConstMap, AtomManager atomManager) {
+        Atom atom = (Atom)formula;
         Predicate predicate = atom.getPredicate();
-        // System.out.println(predicate);
         Term[] arguments = atom.getArguments();
-        // System.out.println(varConstMap);
-
-        //TODO: make array of size 2 and insert, or convert
 
         Constant[] constants = new Constant[2];
         int i = 0;
         for (Term t : arguments){
-            if (t instanceof Variable) {
-                constants[i] = varConstMap.get(t);
-                i++;
+            if (!(t instanceof Variable)) {
+                continue;
             }
+            constants[i] = varConstMap.get(t);
+            i++;
+        }
+        if (predicate instanceof StandardPredicate) {
+            return atomManager.getAtom((StandardPredicate)predicate, constants);
         }
 
-        AtomManager atomManagerCopy = atomManager.clone();
-        GroundAtom groundedAtom = atomManagerCopy.getAtom(predicate, constants);
-        // System.out.println(atomManager.getAtom(predicate, constants));
-        // System.out.println("--------------------------");
-        // String groundedAtom = atom.toString();
-        // Term[] arguments = atom.getArguments();
-        // for (Term t : arguments){
-        //     if (t instanceof Variable) {
-        //         // Only want to replace terms, to do so make sure they are in a parenthesis.
-        //         String leftVarParen = "(" + t.toString();
-        //         String rightVarParen = t.toString() + ")";
-        //         if (groundedAtom.contains(leftVarParen)) {
-        //             String replacement = "(\'" + varConstMap.get(t.toString()) + "\'";
-        //             groundedAtom = groundedAtom.replace(leftVarParen, replacement);
-        //         } else if (groundedAtom.contains(rightVarParen)) {
-        //             String replacement = "\'" + varConstMap.get(t.toString()) + "\')";
-        //             groundedAtom = groundedAtom.replace(rightVarParen, replacement);
-        //         }
-        //     }
-        // }
-        // return groundedAtom;
-        return "";
+        return null;
     }
 
     // Parses through a formula object, and creates the needed object for modelData object consumption.
-    public static ArrayList<Object> parseFormula(Formula f, Map<Variable, Constant> varConstMap, GroundRule groundRule, boolean negation, AtomManager atomManager) {
+    public static List<Object> parseFormula(Formula formula, Map<Variable, Constant> varConstMap, GroundRule groundRule, boolean negation, AtomManager atomManager) {
         ArrayList<Object> groundAtoms = new ArrayList<Object>();
-        if (f instanceof QueryAtom){
-            String groundedAtom = parseAtom(f, varConstMap, atomManager);
-            Object decoratedFormula = decorateFormula(groundedAtom, groundRule, negation);
-            if (decoratedFormula != null) {
-                groundAtoms.add(decoratedFormula);
-            }
-        } else {
-            AbstractBranchFormula branchFormula = (AbstractBranchFormula) f;
-            for (int i = 0; i < branchFormula.length(); i++){
-                String groundedAtom = parseAtom(branchFormula.get(i), varConstMap, atomManager);
+        if (formula instanceof QueryAtom){
+            GroundAtom groundedAtom = parseAtom(formula, varConstMap, atomManager);
+            if (groundedAtom != null) {
                 Object decoratedFormula = decorateFormula(groundedAtom, groundRule, negation);
                 if (decoratedFormula != null) {
                     groundAtoms.add(decoratedFormula);
+                }
+            }
+        } else {
+            AbstractBranchFormula branchFormula = (AbstractBranchFormula) formula;
+            for (int i = 0; i < branchFormula.length(); i++){
+                GroundAtom groundedAtom = parseAtom(branchFormula.get(i), varConstMap, atomManager);
+                if (groundedAtom != null) {
+                    Object decoratedFormula = decorateFormula(groundedAtom, groundRule, negation);
+                    if (decoratedFormula != null) {
+                        groundAtoms.add(decoratedFormula);
+                    }
                 }
             }
         }
@@ -281,8 +257,8 @@ public class ModelDataCollector {
 
         // Captures the lhs and rhs of a ground rule in order to add to the modelData object.
         String groundRuleString;
-        ArrayList<Object> lhs = new ArrayList<Object>();
-        ArrayList<Object> rhs = new ArrayList<Object>();
+        List<Object> lhs = new ArrayList<Object>();
+        List<Object> rhs = new ArrayList<Object>();
         String operator = "";
         if (parentRule instanceof AbstractLogicalRule) {
             AbstractLogicalRule abstractLogicalParent = (AbstractLogicalRule) parentRule;
@@ -299,6 +275,7 @@ public class ModelDataCollector {
                     negationFlag = true;
                 }
                 lhs = parseFormula(body, varConstMap, groundRule, negationFlag, atomManager);
+
                 if (head instanceof Negation) {
                     Negation negation = (Negation) head;
                     head = negation.getFormula();
