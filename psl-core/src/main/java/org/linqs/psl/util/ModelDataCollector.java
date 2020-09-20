@@ -171,7 +171,7 @@ public class ModelDataCollector {
         modelData.truthMap.put(groundAtomID, truthVal);
     }
 
-    // Adds a ground rules dissatisfaction / infeasibility.
+    // Adds a ground rules dissatisfaction / infeasibility to the groundRules HashMap.
     public static void dissatisfactionPerGroundRule(GroundRuleStore groundRuleStore) {
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String strGroundRuleId = Integer.toString(System.identityHashCode(groundRule));
@@ -195,13 +195,13 @@ public class ModelDataCollector {
         return System.identityHashCode(groundAtom);
     }
 
-    // Parses through an atom object, and fills out variables with their proper values.
+    // Parses through an atom object, gets ground atoms from AtomManager via predicate and arguments.
     public static GroundAtom parseAtom (Formula formula, Map<Variable, Constant> varConstMap, AtomManager atomManager) {
         Atom atom = (Atom)formula;
         Predicate predicate = atom.getPredicate();
         Term[] arguments = atom.getArguments();
 
-        Constant[] constants = new Constant[2];
+        Constant[] constants = new Constant[2]; // Atoms will have 2 constants each, so can used a fixed array size to pass into atomManager.getAtom()
         int i = 0;
         for (Term t : arguments){
             if (!(t instanceof Variable)) {
