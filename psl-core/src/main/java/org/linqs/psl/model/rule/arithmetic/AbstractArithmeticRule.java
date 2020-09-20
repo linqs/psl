@@ -282,6 +282,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         } else {
             groundForSummation(constants, variableMap, atomManager, results);
         }
+
+        Boolean collectDataOption = (Boolean)Options.CLI_MODEL_DATA_COLLECTION.getUnlogged();
+        if (collectDataOption != null && collectDataOption.booleanValue()) {
+            for (GroundRule groundRule : results) {
+                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
+            }
+        }
     }
 
     private void groundForNonSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
@@ -290,11 +297,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         groundSingleNonSummationRule(constants, variableMap, atomManager, resources);
 
         results.addAll(resources.groundRules);
-        if (resources.collectData) {
-            for (GroundRule groundRule : resources.groundRules) {
-                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
-            }
-        }
         resources.groundRules.clear();
         resources.accessExceptionAtoms.clear();
     }
@@ -316,12 +318,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         groundSingleSummationRule(constants, variableMap, atomManager, resources);
 
         results.addAll(resources.groundRules);
-        if (resources.collectData) {
-            for (GroundRule groundRule : resources.groundRules) {
-                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
-            }
-        }
-
         resources.groundRules.clear();
         resources.accessExceptionAtoms.clear();
     }
