@@ -168,7 +168,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         GroundRule groundRule = groundInternal(constants, variableMap, atomManager, resources);
         if (groundRule != null && resources.collectData) {
-            ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants);
+            ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants, atomManager);
         }
 
         return groundRule;
