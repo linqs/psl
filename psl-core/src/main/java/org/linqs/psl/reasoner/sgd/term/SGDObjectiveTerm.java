@@ -23,7 +23,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -41,9 +40,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private int[] variableIndexes;
 
     public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-            boolean squared, boolean hinge,
-            Hyperplane<RandomVariableAtom> hyperplane,
-            float weight, float learningRate) {
+                            boolean squared, boolean hinge,
+                            Hyperplane<RandomVariableAtom> hyperplane,
+                            float weight, float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
 
@@ -87,15 +86,22 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(int iteration, float[] variableValues) {
+    public float minimize(int iteration, VariableTermStore termStore) {
         float movement = 0.0f;
+        float dot = 0.0f;
+        float partial = 0.0f;
+        float gradientStep = 0.0f;
+        float newValue = 0.0f;
+
+        float[] variableValues = termStore.getVariableValues();
+
+        dot = dot(variableValues);
 
         for (int i = 0 ; i < size; i++) {
-            float dot = dot(variableValues);
-            float gradient = computeGradient(i, dot);
-            float gradientStep = gradient * (learningRate / iteration);
+            partial = computeGradient(i, dot);
+            gradientStep = partial * (learningRate / iteration);
 
-            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradientStep));
+            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradientStep));
             movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
             variableValues[variableIndexes[i]] = newValue;
         }

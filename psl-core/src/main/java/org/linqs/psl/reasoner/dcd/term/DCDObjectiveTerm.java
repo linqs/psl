@@ -24,7 +24,6 @@ import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a DCDReasoner.
@@ -42,9 +41,9 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     private int[] variableIndexes;
 
     public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
-            boolean squared,
-            Hyperplane<RandomVariableAtom> hyperplane,
-            float weight, float c) {
+                            boolean squared,
+                            Hyperplane<RandomVariableAtom> hyperplane,
+                            float weight, float c) {
         this.squared = squared;
 
         size = (short)hyperplane.size();
