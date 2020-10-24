@@ -108,18 +108,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
     private float dot(float[] variableValues) {
         float value = 0.0f;
-        float dot = 0.0f;
 
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variableValues[variableIndexes[i]];
         }
 
-        dot = value - constant;
-        if (Float.isNaN(dot)) {
-            System.out.println("isnan");
-        }
-        assert(dot <= 1.0f) : String.format("Dot: %f should be less than 1.0", dot);
-        return dot;
+        return value - constant;
     }
 
     /**

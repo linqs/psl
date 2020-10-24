@@ -394,7 +394,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
-        false,
+        true,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
     );
 
@@ -669,12 +669,6 @@ public class Options {
         "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
-    public static final Option SGD_COORDINATE_STEP = new Option(
-        "sgd.coordinatestep",
-        false,
-        "Take coordinate decrease steps during sgd."
-    );
-
     public static final Option SGD_ADAM = new Option(
             "sgd.adam",
             false,
@@ -685,6 +679,12 @@ public class Options {
             "sgd.adagrad",
             false,
             "Update learning rate according ada grad."
+    );
+
+    public static final Option SGD_COORDINATE_STEP = new Option(
+            "sgd.coordinatestep",
+            false,
+            "Take coordinate decrease steps during sgd."
     );
 
     public static final Option SGD_INVERSE_TIME_EXP = new Option(

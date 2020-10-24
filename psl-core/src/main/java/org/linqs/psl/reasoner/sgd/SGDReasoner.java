@@ -134,6 +134,7 @@ public class SGDReasoner extends Reasoner {
             }
 
             if (breakOptimization(iteration, objective, oldObjective, meanMovement, termCount)) {
+                totalTime += System.currentTimeMillis() - start;
                 break;
             }
 

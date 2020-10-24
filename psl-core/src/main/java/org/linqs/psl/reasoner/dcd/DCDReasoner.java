@@ -60,35 +60,54 @@ public class DCDReasoner extends Reasoner {
 
         termStore.initForOptimization();
 
-        // This must be called after the term store has to correct variable capacity.
-        // A reallocation can cause this array to become out-of-date.
-        float[] variableValues = termStore.getVariableValues();
-
         long termCount = 0;
         double objective = Double.POSITIVE_INFINITY;
         double oldObjective = Double.POSITIVE_INFINITY;
-        float[] oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+        float[] oldVariableValues = null;
+
+        if (log.isTraceEnabled()) {
+            objective = computeObjective(termStore);
+            log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
+                    0, objective, objective / termStore.size(), 0, 0, 0);
+        }
 
         int iteration = 1;
         long totalTime = 0;
         while (true) {
             long start = System.currentTimeMillis();
 
-            oldObjective = objective;
             termCount = 0;
             objective = 0;
-            System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
             for (DCDObjectiveTerm term : termStore) {
+                if (oldVariableValues != null) {
+                    objective += term.evaluate(oldVariableValues);
+                } else {
+                    objective += term.evaluate(termStore.getVariableValues());
+                }
+
                 termCount++;
-                objective += term.evaluate(oldVariableValues);
-                term.minimize(truncateEveryStep, variableValues);
+                term.minimize(truncateEveryStep, termStore.getVariableValues());
             }
 
             // If we are truncating every step, then the variables are already in valid state.
             if (!truncateEveryStep) {
                 for (int i = 0; i < termStore.getNumVariables(); i++) {
-                    variableValues[i] = Math.max(0.0f, Math.min(1.0f, variableValues[i]));
+                    termStore.getVariableValues()[i] = Math.max(0.0f, Math.min(1.0f, termStore.getVariableValues()[i]));
                 }
+            }
+
+            if (breakOptimization(iteration, objective, oldObjective, termCount)) {
+                totalTime += System.currentTimeMillis() - start;
+                break;
+            }
+
+            // Keep track of the old variables for a deferred objective computation.
+            if (oldVariableValues == null) {
+                oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+                oldObjective = Double.POSITIVE_INFINITY;
+            } else {
+                System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+                oldObjective = objective;
             }
 
             long end = System.currentTimeMillis();
@@ -101,10 +120,6 @@ public class DCDReasoner extends Reasoner {
 
             iteration++;
             termStore.iterationComplete();
-
-            if (breakOptimization(iteration, objective, oldObjective, termCount)) {
-                break;
-            }
         }
 
         objective = computeObjective(termStore);
