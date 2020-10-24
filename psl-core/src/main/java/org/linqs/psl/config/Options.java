@@ -394,7 +394,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
-        true,
+        false,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
     );
 
@@ -640,7 +640,7 @@ public class Options {
     public static final Option REASONER_TOLERANCE = new Option(
         "reasoner.tolerance",
         1e-5f,
-        "How close towo objective values need to be to be considered the same.",
+        "How close two objective values need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
     );
 
@@ -669,11 +669,42 @@ public class Options {
         "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
+    public static final Option SGD_COORDINATE_STEP = new Option(
+        "sgd.coordinatestep",
+        false,
+        "Take coordinate decrease steps during sgd."
+    );
+
+    public static final Option SGD_ADAM = new Option(
+            "sgd.adam",
+            false,
+            "Update learning rate according adam."
+    );
+
+    public static final Option SGD_ADA_GRAD = new Option(
+            "sgd.adagrad",
+            false,
+            "Update learning rate according ada grad."
+    );
+
+    public static final Option SGD_INVERSE_SCALE_EXP = new Option(
+        "sgd.inversescaleexp",
+        1.0f,
+        "If SGD is using the INVERSESCALING schedule, then this value is used as the negative exponent of the number of iterations to scale the gradient step.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option SGD_LEARNING_RATE = new Option(
         "sgd.learningrate",
         1.0f,
         null,
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option SGD_LEARNING_SCHEDULE = new Option(
+        "sgd.learningschedule",
+        "INVERSESCALING",
+        "The learning schedule of the SGD inference reasoner."
     );
 
     public static final Option SGD_MAX_ITER = new Option(

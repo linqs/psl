@@ -17,12 +17,10 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -37,11 +35,7 @@ import org.slf4j.LoggerFactory;
 public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, RandomVariableAtom> {
     private static final Logger log = LoggerFactory.getLogger(SGDTermGenerator.class);
 
-    private float learningRate;
-
-    public SGDTermGenerator() {
-        learningRate = Options.SGD_LEARNING_RATE.getFloat();
-    }
+    public SGDTermGenerator() {}
 
     @Override
     public Class<RandomVariableAtom> getLocalVariableType() {
@@ -53,7 +47,7 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
         VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight, learningRate);
+        return new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight);
     }
 
     @Override
