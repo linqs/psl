@@ -65,7 +65,7 @@ public class SGDReasoner extends Reasoner {
 
         learningRate = Options.SGD_LEARNING_RATE.getFloat();
         learningSchedule = Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase();
-        learningRateInverseScaleExp = Options.SGD_INVERSE_SCALE_EXP.getFloat();
+        learningRateInverseScaleExp = Options.SGD_INVERSE_TIME_EXP.getFloat();
 
         coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
         adaGrad = Options.SGD_ADA_GRAD.getBoolean();
@@ -121,29 +121,20 @@ public class SGDReasoner extends Reasoner {
             for (SGDObjectiveTerm term : termStore) {
                 if (oldVariableValues != null) {
                     objective += term.evaluate(oldVariableValues);
+                } else {
+                    objective += term.evaluate(termStore.getVariableValues());
                 }
 
                 termCount++;
-                meanMovement += minimize(term, termStore, iteration);
+                meanMovement += minimize(term, termStore.getVariableValues(), iteration);
             }
 
             if (termCount != 0) {
                 meanMovement /= termCount;
             }
 
-            iteration++;
-            termStore.iterationComplete();
-
             if (breakOptimization(iteration, objective, oldObjective, meanMovement, termCount)) {
                 break;
-            }
-
-            long end = System.currentTimeMillis();
-            totalTime += end - start;
-
-            if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
-                        iteration, objective, objective / termCount, meanMovement, (end - start), totalTime);
             }
 
             // Keep track of the old variables for a deferred objective computation.
@@ -154,6 +145,17 @@ public class SGDReasoner extends Reasoner {
                 System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
                 oldObjective = objective;
             }
+
+            long end = System.currentTimeMillis();
+            totalTime += end - start;
+
+            if (log.isTraceEnabled()) {
+                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
+                        iteration, objective, objective / termCount, meanMovement, (end - start), totalTime);
+            }
+
+            iteration++;
+            termStore.iterationComplete();
         }
 
         objective = computeObjective(termStore);
@@ -166,12 +168,10 @@ public class SGDReasoner extends Reasoner {
         return objective;
     }
 
-    private float minimize(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore, int iteration) {
+    private float minimize(SGDObjectiveTerm term, float[] variableValues, int iteration) {
         float movement = 0.0f;
         float variableStep = 0.0f;
         float newValue = 0.0f;
-
-        float[] variableValues = termStore.getVariableValues();
         int[] variableIndexes = term.getVariableIndexes();
 
         term.computeGradient(variableValues, gradient);
@@ -268,7 +268,7 @@ public class SGDReasoner extends Reasoner {
 
     private float calculateAnnealedLearningRate(int iteration) {
         switch (learningSchedule) {
-            case "INVERSESCALING":
+            case "INVERSETIME":
                 return learningRate / ((float) Math.pow(iteration, learningRateInverseScaleExp));
             case "CONSTANT":
                 return learningRate;

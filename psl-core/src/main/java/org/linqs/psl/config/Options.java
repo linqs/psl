@@ -687,10 +687,10 @@ public class Options {
             "Update learning rate according ada grad."
     );
 
-    public static final Option SGD_INVERSE_SCALE_EXP = new Option(
+    public static final Option SGD_INVERSE_TIME_EXP = new Option(
         "sgd.inversescaleexp",
         1.0f,
-        "If SGD is using the INVERSESCALING schedule, then this value is used as the negative exponent of the number of iterations to scale the gradient step.",
+        "If SGD is using the INVERSETIME schedule, then this value is used as the negative exponent of the number of iterations to scale the gradient step.",
         Option.FLAG_POSITIVE
     );
 
@@ -703,7 +703,7 @@ public class Options {
 
     public static final Option SGD_LEARNING_SCHEDULE = new Option(
         "sgd.learningschedule",
-        "INVERSESCALING",
+        "INVERSETIME",
         "The learning schedule of the SGD inference reasoner."
     );
 
