@@ -109,9 +109,9 @@ public class SGDReasoner extends Reasoner {
                     0, objective, objective / termStore.size(), 0, 0, 0);
         }
 
-        int iteration = 1;
         long totalTime = 0;
-        while (true) {
+        boolean converged = false;
+        for (int iteration = 1; (iteration < (maxIterations * budget)) && (!converged); iteration++) {
             long start = System.currentTimeMillis();
 
             termCount = 0;
@@ -121,27 +121,23 @@ public class SGDReasoner extends Reasoner {
             for (SGDObjectiveTerm term : termStore) {
                 if (oldVariableValues != null) {
                     objective += term.evaluate(oldVariableValues);
-                } else {
-                    objective += term.evaluate(termStore.getVariableValues());
                 }
 
                 termCount++;
                 meanMovement += minimize(term, termStore.getVariableValues(), iteration);
             }
 
+            termStore.iterationComplete();
+
             if (termCount != 0) {
                 meanMovement /= termCount;
             }
 
-            if (breakOptimization(iteration, objective, oldObjective, meanMovement, termCount)) {
-                totalTime += System.currentTimeMillis() - start;
-                break;
-            }
+            converged = breakOptimization(objective, oldObjective, meanMovement, termCount);
 
             // Keep track of the old variables for a deferred objective computation.
             if (oldVariableValues == null) {
                 oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
-                oldObjective = Double.POSITIVE_INFINITY;
             } else {
                 System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
                 oldObjective = objective;
@@ -150,18 +146,14 @@ public class SGDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            if (log.isTraceEnabled()) {
+            if (log.isTraceEnabled() && (iteration > 1)) {
                 log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
-                        iteration, objective, objective / termCount, meanMovement, (end - start), totalTime);
+                        iteration - 1, objective, objective / termCount, meanMovement, (end - start), totalTime);
             }
-
-            iteration++;
-            termStore.iterationComplete();
         }
 
         objective = computeObjective(termStore);
-        log.info("Optimization completed in {} iterations. Objective: {}, Normalized Objective: {}, Total Optimization Time: {}",
-                iteration, objective, objective / termCount, totalTime);
+        log.info("Final Objective: {}, Normalized Objective: {}, Total Optimization Time: {}", objective, objective / termCount, totalTime);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termCount);
 
         termStore.syncAtoms();
@@ -178,14 +170,15 @@ public class SGDReasoner extends Reasoner {
         term.computeGradient(variableValues, gradient);
 
         for (int i = 0; i < term.size(); i++) {
-            if (coordinateStep) {
-                term.computeGradient(variableValues, gradient);
-            }
             variableStep = computeVariableStep(variableIndexes[i], iteration);
 
             newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
             movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
             variableValues[variableIndexes[i]] = newValue;
+
+            if (coordinateStep) {
+                term.computeGradient(variableValues, gradient);
+            }
         }
 
         return movement;
@@ -224,12 +217,7 @@ public class SGDReasoner extends Reasoner {
         return step;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement, long termCount) {
-        // Always break when the allocated iterations is up.
-        if (iteration > (int)(maxIterations * budget)) {
-            return true;
-        }
-
+    private boolean breakOptimization(double objective, double oldObjective, float movement, long termCount) {
         // Run through the maximum number of iterations.
         if (runFullIterations) {
             return false;
