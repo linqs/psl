@@ -197,7 +197,7 @@ public class ADMMReasoner extends Reasoner {
         // Sync the consensus values back to the atoms.
         termStore.syncAtoms();
 
-        return objective.objective;
+        return objective.objective / termStore.size();
     }
 
     private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {

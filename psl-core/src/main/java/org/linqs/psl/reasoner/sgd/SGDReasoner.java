@@ -154,7 +154,7 @@ public class SGDReasoner extends Reasoner {
 
         termStore.syncAtoms();
 
-        return objective;
+        return objective / termCount;
     }
 
     private float minimize(SGDObjectiveTerm term, float[] variableValues, int iteration) {
