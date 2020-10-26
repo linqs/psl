@@ -65,12 +65,6 @@ public class DCDReasoner extends Reasoner {
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
 
-        if (log.isTraceEnabled()) {
-            objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
-                    0, objective, objective / termStore.size(), 0, 0, 0);
-        }
-
         int iteration = 1;
         long totalTime = 0;
         while (true) {

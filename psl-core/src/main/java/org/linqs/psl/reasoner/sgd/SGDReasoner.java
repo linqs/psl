@@ -103,12 +103,6 @@ public class SGDReasoner extends Reasoner {
             accumulatedGradientVariance = new HashMap<Integer, Float>();
         }
 
-        if (log.isTraceEnabled()) {
-            objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
-                    0, objective, objective / termStore.size(), 0, 0, 0);
-        }
-
         long totalTime = 0;
         boolean converged = false;
         for (int iteration = 1; (iteration < (maxIterations * budget)) && (!converged); iteration++) {
@@ -121,6 +115,8 @@ public class SGDReasoner extends Reasoner {
             for (SGDObjectiveTerm term : termStore) {
                 if (oldVariableValues != null) {
                     objective += term.evaluate(oldVariableValues);
+                } else {
+                    objective += term.evaluate(termStore.getVariableValues());
                 }
 
                 termCount++;
@@ -146,7 +142,7 @@ public class SGDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            if (log.isTraceEnabled() && (iteration > 1)) {
+            if (log.isTraceEnabled()) {
                 log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
                         iteration - 1, objective, objective / termCount, meanMovement, (end - start), totalTime);
             }
