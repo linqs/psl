@@ -473,4 +473,27 @@ public class AtomTest {
             }
         }
     }
+
+    /**
+     * Test atom equality when there are strings with hash collisions.
+     */
+    @Test
+    public void testStringHashCollision() {
+        Predicate singleString = StandardPredicate.get("SingleString", new ConstantType[]{ConstantType.String});
+
+        String collision1 = "C-L";
+        String collision2 = "BLL";
+        String noCollision = "ZZZ";
+
+        assertEquals(collision1.hashCode(), collision2.hashCode());
+        assertNotEquals(collision1.hashCode(), noCollision.hashCode());
+
+        Atom atomCollision1 = new QueryAtom(singleString, new StringAttribute(collision1));
+        Atom atomCollision2 = new QueryAtom(singleString, new StringAttribute(collision2));
+        Atom atomNoCollision = new QueryAtom(singleString, new StringAttribute(noCollision));
+
+        assertNotEquals(atomCollision1, atomCollision2);
+        assertNotEquals(atomCollision1, atomNoCollision);
+        assertNotEquals(atomCollision2, atomNoCollision);
+    }
 }
