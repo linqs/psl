@@ -951,7 +951,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     /**
-     * Resources that every grounding thread and use and reuse.
+     * Resources that every grounding thread will use and reuse.
      */
     private static class GroundingResources {
         // Because multiple ground rules can be generated from a single rule,

@@ -76,7 +76,7 @@ class Model(object):
 
         self._name = name
         if (self._name is None):
-            self._name = uuid.uuid4()
+            self._name = str(uuid.uuid4())
 
         self._rules = []
         # {normalized_name: predicate, ...}
