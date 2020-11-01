@@ -65,9 +65,14 @@ public class DCDReasoner extends Reasoner {
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
 
-        int iteration = 1;
+        if (printInitialObj && log.isTraceEnabled()) {
+            objective = computeObjective(termStore);
+            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0.0f, 0, 0);
+        }
+
         long totalTime = 0;
-        while (true) {
+        boolean converged = false;
+        for (int iteration = 1; iteration < (maxIterations * budget) && !converged; iteration++) {
             long start = System.currentTimeMillis();
 
             termCount = 0;
@@ -83,6 +88,8 @@ public class DCDReasoner extends Reasoner {
                 term.minimize(truncateEveryStep, termStore.getVariableValues());
             }
 
+            termStore.iterationComplete();
+
             // If we are truncating every step, then the variables are already in valid state.
             if (!truncateEveryStep) {
                 for (int i = 0; i < termStore.getNumVariables(); i++) {
@@ -90,10 +97,7 @@ public class DCDReasoner extends Reasoner {
                 }
             }
 
-            if (breakOptimization(iteration, objective, oldObjective, termCount)) {
-                totalTime += System.currentTimeMillis() - start;
-                break;
-            }
+            converged = breakOptimization(objective, oldObjective, termCount);
 
             // Keep track of the old variables for a deferred objective computation.
             if (oldVariableValues == null) {
@@ -107,18 +111,16 @@ public class DCDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
-                        iteration, objective, objective / termCount, (end - start), totalTime);
+            if (iteration > 1) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
+                            iteration - 1, objective, objective / termCount, (end - start), totalTime);
+                }
             }
-
-            iteration++;
-            termStore.iterationComplete();
         }
 
         objective = computeObjective(termStore);
-        log.info("Optimization completed in {} iterations. Objective: {}, Normalized Objective: {}, Total Optimization Time: {}",
-                iteration, objective, objective / termCount, totalTime);
+        log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}", objective, objective / termCount, totalTime);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termCount);
 
         termStore.syncAtoms();
@@ -126,12 +128,7 @@ public class DCDReasoner extends Reasoner {
         return objective / termCount;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, long termCount) {
-        // Always break when the allocated iterations is up.
-        if (iteration > (int)(maxIterations * budget)) {
-            return true;
-        }
-
+    private boolean breakOptimization(double objective, double oldObjective, long termCount) {
         // Run through the maximum number of iterations.
         if (runFullIterations) {
             return false;
