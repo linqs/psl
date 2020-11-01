@@ -52,11 +52,6 @@ public class SGDReasoner extends Reasoner {
     private boolean adaGrad;
     private boolean adam;
 
-    private HashMap<Integer, Float> gradient;
-    private HashMap<Integer, Float> accumulatedGradientSquares;
-    private HashMap<Integer, Float> accumulatedGradientMean;
-    private HashMap<Integer, Float>  accumulatedGradientVariance;
-
     public SGDReasoner() {
         maxIterations = Options.SGD_MAX_ITER.getInt();
 
@@ -70,11 +65,6 @@ public class SGDReasoner extends Reasoner {
         coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
         adaGrad = Options.SGD_ADA_GRAD.getBoolean();
         adam = Options.SGD_ADAM.getBoolean();
-
-        gradient = null;
-        accumulatedGradientSquares = null;
-        accumulatedGradientMean = null;
-        accumulatedGradientVariance = null;
     }
 
     @Override
@@ -93,9 +83,12 @@ public class SGDReasoner extends Reasoner {
         double objective = Double.POSITIVE_INFINITY;
         double oldObjective = Double.POSITIVE_INFINITY;
 
+        HashMap<Integer, Float> accumulatedGradientSquares = null;
+        HashMap<Integer, Float> accumulatedGradientMean = null;
+        HashMap<Integer, Float>  accumulatedGradientVariance = null;
+
         // Initialize dynamic data structures for optimization.
         float[] oldVariableValues = null;
-        gradient = new HashMap<Integer, Float>();
         if (adaGrad) {
             accumulatedGradientSquares = new HashMap<Integer, Float>();
         } else if (adam) {
@@ -103,9 +96,14 @@ public class SGDReasoner extends Reasoner {
             accumulatedGradientVariance = new HashMap<Integer, Float>();
         }
 
+        if (printInitialObj && log.isTraceEnabled()) {
+            objective = computeObjective(termStore);
+            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}", 0, objective, 0.0f, 0, 0);
+        }
+
         long totalTime = 0;
         boolean converged = false;
-        for (int iteration = 1; (iteration < (maxIterations * budget)) && (!converged); iteration++) {
+        for (int iteration = 1; iteration < (maxIterations * budget) && !converged; iteration++) {
             long start = System.currentTimeMillis();
 
             termCount = 0;
@@ -115,12 +113,12 @@ public class SGDReasoner extends Reasoner {
             for (SGDObjectiveTerm term : termStore) {
                 if (oldVariableValues != null) {
                     objective += term.evaluate(oldVariableValues);
-                } else {
-                    objective += term.evaluate(termStore.getVariableValues());
                 }
 
                 termCount++;
-                meanMovement += minimize(term, termStore.getVariableValues(), iteration);
+                meanMovement += term.minimize(termStore.getVariableValues(), calculateAnnealedLearningRate(iteration),
+                        accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
+                        adaGrad, adam, coordinateStep);
             }
 
             termStore.iterationComplete();
@@ -142,75 +140,21 @@ public class SGDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimization Time: {}",
-                        iteration - 1, objective, objective / termCount, meanMovement, (end - start), totalTime);
+            if (iteration > 1) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
+                            iteration - 1, objective, objective / termCount, (end - start), totalTime);
+                }
             }
         }
 
         objective = computeObjective(termStore);
-        log.info("Final Objective: {}, Normalized Objective: {}, Total Optimization Time: {}", objective, objective / termCount, totalTime);
+        log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}", objective, objective / termCount, totalTime);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termCount);
 
         termStore.syncAtoms();
 
         return objective / termCount;
-    }
-
-    private float minimize(SGDObjectiveTerm term, float[] variableValues, int iteration) {
-        float movement = 0.0f;
-        float variableStep = 0.0f;
-        float newValue = 0.0f;
-        int[] variableIndexes = term.getVariableIndexes();
-
-        term.computeGradient(variableValues, gradient);
-
-        for (int i = 0; i < term.size(); i++) {
-            variableStep = computeVariableStep(variableIndexes[i], iteration);
-
-            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
-            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
-            variableValues[variableIndexes[i]] = newValue;
-
-            if (coordinateStep) {
-                term.computeGradient(variableValues, gradient);
-            }
-        }
-
-        return movement;
-    }
-
-    private float computeVariableStep(int variableIndex, int iteration) {
-        float beta1 = 0.9f;
-        float beta2 = 0.999f;
-        float mean_hat = 0.0f;
-        float variance_hat = 0.0f;
-        float step = 0.0f;
-        float adaptedLearningRate = 0.0f;
-
-        if (adaGrad) {
-            accumulatedGradientSquares.put(variableIndex, accumulatedGradientSquares.getOrDefault(variableIndex, 0.0f)
-                    + (float)Math.pow(gradient.get(variableIndex), 2.0f));
-            adaptedLearningRate = calculateAnnealedLearningRate(iteration) / (float)Math.sqrt(accumulatedGradientSquares.get(variableIndex) + 1e-8f);
-
-            step = gradient.get(variableIndex) * adaptedLearningRate;
-        } else if (adam) {
-            accumulatedGradientMean.put(variableIndex, beta1 * accumulatedGradientMean.getOrDefault(variableIndex, 0.0f)
-                    + (1 - beta1) * gradient.get(variableIndex));
-
-            accumulatedGradientVariance.put(variableIndex, beta2 * accumulatedGradientVariance.getOrDefault(variableIndex, 0.0f) +
-                    (1 - beta2) * (float)Math.pow(gradient.get(variableIndex), 2.0f));
-
-            mean_hat = accumulatedGradientMean.get(variableIndex) / (1 - beta1);
-            variance_hat = accumulatedGradientVariance.get(variableIndex) / (1 - beta2);
-
-            adaptedLearningRate = (calculateAnnealedLearningRate(iteration) / ((float)Math.sqrt(variance_hat) + 1e-8f));
-            step = mean_hat * adaptedLearningRate;
-        } else {
-            step = gradient.get(variableIndex) * calculateAnnealedLearningRate(iteration);
-        }
-
-        return step;
     }
 
     private boolean breakOptimization(double objective, double oldObjective, float movement, long termCount) {

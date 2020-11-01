@@ -64,10 +64,6 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
-    public int[] getVariableIndexes() {
-        return variableIndexes;
-    }
-
     public float evaluate(float[] variableValues) {
         float dot = dot(variableValues);
 
@@ -86,12 +82,73 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void computeGradient(float[] variableValues, HashMap<Integer, Float> gradient) {
+    /**
+     * Minimize the term by changing the random variables and return how much the random variables were moved by.
+     */
+    public float minimize(float[] variableValues, float learningRate,
+                          HashMap<Integer, Float> accumulatedGradientSquares,
+                          HashMap<Integer, Float> accumulatedGradientMean,
+                          HashMap<Integer, Float> accumulatedGradientVariance,
+                          boolean adaGrad, boolean adam, boolean coordinateStep) {
+        float movement = 0.0f;
+        float variableStep = 0.0f;
+        float newValue = 0.0f;
+        float partial = 0.0f;
         float dot = dot(variableValues);
 
-        for (int i = 0 ; i < size; i++) {
-            gradient.put(variableIndexes[i], computePartial(i, dot));
+        for (int i = 0; i < size; i++) {
+            partial = computePartial(i, dot);
+            variableStep = computeVariableStep(variableIndexes[i], learningRate, partial,
+                    accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
+                    adaGrad, adam);
+
+            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
+            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
+            variableValues[variableIndexes[i]] = newValue;
+
+            if (coordinateStep) {
+                dot = dot(variableValues);
+            }
         }
+
+        return movement;
+    }
+
+    private float computeVariableStep(int variableIndex, float learningRate, float partial,
+                                      HashMap<Integer, Float> accumulatedGradientSquares,
+                                      HashMap<Integer, Float> accumulatedGradientMean,
+                                      HashMap<Integer, Float> accumulatedGradientVariance,
+                                      boolean adaGrad, boolean adam) {
+        float beta1 = 0.9f;
+        float beta2 = 0.999f;
+        float mean_hat = 0.0f;
+        float variance_hat = 0.0f;
+        float step = 0.0f;
+        float adaptedLearningRate = 0.0f;
+
+        if (adaGrad) {
+            accumulatedGradientSquares.put(variableIndex, accumulatedGradientSquares.getOrDefault(variableIndex, 0.0f)
+                    + (float)Math.pow(partial, 2.0f));
+            adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares.get(variableIndex) + 1e-8f);
+
+            step = partial * adaptedLearningRate;
+        } else if (adam) {
+            accumulatedGradientMean.put(variableIndex, beta1 * accumulatedGradientMean.getOrDefault(variableIndex, 0.0f)
+                    + (1 - beta1) * partial);
+
+            accumulatedGradientVariance.put(variableIndex, beta2 * accumulatedGradientVariance.getOrDefault(variableIndex, 0.0f) +
+                    (1 - beta2) * (float)Math.pow(partial, 2.0f));
+
+            mean_hat = accumulatedGradientMean.get(variableIndex) / (1 - beta1);
+            variance_hat = accumulatedGradientVariance.get(variableIndex) / (1 - beta2);
+
+            adaptedLearningRate = learningRate / ((float)Math.sqrt(variance_hat) + 1e-8f);
+            step = mean_hat * adaptedLearningRate;
+        } else {
+            step = partial * learningRate;
+        }
+
+        return step;
     }
 
     private float computePartial(int varId, float dot) {
