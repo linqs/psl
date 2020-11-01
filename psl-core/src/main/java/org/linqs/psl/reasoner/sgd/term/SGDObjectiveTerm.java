@@ -23,7 +23,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -86,9 +86,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
     public float minimize(float[] variableValues, float learningRate,
-                          HashMap<Integer, Float> accumulatedGradientSquares,
-                          HashMap<Integer, Float> accumulatedGradientMean,
-                          HashMap<Integer, Float> accumulatedGradientVariance,
+                          Map<Integer, Float> accumulatedGradientSquares,
+                          Map<Integer, Float> accumulatedGradientMean,
+                          Map<Integer, Float> accumulatedGradientVariance,
                           boolean adaGrad, boolean adam, boolean coordinateStep) {
         float movement = 0.0f;
         float variableStep = 0.0f;
@@ -115,9 +115,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     }
 
     private float computeVariableStep(int variableIndex, float learningRate, float partial,
-                                      HashMap<Integer, Float> accumulatedGradientSquares,
-                                      HashMap<Integer, Float> accumulatedGradientMean,
-                                      HashMap<Integer, Float> accumulatedGradientVariance,
+                                      Map<Integer, Float> accumulatedGradientSquares,
+                                      Map<Integer, Float> accumulatedGradientMean,
+                                      Map<Integer, Float> accumulatedGradientVariance,
                                       boolean adaGrad, boolean adam) {
         float beta1 = 0.9f;
         float beta2 = 0.999f;

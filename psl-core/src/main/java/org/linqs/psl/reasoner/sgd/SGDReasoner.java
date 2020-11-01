@@ -176,7 +176,7 @@ public class SGDReasoner extends Reasoner {
         return false;
     }
 
-    private double computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    public double computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
         double objective = 0.0;
 
         // If possible, use a readonly iterator.
