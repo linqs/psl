@@ -116,7 +116,7 @@ public class SGDReasoner extends Reasoner {
                 }
 
                 termCount++;
-                meanMovement += term.minimize(termStore.getVariableValues(), calculateAnnealedLearningRate(iteration),
+                meanMovement += term.minimize(termStore.getVariableValues(), iteration, calculateAnnealedLearningRate(iteration),
                         accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
                         adaGrad, adam, coordinateStep);
             }

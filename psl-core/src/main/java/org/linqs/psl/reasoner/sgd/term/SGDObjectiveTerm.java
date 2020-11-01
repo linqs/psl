@@ -85,7 +85,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(float[] variableValues, float learningRate,
+    public float minimize(float[] variableValues, int iteration, float learningRate,
                           Map<Integer, Float> accumulatedGradientSquares,
                           Map<Integer, Float> accumulatedGradientMean,
                           Map<Integer, Float> accumulatedGradientVariance,
@@ -98,7 +98,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         for (int i = 0; i < size; i++) {
             partial = computePartial(i, dot);
-            variableStep = computeVariableStep(variableIndexes[i], learningRate, partial,
+            variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
                     accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
                     adaGrad, adam);
 
@@ -114,12 +114,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return movement;
     }
 
-    private float computeVariableStep(int variableIndex, float learningRate, float partial,
+    private float computeVariableStep(int variableIndex, int iteration, float learningRate, float partial,
                                       Map<Integer, Float> accumulatedGradientSquares,
                                       Map<Integer, Float> accumulatedGradientMean,
                                       Map<Integer, Float> accumulatedGradientVariance,
                                       boolean adaGrad, boolean adam) {
-        float beta1 = 0.9f;
+        float beta1 = 0.9f * (float)Math.pow(1.0f - 1.0e-8f, iteration - 1);
         float beta2 = 0.999f;
         float mean_hat = 0.0f;
         float variance_hat = 0.0f;
