@@ -197,7 +197,7 @@ public class SGDReasoner extends Reasoner {
 
     private float calculateAnnealedLearningRate(int iteration) {
         switch (learningSchedule) {
-            case "INVERSETIME":
+            case "STEPDECAY":
                 return learningRate / ((float) Math.pow(iteration, learningRateInverseScaleExp));
             case "CONSTANT":
                 return learningRate;

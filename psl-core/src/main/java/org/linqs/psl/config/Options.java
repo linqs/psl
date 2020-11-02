@@ -703,7 +703,7 @@ public class Options {
 
     public static final Option SGD_LEARNING_SCHEDULE = new Option(
         "sgd.learningschedule",
-        "INVERSETIME",
+        "STEPDECAY",
         "The learning schedule of the SGD inference reasoner."
     );
 
