@@ -121,20 +121,23 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             Map<Integer, Float> accumulatedGradientMean,
             Map<Integer, Float> accumulatedGradientVariance,
             boolean adaGrad, boolean adam) {
-        float beta1 = 0.9f * (float)Math.pow(1.0f - 1.0e-8f, iteration - 1);
-        float beta2 = 0.999f;
-        float mean_hat = 0.0f;
-        float variance_hat = 0.0f;
         float step = 0.0f;
-        float adaptedLearningRate = 0.0f;
 
         if (adaGrad) {
+            float adaptedLearningRate = 0.0f;
+
             accumulatedGradientSquares.put(variableIndex, accumulatedGradientSquares.getOrDefault(variableIndex, 0.0f)
                     + (float)Math.pow(partial, 2.0f));
             adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares.get(variableIndex) + 1e-8f);
 
             step = partial * adaptedLearningRate;
         } else if (adam) {
+            float beta1 = 0.9f * (float)Math.pow(1.0f - 1.0e-8f, iteration - 1);
+            float beta2 = 0.999f;
+            float mean_hat = 0.0f;
+            float variance_hat = 0.0f;
+            float adaptedLearningRate = 0.0f;
+
             accumulatedGradientMean.put(variableIndex, beta1 * accumulatedGradientMean.getOrDefault(variableIndex, 0.0f)
                     + (1 - beta1) * partial);
 
