@@ -39,10 +39,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-                            boolean squared, boolean hinge,
-                            Hyperplane<RandomVariableAtom> hyperplane,
-                            float weight) {
+    public SGDObjectiveTerm(
+            VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
+            boolean squared, boolean hinge,
+            Hyperplane<RandomVariableAtom> hyperplane, float weight) {
         this.squared = squared;
         this.hinge = hinge;
 
@@ -85,11 +85,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(float[] variableValues, int iteration, float learningRate,
-                          Map<Integer, Float> accumulatedGradientSquares,
-                          Map<Integer, Float> accumulatedGradientMean,
-                          Map<Integer, Float> accumulatedGradientVariance,
-                          boolean adaGrad, boolean adam, boolean coordinateStep) {
+    public float minimize(
+            float[] variableValues, int iteration, float learningRate,
+            Map<Integer, Float> accumulatedGradientSquares,
+            Map<Integer, Float> accumulatedGradientMean,
+            Map<Integer, Float> accumulatedGradientVariance,
+            boolean adaGrad, boolean adam, boolean coordinateStep) {
         float movement = 0.0f;
         float variableStep = 0.0f;
         float newValue = 0.0f;
@@ -114,11 +115,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return movement;
     }
 
-    private float computeVariableStep(int variableIndex, int iteration, float learningRate, float partial,
-                                      Map<Integer, Float> accumulatedGradientSquares,
-                                      Map<Integer, Float> accumulatedGradientMean,
-                                      Map<Integer, Float> accumulatedGradientVariance,
-                                      boolean adaGrad, boolean adam) {
+    private float computeVariableStep(
+            int variableIndex, int iteration, float learningRate, float partial,
+            Map<Integer, Float> accumulatedGradientSquares,
+            Map<Integer, Float> accumulatedGradientMean,
+            Map<Integer, Float> accumulatedGradientVariance,
+            boolean adaGrad, boolean adam) {
         float beta1 = 0.9f * (float)Math.pow(1.0f - 1.0e-8f, iteration - 1);
         float beta2 = 0.999f;
         float mean_hat = 0.0f;
