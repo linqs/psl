@@ -80,8 +80,6 @@ public class DCDReasoner extends Reasoner {
             for (DCDObjectiveTerm term : termStore) {
                 if (oldVariableValues != null) {
                     objective += term.evaluate(oldVariableValues);
-                } else {
-                    objective += term.evaluate(termStore.getVariableValues());
                 }
 
                 termCount++;
