@@ -672,25 +672,25 @@ public class Options {
     public static final Option SGD_ADAM = new Option(
             "sgd.adam",
             false,
-            "Update learning rate according adam."
+            "Update learning rate using the Adaptive Moment Estimation (ADAM) algorithm."
     );
 
     public static final Option SGD_ADA_GRAD = new Option(
             "sgd.adagrad",
             false,
-            "Update learning rate according ada grad."
+            "Update learning rate using the Adaptive Gradient (AdaGrad) algorithm."
     );
 
     public static final Option SGD_COORDINATE_STEP = new Option(
             "sgd.coordinatestep",
             false,
-            "Take coordinate decrease steps during sgd."
+            "Take coordinate steps during sgd."
     );
 
     public static final Option SGD_INVERSE_TIME_EXP = new Option(
         "sgd.inversescaleexp",
         1.0f,
-        "If SGD is using the INVERSETIME schedule, then this value is used as the negative exponent of the number of iterations to scale the gradient step.",
+        "If SGD is using the STEPDECAY learning schedule, then this value is the negative exponent of the iteration count which scales the gradient step using (learning_rate / ( iteration ^ - SGD_INVERSE_TIME_EXP)).",
         Option.FLAG_POSITIVE
     );
 
@@ -704,7 +704,7 @@ public class Options {
     public static final Option SGD_LEARNING_SCHEDULE = new Option(
         "sgd.learningschedule",
         "STEPDECAY",
-        "The learning schedule of the SGD inference reasoner."
+        "The learning schedule of the SGD inference reasoner changes the learning rate during learning."
     );
 
     public static final Option SGD_MAX_ITER = new Option(
