@@ -32,8 +32,7 @@ public class SGDInferenceTest extends InferenceTest {
     public void cleanup() {
         Options.SGD_LEARNING_RATE.clear();
         Options.SGD_COORDINATE_STEP.clear();
-        Options.SGD_ADAM.clear();
-        Options.SGD_ADA_GRAD.clear();
+        Options.SGD_EXTENSION.clear();
     }
 
     @Override
@@ -54,25 +53,27 @@ public class SGDInferenceTest extends InferenceTest {
 
         cleanup();
 
-        // Adam Non-coordinate step.
+        // Adam.
+        Options.SGD_EXTENSION.set("ADAM");
+        // Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
-        Options.SGD_ADAM.set(true);
         Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();
 
-        // Adam Coordinate step.
+        // Coordinate step.
         Options.SGD_COORDINATE_STEP.set(true);
         super.initialValueTest();
 
         cleanup();
 
-        // AdaGrad Non-coordinate step.
+        // AdaGrad.
+        Options.SGD_EXTENSION.set("ADAGRAD");
+        // Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
-        Options.SGD_ADA_GRAD.set(true);
         Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();
 
-        // AdaGrad Coordinate step.
+        // Coordinate step.
         Options.SGD_COORDINATE_STEP.set(true);
         super.initialValueTest();
     }

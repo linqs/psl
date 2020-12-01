@@ -639,7 +639,7 @@ public class Options {
 
     public static final Option REASONER_TOLERANCE = new Option(
         "reasoner.tolerance",
-        1e-5f,
+        1e-8f,
         "How close two objective values need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
     );
@@ -669,22 +669,19 @@ public class Options {
         "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
-    public static final Option SGD_ADAM = new Option(
-            "sgd.adam",
-            false,
-            "Update learning rate using the Adaptive Moment Estimation (Adam) algorithm."
-    );
-
-    public static final Option SGD_ADA_GRAD = new Option(
-            "sgd.adagrad",
-            false,
-            "Update learning rate using the Adaptive Gradient (AdaGrad) algorithm."
-    );
-
     public static final Option SGD_COORDINATE_STEP = new Option(
             "sgd.coordinatestep",
             false,
             "Take coordinate steps during sgd."
+    );
+
+    public static final Option SGD_EXTENSION = new Option(
+            "sgd.extension",
+            "NONE",
+            "The SGD extension to use for SGD reasoning."
+            + "NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+            + "ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
+            + "ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
     );
 
     public static final Option SGD_INVERSE_TIME_EXP = new Option(

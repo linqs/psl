@@ -90,7 +90,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             Map<Integer, Float> accumulatedGradientSquares,
             Map<Integer, Float> accumulatedGradientMean,
             Map<Integer, Float> accumulatedGradientVariance,
-            boolean adaGrad, boolean adam, boolean coordinateStep) {
+            String sgdExtension, boolean coordinateStep) {
         float movement = 0.0f;
         float variableStep = 0.0f;
         float newValue = 0.0f;
@@ -101,7 +101,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             partial = computePartial(i, dot);
             variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
                     accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
-                    adaGrad, adam);
+                    sgdExtension);
 
             newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
             movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
@@ -120,37 +120,41 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             Map<Integer, Float> accumulatedGradientSquares,
             Map<Integer, Float> accumulatedGradientMean,
             Map<Integer, Float> accumulatedGradientVariance,
-            boolean adaGrad, boolean adam) {
+            String sgdExtension) {
         float step = 0.0f;
+        float adaptedLearningRate = 0.0f;
 
-        if (adaGrad) {
-            float adaptedLearningRate = 0.0f;
+        switch (sgdExtension) {
+            case "NONE":
+                step = partial * learningRate;
+                break;
+            case "ADAGRAD":
+                accumulatedGradientSquares.put(variableIndex, accumulatedGradientSquares.getOrDefault(variableIndex, 0.0f)
+                        + (float) Math.pow(partial, 2.0f));
+                adaptedLearningRate = learningRate / (float) Math.sqrt(accumulatedGradientSquares.get(variableIndex) + 1e-8f);
 
-            accumulatedGradientSquares.put(variableIndex, accumulatedGradientSquares.getOrDefault(variableIndex, 0.0f)
-                    + (float)Math.pow(partial, 2.0f));
-            adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares.get(variableIndex) + 1e-8f);
+                step = partial * adaptedLearningRate;
+                break;
+            case "ADAM":
+                float beta1 = 0.9f * (float) Math.pow(1.0f - 1.0e-8f, iteration - 1);
+                float beta2 = 0.999f;
+                float mean_hat = 0.0f;
+                float variance_hat = 0.0f;
 
-            step = partial * adaptedLearningRate;
-        } else if (adam) {
-            float beta1 = 0.9f * (float)Math.pow(1.0f - 1.0e-8f, iteration - 1);
-            float beta2 = 0.999f;
-            float mean_hat = 0.0f;
-            float variance_hat = 0.0f;
-            float adaptedLearningRate = 0.0f;
+                accumulatedGradientMean.put(variableIndex, beta1 * accumulatedGradientMean.getOrDefault(variableIndex, 0.0f)
+                        + (1 - beta1) * partial);
 
-            accumulatedGradientMean.put(variableIndex, beta1 * accumulatedGradientMean.getOrDefault(variableIndex, 0.0f)
-                    + (1 - beta1) * partial);
+                accumulatedGradientVariance.put(variableIndex, beta2 * accumulatedGradientVariance.getOrDefault(variableIndex, 0.0f) +
+                        (1 - beta2) * (float) Math.pow(partial, 2.0f));
 
-            accumulatedGradientVariance.put(variableIndex, beta2 * accumulatedGradientVariance.getOrDefault(variableIndex, 0.0f) +
-                    (1 - beta2) * (float)Math.pow(partial, 2.0f));
+                mean_hat = accumulatedGradientMean.get(variableIndex) / (1 - beta1);
+                variance_hat = accumulatedGradientVariance.get(variableIndex) / (1 - beta2);
 
-            mean_hat = accumulatedGradientMean.get(variableIndex) / (1 - beta1);
-            variance_hat = accumulatedGradientVariance.get(variableIndex) / (1 - beta2);
-
-            adaptedLearningRate = learningRate / ((float)Math.sqrt(variance_hat) + 1e-8f);
-            step = mean_hat * adaptedLearningRate;
-        } else {
-            step = partial * learningRate;
+                adaptedLearningRate = learningRate / ((float) Math.sqrt(variance_hat) + 1e-8f);
+                step = mean_hat * adaptedLearningRate;
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unrecognized SGD extension: %s", sgdExtension));
         }
 
         return step;

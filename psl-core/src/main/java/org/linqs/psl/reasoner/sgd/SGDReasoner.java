@@ -49,8 +49,7 @@ public class SGDReasoner extends Reasoner {
     private String learningSchedule;
 
     private boolean coordinateStep;
-    private boolean adaGrad;
-    private boolean adam;
+    private String sgdExtension;
 
     public SGDReasoner() {
         maxIterations = Options.SGD_MAX_ITER.getInt();
@@ -63,12 +62,8 @@ public class SGDReasoner extends Reasoner {
         learningRateInverseScaleExp = Options.SGD_INVERSE_TIME_EXP.getFloat();
 
         coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
-        adaGrad = Options.SGD_ADA_GRAD.getBoolean();
-        adam = Options.SGD_ADAM.getBoolean();
 
-        if (adaGrad && adam) {
-            throw new IllegalArgumentException("SGDReasoner can only have zero or one of adam or adaGrad options set to true.");
-        }
+        sgdExtension = Options.SGD_EXTENSION.getString().toUpperCase();
     }
 
     @Override
@@ -93,11 +88,19 @@ public class SGDReasoner extends Reasoner {
 
         // Initialize dynamic data structures for optimization.
         float[] oldVariableValues = null;
-        if (adaGrad) {
-            accumulatedGradientSquares = new HashMap<Integer, Float>();
-        } else if (adam) {
-            accumulatedGradientMean = new HashMap<Integer, Float>();
-            accumulatedGradientVariance = new HashMap<Integer, Float>();
+
+        switch (sgdExtension) {
+            case "NONE":
+                break;
+            case "ADAGRAD":
+                accumulatedGradientSquares = new HashMap<Integer, Float>();
+                break;
+            case "ADAM":
+                accumulatedGradientMean = new HashMap<Integer, Float>();
+                accumulatedGradientVariance = new HashMap<Integer, Float>();
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unrecognized SGD extension: %s", sgdExtension));
         }
 
         if (printInitialObj && log.isTraceEnabled()) {
@@ -122,7 +125,7 @@ public class SGDReasoner extends Reasoner {
                 termCount++;
                 meanMovement += term.minimize(termStore.getVariableValues(), iteration, calculateAnnealedLearningRate(iteration),
                         accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
-                        adaGrad, adam, coordinateStep);
+                        sgdExtension, coordinateStep);
             }
 
             termStore.iterationComplete();
