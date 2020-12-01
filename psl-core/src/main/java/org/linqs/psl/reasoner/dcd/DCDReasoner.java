@@ -123,7 +123,7 @@ public class DCDReasoner extends Reasoner {
 
         termStore.syncAtoms();
 
-        return objective / termCount;
+        return objective;
     }
 
     private boolean breakOptimization(double objective, double oldObjective, long termCount) {

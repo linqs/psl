@@ -278,28 +278,33 @@ public abstract class InferenceTest {
     public void initialValueTest() {
         TestModel.ModelInformation info = TestModel.getModel();
 
-        double oldObjective = 0.0f;
+        double oldAvgObjective = 0.0f;
         InitialValue oldInitialValue = null;
 
         for (InitialValue initialValue : InitialValue.values()) {
             Options.INFERENCE_INITIAL_VARIABLE_VALUE.set(initialValue.toString());
 
             Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-            Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
-            InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-            double objective = inference.inference();
-            inference.close();
-            inferDB.close();
+            double avg_objective = 0.0;
+            for (int i = 0; i < 10; i++) {
+                Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+                InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+                avg_objective += inference.inference() / 10.0;
+
+                inference.close();
+                inferDB.close();
+            }
 
             if (oldInitialValue != null) {
                 assertEquals(
                         String.format("Found differing values for two initial values: %s (%f) vs %s (%f).",
-                        oldInitialValue, oldObjective, initialValue, objective),
-                        objective, oldObjective, 0.05);
+                        oldInitialValue, oldAvgObjective, initialValue, avg_objective),
+                        avg_objective, oldAvgObjective, 0.05);
             }
 
-            oldObjective = objective;
+            oldAvgObjective = avg_objective;
             oldInitialValue = initialValue;
         }
     }

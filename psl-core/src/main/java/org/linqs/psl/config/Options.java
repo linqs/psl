@@ -672,7 +672,7 @@ public class Options {
     public static final Option SGD_ADAM = new Option(
             "sgd.adam",
             false,
-            "Update learning rate using the Adaptive Moment Estimation (ADAM) algorithm."
+            "Update learning rate using the Adaptive Moment Estimation (Adam) algorithm."
     );
 
     public static final Option SGD_ADA_GRAD = new Option(
