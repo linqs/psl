@@ -65,6 +65,10 @@ public class SGDReasoner extends Reasoner {
         coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
         adaGrad = Options.SGD_ADA_GRAD.getBoolean();
         adam = Options.SGD_ADAM.getBoolean();
+
+        if (adaGrad && adam) {
+            throw new IllegalArgumentException("SGDReasoner can only have zero or one of adam or adaGrad options set to true.");
+        }
     }
 
     @Override
