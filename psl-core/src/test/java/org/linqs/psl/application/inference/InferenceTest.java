@@ -286,12 +286,12 @@ public abstract class InferenceTest {
 
             Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 
-            double avg_objective = 0.0;
+            double avgObjective = 0.0;
             for (int i = 0; i < 25; i++) {
                 Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
                 InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-                avg_objective += inference.inference() / 10.0;
+                avgObjective += inference.inference() / 10.0;
 
                 inference.close();
                 inferDB.close();
@@ -300,11 +300,11 @@ public abstract class InferenceTest {
             if (oldInitialValue != null) {
                 assertEquals(
                         String.format("Found differing values for two initial values: %s (%f) vs %s (%f).",
-                        oldInitialValue, oldAvgObjective, initialValue, avg_objective),
-                        avg_objective, oldAvgObjective, 0.05);
+                        oldInitialValue, oldAvgObjective, initialValue, avgObjective),
+                        avgObjective, oldAvgObjective, 0.05);
             }
 
-            oldAvgObjective = avg_objective;
+            oldAvgObjective = avgObjective;
             oldInitialValue = initialValue;
         }
     }
