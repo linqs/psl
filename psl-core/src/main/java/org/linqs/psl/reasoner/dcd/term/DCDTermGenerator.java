@@ -31,6 +31,8 @@ import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+
 /**
  * A TermGenerator for DCD objective terms.
  */
@@ -49,28 +51,30 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
     }
 
     @Override
-    public DCDObjectiveTerm createLossTerm(TermStore <DCDObjectiveTerm, RandomVariableAtom> baseTermStore,
+    public int createLossTerm(Collection<DCDObjectiveTerm> newTerms, TermStore <DCDObjectiveTerm, RandomVariableAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
         VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<DCDObjectiveTerm, RandomVariableAtom>)baseTermStore;
         float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
         if (isHinge && isSquared) {
-            return new DCDObjectiveTerm(termStore, true, hyperplane, weight, c);
+            newTerms.add(new DCDObjectiveTerm(termStore, true, hyperplane, weight, c));
+            return 1;
         } else if (isHinge && !isSquared) {
-            return new DCDObjectiveTerm(termStore, false, hyperplane, weight, c);
+            newTerms.add(new DCDObjectiveTerm(termStore, false, hyperplane, weight, c));
+            return 1;
         } else if (!isHinge && isSquared) {
             log.warn("DCD does not support squared linear terms: " + groundRule);
-            return null;
+            return 0;
         } else {
             log.warn("DCD does not support linear terms: " + groundRule);
-            return null;
+            return 0;
         }
     }
 
     @Override
-    public DCDObjectiveTerm createLinearConstraintTerm(TermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
+    public int createLinearConstraintTerm(Collection<DCDObjectiveTerm> newTerms, TermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
             GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane, FunctionComparator comparator) {
         log.warn("DCD does not support hard constraints, i.e. " + groundRule);
-        return null;
+        return 0;
     }
 }

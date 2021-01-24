@@ -277,6 +277,7 @@ public class ADMMReasoner extends Reasoner {
             this.consensusValues = termStore.getConsensusValues();
         }
 
+        @Override
         public Object clone() {
             return new TermWorker(termStore, blockSize);
         }
