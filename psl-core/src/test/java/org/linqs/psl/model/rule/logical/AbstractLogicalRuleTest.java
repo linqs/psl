@@ -88,7 +88,7 @@ public class AbstractLogicalRuleTest {
                 ),
                 new QueryAtom(singleOpened, new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -108,7 +108,7 @@ public class AbstractLogicalRuleTest {
                     ),
                     new QueryAtom(singleOpened, new Variable("B"))
                 ),
-                1.0,
+                1.0f,
                 true
             );
 
@@ -128,7 +128,7 @@ public class AbstractLogicalRuleTest {
                     ),
                     new QueryAtom(singleOpened, new Variable("B"))
                 ),
-                1.0,
+                1.0f,
                 true
             );
 
@@ -150,7 +150,7 @@ public class AbstractLogicalRuleTest {
                 new QueryAtom(singleClosed, new Variable("A")),
                 new QueryAtom(singleOpened, new Variable("A"))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -160,7 +160,7 @@ public class AbstractLogicalRuleTest {
                 new QueryAtom(singleOpened, new Variable("A")),
                 new QueryAtom(singleClosed, new Variable("A"))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -170,7 +170,7 @@ public class AbstractLogicalRuleTest {
                 new Negation(new QueryAtom(singleOpened, new Variable("A"))),
                 new Negation(new QueryAtom(singleClosed, new Variable("A")))
             ),
-            1.0,
+            1.0f,
             true
         );
 

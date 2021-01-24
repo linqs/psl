@@ -27,6 +27,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.util.MathUtils;
 
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,7 +129,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
     @Override
     protected void doLearn() {
-        double[] avgWeights = new double[mutableRules.size()];
+        float[] avgWeights = new float[mutableRules.size()];
+
+        String currentLocation = null;
 
         // Computes the observed incompatibilities.
         computeObservedIncompatibility();
@@ -138,7 +141,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
         if (zeroInitialWeights) {
             for (WeightedRule rule : mutableRules) {
-                rule.setWeight(0.0);
+                rule.setWeight(0.0f);
             }
         }
 
@@ -159,7 +162,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
         double[] lastSteps = new double[mutableRules.size()];
         double lastObjective = -1.0;
 
-        double[] lastWeights = new double[mutableRules.size()];
+        float[] currentWeights = new float[mutableRules.size()];
+        float[] lastWeights = new float[mutableRules.size()];
         for (int i = 0; i < mutableRules.size(); i++) {
             lastWeights[i] = mutableRules.get(i).getWeight();
         }
@@ -176,7 +180,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
             // Updates weights.
             for (int i = 0; i < mutableRules.size(); i++) {
-                double newWeight = mutableRules.get(i).getWeight();
+                float newWeight = mutableRules.get(i).getWeight();
                 double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
                         - l2Regularization * newWeight
                         - l1Regularization) / scalingFactor[i];
@@ -191,9 +195,9 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 currentStep += inertia * lastSteps[i];
 
                 if (clipNegativeWeights) {
-                    newWeight = Math.max(0.0, newWeight + currentStep);
+                    newWeight = (float)Math.max(0.0, newWeight + currentStep);
                 } else {
-                    newWeight = newWeight + currentStep;
+                    newWeight = (float)(newWeight + currentStep);
                 }
 
                 log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
@@ -204,9 +208,16 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
                 mutableRules.get(i).setWeight(newWeight);
                 lastSteps[i] = currentStep;
                 avgWeights[i] += newWeight;
+                currentWeights[i] = newWeight;
                 norm += Math.pow(expectedIncompatibility[i] - observedIncompatibility[i], 2);
             }
 
+            // Set the current location.
+            currentLocation = StringUtils.join(DELIM, currentWeights);
+
+            log.trace("Weights: {}", currentWeights);
+
+            // The weights have changed, so we are no longer in an MPE state.
             inMPEState = false;
 
             norm = Math.sqrt(norm);
@@ -222,6 +233,8 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 
                 evaluator.compute(trainingMap);
                 objective = -1.0 * evaluator.getNormalizedRepMetric();
+
+                log.debug("Weights: {} -- objective: {}", currentLocation, objective);
 
                 if (cutObjective && step > 0 && objective > lastObjective) {
                     log.trace("Objective increased: {} -> {}, cutting step size: {} -> {}.",

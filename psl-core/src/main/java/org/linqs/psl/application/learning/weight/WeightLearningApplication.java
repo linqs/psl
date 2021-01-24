@@ -41,6 +41,13 @@ import java.util.List;
  * (List<Rule>, Database (rv), Database (observed)).
  */
 public abstract class WeightLearningApplication implements ModelApplication {
+    /**
+     * The delimiter to separate rule weights (and location ids).
+     * Note that we cannot use ',' because our configuration infrastructure
+     * will try to interpret it as a list of strings.
+     */
+    public static final String DELIM = ":";
+
     private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
 
     protected Database rvDB;
@@ -224,7 +231,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         try {
             constructor = classObject.getConstructor(List.class, Database.class, Database.class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No sutible constructor found for weight learner: " + className + ".", ex);
+            throw new IllegalArgumentException("No suitable constructor found for weight learner: " + className + ".", ex);
         }
 
         WeightLearningApplication wla = null;

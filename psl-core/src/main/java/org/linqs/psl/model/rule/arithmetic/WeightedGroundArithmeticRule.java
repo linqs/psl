@@ -60,12 +60,12 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     @Override
-    public double getWeight() {
+    public float getWeight() {
         return ((WeightedRule)rule).getWeight();
     }
 
     @Override
-    public void setWeight(double weight) {
+    public void setWeight(float weight) {
         ((WeightedRule)rule).setWeight(weight);
     }
 

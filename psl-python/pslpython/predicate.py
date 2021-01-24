@@ -165,7 +165,7 @@ class Predicate(object):
         if (len(data.columns) == size):
             # Missing the truth value.
             data[size] = Predicate.DEFAULT_TRUTH_VALUE
-            
+
         self._data[partition] = self._data[partition].append(data, ignore_index = True)
 
         return self

@@ -71,7 +71,7 @@ public class Formula2SQLTest {
             new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
         );
 
-        Rule rule = new WeightedLogicalRule(ruleFormula, 10.0, true);
+        Rule rule = new WeightedLogicalRule(ruleFormula, 10.0f, true);
         info.model.addRule(rule);
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
@@ -115,7 +115,7 @@ public class Formula2SQLTest {
                     ),
                     new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                10.0,
+                10.0f,
                 true);
         info.model.addRule(rule);
 

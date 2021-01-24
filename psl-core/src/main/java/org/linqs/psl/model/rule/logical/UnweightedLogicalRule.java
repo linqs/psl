@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.model.rule.WeightedRule;
 
@@ -35,7 +34,7 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
     }
 
     @Override
-    public WeightedRule relax(double weight, boolean squared) {
+    public WeightedRule relax(float weight, boolean squared) {
         return new WeightedLogicalRule(formula, weight, squared, name);
     }
 

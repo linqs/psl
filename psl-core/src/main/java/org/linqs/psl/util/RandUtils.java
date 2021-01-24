@@ -176,4 +176,74 @@ public final class RandUtils {
             indexes[swapIndex] = tempIndex;
         }
     }
+
+    /**
+     * Sample from a dirichlet with the provided parameters
+     */
+    public static synchronized double[] sampleDirichlet(double[] alphas) {
+        double [] gammaSamples = new double[alphas.length];
+        double gammaSampleSum = 0.0;
+        double [] dirichletSample = new double[alphas.length];
+
+        for(int i = 0; i < alphas.length; i++) {
+            gammaSamples[i] = nextGamma(alphas[i], 1);
+            gammaSampleSum = gammaSampleSum + gammaSamples[i];
+        }
+
+        for(int i = 0; i < alphas.length; i++) {
+            dirichletSample[i] = gammaSamples[i] / gammaSampleSum;
+        }
+
+        return dirichletSample;
+    }
+
+    /**
+     * Sample from a gamma distribution with the provided shape and scale parameters.
+     * See Marsaglia and Tsang (2000a): https://dl.acm.org/doi/10.1145/358407.358414
+     */
+    public static synchronized double nextGamma(double shape, double scale) {
+        boolean transformFlag = false;
+        double alpha = 0.0;
+        double scalingParameterD = 0.0;  // d
+        double scalingParameterC = 0.0;  // c
+        double standardNormalRV = 0.0;  // Z
+        double truncatedNormalRV = 0.0;  // V
+        double uniformRV = 0.0;  // U
+        double gammaSample = 0.0;  // X
+
+        if (shape < 1.0) {
+            transformFlag = true;
+            alpha = shape + 1.0;
+        } else {
+            transformFlag = false;
+            alpha = shape;
+        }
+
+        scalingParameterD = alpha - 1.0 / 3.0;
+        scalingParameterC = 1.0 / (3.0 * Math.sqrt(scalingParameterD));
+
+        do {
+            do {
+                standardNormalRV = nextGaussian();
+                truncatedNormalRV = 1.0 + scalingParameterC * standardNormalRV;
+            } while (truncatedNormalRV <= 0.0);
+            // truncatedNormalRV is a truncated normal distribution.
+            truncatedNormalRV = Math.pow(truncatedNormalRV, 3.0);
+            uniformRV = nextDouble();
+
+            if ((uniformRV < 1.0 - 0.0331 * Math.pow(standardNormalRV, 4.0)) ||
+                    (Math.log(uniformRV) < 0.5 * Math.pow(standardNormalRV, 2.0) + scalingParameterD * (1.0 - truncatedNormalRV + Math.log(truncatedNormalRV)))) {
+                gammaSample = scale * scalingParameterD * truncatedNormalRV;
+                break;
+            }
+        } while (true);
+
+        // If shape < 1.0 then transform Gamma(shape + 1.0, beta) to Gamma(shape, beta).
+        if (transformFlag) {
+            uniformRV = nextDouble();
+            gammaSample = gammaSample * Math.pow(uniformRV, (1.0 / shape));
+        }
+
+        return gammaSample;
+    }
 }

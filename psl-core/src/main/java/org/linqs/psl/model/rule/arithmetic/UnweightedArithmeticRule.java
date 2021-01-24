@@ -62,7 +62,7 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule implements 
     }
 
     @Override
-    public WeightedRule relax(double weight, boolean squared) {
+    public WeightedRule relax(float weight, boolean squared) {
         return new WeightedArithmeticRule(expression, filters, weight, squared, name);
     }
 

@@ -107,6 +107,18 @@ public class RankingEvaluator extends Evaluator {
     }
 
     @Override
+    public double getBestRepScore() {
+        switch (representative) {
+            case AUROC:
+            case POSITIVE_AUPRC:
+            case NEGATIVE_AUPRC:
+                return 1.0;
+            default:
+                throw new IllegalStateException("Unknown representative metric: " + representative);
+        }
+    }
+
+    @Override
     public boolean isHigherRepBetter() {
         return true;
     }

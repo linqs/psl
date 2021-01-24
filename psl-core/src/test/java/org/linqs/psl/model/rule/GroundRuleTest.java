@@ -158,7 +158,7 @@ public class GroundRuleTest {
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -219,7 +219,7 @@ public class GroundRuleTest {
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -243,7 +243,7 @@ public class GroundRuleTest {
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -282,7 +282,7 @@ public class GroundRuleTest {
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -332,7 +332,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -370,7 +370,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -417,7 +417,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -462,7 +462,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -511,7 +511,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(1)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -560,7 +560,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -653,7 +653,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -677,7 +677,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -721,7 +721,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -745,7 +745,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -813,7 +813,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -844,7 +844,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -884,7 +884,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -932,7 +932,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -959,7 +959,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -985,7 +985,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1041,7 +1041,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1068,7 +1068,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1094,7 +1094,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1120,7 +1120,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1146,7 +1146,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1172,7 +1172,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1239,7 +1239,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1294,7 +1294,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1444,7 +1444,7 @@ public class GroundRuleTest {
             rule = new WeightedArithmeticRule(
                     new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                     filters,
-                    1.0,
+                    1.0f,
                     true
             );
 
@@ -1493,7 +1493,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1526,7 +1526,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(0.0f)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1577,7 +1577,7 @@ public class GroundRuleTest {
                 new QueryAtom(model.predicates.get("Nice"), new Variable("A")),
                 new Negation(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
             ),
-            1.0,
+            1.0f,
             true
         );
 
@@ -1633,7 +1633,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(0.0f)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1653,7 +1653,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(1.0f)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1673,7 +1673,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(-1.0f)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1693,7 +1693,7 @@ public class GroundRuleTest {
 
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.LTE, new ConstantNumber(0.0f)),
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1736,7 +1736,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1768,7 +1768,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1801,7 +1801,7 @@ public class GroundRuleTest {
         rule = new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
                 filters,
-                1.0,
+                1.0f,
                 true
         );
 
@@ -1831,7 +1831,7 @@ public class GroundRuleTest {
                 ),
                 new QueryAtom(model.predicates.get("Friends"), new UniqueStringID("__Missing1__"), new UniqueStringID("__Missing2__"))
             ),
-            1.0,
+            1.0f,
             true
         );
 

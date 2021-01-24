@@ -24,9 +24,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 
 /**

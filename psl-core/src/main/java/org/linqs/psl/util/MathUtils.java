@@ -155,4 +155,66 @@ public final class MathUtils {
 
         return result;
     }
+
+    /**
+     * Scale n-dimensional double array to unit vector.
+     */
+    public static void toUnit(double[] vector) {
+        toMagnitude(vector, 1.0);
+    }
+
+    /**
+     * Scale n-dimensional float array to unit vector.
+     */
+    public static void toUnit(float[] vector) {
+        toMagnitude(vector, 1.0);
+    }
+
+    /**
+     * Scale n-dimensional double array to vector with the specified magnitude.
+     */
+    public static void toMagnitude(double[] vector, double magnitude) {
+        double norm = 0.0;
+
+        if (magnitude <= 0.0) {
+            throw new ArithmeticException("Cannot scale a vector to a non-positive magnitude.");
+        }
+
+        for (int i = 0; i < vector.length; i++) {
+            norm += Math.pow(vector[i], 2);
+        }
+
+        norm = Math.sqrt(norm);
+        if (!((norm != 0.0) || (vector.length == 0))) {
+            throw new ArithmeticException("Cannot scale a zero vector to a non-zero magnitude.");
+        }
+
+        for (int i = 0; i < vector.length; i++) {
+            vector[i] = (magnitude * (vector[i] / norm));
+        }
+    }
+
+    /**
+     * Scale n-dimensional float array to vector with the specified magnitude.
+     */
+    public static void toMagnitude(float[] vector, double magnitude) {
+        double norm = 0.0;
+
+        if (magnitude <= 0.0) {
+            throw new ArithmeticException("Cannot scale a vector to a non-positive magnitude.");
+        }
+
+        for (int i = 0; i < vector.length; i++) {
+            norm += Math.pow(vector[i], 2);
+        }
+
+        norm = Math.sqrt(norm);
+        if (!((norm != 0.0) || (vector.length == 0))) {
+            throw new ArithmeticException("Cannot scale a zero vector to a non-zero magnitude.");
+        }
+
+        for (int i = 0; i < vector.length; i++) {
+            vector[i] = (float)(magnitude * (vector[i] / norm));
+        }
+    }
 }

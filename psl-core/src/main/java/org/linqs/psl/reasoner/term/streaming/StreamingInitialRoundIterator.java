@@ -55,6 +55,10 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
     protected List<T> termCache;
     protected List<T> termPool;
 
+    // Since a ground rule can produce multiple terms,
+    // we need to keep multiple terms until they are officially passed out the iterator.
+    private List<T> newTerms;
+
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
 
@@ -91,6 +95,8 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
 
         this.termPool = termPool;
         this.termPool.clear();
+
+        newTerms = new ArrayList<T>();
 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
@@ -159,35 +165,46 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
             flushCache();
         }
 
-        T term = fetchNextTermFromRule();
-        if (term != null) {
+        // If there are no terms already waiting, then fetch the next one(s).
+        if (newTerms.size() == 0) {
+            fetchNextTermFromRule();
+        }
+
+        // Pick off the next waiting term.
+        T term = null;
+        if (newTerms.size() > 0) {
+            term = newTerms.remove(0);
+
+            termCache.add(term);
             termCount++;
+        }
+
+        // If the size of this page is ever larger than the size of the pool, then set aside the term for reuse.
+        if (term != null && termCache.size() > termPool.size()) {
+            termPool.add(term);
         }
 
         return term;
     }
 
-    private T fetchNextTermFromRule() {
-        // Note that it is possible to not get a term from a ground rule.
-        T term = null;
-        while (term == null) {
+    /**
+     * Go through the next ground rules and look for terms.
+     * The results will be loaded into |newTerms|.
+     * |newTerms| will be cleared and may be empty after the call if no more terms are available.
+     */
+    private void fetchNextTermFromRule() {
+        newTerms.clear();
+
+        // Note that it is possible to not get any terms from a ground rule.
+        while (newTerms.size() == 0) {
             GroundRule groundRule = fetchNextGroundRule();
             if (groundRule == null) {
                 // We are out of ground rules, and therefore out of terms.
-                return null;
+                return;
             }
 
-            term = termGenerator.createTerm(groundRule, parentStore);
+            termGenerator.createTerm(groundRule, parentStore, newTerms);
         }
-
-        termCache.add(term);
-
-        // If we are on the first page, set aside the term for reuse.
-        if (numPages == 0) {
-            termPool.add(term);
-        }
-
-        return term;
     }
 
     private GroundRule fetchNextGroundRule() {

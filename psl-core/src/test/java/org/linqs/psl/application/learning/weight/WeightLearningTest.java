@@ -54,7 +54,7 @@ import java.util.Set;
 /**
  * General tests for all classes that implement WeightLearningApplication.
  * TODO(eriq): We have to disable some tests because they give different weights.
- *  But some are legitimetley different. We need more robust cases.
+ *  But some are legitimately different. We need more robust cases.
  */
 public abstract class WeightLearningTest {
     public static final String RULE_PRIOR = "prior";
@@ -138,7 +138,7 @@ public abstract class WeightLearningTest {
                 throw new IllegalArgumentException("Unknown rule: " + rule);
             }
 
-            rule.setWeight(1.0);
+            rule.setWeight(1.0f);
         }
 
         Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
@@ -183,7 +183,7 @@ public abstract class WeightLearningTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
         info.model.addRule(rule);
@@ -200,7 +200,7 @@ public abstract class WeightLearningTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Bob"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
         info.model.addRule(rule);
@@ -217,7 +217,7 @@ public abstract class WeightLearningTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Eugene"), new Variable("B"))
             ),
-            1.0,
+            1.0f,
             true
         );
         info.model.addRule(rule);
@@ -234,7 +234,7 @@ public abstract class WeightLearningTest {
                 ),
                 new Negation(new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B")))
             ),
-            1.0,
+            1.0f,
             true
         );
         info.model.addRule(rule);
@@ -263,7 +263,7 @@ public abstract class WeightLearningTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
             ),
-            5.0,
+            5.0f,
             true
         );
         info.model.addRule(newRule);

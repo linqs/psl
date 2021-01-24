@@ -30,7 +30,7 @@ import java.util.AbstractMap;
 import java.util.Map;
 
 /**
- * Compute some metric (or set of matrics) for some predicted and labeled data.
+ * Compute some metric (or set of metrics) for some predicted and labeled data.
  * Every evaluator will have some "representative metric" that is usually set through config options.
  * For example, a discrete Evaluator may have F1 as its representative metric.
  * This is so that more automated methods like search-based weight learning and CLI evaluation
@@ -103,6 +103,24 @@ public abstract class Evaluator {
 
         return value;
     }
+
+    /**
+     * Combine getBestRepScore() with isHigherRepBetter() so that the values from getNormalizedRepMetric are always
+     * less than or equal to this value.
+     */
+    public double getNormalizedMaxRepMetric() {
+        double value = getBestRepScore();
+        if (!isHigherRepBetter()) {
+            value = -value;
+        }
+
+        return value;
+    }
+
+    /**
+     * The maximum (i.e. the best) value that the representative (rep) can take for this evaluator.
+     */
+    public abstract double getBestRepScore();
 
     /**
      * Get a string that contains the full range of stats that this Evaluator can provide.

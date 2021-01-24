@@ -121,7 +121,7 @@ public class TestModel {
                     ),
                     new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                5.0,
+                5.0f,
                 true));
 
         rules.add(new WeightedLogicalRule(
@@ -134,14 +134,14 @@ public class TestModel {
                     ),
                     new QueryAtom(predicates.get("Friends"), new Variable("B"), new Variable("A"))
                 ),
-                10.0,
+                10.0f,
                 true));
 
         rules.add(new WeightedLogicalRule(
                 new Negation(
                     new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                1.0,
+                1.0f,
                 true));
 
         // Data

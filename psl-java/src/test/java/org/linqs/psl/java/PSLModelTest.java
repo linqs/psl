@@ -58,14 +58,14 @@ public class PSLModelTest {
     @Test
     public void testBaseAddRule() {
         model.addRule("1: Single(A) & Sim(A, B) >> Single(B) ^2");
-        model.addWeightedRule("Single(A) & Sim(A, B) >> Single(B)", 10.0, false);
-        model.addWeightedRule("Single(A) & Sim(A, B) >> Single(B)", 20.0, true);
+        model.addWeightedRule("Single(A) & Sim(A, B) >> Single(B)", 10.0f, false);
+        model.addWeightedRule("Single(A) & Sim(A, B) >> Single(B)", 20.0f, true);
 
         model.addRule("Sim(A, B) = Sim(B, A) .");
         model.addUnweightedRule("Sim(B, A) = Sim(A, B) .");
 
-        model.addRule("Single(A) & Sim(A, B) >> Single(B)", true, 30.0, true);
-        model.addRule("Sim(B, C) = Sim(C, B)", false, 40.0, true);
+        model.addRule("Single(A) & Sim(A, B) >> Single(B)", true, 30.0f, true);
+        model.addRule("Sim(B, C) = Sim(C, B)", false, 40.0f, true);
 
         String[] expected = new String[]{
             "1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
