@@ -60,21 +60,21 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         SquaredHingeLossTerm,
     }
 
-    protected float weight;
-    protected int size;
+    private float weight;
+    private int size;
 
-    protected float[] coefficients;
-    protected LocalVariable[] variables;
+    private float[] coefficients;
+    private LocalVariable[] variables;
 
-    protected boolean squared;
-    protected boolean hinge;
+    private boolean squared;
+    private boolean hinge;
 
-    protected float constant;
+    private float constant;
 
     /**
      * When non-null, this term must be a hard constraint.
      */
-    protected FunctionComparator comparator;
+    private FunctionComparator comparator;
 
     // The following variables are used when solving the objective function.
     // We keep them as member data to avoid multiple allocations.
@@ -84,8 +84,8 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * The optimizer considering only the consensus values (and not the constraint imposed by this local hyperplane).
      * This optimizer will be projected onto this hyperplane to minimize.
      */
-    protected float[] consensusOptimizer;
-    protected float[] unitNormal;
+    private float[] consensusOptimizer;
+    private float[] unitNormal;
 
     /**
      * Cache the matrices we will use to minimize the terms.
@@ -405,27 +405,27 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
     // Functionality for squared linear loss terms.
 
-    public void minimizeSquaredLinearLoss(float stepSize, float[] consensusValues) {
+    private void minimizeSquaredLinearLoss(float stepSize, float[] consensusValues) {
         minWeightedSquaredHyperplane(stepSize, consensusValues);
     }
 
     /**
      * weight * (coefficients^T * local - constant)^2
      */
-    public float evaluateSquaredLinearLoss() {
+    private float evaluateSquaredLinearLoss() {
         return weight * (float)Math.pow(computeInnerPotential(), 2.0);
     }
 
     /**
      * weight * (coefficients^T * consensus - constant)^2
      */
-    public float evaluateSquaredLinearLoss(float[] consensusValues) {
+    private float evaluateSquaredLinearLoss(float[] consensusValues) {
         return weight * (float)Math.pow(computeInnerPotential(consensusValues), 2.0);
     }
 
     // Functionality for squared hinge-loss terms.
 
-    public void minimizeSquaredHingeLoss(float stepSize, float[] consensusValues) {
+    private void minimizeSquaredHingeLoss(float stepSize, float[] consensusValues) {
         // Take a gradient step and see if we are in the flat region.
         float total = 0.0f;
         for (int i = 0; i < size; i++) {
@@ -446,14 +446,14 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * weight * [max(0, coefficients^T * local - constant)]^2
      */
-    public float evaluateSquaredHingeLoss() {
+    private float evaluateSquaredHingeLoss() {
         return weight * (float)Math.pow(Math.max(0.0f, computeInnerPotential()), 2.0);
     }
 
     /**
      * weight * [max(0, coefficients^T * consensus - constant)]^2
      */
-    public float evaluateSquaredHingeLoss(float[] consensusValues) {
+    private float evaluateSquaredHingeLoss(float[] consensusValues) {
         return weight * (float)Math.pow(Math.max(0.0f, computeInnerPotential(consensusValues)), 2.0);
     }
 
@@ -484,7 +484,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * coefficients^T * local - constant
      */
-    protected float computeInnerPotential() {
+    private float computeInnerPotential() {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variables[i].getValue();
@@ -496,7 +496,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * coefficients^T * consensus - constant
      */
-    protected float computeInnerPotential(float[] consensusValues) {
+    private float computeInnerPotential(float[] consensusValues) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
@@ -513,7 +513,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * while this hyperplane is: [coefficients^T * local = constant].
      * The result of the projection is stored in the local variables.
      */
-    protected void project(float stepSize, float[] consensusValues) {
+    private void project(float stepSize, float[] consensusValues) {
         // When there is only one variable, there is only one answer.
         // This answer must satisfy the constraint.
         if (size == 1) {
@@ -556,7 +556,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      *
      * The result of the minimization will be stored in the local variables.
      */
-    protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
+    private void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
         // Different solving methods will be used depending on the size of the hyperplane.
 
         // Pre-load the local variable with a term that is common in all the solutions:
