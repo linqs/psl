@@ -69,12 +69,15 @@ public class NeuralModel extends SupportingModel {
      */
     private INDArray output;
 
-    // Always take the min of the batch size and number of data points.
-    private int maxBatchSize;
-
-    private int epochs;
     private double newLearningRate;
     private String lossFunction;
+
+    // Always take the min of the batch size and number of data points.
+    private int maxBatchSize;
+    private int epochs;
+
+    private int initialMaxBatchSize;
+    private int initialEpochs;
 
     private float lowerBinarizeRank;
     private float upperBinarizeRank;
@@ -94,10 +97,14 @@ public class NeuralModel extends SupportingModel {
 
         output = null;
 
-        epochs = Options.MODEL_PREDICATE_ITERATIONS.getInt();
-        maxBatchSize = Options.MODEL_PREDICATE_BATCH_SIZE.getInt();
         newLearningRate = NeuralOptions.NEURAL_LEARNING_RATE.getDouble();
         lossFunction = NeuralOptions.NEURAL_LOSS_FUNCTION.getString();
+
+        epochs = Options.MODEL_PREDICATE_ITERATIONS.getInt();
+        maxBatchSize = Options.MODEL_PREDICATE_BATCH_SIZE.getInt();
+
+        initialEpochs = Options.MODEL_PREDICATE_INITIAL_ITERATIONS.getInt();
+        initialMaxBatchSize = Options.MODEL_PREDICATE_INITIAL_BATCH_SIZE.getInt();
 
         lowerBinarizeRank = NeuralOptions.NEURAL_BIN_RANK_LOWER.getFloat();
         upperBinarizeRank = NeuralOptions.NEURAL_BIN_RANK_UPPER.getFloat();
@@ -226,6 +233,32 @@ public class NeuralModel extends SupportingModel {
                 return 0;
             }
         }
+    }
+
+    @Override
+    public void initialFit() {
+        if (observedLabels.size() == 0) {
+            log.trace("No observed values for initial fitting of {}.", this);
+            return;
+        }
+
+        log.trace("Initial fitting {}.", this);
+
+        model.clear();
+
+        Iterable<Pair<INDArray, INDArray>> pairs = IteratorUtils.map(
+                observedLabels.entrySet(),
+                new IteratorUtils.MapFunction<Map.Entry<Integer, float[]>, Pair<INDArray, INDArray>> () {
+                    @Override
+                    public Pair<INDArray, INDArray> map(Map.Entry<Integer, float[]> entry) {
+                        return Pair.create(features.getRow(entry.getKey().intValue()), Nd4j.create(entry.getValue()));
+                    }
+                });
+
+        DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(initialMaxBatchSize, observedLabels.size()));
+        model.fit(data, initialEpochs);
+
+        log.trace("Done initial fitting {}.", this);
     }
 
     @Override

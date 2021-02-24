@@ -467,7 +467,7 @@ public class Options {
     public static final Option MODEL_PREDICATE_BATCH_SIZE = new Option(
         "modelpredicate.batchsize",
         32,
-        "The size of batches for model updates.",
+        "The maximum size of batches for model updates.",
         Option.FLAG_POSITIVE
     );
 
@@ -488,6 +488,20 @@ public class Options {
         "modelpredicate.labelargs",
         "1",
         "A comma separated list of indexes to the predicate arguments that identity the target label (as opposed to the identity of the data point)."
+    );
+
+    public static final Option MODEL_PREDICATE_INITIAL_BATCH_SIZE = new Option(
+        "modelpredicate.initialbatchsize",
+        32,
+        "The maximum size of batches for the initial fitting of model predicates.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option MODEL_PREDICATE_INITIAL_ITERATIONS = new Option(
+        "modelpredicate.initialiterations",
+        100,
+        "The number of iterations for the internal model to go through for initial fitting.",
+        Option.FLAG_POSITIVE
     );
 
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
