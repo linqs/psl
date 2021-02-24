@@ -69,8 +69,10 @@ public class NeuralModel extends SupportingModel {
      */
     private INDArray output;
 
+    // Always take the min of the batch size and number of data points.
+    private int maxBatchSize;
+
     private int epochs;
-    private int batchSize;
     private double newLearningRate;
     private String lossFunction;
 
@@ -93,7 +95,7 @@ public class NeuralModel extends SupportingModel {
         output = null;
 
         epochs = Options.MODEL_PREDICATE_ITERATIONS.getInt();
-        batchSize = Options.MODEL_PREDICATE_BATCH_SIZE.getInt();
+        maxBatchSize = Options.MODEL_PREDICATE_BATCH_SIZE.getInt();
         newLearningRate = NeuralOptions.NEURAL_LEARNING_RATE.getDouble();
         lossFunction = NeuralOptions.NEURAL_LOSS_FUNCTION.getString();
 
@@ -260,7 +262,7 @@ public class NeuralModel extends SupportingModel {
                 });
 
 
-        DataSetIterator data = new INDArrayDataSetIterator(pairs, batchSize);
+        DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(maxBatchSize, entityIndexMapping.size()));
         model.fit(data, epochs);
 
         log.trace("Done fitting {}.", this);
