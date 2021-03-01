@@ -25,7 +25,6 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDMemoryTermStore;
 import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 

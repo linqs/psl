@@ -17,16 +17,25 @@
  */
 package org.linqs.psl.model.rule;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Base class for all (first order, i.e., not ground) rules.
  */
 public abstract class AbstractRule implements Rule {
+    private static Map<Integer, AbstractRule> rules = new HashMap<Integer, AbstractRule>();
+
     protected final String name;
+
+    public static AbstractRule getRule(int hashcode) {
+        return rules.get(hashcode);
+    }
 
     public AbstractRule(String name) {
         this.name = name;
+        rules.put(System.identityHashCode(this), this);
     }
 
     public String getName() {

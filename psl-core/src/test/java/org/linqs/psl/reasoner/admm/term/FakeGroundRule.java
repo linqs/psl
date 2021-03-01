@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Set;
 
 public class FakeGroundRule implements WeightedGroundRule {
-    private float weight;
+    private FakeRule rule;
 
-    public FakeGroundRule(float weight) {
-        this.weight = weight;
+    public FakeGroundRule(FakeRule rule) {
+        this.rule = rule;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class FakeGroundRule implements WeightedGroundRule {
 
     @Override
     public WeightedRule getRule() {
-        return null;
+        return rule;
     }
 
     @Override
@@ -55,12 +55,12 @@ public class FakeGroundRule implements WeightedGroundRule {
 
     @Override
     public float getWeight() {
-        return weight;
+        return rule.getWeight();
     }
 
     @Override
     public void setWeight(float weight) {
-        this.weight = weight;
+        this.rule.setWeight(weight);
     }
 
     @Override

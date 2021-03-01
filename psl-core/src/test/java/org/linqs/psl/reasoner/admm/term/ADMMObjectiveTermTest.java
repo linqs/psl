@@ -237,19 +237,19 @@ public class ADMMObjectiveTermTest {
         } else if (!squared && !hinge) {
             term = ADMMObjectiveTerm.createLinearLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, 0.0f, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         } else if (!squared && hinge) {
             term = ADMMObjectiveTerm.createHingeLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         } else if (squared && !hinge) {
             term = ADMMObjectiveTerm.createSquaredLinearLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         } else if (squared && hinge) {
             term = ADMMObjectiveTerm.createSquaredHingeLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         }
 
         term.minimize(stepSize, consensus);
