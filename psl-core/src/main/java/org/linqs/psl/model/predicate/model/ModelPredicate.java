@@ -34,6 +34,8 @@ import java.util.Map;
 public class ModelPredicate extends StandardPredicate {
     private static final Logger log = LoggerFactory.getLogger(ModelPredicate.class);
 
+    private static final String CONFIG_MIRROR = "mirror";
+
     protected SupportingModel model;
 
     private boolean modelLoaded;
@@ -47,11 +49,28 @@ public class ModelPredicate extends StandardPredicate {
         modelRan = false;
     }
 
+    @Override
+    public boolean isFixedMirror() {
+        return true;
+    }
+
     /**
      * Load a supporting model.
      * If any relative paths are supplied in the config, |relativeDir| can be used to resilve them.
      */
     public void loadModel(Map<String, String> config, String relativeDir) {
+        if (config.containsKey(CONFIG_MIRROR)) {
+            StandardPredicate mirror = StandardPredicate.get(config.get(CONFIG_MIRROR));
+            if (mirror == null) {
+                throw new IllegalArgumentException(String.format(
+                        "Cannot make unknwon predicate (%s) a mirror for %s.",
+                        config.get(CONFIG_MIRROR), this));
+            }
+
+            setMirror(mirror);
+            mirror.setMirror(this);
+        }
+
         model.load(config, relativeDir);
         modelLoaded = true;
     }

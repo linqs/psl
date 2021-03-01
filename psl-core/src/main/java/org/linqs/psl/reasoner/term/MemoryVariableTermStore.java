@@ -105,7 +105,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     @Override
     public synchronized V createLocalVariable(RandomVariableAtom atom) {
         V variable = convertAtomToVariable(atom);
-
         if (variables.containsKey(variable)) {
             return variable;
         }
@@ -229,6 +228,10 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         updateModelAtoms();
     }
 
+    public RandomVariableAtom getAtom(int index) {
+        return variableAtoms[index];
+    }
+
     private void updateModelAtoms() {
         if (modelPredicates.size() == 0) {
             return;
@@ -276,7 +279,11 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         int count = 0;
         for (int i = 0; i < variables.size(); i++) {
             if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
-                ((ModelPredicate)variableAtoms[i].getPredicate()).setLabel(variableAtoms[i], variableValues[i]);
+                // Get the value from the mirror.
+                // The conversion path looks like: index -> RVA -> Mirror RVA -> Mirror V -> Mirror Index -> Mirror Value
+                float labelValue = variableValues[variables.get(convertAtomToVariable(variableAtoms[i].getMirror())).intValue()];
+
+                ((ModelPredicate)variableAtoms[i].getPredicate()).setLabel(variableAtoms[i], labelValue);
                 count++;
             }
         }
@@ -317,5 +324,9 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         return iterator();
     }
 
+    /**
+     * Get the variable (V) representation of the atom.
+     * This should be lightweight and may be called multiple times per atom.
+     */
     protected abstract V convertAtomToVariable(RandomVariableAtom atom);
 }

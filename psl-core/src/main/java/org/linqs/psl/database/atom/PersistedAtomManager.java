@@ -24,6 +24,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -94,6 +96,9 @@ public class PersistedAtomManager extends AtomManager {
     private void buildPersistedAtomCache() {
         persistedAtomCount = 0;
 
+        // Keep track of mirror variables to commit them to the database.
+        List<RandomVariableAtom> mirrorAtoms = new LinkedList<RandomVariableAtom>();
+
         // Iterate through all of the registered predicates in this database
         for (StandardPredicate predicate : db.getDataStore().getRegisteredPredicates()) {
             // Ignore any closed predicates, they will not return RandomVariableAtoms
@@ -105,15 +110,37 @@ public class PersistedAtomManager extends AtomManager {
                 continue;
             }
 
+            // Fixed mirrors will be instantiated when the other part of the mirror is instantiated.
+            if (predicate instanceof ModelPredicate) {
+                continue;
+            }
+
             // First pull all the random variable atoms and mark them as persisted.
             for (RandomVariableAtom atom : db.getAllGroundRandomVariableAtoms(predicate)) {
                 atom.setPersisted(true);
                 persistedAtomCount++;
+
+                // If this predicate has a mirror, ensure that the other half of the mirror pair is created.
+                if (predicate.getMirror() != null) {
+                    RandomVariableAtom mirrorAtom = (RandomVariableAtom)db.getAtom(predicate.getMirror(), true, atom.getArguments());
+                    mirrorAtoms.add(mirrorAtom);
+
+                    atom.setMirror(mirrorAtom);
+                    mirrorAtom.setMirror(atom);
+
+                    mirrorAtom.setPersisted(true);
+                    persistedAtomCount++;
+                }
             }
 
             // Now pull all the observed atoms so they will get cached.
             // This will throw if any observed atoms were previously seen as RVAs.
             db.getAllGroundObservedAtoms(predicate);
+
+            if (mirrorAtoms.size() > 0) {
+                db.commit(mirrorAtoms);
+                mirrorAtoms.clear();
+            }
         }
     }
 

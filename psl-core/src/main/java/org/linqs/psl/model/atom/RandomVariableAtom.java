@@ -46,12 +46,18 @@ public class RandomVariableAtom extends GroundAtom implements ReasonerLocalVaria
     private boolean isAccessException;
 
     /**
+     * An RVA that mirrors this one during optimization.
+     */
+    private RandomVariableAtom mirror;
+
+    /**
      * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
      */
     public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value) {
         super(predicate, args, value);
         isPersisted = false;
         isAccessException = false;
+        mirror = null;
     }
 
     @Override
@@ -85,5 +91,19 @@ public class RandomVariableAtom extends GroundAtom implements ReasonerLocalVaria
 
     public boolean getAccessException() {
         return isAccessException;
+    }
+
+    public RandomVariableAtom getMirror() {
+        return mirror;
+    }
+
+    public void setMirror(RandomVariableAtom mirror) {
+        if (this.mirror != null && this.mirror != mirror) {
+            throw new IllegalArgumentException(String.format(
+                    "Mirror atom for %s already set to %s. Cannot change to %s.",
+                    this, this.mirror, mirror));
+        }
+
+        this.mirror = mirror;
     }
 }
