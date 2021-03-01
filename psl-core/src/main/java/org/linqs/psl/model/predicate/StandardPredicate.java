@@ -27,9 +27,13 @@ import org.linqs.psl.model.term.ConstantType;
 public class StandardPredicate extends Predicate {
     private boolean isBlock;
 
+    protected StandardPredicate mirror;
+
     protected StandardPredicate(String name, ConstantType[] types) {
         super(name, types);
+
         isBlock = false;
+        mirror = null;
 
         for (ConstantType type : types) {
             if (type == ConstantType.DeferredFunctionalUniqueID) {
@@ -46,6 +50,28 @@ public class StandardPredicate extends Predicate {
 
     public boolean isBlock() {
         return isBlock;
+    }
+
+    public void setMirror(StandardPredicate mirror) {
+        if (this.mirror != null && this.mirror != mirror) {
+            throw new IllegalArgumentException(String.format(
+                    "Mirror predicate for %s already set to %s. Cannot change to %s.",
+                    this, this.mirror, mirror));
+        }
+
+        this.mirror = mirror;
+    }
+
+    public StandardPredicate getMirror() {
+        return mirror;
+    }
+
+    /**
+     * Is this predicate one with mirror variables that are fixed during inference?
+     * Child classes that are fixed mirrors will override this.
+     */
+    public boolean isFixedMirror() {
+        return false;
     }
 
     /**

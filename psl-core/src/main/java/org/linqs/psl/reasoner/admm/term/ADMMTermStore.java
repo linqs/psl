@@ -37,16 +37,16 @@ import java.util.Map;
  * A TermStore specifically for ADMM terms.
  */
 public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm, LocalVariable> {
-    protected LocalVariable createLocalVariableInternal(int consensusIndex, float value) {
-        return new LocalVariable(consensusIndex, value);
+    protected LocalVariable createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value) {
+        return new LocalVariable(consensusIndex, value, atom.getPredicate().isFixedMirror());
     }
 
     protected void resetLocalVariables() {
         for (int i = 0; i < store.getNumVariables(); i++) {
             float value = store.getVariableValue(i);
             for (LocalVariable local : localVariables.get(i)) {
-                local.setValue(value);
-                local.setLagrange(0.0f);
+                local.setValue(value, true);
+                local.setLagrange(0.0f, true);
             }
         }
     }

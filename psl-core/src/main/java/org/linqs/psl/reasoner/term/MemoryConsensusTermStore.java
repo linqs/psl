@@ -69,7 +69,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
             localVariables.add(new ArrayList<V>());
         }
 
-        V localVariable = createLocalVariableInternal(consensusId, (float)atom.getValue());
+        V localVariable = createLocalVariableInternal(atom, consensusId, (float)atom.getValue());
         localVariables.get(consensusId).add(localVariable);
 
         return localVariable;
@@ -141,6 +141,10 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
         store.iterationComplete();
     }
 
+    public RandomVariableAtom getAtom(int index) {
+        return store.getAtom(index);
+    }
+
     @Override
     public T get(long index) {
         return store.get(index);
@@ -177,7 +181,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
         return iterator();
     }
 
-    protected abstract V createLocalVariableInternal(int consensusIndex, float value);
+    protected abstract V createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value);
 
     protected abstract void resetLocalVariables();
 }
