@@ -134,11 +134,21 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     @Override
     public void initForOptimization() {
         store.initForOptimization();
+
+        if (store.getVariablesExternallyUpdatedFlag()) {
+            variablesExternallyUpdated();
+            store.resetVariablesExternallyUpdatedFlag();
+        }
     }
 
     @Override
     public void iterationComplete() {
         store.iterationComplete();
+
+        if (store.getVariablesExternallyUpdatedFlag()) {
+            variablesExternallyUpdated();
+            store.resetVariablesExternallyUpdatedFlag();
+        }
     }
 
     public RandomVariableAtom getAtom(int index) {

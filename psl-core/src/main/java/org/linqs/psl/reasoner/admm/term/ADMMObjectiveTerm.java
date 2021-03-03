@@ -143,8 +143,6 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     }
 
     public void updateLagrange(float stepSize, float[] consensusValues) {
-        // Use index instead of iterator here so we can see clear results in the profiler.
-        // http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
         for (int i = 0; i < size; i++) {
             LocalVariable variable = variables[i];
             variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
@@ -564,7 +562,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
     /**
      * Minimizes the term as a weighted, squared hyperplane.
-     * This function to minimize takes the form:
+     * The function to minimize takes the form:
      * weight * [coefficients^T * local - constant]^2 + (stepsize / 2) * || local - consensus + lagrange / stepsize ||_2^2.
      *
      * The result of the minimization will be stored in the local variables.

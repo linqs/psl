@@ -55,6 +55,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     private Set<ModelPredicate> modelPredicates;
 
+    private boolean variablesExternallyUpdatedFlag;
+
     public MemoryVariableTermStore() {
         shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();
         defaultSize = Options.MEMORY_VTS_DEFAULT_SIZE.getInt();
@@ -63,6 +65,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         ensureVariableCapacity(defaultSize);
 
         modelPredicates = new HashSet<ModelPredicate>();
+
+        variablesExternallyUpdatedFlag = false;
     }
 
     @Override
@@ -125,7 +129,22 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     @Override
     public void variablesExternallyUpdated() {
+        variablesExternallyUpdatedFlag = true;
         store.variablesExternallyUpdated();
+    }
+
+    /**
+     * Check of the variables were updated externally.
+     */
+    public boolean getVariablesExternallyUpdatedFlag() {
+        return variablesExternallyUpdatedFlag;
+    }
+
+    /**
+     * Clear the flag for variables being updated externally.
+     */
+    public void resetVariablesExternallyUpdatedFlag() {
+        variablesExternallyUpdatedFlag = false;
     }
 
     /**
