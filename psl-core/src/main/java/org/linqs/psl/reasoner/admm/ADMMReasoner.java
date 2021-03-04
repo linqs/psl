@@ -338,11 +338,6 @@ public class ADMMReasoner extends Reasoner {
                     break;
                 }
 
-                // Skip any fixed mirror variables.
-                if (termStore.getAtom(variableIndex).getPredicate().isFixedMirror()) {
-                    continue;
-                }
-
                 double total = 0.0f;
                 int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
 

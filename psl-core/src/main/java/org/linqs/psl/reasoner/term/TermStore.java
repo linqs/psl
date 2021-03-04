@@ -31,8 +31,9 @@ import java.util.List;
 public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends Iterable<T> {
     /**
      * Add a term to the store that was generated from the given ground rule.
+     * The hyperplane used to create the term is provided for reference.
      */
-    public void add(GroundRule rule, T term);
+    public void add(GroundRule rule, T term, Hyperplane hyperplane);
 
     /**
      * Remove any existing terms and prepare for a new set.

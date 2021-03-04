@@ -106,6 +106,11 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
+    @Override
+    public void adjustConstant(float oldValue, float newValue) {
+        constant = constant - oldValue + newValue;
+    }
+
     private float computeGradient(float[] variableValues) {
         float val = 0.0f;
 

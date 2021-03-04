@@ -25,10 +25,12 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,6 +57,11 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     private Set<ModelPredicate> modelPredicates;
 
+    // Mirror variables need to track what terms they are involved in.
+    // Because they are observed during MAP inference (and unobserved during supporting model fitting),
+    // their values are integrated into the constants of terms.
+    private Map<RandomVariableAtom, List<MirrorTermCoefficient>> mirrorVariables;
+
     private boolean variablesExternallyUpdatedFlag;
 
     public MemoryVariableTermStore() {
@@ -65,6 +72,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         ensureVariableCapacity(defaultSize);
 
         modelPredicates = new HashSet<ModelPredicate>();
+        mirrorVariables = new HashMap<RandomVariableAtom, List<MirrorTermCoefficient>>();
 
         variablesExternallyUpdatedFlag = false;
     }
@@ -120,11 +128,19 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         variableValues[index] = atom.getValue();
         variableAtoms[index] = atom;
 
+        return variable;
+    }
+
+    private synchronized void createMirrorVariable(RandomVariableAtom atom, float coefficient, T term) {
         if (atom.getPredicate() instanceof ModelPredicate) {
             modelPredicates.add((ModelPredicate)atom.getPredicate());
         }
 
-        return variable;
+        if (!mirrorVariables.containsKey(atom)) {
+            mirrorVariables.put(atom, new ArrayList<MirrorTermCoefficient>());
+        }
+
+        mirrorVariables.get(atom).add(new MirrorTermCoefficient(term, coefficient));
     }
 
     @Override
@@ -189,8 +205,18 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void add(GroundRule rule, T term) {
-        store.add(rule, term);
+    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
+        store.add(rule, term, hyperplane);
+
+        if (hyperplane.getIntegratedRVAs() != null) {
+            for (Object object : hyperplane.getIntegratedRVAs()) {
+                // HACK(eriq): There is some strange typing issue here that I do not understand.
+                //  Java thinks that the elements in hyperplane.getIntegratedRVAs() are Objects,
+                //  and therefore will not implicitly cast to Hyperplane.IntegratedRVA.
+                Hyperplane.IntegratedRVA integratedRVA = (Hyperplane.IntegratedRVA)object;
+                createMirrorVariable(integratedRVA.atom, integratedRVA.coefficient, term);
+            }
+        }
     }
 
     @Override
@@ -205,6 +231,10 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         if (modelPredicates != null) {
             modelPredicates.clear();
+        }
+
+        if (mirrorVariables != null) {
+            mirrorVariables.clear();
         }
 
         variableValues = null;
@@ -257,13 +287,23 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         double rmse = 0.0;
 
         int count = 0;
-        for (int i = 0; i < variables.size(); i++) {
-            if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
-                ModelPredicate predicate = (ModelPredicate)variableAtoms[i].getPredicate();
-                variableValues[i] = predicate.getValue(variableAtoms[i]);
-                rmse += Math.pow(variableValues[i] - predicate.getLabel(variableAtoms[i]), 2);
-                count++;
+        for (RandomVariableAtom mirrorAtom : mirrorVariables.keySet()) {
+            if (!(mirrorAtom.getPredicate() instanceof ModelPredicate)) {
+                continue;
             }
+
+            ModelPredicate predicate = (ModelPredicate)mirrorAtom.getPredicate();
+
+            float oldValue = mirrorAtom.getValue();
+            float newValue = predicate.getValue(mirrorAtom);
+            mirrorAtom.setValue(newValue);
+
+            for (MirrorTermCoefficient pair : mirrorVariables.get(mirrorAtom)) {
+                pair.term.adjustConstant(pair.coefficient * oldValue, pair.coefficient * newValue);
+            }
+
+            rmse += Math.pow(newValue - predicate.getLabel(mirrorAtom), 2);
+            count++;
         }
 
         if (count != 0) {
@@ -284,15 +324,17 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         int count = 0;
-        for (int i = 0; i < variables.size(); i++) {
-            if (variableAtoms[i].getPredicate() instanceof ModelPredicate) {
-                // Get the value from the mirror.
-                // The conversion path looks like: index -> RVA -> Mirror RVA -> Mirror V -> Mirror Index -> Mirror Value
-                float labelValue = variableValues[variables.get(convertAtomToVariable(variableAtoms[i].getMirror())).intValue()];
-
-                ((ModelPredicate)variableAtoms[i].getPredicate()).setLabel(variableAtoms[i], labelValue);
-                count++;
+        for (RandomVariableAtom mirrorAtom : mirrorVariables.keySet()) {
+            if (!(mirrorAtom.getPredicate() instanceof ModelPredicate)) {
+                continue;
             }
+
+            // Get the value from the mirrored pair.
+            // The conversion path looks like: RVA -> Mirror RVA -> Mirror V -> Mirror Index -> Mirror Value
+            float labelValue = variableValues[variables.get(convertAtomToVariable(mirrorAtom.getMirror())).intValue()];
+
+            ((ModelPredicate)mirrorAtom.getPredicate()).setLabel(mirrorAtom, labelValue);
+            count++;
         }
 
         for (ModelPredicate predicate : modelPredicates) {
@@ -336,4 +378,17 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
      * This should be lightweight and may be called multiple times per atom.
      */
     protected abstract V convertAtomToVariable(RandomVariableAtom atom);
+
+    /**
+     * A term and coefficient (for that term) associated with a mirror variable.
+     */
+    private class MirrorTermCoefficient {
+        public T term;
+        public float coefficient;
+
+        public MirrorTermCoefficient(T term, float coefficient) {
+            this.term = term;
+            this.coefficient = coefficient;
+        }
+    }
 }

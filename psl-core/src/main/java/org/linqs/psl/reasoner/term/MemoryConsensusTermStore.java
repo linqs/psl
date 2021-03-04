@@ -96,8 +96,8 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public void add(GroundRule rule, T term) {
-        store.add(rule, term);
+    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
+        store.add(rule, term, hyperplane);
     }
 
     @Override
