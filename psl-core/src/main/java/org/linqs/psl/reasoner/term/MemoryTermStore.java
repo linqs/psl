@@ -41,7 +41,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
-    public synchronized void add(GroundRule rule, T term) {
+    public synchronized void add(GroundRule rule, T term, Hyperplane hyperplane) {
         store.add(term);
     }
 

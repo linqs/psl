@@ -68,6 +68,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
+    @Override
+    public void adjustConstant(float oldValue, float newValue) {
+        constant = constant - oldValue + newValue;
+    }
+
     public float evaluate(float[] variableValues) {
         float dot = dot(variableValues);
         float weight = rule.getWeight();

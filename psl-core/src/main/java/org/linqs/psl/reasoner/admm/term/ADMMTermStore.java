@@ -38,15 +38,15 @@ import java.util.Map;
  */
 public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm, LocalVariable> {
     protected LocalVariable createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value) {
-        return new LocalVariable(consensusIndex, value, atom.getPredicate().isFixedMirror());
+        return new LocalVariable(consensusIndex, value);
     }
 
     protected void resetLocalVariables() {
         for (int i = 0; i < getNumConsensusVariables(); i++) {
             float value = store.getVariableValue(i);
             for (LocalVariable local : localVariables.get(i)) {
-                local.setValue(value, true);
-                local.setLagrange(0.0f, true);
+                local.setValue(value);
+                local.setLagrange(0.0f);
             }
         }
     }

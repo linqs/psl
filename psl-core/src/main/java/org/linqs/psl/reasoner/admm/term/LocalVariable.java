@@ -28,16 +28,14 @@ public class LocalVariable implements ReasonerLocalVariable {
     private final int globalId;
     private float value;
     private float lagrange;
-    private boolean fixed;
 
     /**
      * In the context of ADMM, local variables should be initialized with the initial value of the
      * global variable they are tracking.
      */
-    public LocalVariable(int globalId, float value, boolean fixed) {
+    public LocalVariable(int globalId, float value) {
         this.value = value;
         this.globalId = globalId;
-        this.fixed = fixed;
 
         lagrange = 0;
     }
@@ -54,32 +52,12 @@ public class LocalVariable implements ReasonerLocalVariable {
         return value;
     }
 
-    /**
-     * Check if this variable is considered fixed for the purpose of optimization.
-     * These variables are meant to be manually set outside of optimization.
-     */
-    public boolean isFixed() {
-        return fixed;
-    }
-
     public void setLagrange(float lagrange) {
-        setLagrange(lagrange, false);
-    }
-
-    public void setLagrange(float lagrange, boolean overrideFixed) {
-        if (!fixed || overrideFixed) {
-            this.lagrange = lagrange;
-        }
+        this.lagrange = lagrange;
     }
 
     public void setValue(float value) {
-        setValue(value, false);
-    }
-
-    public void setValue(float value, boolean overrideFixed) {
-        if (!fixed || overrideFixed) {
-            this.value = value;
-        }
+        this.value = value;
     }
 
     /**
@@ -99,6 +77,6 @@ public class LocalVariable implements ReasonerLocalVariable {
     }
 
     public String toString() {
-        return String.format("(%f, %f, %s)", value, lagrange, fixed);
+        return String.format("(%f, %f)", value, lagrange);
     }
 }

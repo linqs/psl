@@ -224,7 +224,7 @@ public class ADMMObjectiveTermTest {
         LocalVariable[] variables = new LocalVariable[consensus.length];
 
         for (int i = 0; i < consensus.length; i++) {
-            variables[i] = new LocalVariable(i, consensus[i], false);
+            variables[i] = new LocalVariable(i, consensus[i]);
             variables[i].setLagrange(lagrange[i]);
         }
 

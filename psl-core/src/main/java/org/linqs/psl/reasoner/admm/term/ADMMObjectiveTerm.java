@@ -165,6 +165,11 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         return size;
     }
 
+    @Override
+    public void adjustConstant(float oldValue, float newValue) {
+        constant = constant - oldValue + newValue;
+    }
+
     public boolean isConstraint() {
         return getTermType() == TermType.LinearConstraintTerm;
     }

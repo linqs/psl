@@ -203,7 +203,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
                 return;
             }
 
-            termGenerator.createTerm(groundRule, parentStore, newTerms);
+            termGenerator.createTerm(groundRule, parentStore, newTerms, null);
         }
     }
 
