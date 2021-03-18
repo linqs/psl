@@ -137,7 +137,7 @@ public class Grounding {
     private static long groundParallel(Formula query, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), query);
         for (Rule rule : rules) {
-            log.trace("    " + rule);
+            log.debug("    " + rule);
         }
 
         // We will manually handle these in the grounding process.
@@ -151,8 +151,8 @@ public class Grounding {
 
         atomManager.enableAccessExceptions(oldAccessExceptionState);
 
-        log.trace("Got {} results from query [{}].", timings.iterations, query);
-        log.debug("Generated {} ground rules with query: [{}].", groundCount, query);
+        log.debug("Generated {} ground rules from {} query results.", groundCount, timings.iterations);
+
         return groundCount;
     }
 
