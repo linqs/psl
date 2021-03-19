@@ -244,28 +244,31 @@ public class NeuralModel extends SupportingModel {
 
         log.trace("Initial fitting {}.", this);
 
-        model.clear();
+        for (int i = 0; i < initialEpochs; i++) {
+            // Note that we need to create a new Iterable because the inner Iterable does not support resetting.
+            Iterable<Pair<INDArray, INDArray>> pairs = IteratorUtils.map(
+                    observedLabels.entrySet(),
+                    new IteratorUtils.MapFunction<Map.Entry<Integer, float[]>, Pair<INDArray, INDArray>> () {
+                        @Override
+                        public Pair<INDArray, INDArray> map(Map.Entry<Integer, float[]> entry) {
+                            return Pair.create(features.getRow(entry.getKey().intValue()), Nd4j.create(entry.getValue()));
+                        }
+                    });
 
-        Iterable<Pair<INDArray, INDArray>> pairs = IteratorUtils.map(
-                observedLabels.entrySet(),
-                new IteratorUtils.MapFunction<Map.Entry<Integer, float[]>, Pair<INDArray, INDArray>> () {
-                    @Override
-                    public Pair<INDArray, INDArray> map(Map.Entry<Integer, float[]> entry) {
-                        return Pair.create(features.getRow(entry.getKey().intValue()), Nd4j.create(entry.getValue()));
-                    }
-                });
+            DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(initialMaxBatchSize, observedLabels.size()));
 
-        DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(initialMaxBatchSize, observedLabels.size()));
-        model.fit(data, initialEpochs);
+            model.clear();
+            model.fit(data);
 
-        log.trace("Done initial fitting {}.", this);
+            log.trace("Epoch: {} / {}, Score: {} {}", i + 1, initialEpochs, model.score(), lossFunction);
+        }
+
+        log.debug("Done initial fitting {} with {} epochs. Score: {} {}.", this, initialEpochs, model.score(), lossFunction);
     }
 
     @Override
     public void fit() {
         log.trace("Fitting {}.", this);
-
-        model.clear();
 
         if (normalizeLabels) {
             normalizeLabels();
@@ -285,20 +288,26 @@ public class NeuralModel extends SupportingModel {
 
         INDArray labels = Nd4j.create(manualLabels);
 
-        Iterable<Pair<INDArray, INDArray>> pairs = IteratorUtils.map(
-                IteratorUtils.newIterable(IteratorUtils.count(entityIndexMapping.size())),
-                new IteratorUtils.MapFunction<Integer, Pair<INDArray, INDArray>> () {
-                    @Override
-                    public Pair<INDArray, INDArray> map(Integer index) {
-                        return Pair.create(features.getRow(index.intValue()), labels.getRow(index.intValue()));
-                    }
-                });
+        for (int i = 0; i < epochs; i++) {
+            // Note that we need to create a new Iterable because the inner Iterable does not support resetting.
+            Iterable<Pair<INDArray, INDArray>> pairs = IteratorUtils.map(
+                    IteratorUtils.newIterable(IteratorUtils.count(entityIndexMapping.size())),
+                    new IteratorUtils.MapFunction<Integer, Pair<INDArray, INDArray>> () {
+                        @Override
+                        public Pair<INDArray, INDArray> map(Integer index) {
+                            return Pair.create(features.getRow(index.intValue()), labels.getRow(index.intValue()));
+                        }
+                    });
 
+            DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(maxBatchSize, entityIndexMapping.size()));
 
-        DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(maxBatchSize, entityIndexMapping.size()));
-        model.fit(data, epochs);
+            model.clear();
+            model.fit(data);
 
-        log.trace("Done fitting {}.", this);
+            log.trace("Epoch: {} / {}, Score: {} {}", i + 1, epochs, model.score(), lossFunction);
+        }
+
+        log.debug("Done fitting {} with {} epochs. Score: {} {}.", this, epochs, model.score(), lossFunction);
     }
 
     private void normalizeLabels() {
