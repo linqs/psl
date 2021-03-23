@@ -70,7 +70,9 @@ public final class IteratorUtils {
     }
 
     /**
-     * Make an Iterable from and Interator.
+     * Make an Iterable from an Interator.
+     * Note that the exact same iterator will be returned on each call to iterator().
+     * This may be unexpected for callers that want to restart iteration from the beginning.
      */
     public static <T> Iterable<T> newIterable(Iterator<T> items) {
         final Iterator<T> finalItems = items;
