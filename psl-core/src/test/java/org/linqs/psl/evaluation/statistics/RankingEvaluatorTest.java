@@ -93,9 +93,6 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
         return new RankingEvaluator();
     }
 
-    /**
-     * Run several runs against the output of an external reference implementation.
-     */
     @Test
     public void testMRR() {
         RankingEvaluator evaluator = new RankingEvaluator();

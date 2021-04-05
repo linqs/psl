@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Compute various ranking statistics.
+ * Compute various area-under-curve statistics.
  */
 public class AUCEvaluator extends Evaluator {
     public enum RepresentativeMetric {

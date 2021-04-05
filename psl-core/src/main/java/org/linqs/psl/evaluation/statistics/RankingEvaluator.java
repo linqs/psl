@@ -45,20 +45,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Compute various statistics on data known to be categorical.
- *
- * Categorical atoms are normal atoms that are interpreted to have two parts: the base and the category.
- * Ex: HasOS(x, 'Linux'), HasOS(x, 'BSD'), HasOS(x, 'Mac'), ...
- * Both the base and category can consist of more than one variable.
- * Ex: HasClimate(location, time, 'Cold', 'Rain'), HasClimate(location, time, 'Cold', 'Snow'), ...
- * However, each atom can only have one category.
- * Any arguments not in a category will be considered to be in the base.
- *
- * The best (highest truth value) category for each base will be chosen.
- * Then the truth database will be iterated over for atoms with a 1.0 truth value.
- * If the truth atom was chosen as the best category in the predicted data, then that is a hit.
- * Anything else is a miss.
+ * Compute ranking-based statistics.
  */
+
 public class RankingEvaluator extends Evaluator {
     private static final Logger log = LoggerFactory.getLogger(RankingEvaluator.class);
 
