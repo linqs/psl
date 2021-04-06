@@ -309,16 +309,19 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         outputDirectory.mkdirs();
 
         for (StandardPredicate predicate : parentDataStore.getRegisteredPredicates()) {
-            if (getAllGroundRandomVariableAtoms(predicate).size() == 0) {
+            if (isClosed(predicate)) {
                 continue;
             }
 
-            try {
-                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, predicate.getName() + ".txt"));
-                BufferedWriter bufferedPredWriter = new BufferedWriter(predFileWriter);
-                StringBuilder row = new StringBuilder();
+            List<RandomVariableAtom> atoms = getAllGroundRandomVariableAtoms(predicate);
+            if (atoms.size() == 0) {
+                continue;
+            }
 
-                for (GroundAtom atom : getAllGroundRandomVariableAtoms(predicate)) {
+            try (BufferedWriter bufferedPredWriter = new BufferedWriter(
+                    new FileWriter(new File(outputDirectory, predicate.getName() + ".txt")))) {
+                StringBuilder row = new StringBuilder();
+                for (GroundAtom atom : atoms) {
                     row.setLength(0);
 
                     for (Constant term : atom.getArguments()) {
@@ -330,8 +333,6 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
                     bufferedPredWriter.write(row.toString());
                 }
-
-                bufferedPredWriter.close();
             } catch (IOException ex) {
                 throw new RuntimeException("Error writing predicate " + predicate + ".", ex);
             }

@@ -205,11 +205,11 @@ public class Launcher {
 
         // Output the results.
         if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
-            log.trace("Writing inferred predicates to out stream.");
+            log.info("Writing inferred predicates to stdout.");
             database.outputRandomVariableAtoms();
         } else {
             String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
-            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
+            log.info("Writing inferred predicates to directory: " + outputDirectoryPath);
             database.outputRandomVariableAtoms(outputDirectoryPath);
         }
 
