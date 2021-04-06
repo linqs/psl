@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.rule.logical;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
@@ -41,6 +42,7 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.ModelDataCollector;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
@@ -164,7 +166,12 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         }
         GroundingResources resources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
 
-        return groundInternal(constants, variableMap, atomManager, resources);
+        GroundRule groundRule = groundInternal(constants, variableMap, atomManager, resources);
+        if (groundRule != null && resources.collectData) {
+            ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants, atomManager);
+        }
+
+        return groundRule;
     }
 
     public long groundAll(QueryResultIterable groundVariables, AtomManager atomManager, GroundRuleStore groundRuleStore) {
@@ -339,6 +346,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         // Atoms that cause trouble for the atom manager.
         public Set<GroundAtom> accessExceptionAtoms;
 
+        public boolean collectData;
+
         // Allocate up-front some buffers for grounding QueryAtoms into.
         public Constant[][] positiveAtomArgs;
         public Constant[][] negativeAtomArgs;
@@ -347,6 +356,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             positiveAtoms = new ArrayList<GroundAtom>(4);
             negativeAtoms = new ArrayList<GroundAtom>(4);
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
+
+            Boolean collectDataOption = (Boolean)Options.CLI_MODEL_DATA_COLLECTION.getUnlogged();
+            collectData = (collectDataOption != null && collectDataOption.booleanValue());
 
             int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
 

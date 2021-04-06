@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
@@ -55,6 +56,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.util.ModelDataCollector;
 import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
@@ -280,6 +282,13 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         } else {
             groundForSummation(constants, variableMap, atomManager, results);
         }
+
+        Boolean collectDataOption = (Boolean)Options.CLI_MODEL_DATA_COLLECTION.getUnlogged();
+        if (collectDataOption != null && collectDataOption.booleanValue()) {
+            for (GroundRule groundRule : results) {
+                ModelDataCollector.addGroundRule(this, groundRule, variableMap, constants, atomManager);
+            }
+        }
     }
 
     private void groundForNonSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
@@ -336,8 +345,18 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         ResultList results = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false));
         Map<Variable, Integer> variableMap = results.getVariableMap();
 
+        int priorResourcesSize = resources.groundRules.size();
         for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
             groundSingleNonSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            int postGroundingResourcesSize = resources.groundRules.size();
+            // Checking the size of the resources allows us to verify if a grounding occured or not.
+            if (resources.collectData) {
+                if (postGroundingResourcesSize != priorResourcesSize) {
+                    GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
+                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex), atomManager);
+                }
+            }
+            priorResourcesSize = resources.groundRules.size();
         }
 
         long count = resources.groundRules.size();
@@ -410,8 +429,18 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         ResultList results = database.executeQuery(rawQuery);
         Map<Variable, Integer> variableMap = results.getVariableMap();
 
+        int priorResourcesSize = resources.groundRules.size();
         for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
             groundSingleSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            int postGroundingResourcesSize = resources.groundRules.size();
+            // Checking the size of the resources allows us to verify if a grounding occured or not.
+            if (resources.collectData) {
+                if (postGroundingResourcesSize != priorResourcesSize) {
+                    GroundRule groundRule = resources.groundRules.get(resources.groundRules.size()-1);
+                    ModelDataCollector.addGroundRule(this, groundRule, variableMap, results.get(groundingIndex), atomManager);
+                }
+            }
+            priorResourcesSize = resources.groundRules.size();
         }
 
         long count = resources.groundRules.size();
@@ -961,6 +990,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         // Atoms that cause trouble for the atom manager.
         public Set<GroundAtom> accessExceptionAtoms;
 
+        public boolean collectData;
+
         // Shared resources.
 
         public List<QueryAtom> queryAtoms;
@@ -993,6 +1024,9 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         public GroundingResources() {
             groundRules = new ArrayList<GroundRule>();
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
+
+            Boolean collectDataOption = (Boolean)Options.CLI_MODEL_DATA_COLLECTION.getUnlogged();
+            collectData = (collectDataOption != null && collectDataOption.booleanValue());
         }
 
         public void parseExpression(ArithmeticRuleExpression expression, boolean computeCoefficients) {

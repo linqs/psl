@@ -30,6 +30,9 @@ import org.linqs.psl.parser.CommandLineLoader;
 
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -150,6 +153,27 @@ public class SimpleAcquaintancesTest extends CLITest {
             fail("Error not thrown on atoms that are observed and targets.");
         } catch (RuntimeException ex) {
             // Expected.
+        }
+    }
+
+    @Test
+    public void testVisualization() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+
+        Path tempOutputFile = Paths.get(System.getProperty("java.io.tmpdir"), "model-data.gz");
+
+        List<String> additionalArgs = Arrays.asList(
+            "--" + CommandLineLoader.OPTION_MODEL_DATA_COLLECTION_LONG,
+            tempOutputFile.toString()
+        );
+
+        run(modelPath, dataPath, additionalArgs);
+
+        try {
+            Files.delete(tempOutputFile);
+        } catch (IOException ex) {
+            // Not expected.
         }
     }
 

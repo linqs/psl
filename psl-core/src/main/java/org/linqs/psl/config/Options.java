@@ -190,6 +190,12 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+     public static final Option CLI_MODEL_DATA_COLLECTION = new Option(
+        "cli.mode.data.collection",
+        false,
+        "Include visualization data collection."
+    );
+
     public static final Option EVAL_CLOSE_TRUTH = new Option(
         "eval.closetruth",
         false,

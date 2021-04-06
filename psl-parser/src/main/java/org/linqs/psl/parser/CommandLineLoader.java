@@ -64,6 +64,8 @@ public class CommandLineLoader {
     public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
     public static final String OPTION_EVAL = "e";
     public static final String OPTION_EVAL_LONG = "eval";
+    public static final String OPTION_MODEL_DATA_COLLECTION = "viz";
+    public static final String OPTION_MODEL_DATA_COLLECTION_LONG = "visualization";
     public static final String OPTION_INT_IDS = "int";
     public static final String OPTION_INT_IDS_LONG = "int-ids";
     public static final String OPTION_LOG4J = "4j";
@@ -261,6 +263,15 @@ public class CommandLineLoader {
                         " If multiple evaluators are specific, they will each be run.")
                 .hasArgs()
                 .argName("evaluator ...")
+                .build());
+
+        newOptions.addOption(Option.builder(OPTION_MODEL_DATA_COLLECTION)
+                .longOpt(OPTION_MODEL_DATA_COLLECTION_LONG)
+                .desc("Gather data for creating a visualization of a given PSL run." +
+                        " When a path is specified, the visualization will be output there.")
+                .hasArg()
+                .argName("path")
+                .optionalArg(false)
                 .build());
 
         newOptions.addOption(Option.builder(OPTION_INT_IDS)

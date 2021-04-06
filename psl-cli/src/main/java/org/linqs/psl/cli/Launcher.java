@@ -18,8 +18,11 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.config.Options;
+import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -32,6 +35,8 @@ import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -40,6 +45,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
+import org.linqs.psl.util.ModelDataCollector;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
@@ -63,7 +69,6 @@ import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -211,12 +216,51 @@ public class Launcher {
             outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
         }
 
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL_DATA_COLLECTION)) {
+            modelDataCollection(model, inferenceApplication, dataStore, database, closedPredicates);
+        }
+
         log.info("Inference Complete");
 
         // Output the results.
         outputResults(database, dataStore, closedPredicates);
 
         return database;
+    }
+
+    private void modelDataCollection(Model model, InferenceApplication inferenceApplication, DataStore dataStore,
+            Database predictionDatabase, Set<StandardPredicate> closedPredicates) {
+        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
+        openPredicates.removeAll(closedPredicates);
+
+        // Create database.
+        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+
+        boolean closePredictionDB = false;
+        if (predictionDatabase == null) {
+            closePredictionDB = true;
+            predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+        }
+
+        Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+
+        // Create TrainingMap between predictions and truth.
+        PersistedAtomManager atomManager = new PersistedAtomManager(predictionDatabase, !closePredictionDB);
+        TrainingMap trainingMap = new TrainingMap(atomManager, truthDatabase);
+
+        // Collect prediction and truth values for each target.
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
+            ModelDataCollector.addTruth(entry.getKey(), entry.getValue().getValue());
+        }
+
+        if (closePredictionDB) {
+            predictionDatabase.close();
+        }
+        truthDatabase.close();
+
+        ModelDataCollector.dissatisfactionPerGroundRule(inferenceApplication.getGroundRuleStore());
     }
 
     private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
@@ -395,6 +439,11 @@ public class Launcher {
 
         // Load model
         Model model = loadModel();
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL_DATA_COLLECTION)) {
+            Options.CLI_MODEL_DATA_COLLECTION.set(true);
+            ModelDataCollector.setOutputPath(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL_DATA_COLLECTION));
+        }
 
         // Inference
         Database evalDB = null;
