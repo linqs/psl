@@ -349,7 +349,7 @@ public class Launcher {
         Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
 
         for (StandardPredicate targetPredicate : openPredicates) {
-            // Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
+            // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
             if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
                 log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
                 continue;
@@ -365,13 +365,13 @@ public class Launcher {
         truthDatabase.close();
     }
 
-    private Model loadModel(DataStore dataStore) {
+    private Model loadModel() {
         log.info("Loading model from {}", parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
 
         Model model = null;
 
         try (FileReader reader = new FileReader(new File(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL)))) {
-            model = ModelLoader.load(dataStore, reader);
+            model = ModelLoader.load(reader);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL), ex);
         }
@@ -394,7 +394,7 @@ public class Launcher {
         Set<StandardPredicate> closedPredicates = loadData(dataStore);
 
         // Load model
-        Model model = loadModel(dataStore);
+        Model model = loadModel();
 
         // Inference
         Database evalDB = null;

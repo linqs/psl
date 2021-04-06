@@ -18,9 +18,7 @@
 package org.linqs.psl;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
-import org.linqs.psl.database.DataStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.parser.ModelLoader;
@@ -36,8 +34,8 @@ public class PSLTest {
     /**
      * Convenience call for the common functionality of assertRule() (alphabetize).
      */
-    public static void assertRule(DataStore dataStore, String input, String expectedRule) {
-        assertRule(dataStore, input, expectedRule, true);
+    public static void assertRule(String input, String expectedRule) {
+        assertRule(input, expectedRule, true);
     }
 
     /**
@@ -49,14 +47,14 @@ public class PSLTest {
      * characters in both strings (actual and expected) before comparing.
      * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
      */
-    public static void assertRule(DataStore dataStore, String input, String expectedRule, boolean alphabetize) {
+    public static void assertRule(String input, String expectedRule, boolean alphabetize) {
         Rule rule = null;
 
-        rule = ModelLoader.loadRule(dataStore, input);
+        rule = ModelLoader.loadRule(input);
         assertRule(rule, expectedRule, alphabetize);
 
         // Now ensure that we can load the string version of the created rule.
-        rule = ModelLoader.loadRule(dataStore, rule.toString());
+        rule = ModelLoader.loadRule(rule.toString());
         assertRule(rule, expectedRule, alphabetize);
     }
 
@@ -113,8 +111,8 @@ public class PSLTest {
     /**
      * Convenience call for the common functionality of assertModel() (alphabetize).
      */
-    public static void assertModel(DataStore dataStore, String input, String[] expectedRules) {
-        assertModel(dataStore, input, expectedRules, true);
+    public static void assertModel(String input, String[] expectedRules) {
+        assertModel(input, expectedRules, true);
     }
 
     /**
@@ -125,8 +123,8 @@ public class PSLTest {
      * characters in both strings (actual and expected) before comparing.
      * Only alphabetize if it is really necessary since it makes the output much harder to interpret.
      */
-    public static void assertModel(DataStore dataStore, String input, String[] expectedRules, boolean alphabetize) {
-        Model model = ModelLoader.load(dataStore, input);
+    public static void assertModel(String input, String[] expectedRules, boolean alphabetize) {
+        Model model = ModelLoader.load(input);
 
         List<Rule> rules = new ArrayList<Rule>();
         for (Rule rule : model.getRules()) {
@@ -138,7 +136,7 @@ public class PSLTest {
         // Try again with each rule, but use the generated text for each rule.
         for (int i = 0; i < rules.size(); i++) {
             try {
-                assertRule(dataStore, rules.get(i).toString(), expectedRules[i], alphabetize);
+                assertRule(rules.get(i).toString(), expectedRules[i], alphabetize);
             } catch (org.antlr.v4.runtime.RecognitionException ex) {
                 throw new RuntimeException("toString() rule did not parse: " + rules.get(i).toString(), ex);
             }
@@ -149,8 +147,8 @@ public class PSLTest {
      * A weaker variant of assertModel() that only uses sorted strings for comparison.
      * Use when you can't give guarentees on both the order of rules and format of each rule.
      */
-    public static void assertStringModel(DataStore dataStore, String input, String[] expectedRules, boolean alphabetize) {
-        Model model = ModelLoader.load(dataStore, input);
+    public static void assertStringModel(String input, String[] expectedRules, boolean alphabetize) {
+        Model model = ModelLoader.load(input);
 
         List<String> rules = new ArrayList<String>();
         for (Rule rule : model.getRules()) {
@@ -176,8 +174,8 @@ public class PSLTest {
         }
     }
 
-    public static List<Rule> getRules(DataStore dataStore, String input) {
-        Model model = ModelLoader.load(dataStore, input);
+    public static List<Rule> getRules(String input) {
+        Model model = ModelLoader.load(input);
 
         List<Rule> rules = new ArrayList<Rule>();
         for (Rule rule : model.getRules()) {
