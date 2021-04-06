@@ -22,25 +22,20 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Term;
-import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Parallel;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -291,6 +286,56 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
 
     public Partition getWritePartition() {
         return writePartition;
+    }
+
+    /**
+     * Output all random variables to stdout in a human readable format: Foo('a', 'b') = 1.0.
+     */
+    public void outputRandomVariableAtoms() {
+        for (StandardPredicate openPredicate : parentDataStore.getRegisteredPredicates()) {
+            for (GroundAtom atom : getAllGroundRandomVariableAtoms(openPredicate)) {
+                System.out.println(atom.toString() + " = " + atom.getValue());
+            }
+        }
+    }
+
+    /**
+     * Output all random variables in a tab separated format.
+     */
+    public void outputRandomVariableAtoms(String outputDirectoryPath) {
+        File outputDirectory = new File(outputDirectoryPath);
+
+        // mkdir -p
+        outputDirectory.mkdirs();
+
+        for (StandardPredicate predicate : parentDataStore.getRegisteredPredicates()) {
+            if (getAllGroundRandomVariableAtoms(predicate).size() == 0) {
+                continue;
+            }
+
+            try {
+                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, predicate.getName() + ".txt"));
+                BufferedWriter bufferedPredWriter = new BufferedWriter(predFileWriter);
+                StringBuilder row = new StringBuilder();
+
+                for (GroundAtom atom : getAllGroundRandomVariableAtoms(predicate)) {
+                    row.setLength(0);
+
+                    for (Constant term : atom.getArguments()) {
+                        row.append(term.rawToString());
+                        row.append("\t");
+                    }
+                    row.append(atom.getValue());
+                    row.append("\n");
+
+                    bufferedPredWriter.write(row.toString());
+                }
+
+                bufferedPredWriter.close();
+            } catch (IOException ex) {
+                throw new RuntimeException("Error writing predicate " + predicate + ".", ex);
+            }
+        }
     }
 
     public int getCachedRVACount() {

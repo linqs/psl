@@ -19,7 +19,6 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -31,13 +30,11 @@ import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
@@ -55,17 +52,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Launches PSL from the command line.
@@ -214,57 +204,16 @@ public class Launcher {
         log.info("Inference Complete");
 
         // Output the results.
-        outputResults(database, dataStore, closedPredicates);
+        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
+            log.trace("Writing inferred predicates to out stream.");
+            database.outputRandomVariableAtoms();
+        } else {
+            String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
+            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
+            database.outputRandomVariableAtoms(outputDirectoryPath);
+        }
 
         return database;
-    }
-
-    private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-        // Set of open predicates
-        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-        openPredicates.removeAll(closedPredicates);
-
-        // If we are just writing to the console, use a more human-readable format.
-        if (!parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR)) {
-            for (StandardPredicate openPredicate : openPredicates) {
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    System.out.println(atom.toString() + " = " + atom.getValue());
-                }
-            }
-
-            return;
-        }
-
-        // If we have an output directory, then write a different file for each predicate.
-        String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
-        File outputDirectory = new File(outputDirectoryPath);
-
-        // mkdir -p
-        outputDirectory.mkdirs();
-
-        for (StandardPredicate openPredicate : openPredicates) {
-            try {
-                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
-                StringBuilder row = new StringBuilder();
-
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    row.setLength(0);
-
-                    for (Constant term : atom.getArguments()) {
-                        row.append(term.rawToString());
-                        row.append("\t");
-                    }
-                    row.append(Double.toString(atom.getValue()));
-                    row.append("\n");
-
-                    predFileWriter.write(row.toString());
-                }
-
-                predFileWriter.close();
-            } catch (IOException ex) {
-                log.error("Exception writing predicate {}", openPredicate);
-            }
-        }
     }
 
     private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName) {
