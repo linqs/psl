@@ -30,7 +30,7 @@ public interface WritableDatabase {
     /**
      * Removes the GroundAtom from the Database, if it exists.
      */
-    public boolean deleteAtom(GroundAtom a);
+    public boolean deleteAtom(GroundAtom atom);
 
     /**
      * Persists a RandomVariableAtom in this Database's write Partition.
@@ -41,10 +41,10 @@ public interface WritableDatabase {
     public void commit(RandomVariableAtom atom);
 
     /**
-     * A batch form or commit().
+     * A batch form of commit().
      * When possible, this commit should be used.
      */
-    public void commit(Iterable<RandomVariableAtom> atoms);
+    public void commit(Iterable<? extends GroundAtom> atoms);
 
     /**
      * Commit all RandomVariableAtoms in the database's cache.
@@ -59,10 +59,10 @@ public interface WritableDatabase {
 
     /**
      * A form of commit() that allows the caller to choose the specific partition
-     * the atoms are comitted to.
+     * the atoms are committed to.
      * Should only be used if you REALLY know what you are doing.
      */
-    public void commit(Iterable<RandomVariableAtom> atoms, int partitionId);
+    public void commit(Iterable<? extends GroundAtom> atoms, int partitionId);
 
     /**
      * Move all ground atoms of a predicate/partition combination into
