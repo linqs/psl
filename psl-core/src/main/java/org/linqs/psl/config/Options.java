@@ -26,6 +26,7 @@ import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.RankingEvaluator;
+import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -590,16 +591,42 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
+    public static final Option EVAL_AUC_REPRESENTATIVE = new Option(
+        "aucevaluator.representative",
+        AUCEvaluator.RepresentativeMetric.AUROC.toString(),
+        "The representative metric (see AUCEvaluator.RepresentativeMetric)."
+    );
+
+    public static final Option EVAL_AUC_THRESHOLD = new Option(
+        "aucevaluator.threshold",
+        0.5,
+        "The truth threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option EVAL_RANK_REPRESENTATIVE = new Option(
         "rankingevaluator.representative",
-        RankingEvaluator.RepresentativeMetric.AUROC.toString(),
+        RankingEvaluator.RepresentativeMetric.MRR.toString(),
         "The representative metric (see RankingEvaluator.RepresentativeMetric)."
     );
 
-    public static final Option EVAL_RANKING_THRESHOLD = new Option(
+    public static final Option EVAL_RANK_DEFAULT_PREDICATE = new Option(
+        "rankingevaluator.defaultpredicate",
+        null,
+        "The default predicate to use when none are supplied."
+    );
+
+    public static final Option EVAL_RANK_CATEGORY_INDEX = new Option(
+        "rankingevaluator.categoryindex",
+        1,
+        "The index (zero-indexed) of the argument in the predicate that indicate a category."
+        + " The other arguments will be treated as identifiers."
+    );
+
+    public static final Option EVAL_RANK_THRESHOLD = new Option(
         "rankingevaluator.threshold",
         0.5,
-        "The truth threshold.",
+        "The truth value threshold for ranking atoms.",
         Option.FLAG_NON_NEGATIVE
     );
 

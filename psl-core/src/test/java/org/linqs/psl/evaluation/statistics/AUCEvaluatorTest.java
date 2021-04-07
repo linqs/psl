@@ -23,29 +23,29 @@ import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
-public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
+public class AUCEvaluatorTest extends EvaluatorTest<AUCEvaluator> {
     @Override
-    protected RankingEvaluator getEvaluator() {
-        return new RankingEvaluator();
+    protected AUCEvaluator getEvaluator() {
+        return new AUCEvaluator();
     }
 
     @Test
     public void testAUROC() {
-        RankingEvaluator evaluator = new RankingEvaluator();
+        AUCEvaluator evaluator = new AUCEvaluator();
         evaluator.compute(trainingMap, predicate);
         assertEquals(0.75, evaluator.auroc(), MathUtils.EPSILON);
     }
 
     @Test
     public void testPositiveAUPRC() {
-        RankingEvaluator evaluator = new RankingEvaluator();
+        AUCEvaluator evaluator = new AUCEvaluator();
         evaluator.compute(trainingMap, predicate);
         assertEquals(0.791667, evaluator.positiveAUPRC(), MathUtils.EPSILON);
     }
 
     @Test
     public void testNegativeAUPRC() {
-        RankingEvaluator evaluator = new RankingEvaluator();
+        AUCEvaluator evaluator = new AUCEvaluator();
         evaluator.compute(trainingMap, predicate);
         assertEquals(1.0f / 3.0f, evaluator.negativeAUPRC(), MathUtils.EPSILON);
     }
@@ -55,7 +55,7 @@ public class RankingEvaluatorTest extends EvaluatorTest<RankingEvaluator> {
      */
     @Test
     public void testReference() {
-        RankingEvaluator evaluator = new RankingEvaluator();
+        AUCEvaluator evaluator = new AUCEvaluator();
         float[] truth = null;
         float[] predictions = null;
 
