@@ -207,7 +207,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         List<RandomVariableAtom> atoms = new ArrayList<RandomVariableAtom>(groundAtoms.size());
         for (GroundAtom atom : groundAtoms) {
             // This is only possible if the predicate is partially observed and this ground atom
-            // was specified as a target and an observation/
+            // was specified as a target and an observation.
             if (atom instanceof ObservedAtom) {
                 throw new IllegalStateException(String.format(
                         "Found a ground atom (%s) that is both observed and a target." +
@@ -276,7 +276,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
     /**
      * @return the DataStore backing this Database
      */
-    public DataStore getDataStore(){
+    public DataStore getDataStore() {
         return parentDataStore;
     }
 
