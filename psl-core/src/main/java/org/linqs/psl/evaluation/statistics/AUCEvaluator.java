@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Compute various ranking statistics.
+ * Compute various area-under-curve statistics.
  */
-public class RankingEvaluator extends Evaluator {
+public class AUCEvaluator extends Evaluator {
     public enum RepresentativeMetric {
         AUROC,
         POSITIVE_AUPRC,
@@ -45,19 +45,19 @@ public class RankingEvaluator extends Evaluator {
     private List<GroundAtom> truth;
     private List<GroundAtom> predicted;
 
-    public RankingEvaluator() {
-        this(Options.EVAL_RANKING_THRESHOLD.getDouble());
+    public AUCEvaluator() {
+        this(Options.EVAL_AUC_THRESHOLD.getDouble());
     }
 
-    public RankingEvaluator(double threshold) {
-        this(threshold, Options.EVAL_RANKING_REPRESENTATIVE.getString());
+    public AUCEvaluator(double threshold) {
+        this(threshold, Options.EVAL_AUC_REPRESENTATIVE.getString());
     }
 
-    public RankingEvaluator(double threshold, String representative) {
+    public AUCEvaluator(double threshold, String representative) {
         this(threshold, RepresentativeMetric.valueOf(representative.toUpperCase()));
     }
 
-    public RankingEvaluator(double threshold, RepresentativeMetric representative) {
+    public AUCEvaluator(double threshold, RepresentativeMetric representative) {
         if (threshold < 0.0 || threshold > 1.0) {
             throw new IllegalArgumentException("Threhsold must be in (0, 1). Found: " + threshold);
         }

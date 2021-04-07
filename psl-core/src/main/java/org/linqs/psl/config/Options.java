@@ -25,7 +25,7 @@ import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
-import org.linqs.psl.evaluation.statistics.RankingEvaluator;
+import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -590,14 +590,14 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
-        "rankingevaluator.representative",
-        RankingEvaluator.RepresentativeMetric.AUROC.toString(),
-        "The representative metric (see RankingEvaluator.RepresentativeMetric)."
+    public static final Option EVAL_AUC_REPRESENTATIVE = new Option(
+        "aucevaluator.representative",
+        AUCEvaluator.RepresentativeMetric.AUROC.toString(),
+        "The representative metric (see AUCEvaluator.RepresentativeMetric)."
     );
 
-    public static final Option EVAL_RANKING_THRESHOLD = new Option(
-        "rankingevaluator.threshold",
+    public static final Option EVAL_AUC_THRESHOLD = new Option(
+        "aucevaluator.threshold",
         0.5,
         "The truth threshold.",
         Option.FLAG_NON_NEGATIVE
