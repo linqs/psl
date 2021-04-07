@@ -44,7 +44,7 @@ public interface WritableDatabase {
      * A batch form of commit().
      * When possible, this commit should be used.
      */
-    public void commit(Iterable<? extends GroundAtom> atoms);
+    public void commit(Iterable<RandomVariableAtom> atoms);
 
     /**
      * Commit all RandomVariableAtoms in the database's cache.

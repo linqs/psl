@@ -154,7 +154,7 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void commit(Iterable<? extends GroundAtom> atoms) {
+    public void commit(Iterable<RandomVariableAtom> atoms) {
         commit(atoms, writeID);
     }
 
