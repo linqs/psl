@@ -342,4 +342,8 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
     public int getCachedRVACount() {
         return cache.getRVACount();
     }
+
+    public int getCachedObsCount() {
+        return cache.getObsCount();
+    }
 }

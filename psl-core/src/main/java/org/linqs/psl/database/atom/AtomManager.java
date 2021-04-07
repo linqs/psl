@@ -119,6 +119,13 @@ public abstract class AtomManager {
     }
 
     /**
+     * Get the number of ObservedAtoms cached by the database.
+     */
+    public int getCachedObsCount() {
+        return db.getCachedObsCount();
+    }
+
+    /**
      * Decide whether or not to throw an access exception.
      * This will bypass |enableAccessExceptions|.
      */
