@@ -60,6 +60,7 @@ public abstract class AtomManager {
      *
      * This method must call {@link Database#getAtom(Predicate, Constant...)}
      * to actually retrieve the GroundAtom.
+     * Atom managers reserve the right to reject any atom by returning null here.
      *
      * @param predicate the Predicate of the Atom
      * @param arguments the GroundTerms of the Atom
