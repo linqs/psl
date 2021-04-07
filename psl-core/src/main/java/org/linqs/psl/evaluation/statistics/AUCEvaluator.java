@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,86 +21,232 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
+import org.linqs.psl.util.StringUtils;
+
+
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.linqs.psl.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Compute various area-under-curve statistics.
+ * Compute ranking-based statistics.
  */
-public class AUCEvaluator extends Evaluator {
+
+public class RankingEvaluator extends Evaluator {
+    private static final Logger log = LoggerFactory.getLogger(RankingEvaluator.class);
+
     public enum RepresentativeMetric {
-        AUROC,
-        POSITIVE_AUPRC,
-        NEGATIVE_AUPRC
+        MRR
     }
 
-    private double threshold;
     private RepresentativeMetric representative;
+    private String defaultPredicate;
+    private int categoryIndex;
+    private double threshold;
 
-    // Both sorted DESC by truth value.
-    private List<GroundAtom> truth;
-    private List<GroundAtom> predicted;
+    // Lists to keep track of all atoms with predicted values
+    // and all atoms in the truth database
 
-    public AUCEvaluator() {
-        this(Options.EVAL_AUC_THRESHOLD.getDouble());
+    private List<RandomVariableAtom> predictedAtoms;
+    private List<GroundAtom> truthAtoms;
+
+    // we compute a map from truth atoms to
+    // their corresponding target atoms
+    private Map<GroundAtom, GroundAtom> truthTargetMap;
+
+    // We partition all unobserved target atoms
+    // by their categories, into ArrayLists.
+    // categoryMap maps the category constants
+    // to these ArrayLists.
+    private Map<Constant, ArrayList<GroundAtom>> categoryMap;
+
+    public RankingEvaluator() {
+        this(RepresentativeMetric.MRR);
     }
 
-    public AUCEvaluator(double threshold) {
-        this(threshold, Options.EVAL_AUC_REPRESENTATIVE.getString());
-    }
-
-    public AUCEvaluator(double threshold, String representative) {
-        this(threshold, RepresentativeMetric.valueOf(representative.toUpperCase()));
-    }
-
-    public AUCEvaluator(double threshold, RepresentativeMetric representative) {
-        if (threshold < 0.0 || threshold > 1.0) {
-            throw new IllegalArgumentException("Threhsold must be in (0, 1). Found: " + threshold);
-        }
-
-        this.threshold = threshold;
+    public RankingEvaluator(RepresentativeMetric representative) {
         this.representative = representative;
+        this.categoryIndex = Options.EVAL_RANK_CATEGORY_INDEX.getInt();
+        this.threshold = Options.EVAL_RANK_THRESHOLD.getDouble();
+        this.categoryMap = new HashMap<Constant, ArrayList<GroundAtom>>();
+        defaultPredicate = Options.EVAL_RANK_DEFAULT_PREDICATE.getString();
+    }
 
-        truth = new ArrayList<GroundAtom>();
-        predicted = new ArrayList<GroundAtom>();
+    /*
+    Grab the Constant argument of an atom in a specified position.
+    */
+
+    public Constant getArgAtPosition(GroundAtom atom, int position) {
+        Constant[] args = atom.getArguments();
+        return args[position];
+    }
+
+    /*
+    Convert the Iterables returned by TrainingMap methods
+    into Lists.
+    */
+
+    public static <E> ArrayList<E> iterableToList(Iterable<E> iterable) {
+        ArrayList<E> list = new ArrayList<E>();
+        for (E element : iterable) {
+            list.add(element);
+        }
+        return list;
     }
 
     @Override
     public void compute(TrainingMap trainingMap) {
-        compute(trainingMap, null);
+        if (defaultPredicate == null) {
+            throw new UnsupportedOperationException("RankingEvaluators must have a default predicate set (through config).");
+        }
+
+        compute(trainingMap, StandardPredicate.get(defaultPredicate));
     }
 
     @Override
     public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
-        truth = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
-        predicted = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
+        /*
+        Populate lists of all predicted/truth atoms
+        which have the specified predicate.
+        */
+
+        predictedAtoms = iterableToList(trainingMap.getAllPredictions());
+        truthAtoms = iterableToList(trainingMap.getAllTruths());
+
+        /*
+        Filter out atoms from these lists which
+        don't have the specified predicate.
+        */
+
+        predictedAtoms.removeIf(atom -> atom.getPredicate() != predicate);
+        truthAtoms.removeIf(atom -> atom.getPredicate() != predicate);
+
+        /*
+        Create the map from truth atoms to corresponding target
+        atoms by reversing the label map from trainingMap.
+        */
+
+        truthTargetMap = new HashMap<GroundAtom, GroundAtom>();
 
         for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
-            if (predicate != null && entry.getKey().getPredicate() != predicate) {
+            if (entry.getKey().getPredicate() == predicate) {
+                truthTargetMap.put(entry.getValue(), entry.getKey());
+            }
+        }
+
+        /*
+        Partition the target atoms into ArrayLists
+        according to what category they belong to.
+        */
+
+        for (GroundAtom atom : predictedAtoms) {
+            Constant category = getArgAtPosition(atom, categoryIndex);
+
+            if (!categoryMap.containsKey(category)) {
+                ArrayList<GroundAtom> categoryAtomList = new ArrayList<GroundAtom>();
+                categoryMap.put(category, categoryAtomList);
+            }
+
+            categoryMap.get(category).add(atom);
+        }
+
+
+        /*
+        Sort each ArrayList and fill in our
+        category-to-list-of-predicted-atoms
+        map.
+        */
+
+        for (Constant category : categoryMap.keySet()) {
+            Collections.sort(categoryMap.get(category));
+            categoryMap.put(category, categoryMap.get(category));
+        }
+    }
+
+    /*
+    Gets the rank of a target atom given
+    its corresponding truth atom.
+
+    Returns 0 if a matching atom isn't
+    found in the targets.
+    */
+
+    public int getAtomRank(GroundAtom atom, List<GroundAtom> atomList) {
+        GroundAtom targetAtom = truthTargetMap.get(atom);
+        int position = atomList.indexOf(targetAtom);
+
+        return position + 1;
+    }
+
+    public double mrr() {
+
+        /*
+        The numerator and denominator in the
+        MRR.
+
+        rr keeps a running sum of reciprocal ranks,
+        and rankedAtomCount keeps track of how many
+        atoms are being ranked in this evaluation.
+        */
+
+        double rr = 0;
+        int rankedAtomCount = 0;
+
+        /*
+        Iterate through the full truth set.
+
+        If a truth atom has a value above some
+        threshold, then compute the reciprocal
+        rank of its matching target atom.
+
+        Sum these reciprocal ranks and take the mean.
+        */
+
+        for(GroundAtom atom : truthAtoms) {
+            if (atom.getValue() < threshold) {
                 continue;
             }
 
-            truth.add(entry.getValue());
-            predicted.add(entry.getKey());
+            rankedAtomCount++;
+
+            Constant category = getArgAtPosition(atom, categoryIndex);
+            int rank = getAtomRank(atom, categoryMap.get(category));
+
+            // If a truth atom doesn't have a corresponding
+            // target atom, skip it
+
+            if (rank == 0) {
+                continue;
+            }
+
+            rr += 1 / (double) rank;
         }
 
-        Collections.sort(truth);
-        Collections.sort(predicted);
+        categoryMap.clear();
+        return (double) rr / rankedAtomCount;
     }
 
     @Override
     public double getRepMetric() {
         switch (representative) {
-            case AUROC:
-                return auroc();
-            case POSITIVE_AUPRC:
-                return positiveAUPRC();
-            case NEGATIVE_AUPRC:
-                return negativeAUPRC();
+            case MRR:
+                return mrr();
             default:
                 throw new IllegalStateException("Unknown representative metric: " + representative);
         }
@@ -109,9 +255,7 @@ public class AUCEvaluator extends Evaluator {
     @Override
     public double getBestRepScore() {
         switch (representative) {
-            case AUROC:
-            case POSITIVE_AUPRC:
-            case NEGATIVE_AUPRC:
+            case MRR:
                 return 1.0;
             default:
                 throw new IllegalStateException("Unknown representative metric: " + representative);
@@ -123,153 +267,8 @@ public class AUCEvaluator extends Evaluator {
         return true;
     }
 
-    public double getThreshold() {
-        return threshold;
-    }
-
-    /**
-     * Returns area under the precision recall curve.
-     */
-    public double positiveAUPRC() {
-        return auprc(true);
-    }
-
-    /**
-     * Returns area under the precision recall curve for the negative class.
-     */
-    public double negativeAUPRC() {
-        return auprc(false);
-    }
-
-    private double auprc(boolean positiveIsTrue) {
-        // Both lists are sorted.
-        int totalPositives = 0;
-        for (GroundAtom atom : truth) {
-            if (!((atom.getValue() >= threshold) ^ positiveIsTrue)) {
-                totalPositives++;
-            }
-        }
-
-        if (totalPositives == 0) {
-            return 0.0;
-        }
-
-        double area = 0.0;
-        int tp = 0;
-        int fp = 0;
-
-        // Precision is along the Y-axis, and we always start at full precision.
-        double prevY = 1.0;
-        // Recall is along the X-axis, and we always start at no recall.
-        double prevX = 0.0;
-
-        // Go through the atoms from highest truth value to lowest.
-        for (GroundAtom atom : predicted) {
-            Boolean rawLabel = getLabel(atom);
-            if (rawLabel == null) {
-                continue;
-            }
-
-            boolean label = rawLabel.booleanValue();
-            if (!positiveIsTrue) {
-                label = !label;
-            }
-
-            // Assume we predicted everything positive.
-            if (label) {
-                tp++;
-            } else {
-                fp++;
-            }
-
-            double newY = tp / (double)(tp + fp);
-            double newX = tp / (double)totalPositives;
-
-            // Use trapezoids to compute the area.
-            // Consider the area of the largest rectangle (highest y), and then cut out a triangle.
-            area += ((newX - prevX) * Math.max(prevY, newY)) - 0.5 * ((newX - prevX) * Math.abs(newY - prevY));
-
-            prevY = newY;
-            prevX = newX;
-        }
-
-        return area;
-    }
-
-    /**
-     * Returns area under ROC curve.
-     * Assumes predicted GroundAtoms are hard truth values.
-     */
-    public double auroc() {
-        int totalPositives = 0;
-        for (GroundAtom atom : truth) {
-            if (atom.getValue() > threshold) {
-                totalPositives++;
-            }
-        }
-
-        int totalNegatives = predicted.size() - totalPositives;
-
-        if (totalPositives == 0) {
-            return 0.0;
-        } else if (totalNegatives == 0) {
-            return 1.0;
-        }
-
-        double area = 0.0;
-        int tp = 0;
-        int fp = 0;
-
-        // True positrive rate (TPR) is along the Y-axis.
-        double prevY = 0.0;
-        // False positive rate (FPR) is along the X-axis.
-        double prevX = 0.0;
-
-        // Go through the atoms from highest truth value to lowest.
-        for (GroundAtom atom : predicted) {
-            Boolean label = getLabel(atom);
-            if (label == null) {
-                continue;
-            }
-
-            // Assume we predicted everything positive.
-            if (label != null && label) {
-                tp++;
-            } else {
-                fp++;
-            }
-
-            double newY = (double)tp / (double)totalPositives;
-            double newX = (double)fp / (double)totalNegatives;
-
-            area += 0.5 * (newX - prevX) * Math.abs(newY - prevY) + (newX - prevX) * newY;
-            prevY = newY;
-            prevX = newX;
-        }
-
-        // Add the final piece.
-        area += 0.5 * (1.0 - prevX) * Math.abs(1.0 - prevY) + (1.0 - prevX) * 1.0;
-
-        return area;
-    }
-
     @Override
     public String getAllStats() {
-        return String.format(
-                "AUROC: %f, Positive Class AUPRC: %f, Negative Class AUPRC: %f",
-                auroc(), positiveAUPRC(), negativeAUPRC());
-    }
-
-    /**
-     * If the atom exists in the truth, return it's boolean value.
-     * Otherwise return null.
-     */
-    private Boolean getLabel(GroundAtom atom) {
-        int index = truth.indexOf(atom);
-        if (index == -1) {
-            return null;
-        }
-
-        return truth.get(index).getValue() > threshold;
+        return String.format("MRR: %f", mrr());
     }
 }
