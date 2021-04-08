@@ -123,7 +123,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     protected int[] shuffleMap;
 
     public StreamingTermStore(List<Rule> rules, AtomManager atomManager,
-                              HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
+            HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
         pageSize = Options.STREAMING_TS_PAGE_SIZE.getInt();
         pageDir = Options.STREAMING_TS_PAGE_LOCATION.getString();
         shufflePage = Options.STREAMING_TS_SHUFFLE_PAGE.getBoolean();
