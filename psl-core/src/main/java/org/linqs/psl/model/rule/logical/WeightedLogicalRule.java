@@ -81,7 +81,7 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
         }
 
         WeightedLogicalRule otherRule = (WeightedLogicalRule)other;
-        if (this.squared != otherRule.squared || !MathUtils.equals(this.weight, otherRule.weight)) {
+        if (this.squared != otherRule.squared) {
             return false;
         }
 

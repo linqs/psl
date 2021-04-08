@@ -108,7 +108,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
         }
 
         FakeRule otherRule = (FakeRule)other;
-        if (this.squared != otherRule.squared || !MathUtils.equals(this.weight, otherRule.weight)) {
+        if (this.squared != otherRule.squared) {
             return false;
         }
 
