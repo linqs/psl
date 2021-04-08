@@ -26,7 +26,6 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.List;
 import java.util.Map;
