@@ -18,17 +18,18 @@
 package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -56,64 +57,78 @@ public class SGDReasoner extends Reasoner {
         }
 
         @SuppressWarnings("unchecked")
-        VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
 
         termStore.initForOptimization();
 
-        double objective = -1.0;
+        long termCount = 0;
+        float movement = 0.0f;
+        double change = 0.0;
+        double objective = 0.0;
         double oldObjective = Double.POSITIVE_INFINITY;
+        float[] oldVariableValues = null;
 
-        if (printInitialObj && log.isTraceEnabled()) {
-            objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0.0f, 0, 0);
-        }
-
-        int iteration = 1;
         long totalTime = 0;
-        while (true) {
+        boolean converged = false;
+        int iteration = 1;
+
+        for (; iteration < (maxIterations * budget) && !converged; iteration++) {
             long start = System.currentTimeMillis();
 
-            // Keep track of the mean movement of the random variables.
-            float movement = 0.0f;
+            termCount = 0;
+            movement = 0.0f;
+            objective = 0.0;
 
-            float[] variableValues = termStore.getVariableValues();
             for (SGDObjectiveTerm term : termStore) {
-                movement += term.minimize(iteration, variableValues);
+                // Starting the second round of iteration, keep track of the old objective.
+                // Note that the number of variables may change in the first iteration.
+                if (iteration > 1) {
+                    objective += term.evaluate(oldVariableValues);
+                }
+
+                termCount++;
+                movement += term.minimize(iteration, termStore);
             }
 
-            if (variableValues.length != 0) {
-                movement /= variableValues.length;
+            termStore.iterationComplete();
+
+            if (termCount != 0) {
+                movement /= termCount;
+            }
+
+            converged = breakOptimization(iteration, objective, oldObjective, movement, termCount);
+
+            if (iteration == 1) {
+                // Initialize old variables values and oldGradients.
+                oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+            } else {
+                // Update old variables values and objective.
+                System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+                oldObjective = objective;
             }
 
             long end = System.currentTimeMillis();
+            totalTime += System.currentTimeMillis() - start;
 
-            oldObjective = objective;
-            objective = computeObjective(termStore);
-            totalTime += end - start;
-
-            if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}",
-                        iteration, objective, movement, (end - start), totalTime);
-            }
-
-            iteration++;
-            termStore.iterationComplete();
-
-            if (breakOptimization(iteration, objective, oldObjective, movement)) {
-                break;
+            if (iteration > 1) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
+                            iteration - 1, objective, objective / termCount, (end - start), totalTime);
+                }
             }
         }
 
-        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
-                iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+        objective = computeObjective(termStore);
+        change = termStore.syncAtoms();
 
-        termStore.syncAtoms();
+        log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}", objective, objective / termCount, totalTime);
+        log.debug("Movement of variables from initial state: {}", change);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
 
         return objective;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement) {
+    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement, long termCount) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
@@ -130,14 +145,14 @@ public class SGDReasoner extends Reasoner {
         }
 
         // Break if the objective has not changed.
-        if (objectiveBreak && MathUtils.equals(objective, oldObjective, tolerance)) {
+        if (oldObjective != Double.POSITIVE_INFINITY && objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
             return true;
         }
 
         return false;
     }
 
-    public double computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    private double computeObjective(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         double objective = 0.0;
 
         // If possible, use a readonly iterator.
