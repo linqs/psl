@@ -61,24 +61,31 @@ public class DCDReasoner extends Reasoner {
         termStore.initForOptimization();
 
         long termCount = 0;
+        double change = 0.0;
         double objective = Double.POSITIVE_INFINITY;
-
-        // Starting the second round of iteration, keep track of the old objective.
-        // Note that the number of variables may change in the first iteration (since grounding happens then).
+        // Starting on the second iteration, keep track of the previous iteration's objective value.
+        // The old objective is calculated during the SGD optimization pass of the current iteration
+        // with a copy of the old variable values.
+        // The oldVariableValues array is updated after every complete pass through the terms.
+        // Note that the number of variables may change in the first iteration (since grounding may happen then)
+        // and cannot be initialized here.
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
 
-        int iteration = 1;
         long totalTime = 0;
-        while (true) {
+        boolean converged = false;
+        int iteration = 1;
+
+
+        for (; iteration < (maxIterations * budget) && !converged; iteration++) {
             long start = System.currentTimeMillis();
 
             termCount = 0;
             objective = 0.0;
 
             for (DCDObjectiveTerm term : termStore) {
-                if (oldVariableValues != null) {
-                    objective += term.evaluate(oldVariableValues);
+                if (iteration > 1) {
+                    objective += term.evaluate(oldVariableValues) / c;
                 }
 
                 termCount++;
@@ -93,37 +100,36 @@ public class DCDReasoner extends Reasoner {
                 }
             }
 
-            long end = System.currentTimeMillis();
-            totalTime += end - start;
-
-            if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
-                        iteration, objective, objective / termCount, (end - start), totalTime);
-            }
-
-            iteration++;
             termStore.iterationComplete();
 
-            if (breakOptimization(iteration, objective, oldObjective, termCount)) {
-                break;
-            }
+            converged = breakOptimization(iteration, objective, oldObjective, termCount);
 
-            // Keep track of the old variables for a deferred objective computation.
-            if (oldVariableValues == null) {
+            if (iteration == 1) {
+                // Initialize old variables values and oldGradients.
                 oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
-                oldObjective = Double.POSITIVE_INFINITY;
             } else {
+                // Update old variables values and objective.
                 System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
                 oldObjective = objective;
+            }
+
+            long end = System.currentTimeMillis();
+            totalTime += System.currentTimeMillis() - end;
+
+            if (iteration > 1) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
+                            iteration - 1, objective, objective / termCount, (end - start), totalTime);
+                }
             }
         }
 
         objective = computeObjective(termStore);
-        log.info("Optimization completed in {} iterations. Objective: {}, Normalized Objective: {}, Total Optimization Time: {}",
-                iteration, objective, objective / termCount, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
+        change = termStore.syncAtoms();
 
-        termStore.syncAtoms();
+        log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", objective, objective / termCount, totalTime, iteration);
+        log.debug("Movement of variables from initial state: {}", change);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
 
         return objective;
     }
