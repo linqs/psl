@@ -49,17 +49,15 @@ public class DCDTermGenerator extends HyperplaneTermGenerator<DCDObjectiveTerm, 
         return GroundAtom.class;
     }
 
-    @Override
-    public int createLossTerm(Collection<DCDObjectiveTerm> newTerms, TermStore <DCDObjectiveTerm, GroundAtom> baseTermStore,
+    @Override public int createLossTerm(Collection<DCDObjectiveTerm> newTerms, TermStore <DCDObjectiveTerm, GroundAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
         VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
 
         if (isHinge && isSquared) {
-            newTerms.add(new DCDObjectiveTerm(termStore, true, hyperplane, weight, c));
+            newTerms.add(new DCDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), true, hyperplane, c));
             return 1;
         } else if (isHinge && !isSquared) {
-            newTerms.add(new DCDObjectiveTerm(termStore, false, hyperplane, weight, c));
+            newTerms.add(new DCDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), false, hyperplane, c));
             return 1;
         } else if (!isHinge && isSquared) {
             log.warn("DCD does not support squared linear terms: " + groundRule);

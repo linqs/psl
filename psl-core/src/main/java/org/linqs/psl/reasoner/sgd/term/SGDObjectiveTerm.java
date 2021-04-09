@@ -151,7 +151,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         int bitSize =
             Byte.SIZE  // squared
             + Byte.SIZE  // hinge
-            + Float.SIZE  // weight
+            + Integer.SIZE  // rule hash
             + Float.SIZE  // constant
             + Float.SIZE  // learningRate
             + Short.SIZE  // size
