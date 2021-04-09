@@ -18,13 +18,14 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a DCDReasoner.
@@ -32,19 +33,21 @@ import java.util.Map;
 public class DCDObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
 
-    private float adjustedWeight;
+    private WeightedRule rule;
     private float constant;
     private float lagrange;
     private float qii;
+    private float c;
 
     private short size;
     private float[] coefficients;
     private int[] variableIndexes;
 
     public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
+            WeightedRule rule,
             boolean squared,
             Hyperplane<RandomVariableAtom> hyperplane,
-            float weight, float c) {
+            float c) {
         this.squared = squared;
 
         size = (short)hyperplane.size();
@@ -57,7 +60,8 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
 
-        adjustedWeight = weight * c;
+        this.rule = rule;
+        this.c = c;
 
         float tempQii = 0f;
         for (int i = 0; i < size; i++) {
@@ -74,6 +78,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
     public float evaluate(float[] variableValues) {
         float value = 0.0f;
+        float adjustedWeight = rule.getWeight() * c;
 
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variableValues[variableIndexes[i]];
@@ -92,6 +97,8 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     }
 
     public void minimize(boolean truncateEveryStep, float[] variableValues) {
+        float adjustedWeight = rule.getWeight() * c;
+
         if (squared) {
             float gradient = computeGradient(variableValues);
             gradient += lagrange / (2.0f * adjustedWeight);
@@ -123,6 +130,8 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
     private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] variableValues) {
         float pg = gradient;
+        float adjustedWeight = rule.getWeight() * c;
+
         if (MathUtils.isZero(lagrange)) {
             pg = Math.min(0.0f, gradient);
         }
@@ -153,9 +162,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     public int fixedByteSize() {
         int bitSize =
             Byte.SIZE  // squared
-            + Float.SIZE  // adjustedWeight
+            + Integer.SIZE  // rule hash
             + Float.SIZE  // constant
             + Float.SIZE  // qii
+            + Float.SIZE  // c
             + Short.SIZE  // size
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
 
@@ -168,9 +178,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
      */
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
-        fixedBuffer.putFloat(adjustedWeight);
+        fixedBuffer.putInt(System.identityHashCode(rule));
         fixedBuffer.putFloat(constant);
         fixedBuffer.putFloat(qii);
+        fixedBuffer.putFloat(c);
         fixedBuffer.putShort(size);
 
         for (int i = 0; i < size; i++) {
@@ -184,9 +195,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
      */
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer) {
         squared = (fixedBuffer.get() == 1);
-        adjustedWeight = fixedBuffer.getFloat();
+        rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
         constant = fixedBuffer.getFloat();
         qii = fixedBuffer.getFloat();
+        c = fixedBuffer.getFloat();
         size = fixedBuffer.getShort();
 
         // Make sure that there is enough room for all these variableIndexes.
@@ -209,7 +221,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(adjustedWeight);
+        builder.append(rule.getWeight() * c);
         builder.append(" * max(0.0, ");
 
         for (int i = 0; i < size; i++) {
