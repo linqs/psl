@@ -116,11 +116,9 @@ public class DCDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
             totalTime += System.currentTimeMillis() - end;
 
-            if (iteration > 1) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
-                            iteration - 1, objective, objective / termCount, (end - start), totalTime);
-                }
+            if (iteration > 1 && log.isTraceEnabled()) {
+                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
+                        iteration - 1, objective, objective / termCount, (end - start), totalTime);
             }
         }
 
