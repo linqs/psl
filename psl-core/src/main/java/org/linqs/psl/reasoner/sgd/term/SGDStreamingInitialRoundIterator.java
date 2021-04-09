@@ -52,7 +52,6 @@ public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundItera
         }
     }
 
-    // HACK(eriq): Copied in SGDOnlineGroundingIterator.
     private void flushTermCache(String termPagePath) {
         // Count the exact size we will need to write.
         int termsSize = 0;
