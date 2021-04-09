@@ -66,11 +66,9 @@ public class SGDReasoner extends Reasoner {
         double change = 0.0;
         double objective = 0.0;
         // Starting on the second iteration, keep track of the previous iteration's objective value.
-        // The old objective is calculated during the SGD optimization pass of the current iteration
-        // with a copy of the old variable values.
-        // The oldVariableValues array is updated after every complete pass through the terms.
-        // Note that the number of variables may change in the first iteration (since grounding may happen then)
-        // and cannot be initialized here.
+        // The variable values from the term store cannot be used to calculate the objective during an
+        // optimization pass because they are being updated in the term.minimize() method.
+        // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
 

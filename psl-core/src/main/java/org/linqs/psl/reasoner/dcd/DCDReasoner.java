@@ -21,8 +21,8 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
@@ -64,18 +64,15 @@ public class DCDReasoner extends Reasoner {
         double change = 0.0;
         double objective = Double.POSITIVE_INFINITY;
         // Starting on the second iteration, keep track of the previous iteration's objective value.
-        // The old objective is calculated during the SGD optimization pass of the current iteration
-        // with a copy of the old variable values.
-        // The oldVariableValues array is updated after every complete pass through the terms.
-        // Note that the number of variables may change in the first iteration (since grounding may happen then)
-        // and cannot be initialized here.
+        // The variable values from the term store cannot be used to calculate the objective during an
+        // optimization pass because they are being updated in the term.minimize() method.
+        // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
 
         long totalTime = 0;
         boolean converged = false;
         int iteration = 1;
-
 
         for (; iteration < (maxIterations * budget) && !converged; iteration++) {
             long start = System.currentTimeMillis();
@@ -105,7 +102,7 @@ public class DCDReasoner extends Reasoner {
             converged = breakOptimization(iteration, objective, oldObjective, termCount);
 
             if (iteration == 1) {
-                // Initialize old variables values and oldGradients.
+                // Initialize old variables values.
                 oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
             } else {
                 // Update old variables values and objective.
