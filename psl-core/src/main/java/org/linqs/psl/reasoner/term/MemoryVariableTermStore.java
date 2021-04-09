@@ -102,7 +102,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             variableAtoms[i].setValue(variableValues[i]);
         }
 
-        return movement;
+        return Math.sqrt(movement);
     }
 
     @Override
