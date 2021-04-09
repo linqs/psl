@@ -235,15 +235,9 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
             }
         }
 
-        // Template specific grounding
-        if (termCache.size() > 0) {
-            flushCache();
-        }
-
         currentRule++;
         if (currentRule >= rules.size()) {
             // There are no more rules, we are done.
-            currentRule--;
             return null;
         }
 
