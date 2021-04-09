@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,7 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, RandomVariableAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
         VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        newTerms.add(new SGDObjectiveTerm(termStore, isSquared, isHinge, hyperplane, weight, learningRate));
+        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane, learningRate));
         return 1;
     }
 

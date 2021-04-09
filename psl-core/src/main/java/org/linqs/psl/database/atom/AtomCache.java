@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,8 +48,9 @@ public class AtomCache {
 
     protected final Map<QueryAtom, GroundAtom> cache;
 
-    // The number of random variable atoms that have been instantiated.
+    // The number of random variable and observed atoms that have been instantiated.
     private int rvaCount;
+    private int obsCount;
 
     /**
      * Constructs a new AtomCache for a Database.
@@ -60,6 +61,7 @@ public class AtomCache {
         this.db = db;
         this.cache = new HashMap<QueryAtom, GroundAtom>();
         this.rvaCount = 0;
+        this.obsCount = 0;
     }
 
     /**
@@ -82,6 +84,10 @@ public class AtomCache {
 
     public int getRVACount() {
         return rvaCount;
+    }
+
+    public int getObsCount() {
+        return obsCount;
     }
 
     /**
@@ -110,6 +116,8 @@ public class AtomCache {
 
             if (atom instanceof RandomVariableAtom) {
                 rvaCount--;
+            } else if (atom instanceof ObservedAtom) {
+                obsCount--;
             }
 
             return true;
@@ -162,6 +170,7 @@ public class AtomCache {
 
         ObservedAtom atom = new ObservedAtom(predicate, args, value);
         cache.put(key, atom);
+        obsCount++;
 
         return atom;
     }

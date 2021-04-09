@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,9 @@ public final class IteratorUtils {
     }
 
     /**
-     * Make an Iterable from and Interator.
+     * Make an Iterable from an Interator.
+     * Note that the exact same iterator will be returned on each call to iterator().
+     * This may be unexpected for callers that want to restart iteration from the beginning.
      */
     public static <T> Iterable<T> newIterable(Iterator<T> items) {
         final Iterator<T> finalItems = items;

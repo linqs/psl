@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class PSLModel extends Model {
      * Add a rule that is fully specified in string form.
      */
     public Rule addRule(String ruleString) {
-        Rule rule = ModelLoader.loadRule(dataStore, ruleString);
+        Rule rule = ModelLoader.loadRule(ruleString);
         addRule(rule);
         return rule;
     }
@@ -88,7 +88,7 @@ public class PSLModel extends Model {
      * Add a rule that has the body in string form, but the additional traits (weight/squared) unspecified.
      */
     public Rule addRule(String ruleString, boolean weighted, float weight, boolean squared) {
-        RulePartial rulePartial = ModelLoader.loadRulePartial(dataStore, ruleString);
+        RulePartial rulePartial = ModelLoader.loadRulePartial(ruleString);
 
         Rule rule = null;
 
@@ -116,7 +116,7 @@ public class PSLModel extends Model {
     public List<Rule> addRules(Reader rules) {
         List<Rule> addedRules = new ArrayList<Rule>();
 
-        Model model = ModelLoader.load(dataStore, rules);
+        Model model = ModelLoader.load(rules);
         for (Rule rule : model.getRules()) {
             addRule(rule);
             addedRules.add(rule);

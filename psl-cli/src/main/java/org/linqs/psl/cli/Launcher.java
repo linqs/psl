@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -31,13 +30,11 @@ import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.Reflection;
@@ -55,17 +52,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Launches PSL from the command line.
@@ -214,57 +204,16 @@ public class Launcher {
         log.info("Inference Complete");
 
         // Output the results.
-        outputResults(database, dataStore, closedPredicates);
+        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
+            log.info("Writing inferred predicates to stdout.");
+            database.outputRandomVariableAtoms();
+        } else {
+            String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
+            log.info("Writing inferred predicates to directory: " + outputDirectoryPath);
+            database.outputRandomVariableAtoms(outputDirectoryPath);
+        }
 
         return database;
-    }
-
-    private void outputResults(Database database, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-        // Set of open predicates
-        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-        openPredicates.removeAll(closedPredicates);
-
-        // If we are just writing to the console, use a more human-readable format.
-        if (!parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR)) {
-            for (StandardPredicate openPredicate : openPredicates) {
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    System.out.println(atom.toString() + " = " + atom.getValue());
-                }
-            }
-
-            return;
-        }
-
-        // If we have an output directory, then write a different file for each predicate.
-        String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
-        File outputDirectory = new File(outputDirectoryPath);
-
-        // mkdir -p
-        outputDirectory.mkdirs();
-
-        for (StandardPredicate openPredicate : openPredicates) {
-            try {
-                FileWriter predFileWriter = new FileWriter(new File(outputDirectory, openPredicate.getName() + ".txt"));
-                StringBuilder row = new StringBuilder();
-
-                for (GroundAtom atom : database.getAllGroundRandomVariableAtoms(openPredicate)) {
-                    row.setLength(0);
-
-                    for (Constant term : atom.getArguments()) {
-                        row.append(term.rawToString());
-                        row.append("\t");
-                    }
-                    row.append(Double.toString(atom.getValue()));
-                    row.append("\n");
-
-                    predFileWriter.write(row.toString());
-                }
-
-                predFileWriter.close();
-            } catch (IOException ex) {
-                log.error("Exception writing predicate {}", openPredicate);
-            }
-        }
     }
 
     private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName) {
@@ -349,7 +298,7 @@ public class Launcher {
         Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
 
         for (StandardPredicate targetPredicate : openPredicates) {
-            // Before we run evaluation, ensure that the truth database actaully has instances of the target predicate.
+            // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
             if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
                 log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
                 continue;
@@ -365,13 +314,13 @@ public class Launcher {
         truthDatabase.close();
     }
 
-    private Model loadModel(DataStore dataStore) {
+    private Model loadModel() {
         log.info("Loading model from {}", parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
 
         Model model = null;
 
         try (FileReader reader = new FileReader(new File(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL)))) {
-            model = ModelLoader.load(dataStore, reader);
+            model = ModelLoader.load(reader);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL), ex);
         }
@@ -394,7 +343,7 @@ public class Launcher {
         Set<StandardPredicate> closedPredicates = loadData(dataStore);
 
         // Load model
-        Model model = loadModel(dataStore);
+        Model model = loadModel();
 
         // Inference
         Database evalDB = null;

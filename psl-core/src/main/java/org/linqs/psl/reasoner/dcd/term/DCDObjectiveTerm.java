@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,11 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public void adjustConstant(float oldValue, float newValue) {
+        constant = constant - oldValue + newValue;
     }
 
     private float computeGradient(float[] variableValues) {

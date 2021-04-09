@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
@@ -275,7 +276,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public void add(GroundRule rule, T term) {
+    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
         throw new UnsupportedOperationException();
     }
 
