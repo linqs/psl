@@ -18,22 +18,18 @@
 package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Attribute;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.DoubleAttribute;
@@ -47,14 +43,6 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.util.Parallel;
 
-import com.healthmarketscience.sqlbuilder.BinaryCondition;
-import com.healthmarketscience.sqlbuilder.CustomSql;
-import com.healthmarketscience.sqlbuilder.InCondition;
-import com.healthmarketscience.sqlbuilder.InsertQuery;
-import com.healthmarketscience.sqlbuilder.QueryPreparer;
-import com.healthmarketscience.sqlbuilder.SelectQuery;
-import com.healthmarketscience.sqlbuilder.UpdateQuery;
-import com.healthmarketscience.sqlbuilder.DeleteQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +52,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -172,17 +159,17 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void commit(Iterable<RandomVariableAtom> atoms, int partitionId) {
+    public void commit(Iterable<? extends GroundAtom> atoms, int partitionId) {
         if (closed) {
             throw new IllegalStateException("Cannot commit on a closed database.");
         }
 
         // Split the atoms up by predicate.
-        Map<Predicate, List<RandomVariableAtom>> atomsByPredicate = new HashMap<Predicate, List<RandomVariableAtom>>();
+        Map<Predicate, List<GroundAtom>> atomsByPredicate = new HashMap<Predicate, List<GroundAtom>>();
 
-        for (RandomVariableAtom atom : atoms) {
+        for (GroundAtom atom : atoms) {
             if (!atomsByPredicate.containsKey(atom.getPredicate())) {
-                atomsByPredicate.put(atom.getPredicate(), new ArrayList<RandomVariableAtom>());
+                atomsByPredicate.put(atom.getPredicate(), new ArrayList<GroundAtom>());
             }
 
             atomsByPredicate.get(atom.getPredicate()).add(atom);
@@ -190,12 +177,12 @@ public class RDBMSDatabase extends Database {
 
         try (Connection connection = getConnection()) {
             // Upsert each predicate batch.
-            for (Map.Entry<Predicate, List<RandomVariableAtom>> entry : atomsByPredicate.entrySet()) {
+            for (Map.Entry<Predicate, List<GroundAtom>> entry : atomsByPredicate.entrySet()) {
                 try (PreparedStatement statement = getAtomUpsert(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(entry.getKey()))) {
                     int batchSize = 0;
 
                     // Set all the upsert params.
-                    for (RandomVariableAtom atom : entry.getValue()) {
+                    for (GroundAtom atom : entry.getValue()) {
                         // Partition
                         statement.setInt(1, partitionId);
 
@@ -234,11 +221,16 @@ public class RDBMSDatabase extends Database {
 
     @Override
     public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
+        moveToPartition(predicate, oldPartitionId, writeID);
+    }
+
+    @Override
+    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionId) {
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, writeID);
+            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, newPartitionId);
         ) {
             statement.executeUpdate();
         } catch (SQLException ex) {

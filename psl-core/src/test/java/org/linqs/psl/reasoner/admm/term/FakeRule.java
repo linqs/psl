@@ -26,7 +26,6 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -108,7 +107,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
         }
 
         FakeRule otherRule = (FakeRule)other;
-        if (this.squared != otherRule.squared || !MathUtils.equals(this.weight, otherRule.weight)) {
+        if (this.squared != otherRule.squared) {
             return false;
         }
 
