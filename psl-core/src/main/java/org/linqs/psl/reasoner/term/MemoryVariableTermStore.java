@@ -262,6 +262,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     @Override
     public void initForOptimization() {
+        initialFitModelAtoms();
         updateModelAtoms();
     }
 
@@ -312,6 +313,12 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         log.trace("Batch update of {} model atoms. RMSE: {}", count, rmse);
         variablesExternallyUpdated();
+    }
+
+    private void initialFitModelAtoms() {
+        for (ModelPredicate predicate : modelPredicates) {
+            predicate.initialFit();
+        }
     }
 
     private void fitModelAtoms() {

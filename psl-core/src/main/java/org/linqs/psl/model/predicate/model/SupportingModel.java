@@ -71,6 +71,7 @@ public abstract class SupportingModel {
 
     /**
      * Labels manually set by the reasoner to use for fitting.
+     * Includes both observed and unobsered data points.
      * [entities x labels]
      */
     protected float[][] manualLabels;
@@ -113,6 +114,12 @@ public abstract class SupportingModel {
      * Fit the model using values set through setLabel().
      */
     public abstract void fit();
+
+    /**
+     * Fit the model for the first time.
+     * This will typically involve using only observed values.
+     */
+    public abstract void initialFit();
 
     public float getValue(RandomVariableAtom atom) {
         AtomIndexes indexes = getAtomIndexes(atom);
