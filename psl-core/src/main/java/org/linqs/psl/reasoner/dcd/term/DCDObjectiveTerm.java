@@ -111,6 +111,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         constant = constant - oldValue + newValue;
     }
 
+    public boolean isConvex() {
+        return true;
+    }
+
     private float computeGradient(float[] variableValues) {
         float val = 0.0f;
 

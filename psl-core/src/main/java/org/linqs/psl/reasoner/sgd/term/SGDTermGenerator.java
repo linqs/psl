@@ -20,7 +20,9 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.term.Hyperplane;
@@ -54,8 +56,27 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, RandomVariableAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
         VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+
         newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane, learningRate));
-        return 1;
+        if (!addDeterTerms) {
+            return 1;
+        }
+
+        Rule rawRule = groundRule.getRule();
+        if (rawRule == null || !(rawRule instanceof AbstractArithmeticRule)) {
+            return 1;
+        }
+
+        AbstractArithmeticRule rule = (AbstractArithmeticRule)rawRule;
+        if (!rule.getExpression().looksLikeFunctionalConstraint()) {
+            return 1;
+        }
+
+        // TODO: Skip singles (n == 1)
+
+        newTerms.add(SGDObjectiveTerm.createDeterTerm(termStore, hyperplane, learningRate, deterWeight, deterEpsilon));
+
+        return 2;
     }
 
     @Override

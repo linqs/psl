@@ -89,7 +89,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     protected final Map<SummationVariable, Formula> filters;
 
     /**
-     * A key to store per-rule threading grounding resource under.
+     * A key to store per-rule threading grounding resources under.
      */
     private final String groundingResourcesKey;
 

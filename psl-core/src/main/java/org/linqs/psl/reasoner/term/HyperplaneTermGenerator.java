@@ -50,10 +50,18 @@ import java.util.Set;
 public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
     private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
-    private boolean invertNegativeWeight;
+    protected boolean invertNegativeWeight;
+
+    protected boolean addDeterTerms;
+    protected float deterWeight;
+    protected float deterEpsilon;
 
     public HyperplaneTermGenerator() {
         invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
+
+        addDeterTerms = Options.HYPERPLANE_TG_ADD_DETER.getBoolean();
+        deterWeight = Options.HYPERPLANE_TG_DETER_WEIGHT.getFloat();
+        deterEpsilon = Options.HYPERPLANE_TG_DETER_EPSILON.getFloat();
     }
 
     @Override

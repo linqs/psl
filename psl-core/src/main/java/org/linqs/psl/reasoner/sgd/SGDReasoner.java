@@ -76,8 +76,17 @@ public class SGDReasoner extends Reasoner {
             // Keep track of the mean movement of the random variables.
             float movement = 0.0f;
 
+            boolean useNonConvex = false;
+            if ((iteration >= nonconvexPeriod) && (iteration % nonconvexPeriod < nonconvexRounds)) {
+                useNonConvex = true;
+            }
+
             float[] variableValues = termStore.getVariableValues();
             for (SGDObjectiveTerm term : termStore) {
+                if (!useNonConvex && !term.isConvex()) {
+                    continue;
+                }
+
                 movement += term.minimize(iteration, variableValues);
             }
 

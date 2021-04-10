@@ -19,6 +19,8 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
@@ -59,6 +61,24 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     public int createLinearConstraintTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
             GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
         newTerms.add(ADMMObjectiveTerm.createLinearConstraintTerm(hyperplane, groundRule.getRule(), comparator));
-        return 1;
+        if (!addDeterTerms) {
+            return 1;
+        }
+
+        Rule rawRule = groundRule.getRule();
+        if (rawRule == null || !(rawRule instanceof AbstractArithmeticRule)) {
+            return 1;
+        }
+
+        AbstractArithmeticRule rule = (AbstractArithmeticRule)rawRule;
+        if (!rule.getExpression().looksLikeFunctionalConstraint()) {
+            return 1;
+        }
+
+        // TODO(eriq): Skip singles (n == 1)
+
+        newTerms.add(ADMMObjectiveTerm.createDeterTerm(hyperplane, deterWeight, deterEpsilon));
+
+        return 2;
     }
 }

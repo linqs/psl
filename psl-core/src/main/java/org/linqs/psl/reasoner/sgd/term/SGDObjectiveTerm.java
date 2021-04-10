@@ -19,10 +19,13 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
 import java.nio.ByteBuffer;
 
@@ -32,6 +35,8 @@ import java.nio.ByteBuffer;
 public class SGDObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
     private boolean hinge;
+
+    private float deterEpsilon;
 
     private WeightedRule rule;
     private float constant;
@@ -46,8 +51,18 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             boolean squared, boolean hinge,
             Hyperplane<RandomVariableAtom> hyperplane,
             float learningRate) {
+        this(termStore, rule, squared, hinge, 0.0f, hyperplane, learningRate);
+    }
+
+    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
+            WeightedRule rule,
+            boolean squared, boolean hinge,
+            float deterEpsilon,
+            Hyperplane<RandomVariableAtom> hyperplane,
+            float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
+        this.deterEpsilon = deterEpsilon;
 
         this.rule = rule;
         this.learningRate = learningRate;
@@ -63,6 +78,14 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
+    public static SGDObjectiveTerm createDeterTerm(
+            VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
+            Hyperplane<RandomVariableAtom> hyperplane,
+            float learningRate,
+            float deterWeight, float deterEpsilon) {
+        return new SGDObjectiveTerm(termStore, new FakeRule(deterWeight, false), false, false, deterEpsilon, hyperplane, learningRate);
+    }
+
     @Override
     public int size() {
         return size;
@@ -73,11 +96,17 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         constant = constant - oldValue + newValue;
     }
 
+    public boolean isConvex() {
+        return MathUtils.isZero(deterEpsilon);
+    }
+
     public float evaluate(float[] variableValues) {
         float dot = dot(variableValues);
-        float weight = rule.getWeight();
+        float weight = getWeight();
 
-        if (squared && hinge) {
+        if (!MathUtils.isZero(deterEpsilon)) {
+            return evaluateDeter(weight, variableValues);
+        } else if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
             return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
         } else if (squared && !hinge) {
@@ -97,7 +126,11 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      */
     public float minimize(int iteration, float[] variableValues) {
         float movement = 0.0f;
-        float weight = rule.getWeight();
+        float weight = getWeight();
+
+        if (!MathUtils.isZero(deterEpsilon)) {
+            return minimizeDeter(weight, iteration, variableValues);
+        }
 
         for (int i = 0 ; i < size; i++) {
             float dot = dot(variableValues);
@@ -132,6 +165,63 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
 
         return value - constant;
+    }
+
+    // Functionality for deter terms.
+
+    private float minimizeDeter(float weight, int iteration, float[] variableValues) {
+        // TODO(eriq): This minimization is naive.
+        float deterValue = 1.0f / size;
+
+        // TODO(eriq): Better heuristic for checking the clustering.
+
+        // Check the average distance to the deter point.
+        float distance = 0.0f;
+        for (int i = 0; i < size; i++) {
+            distance += Math.abs(deterValue - variableValues[variableIndexes[i]]);
+        }
+        distance /= size;
+
+        // Do nothing if the points are not clustered around the deter point.
+        if (distance > deterEpsilon) {
+            return 0.0f;
+        }
+
+        // Randomly choose a point to go towards 1.0, the rest go towards 0.0.
+        // TODO(eriq): There is a lot that can be done to choose points more intelligently.
+        //  Maybe weight be truth value, for example.
+        int upPoint = RandUtils.nextInt(size);
+
+        float movement = 0.0f;
+        for (int i = 0; i < size; i++) {
+            float newValue = ((i == upPoint) ? 1.0f : 0.0f);
+            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
+            variableValues[variableIndexes[i]] = newValue;
+        }
+
+        return movement;
+    }
+
+    /**
+     * weight * 1/n * (sum_{i = 0}^{n} f(variable[i]))
+     * f(x) =
+     *   1.0 - x if x > 1/n
+     *   x       else
+     */
+    private float evaluateDeter(float weight, float[] variableValues) {
+        float deterValue = 1.0f / size;
+
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            float variableValue = variableValues[variableIndexes[i]];
+            if (variableValue > deterValue) {
+                value += 1.0f - variableValue;
+            } else {
+                value += variableValue;
+            }
+        }
+
+        return weight * (1.0f / size) * value;
     }
 
     /**
@@ -202,7 +292,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(rule.getWeight());
+        builder.append(getWeight());
         builder.append(" * ");
 
         if (hinge) {
@@ -240,5 +330,13 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
 
         return builder.toString();
+    }
+
+    private float getWeight() {
+        if (rule != null && rule.isWeighted()) {
+            return ((WeightedRule)rule).getWeight();
+        }
+
+        return Float.POSITIVE_INFINITY;
     }
 }
