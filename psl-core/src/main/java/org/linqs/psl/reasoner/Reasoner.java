@@ -27,7 +27,6 @@ import org.linqs.psl.reasoner.term.TermStore;
 public abstract class Reasoner {
     protected double budget;
 
-    protected boolean printInitialObj;
     protected boolean objectiveBreak;
     protected boolean runFullIterations;
 
@@ -37,7 +36,6 @@ public abstract class Reasoner {
         budget = 1.0;
 
         objectiveBreak = Options.REASONER_OBJECTIVE_BREAK.getBoolean();
-        printInitialObj = Options.REASONER_PRINT_INITIAL_OBJECTIVE.getBoolean();
         runFullIterations = Options.REASONER_RUN_FULL_ITERATIONS.getBoolean();
 
         tolerance = Options.REASONER_TOLERANCE.getFloat();

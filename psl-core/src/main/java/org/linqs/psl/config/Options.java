@@ -622,15 +622,6 @@ public class Options {
         "Stop if the objective has not changed since the last iteration (or logging period)."
     );
 
-    public static final Option REASONER_PRINT_INITIAL_OBJECTIVE = new Option(
-        "reasoner.printinitialobj",
-        false,
-        "Print the objective before any optimization."
-        + " Note that this will require a pass through all the terms,"
-        + " and therefore may affect performance."
-        + " Has no effect if logging is not set to TRACE."
-    );
-
     public static final Option REASONER_RUN_FULL_ITERATIONS = new Option(
         "reasoner.runfulliterations",
         false,

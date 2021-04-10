@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -93,10 +94,20 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void syncAtoms() {
+    public double syncAtoms() {
+        double movement = 0.0;
+
         for (int i = 0; i < variables.size(); i++) {
+            movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
             variableAtoms[i].setValue(variableValues[i]);
         }
+
+        return Math.sqrt(movement);
+    }
+
+    @Override
+    public GroundAtom[] getVariableAtoms() {
+        return variableAtoms;
     }
 
     @Override
@@ -105,12 +116,27 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
+    public int getNumRandomVariables() {
+        return getNumVariables();
+    }
+
+    @Override
+    public int getNumObservedVariables() {
+        return 0;
+    }
+
+    @Override
     public boolean isLoaded() {
         return true;
     }
 
     @Override
-    public synchronized V createLocalVariable(RandomVariableAtom atom) {
+    public synchronized V createLocalVariable(GroundAtom groundAtom) {
+        if (!(groundAtom instanceof RandomVariableAtom)) {
+            throw new IllegalArgumentException("MemoryVariableTermStores do not keep track of observed atoms (" + groundAtom + ").");
+        }
+
+        RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
         V variable = convertAtomToVariable(atom);
         if (variables.containsKey(variable)) {
             return variable;

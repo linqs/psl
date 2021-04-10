@@ -17,7 +17,8 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
@@ -43,10 +44,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
+    public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared,
-            Hyperplane<RandomVariableAtom> hyperplane,
+            Hyperplane<GroundAtom> hyperplane,
             float c) {
         this.squared = squared;
 
@@ -55,7 +56,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         constant = hyperplane.getConstant();
 
         variableIndexes = new int[size];
-        RandomVariableAtom[] variables = hyperplane.getVariables();
+        GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
@@ -96,15 +97,15 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(boolean truncateEveryStep, float[] variableValues) {
+    public void minimize(boolean truncateEveryStep, float[] variableValues, GroundAtom[] variableAtoms) {
         float adjustedWeight = rule.getWeight() * c;
 
         if (squared) {
             float gradient = computeGradient(variableValues);
             gradient += lagrange / (2.0f * adjustedWeight);
-            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, variableValues);
+            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, variableValues, variableAtoms);
         } else {
-            minimize(truncateEveryStep, computeGradient(variableValues), adjustedWeight, variableValues);
+            minimize(truncateEveryStep, computeGradient(variableValues), adjustedWeight, variableValues, variableAtoms);
         }
     }
 
@@ -128,7 +129,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return constant - val;
     }
 
-    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] variableValues) {
+    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] variableValues, GroundAtom[] variableAtoms) {
         float pg = gradient;
         float adjustedWeight = rule.getWeight() * c;
 
@@ -147,6 +148,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         float pa = lagrange;
         lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
         for (int i = 0; i < size; i++) {
+            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                continue;
+            }
+
             float val = variableValues[variableIndexes[i]] - ((lagrange - pa) * coefficients[i]);
             if (truncateEveryStep) {
                 val = Math.max(0.0f, Math.min(1.0f, val));
