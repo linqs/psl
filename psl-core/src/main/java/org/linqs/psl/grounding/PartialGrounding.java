@@ -190,9 +190,7 @@ public class PartialGrounding {
         }
 
         RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
-
         List<SelectQuery> queries = new ArrayList<SelectQuery>();
-
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Map<Variable, Integer> projectionMap = null;
         List<Atom> partialTargetAtoms = new ArrayList<Atom>();
@@ -208,7 +206,7 @@ public class PartialGrounding {
                     boolean[] subset = new boolean[allPartialTargetAtoms.size()];
                     subset[i] = true;
                     subset[j] = true;
-                    ((List<boolean[]>) subsetIterable).add(subset);
+                    ((List<boolean[]>)subsetIterable).add(subset);
                 }
             }
         } else {
@@ -220,7 +218,7 @@ public class PartialGrounding {
                 for (int i = 0; i < allPartialTargetAtoms.size(); i++) {
                     boolean[] subset = new boolean[allPartialTargetAtoms.size()];
                     subset[i] = true;
-                    ((List<boolean[]>) subsetIterable).add(subset);
+                    ((List<boolean[]>)subsetIterable).add(subset);
                 }
             }
         }
@@ -236,7 +234,6 @@ public class PartialGrounding {
                     partialTargetAtoms.add(allPartialTargetAtoms.get(partialTargetIndex));
                     numPartialTargets++;
                 }
-
                 partialTargetIndex++;
             }
             // Skip empty-set subset of allPartialTargetAtoms.
