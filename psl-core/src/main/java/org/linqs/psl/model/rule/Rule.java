@@ -51,7 +51,7 @@ public interface Rule {
     /**
      * Does this rule support rewriting the grounding formual.
      * Rules that do can take advantage of some more advanced grounding techniques.
-     * However, they will have to suplly their grounding queries as a Formula
+     * However, they will have to supply their grounding queries as a Formula
      * instead of a raw query.
      * Rules that return true here must also return true for supportsIndividualGrounding().
      */
