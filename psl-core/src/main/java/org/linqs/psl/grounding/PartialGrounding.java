@@ -73,7 +73,7 @@ public class PartialGrounding {
         return partialPredicates;
     }
 
-    public static Set<Rule> getPartialRules(List<Rule> rules, Set<? extends Predicate> partialPredicates) {
+    public static Set<Rule> getPartialRules(List<Rule> rules, Set<StandardPredicate> partialPredicates) {
         Set<Rule> partialRules = new HashSet<Rule>();
 
         for (Rule rule : rules) {
@@ -153,11 +153,9 @@ public class PartialGrounding {
         // For every mention of a partial predicate in this rule, we will need to get the grounding query
         // with that specific predicate mention being the partial atom.
         for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            if (!partialPredicates.contains(atom.getPredicate())) {
-                continue;
+            if (partialPredicates.contains(atom.getPredicate())) {
+                partialTargetAtoms.add(atom);
             }
-
-            partialTargetAtoms.add(atom);
         }
 
         return partialTargetAtoms;
