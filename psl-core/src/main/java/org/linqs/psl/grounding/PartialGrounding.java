@@ -64,9 +64,9 @@ public class PartialGrounding {
      */
     public static Set<StandardPredicate> getPartialPredicates(Set<? extends GroundAtom> atoms) {
         Set<StandardPredicate> partialPredicates = new HashSet<StandardPredicate>();
-        for (Atom atom : atoms) {
+        for (GroundAtom atom : atoms) {
             if (atom.getPredicate() instanceof StandardPredicate) {
-                partialPredicates.add((StandardPredicate) atom.getPredicate());
+                partialPredicates.add((StandardPredicate)atom.getPredicate());
             }
         }
 
@@ -198,7 +198,7 @@ public class PartialGrounding {
         List<Atom> partialTargetAtoms = new ArrayList<Atom>();
         Iterable<boolean[]> subsetIterable = null;
         int partialTargetIndex = 0;
-        int num_partial_targets = 0;
+        int numPartialTargets = 0;
 
         if (Options.PARTIAL_GROUNDING_INVERSE_NON_POWERSET.getBoolean()) {
             // Build subsetIterable so that only MORE than one atom can come from a special partition at a time.
@@ -228,19 +228,19 @@ public class PartialGrounding {
         for (boolean[] partialTargetAtomSubset : subsetIterable) {
             partialTargetAtoms.clear();
             partialTargetIndex = 0;
-            num_partial_targets = 0;
+            numPartialTargets = 0;
 
             // Build partialTargetAtoms atom array.
             for (boolean bool : partialTargetAtomSubset) {
                 if (bool) {
                     partialTargetAtoms.add(allPartialTargetAtoms.get(partialTargetIndex));
-                    num_partial_targets++;
+                    numPartialTargets++;
                 }
 
                 partialTargetIndex++;
             }
             // Skip empty-set subset of allPartialTargetAtoms.
-            if (num_partial_targets == 0) {
+            if (numPartialTargets == 0) {
                 continue;
             }
 
