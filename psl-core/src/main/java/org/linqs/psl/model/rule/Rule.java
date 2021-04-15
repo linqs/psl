@@ -51,17 +51,17 @@ public interface Rule {
     /**
      * Does this rule support rewriting the grounding formual.
      * Rules that do can take advantage of some more advanced grounding techniques.
-     * However, they will have to suply their grounding queries as a Formula
+     * However, they will have to suplly their grounding queries as a Formula
      * instead of a raw query.
      * Rules that return true here must also return true for supportsIndividualGrounding().
      */
     public boolean supportsGroundingQueryRewriting();
 
     /**
-     * Get a grounding formual that can be rewritten.
+     * Get a grounding formula that can be rewritten.
      * Should throw if supportsGroundingQueryRewriting() == false.
      */
-    public Formula getRewritableGroundingFormula(AtomManager atomManager);
+    public Formula getRewritableGroundingFormula();
 
     /**
      * Does this rule support grounding out single instances at a time.
@@ -70,13 +70,13 @@ public interface Rule {
     public boolean supportsIndividualGrounding();
 
     /**
-     * Get the formual that we can use for grounding.
+     * Get the formula that we can use for grounding.
      * Should throw if supportsIndividualGrounding() == false.
      */
     public RawQuery getGroundingQuery(AtomManager atomManager);
 
     /**
-     * Get the formual that we can use for grounding.
+     * Get the formula that we can use for grounding.
      * Should throw if supportsIndividualGrounding() == false.
      */
     public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results);

@@ -20,36 +20,21 @@ package org.linqs.psl.database.atom;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.grounding.PartialGrounding;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.model.term.VariableTypeMap;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
-import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 
-import com.healthmarketscience.sqlbuilder.SelectQuery;
-import com.healthmarketscience.sqlbuilder.SetOperationQuery;
-import com.healthmarketscience.sqlbuilder.UnionQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -59,8 +44,6 @@ import java.util.Set;
  * (Options.LAM_ACTIVATION_THRESHOLD) will be instantiated as real atoms.
  */
 public class LazyAtomManager extends PersistedAtomManager {
-    private static final Logger log = LoggerFactory.getLogger(LazyAtomManager.class);
-
     /**
      * All the ground atoms that have been seen, but not instantiated.
      */
@@ -166,7 +149,7 @@ public class LazyAtomManager extends PersistedAtomManager {
 
     private void activate(Set<RandomVariableAtom> toActivate, List<Rule> rules, GroundRuleStore groundRuleStore) {
         // First commit the atoms to the database.
-        db.commit(toActivate, Partition.LAZY_PARTITION_ID);
+        db.commit(toActivate, Partition.SPECIAL_WRITE_ID);
 
         // Also ensure that the activated atoms are now considered "persisted" by the atom manager.
         addToPersistedCache(toActivate);
@@ -175,153 +158,27 @@ public class LazyAtomManager extends PersistedAtomManager {
 
         // Collect the specific predicates that are targets in this lazy batch
         // and the rules associated with those predicates.
-        Set<StandardPredicate> lazyPredicates = getLazyPredicates(toActivate);
-        Set<Rule> lazyRules = getLazyRules(rules, lazyPredicates);
+        Set<StandardPredicate> lazyPredicates = PartialGrounding.getPartialPredicates(toActivate);
+        Set<Rule> lazyRules = PartialGrounding.getPartialRules(rules, lazyPredicates);
 
         for (Rule lazyRule : lazyRules) {
             // We will deal with these rules after we move the lazy atoms to the write partition.
             if (lazyRule.supportsGroundingQueryRewriting()) {
-                lazySimpleGround(lazyRule, lazyPredicates, groundRuleStore);
+                PartialGrounding.partialSimpleGround(lazyRule, lazyPredicates, groundRuleStore, this);
             }
         }
 
         // Move all the new atoms out of the lazy partition and into the write partition.
         for (StandardPredicate lazyPredicate : lazyPredicates) {
-            db.moveToWritePartition(lazyPredicate, Partition.LAZY_PARTITION_ID);
+            db.moveToWritePartition(lazyPredicate, Partition.SPECIAL_WRITE_ID);
         }
 
         // Since complex aritmetic rules require a full regound, we need to do them
         // after we move the atoms to the write partition.
         for (Rule lazyRule : lazyRules) {
             if (!lazyRule.supportsGroundingQueryRewriting()) {
-                lazyComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore);
+                PartialGrounding.partialComplexGround((AbstractArithmeticRule)lazyRule, groundRuleStore, this);
             }
         }
-    }
-
-    /**
-     * Complex arithmetic rules (ones with summations) require FULL regrounding.
-     * Will will drop all the ground rules originating from this rule and reground.
-     */
-    private void lazyComplexGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore) {
-        log.trace(String.format("Complex lazy grounding on rule [%s]", rule));
-
-        // Remove all existing ground rules.
-        groundRuleStore.removeGroundRules(rule);
-
-        // Reground.
-        rule.groundAll(this, groundRuleStore);
-    }
-
-    private void lazySimpleGround(Rule rule, Set<StandardPredicate> lazyPredicates, GroundRuleStore groundRuleStore) {
-        if (!rule.supportsGroundingQueryRewriting()) {
-            throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
-        }
-
-        Formula formula = rule.getRewritableGroundingFormula(this);
-        ResultList groundingResults = getLazyGroundingResults(formula, lazyPredicates);
-        if (groundingResults == null) {
-            return;
-        }
-
-        log.trace(String.format("Simple lazy grounding on rule: [%s], formula: [%s]", rule, formula));
-
-        List<GroundRule> groundRules = new ArrayList<GroundRule>();
-        for (int i = 0; i < groundingResults.size(); i++) {
-            groundRules.clear();
-            rule.ground(groundingResults.get(i), groundingResults.getVariableMap(), this, groundRules);
-            for (GroundRule groundRule : groundRules) {
-                if (groundRule != null) {
-                    groundRuleStore.addGroundRule(groundRule);
-                }
-            }
-        }
-    }
-
-    private ResultList getLazyGroundingResults(Formula formula, Set<StandardPredicate> lazyPredicates) {
-        List<Atom> lazyTargets = new ArrayList<Atom>();
-
-        // For every mention of a lazy predicate in this rule, we will need to get the grounding query
-        // with that specific predicate mention being the lazy target.
-        for (Atom atom : formula.getAtoms(new HashSet<Atom>())) {
-            if (!lazyPredicates.contains(atom.getPredicate())) {
-                continue;
-            }
-
-            lazyTargets.add(atom);
-        }
-
-        if (lazyTargets.size() == 0) {
-            return null;
-        }
-
-        // Do the grounding query for this rule.
-        return lazyGround(formula, lazyTargets);
-    }
-
-    private ResultList lazyGround(Formula formula, List<Atom> lazyTargets) {
-        if (lazyTargets.size() == 0) {
-            throw new IllegalArgumentException();
-        }
-
-        RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
-
-        List<SelectQuery> queries = new ArrayList<SelectQuery>();
-
-        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-        Map<Variable, Integer> projectionMap = null;
-
-        for (Atom lazyTarget : lazyTargets) {
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, lazyTarget);
-            queries.add(sqler.getQuery(formula));
-
-            if (projectionMap == null) {
-                projectionMap = sqler.getProjectionMap();
-            }
-        }
-
-        // This fallbacks to a normal SELECT when there is only one.
-        UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION_ALL, queries.toArray(new SelectQuery[0]));
-        return relationalDB.executeQuery(projectionMap, varTypes, union.validate().toString());
-    }
-
-    private Set<StandardPredicate> getLazyPredicates(Set<RandomVariableAtom> toActivate) {
-        Set<StandardPredicate> lazyPredicates = new HashSet<StandardPredicate>();
-        for (Atom atom : toActivate) {
-            if (atom.getPredicate() instanceof StandardPredicate) {
-                lazyPredicates.add((StandardPredicate)atom.getPredicate());
-            }
-        }
-        return lazyPredicates;
-    }
-
-    private Set<Rule> getLazyRules(List<Rule> rules, Set<StandardPredicate> lazyPredicates) {
-        Set<Rule> lazyRules = new HashSet<Rule>();
-
-        for (Rule rule : rules) {
-            if (rule instanceof AbstractLogicalRule) {
-                // Note that we check for atoms not in the base formula, but in the
-                // query formula for the DNF because negated atoms will not
-                // be considered.
-                for (Atom atom : ((AbstractLogicalRule)rule).getNegatedDNF().getQueryFormula().getAtoms(new HashSet<Atom>())) {
-                    if (lazyPredicates.contains(atom.getPredicate())) {
-                        lazyRules.add(rule);
-                        break;
-                    }
-                }
-            } else if (rule instanceof AbstractArithmeticRule) {
-                // Note that we do not bother checking the filters since those predicates must be closed.
-                for (Predicate predicate : ((AbstractArithmeticRule)rule).getBodyPredicates()) {
-                    if (lazyPredicates.contains(predicate)) {
-                        lazyRules.add(rule);
-                        break;
-                    }
-                }
-            } else {
-                throw new IllegalStateException("Unknown rule type: " + rule.getClass().getName());
-            }
-        }
-
-        return lazyRules;
     }
 }

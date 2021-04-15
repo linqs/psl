@@ -77,7 +77,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public Formula getRewritableGroundingFormula(AtomManager atomManager) {
+    public Formula getRewritableGroundingFormula() {
         return null;
     }
 
