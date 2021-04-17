@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
@@ -31,7 +30,11 @@ import java.util.Collection;
  */
 public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm, LocalVariable> {
     public ADMMTermGenerator() {
-        super();
+        this(true);
+    }
+
+    public ADMMTermGenerator(boolean mergeConstants) {
+        super(mergeConstants);
     }
 
     @Override
