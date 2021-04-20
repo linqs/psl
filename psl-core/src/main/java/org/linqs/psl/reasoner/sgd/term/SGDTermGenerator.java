@@ -72,11 +72,13 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
             return 1;
         }
 
-        // TODO: Skip singles (n == 1)
+        if (collectiveDeter) {
+            newTerms.add(SGDObjectiveTerm.createDeterTerm(termStore, hyperplane, learningRate, deterWeight, deterEpsilon));
+            return 2;
+        }
 
-        newTerms.add(SGDObjectiveTerm.createDeterTerm(termStore, hyperplane, learningRate, deterWeight, deterEpsilon));
-
-        return 2;
+        // TODO(eriq): Implement SGD independent deter terms.
+        throw new UnsupportedOperationException("Independent SGD deter terms are not yet supported.");
     }
 
     @Override
