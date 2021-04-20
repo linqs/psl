@@ -53,15 +53,19 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     protected boolean invertNegativeWeight;
 
     protected boolean addDeterTerms;
+    protected boolean collectiveDeter;
     protected float deterWeight;
     protected float deterEpsilon;
+    protected float deterConstant;
 
     public HyperplaneTermGenerator() {
         invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
 
         addDeterTerms = Options.HYPERPLANE_TG_ADD_DETER.getBoolean();
+        collectiveDeter = Options.HYPERPLANE_TG_DETER_COLLECTIVE.getBoolean();
         deterWeight = Options.HYPERPLANE_TG_DETER_WEIGHT.getFloat();
         deterEpsilon = Options.HYPERPLANE_TG_DETER_EPSILON.getFloat();
+        deterConstant = Options.HYPERPLANE_TG_DETER_CONSTANT.getFloat();
     }
 
     @Override

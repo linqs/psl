@@ -355,16 +355,29 @@ public class Options {
         "If true, then add a deter term to functional constraints."
     );
 
-    public static final Option HYPERPLANE_TG_DETER_WEIGHT = new Option(
-        "hyperplanetermgenerator.deter.weight",
-        1.0f,
-        "The weight for deter rules."
+    public static final Option HYPERPLANE_TG_DETER_COLLECTIVE = new Option(
+        "hyperplanetermgenerator.deter.collective",
+        true,
+        "If true, then use collective deter terms. Else, use independent deter terms."
+    );
+
+    public static final Option HYPERPLANE_TG_DETER_CONSTANT = new Option(
+        "hyperplanetermgenerator.deter.constant",
+        0.0f,
+        "When used with idependent deter terms, this is the point to deter away from."
+        + " When zero, this value will be (1.0 / |values|)."
     );
 
     public static final Option HYPERPLANE_TG_DETER_EPSILON = new Option(
         "hyperplanetermgenerator.deter.epsilon",
         0.05f,
         "If the average distance of deter variables are less than this, then the deter rule will activate."
+    );
+
+    public static final Option HYPERPLANE_TG_DETER_WEIGHT = new Option(
+        "hyperplanetermgenerator.deter.weight",
+        1.0f,
+        "The weight for deter rules."
     );
 
     public static final Option HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS = new Option(
