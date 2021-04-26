@@ -21,6 +21,7 @@ import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,6 +36,7 @@ public abstract class Predicate {
 
     private final String name;
     private final ConstantType[] types;
+    private final int hashcode;
 
     protected Predicate(String name, ConstantType[] types) {
         this(name, types, true);
@@ -55,6 +57,7 @@ public abstract class Predicate {
 
         this.name = name.toUpperCase();
         this.types = types;
+        hashcode = this.name.hashCode();
 
         if (predicates.containsKey(this.name)) {
             throw new RuntimeException("Predicate with name '" + name + "' already exists.");
@@ -105,6 +108,28 @@ public abstract class Predicate {
 
     public static Predicate get(String name)  {
         return predicates.get(name.toUpperCase());
+    }
+
+    @Override
+    public int hashCode() {
+        return hashcode;
+    }
+
+    @Override
+    public boolean equals(Object oth) {
+        if (oth == this) {
+            return true;
+        }
+
+        if (!(oth instanceof Predicate)) {
+            return false;
+        }
+
+        Predicate other = (Predicate)oth;
+
+        // First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
+        // Note that the hashcode is not perfect, but provides a quick insurance on inequality.
+        return hashCode() == other.hashCode() && name.equals(other.name) && Arrays.deepEquals(types, other.types);
     }
 
     /**
