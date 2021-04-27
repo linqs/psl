@@ -127,8 +127,6 @@ public abstract class Predicate {
 
         Predicate other = (Predicate)oth;
 
-        // First check the hashcode to reduce the time we have to do a deepEquals() on the arguments.
-        // Note that the hashcode is not perfect, but provides a quick insurance on inequality.
         return hashCode() == other.hashCode() && name.equals(other.name) && Arrays.deepEquals(types, other.types);
     }
 
