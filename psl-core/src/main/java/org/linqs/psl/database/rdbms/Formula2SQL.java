@@ -165,11 +165,11 @@ public class Formula2SQL {
         } else if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
             GroundingOnlyPredicate predicate = (GroundingOnlyPredicate)atom.getPredicate();
 
-            if (predicate == GroundingOnlyPredicate.NotEqual) {
+            if (predicate.equals(GroundingOnlyPredicate.NotEqual)) {
                 query.addCondition(BinaryCondition.notEqualTo(convert[0], convert[1]));
-            } else if (predicate == GroundingOnlyPredicate.Equal) {
+            } else if (predicate.equals(GroundingOnlyPredicate.Equal)) {
                 query.addCondition(BinaryCondition.equalTo(convert[0], convert[1]));
-            } else if (predicate == GroundingOnlyPredicate.NonSymmetric) {
+            } else if (predicate.equals(GroundingOnlyPredicate.NonSymmetric)) {
                 query.addCondition(BinaryCondition.lessThan(convert[0], convert[1], false));
             } else {
                 throw new UnsupportedOperationException("Unrecognized GroundingOnlyPredicate: " + predicate);
