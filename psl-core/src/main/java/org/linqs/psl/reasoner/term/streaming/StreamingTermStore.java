@@ -530,6 +530,15 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     /**
+     * Return true if the given term read from the cache is invalid.
+     * Under normal streaming circumstances this cannot happen,
+     * but children may encounter different situations (like online inference where atoms can be deleted).
+     */
+    public boolean rejectCacheTerm(T term) {
+        return false;
+    }
+
+    /**
      * Get an iterator that will perform grounding queries and write pages to disk.
      * By default, this is only called for the initial round of iteration,
      * but children may override call this in different situations (like online inference).
