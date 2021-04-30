@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,13 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -32,28 +35,28 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private boolean squared;
     private boolean hinge;
 
-    private float weight;
+    private WeightedRule rule;
     private float constant;
 
     private short size;
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public SGDObjectiveTerm(
-            VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
+    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+            WeightedRule rule,
             boolean squared, boolean hinge,
-            Hyperplane<RandomVariableAtom> hyperplane, float weight) {
+            Hyperplane<GroundAtom> hyperplane) {
         this.squared = squared;
         this.hinge = hinge;
 
-        this.weight = weight;
+        this.rule = rule;
 
         size = (short)hyperplane.size();
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
         variableIndexes = new int[size];
-        RandomVariableAtom[] variables = hyperplane.getVariables();
+        GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
@@ -64,8 +67,14 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return size;
     }
 
+    @Override
+    public void adjustConstant(float oldValue, float newValue) {
+        constant = constant - oldValue + newValue;
+    }
+
     public float evaluate(float[] variableValues) {
         float dot = dot(variableValues);
+        float weight = rule.getWeight();
 
         if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
@@ -85,8 +94,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(
-            float[] variableValues, int iteration, float learningRate,
+    public float minimize(int iteration, VariableTermStore termStore, float learningRate,
             Map<Integer, Float> accumulatedGradientSquares,
             Map<Integer, Float> accumulatedGradientMean,
             Map<Integer, Float> accumulatedGradientVariance,
@@ -95,10 +103,17 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         float variableStep = 0.0f;
         float newValue = 0.0f;
         float partial = 0.0f;
+
+        GroundAtom[] variableAtoms = termStore.getVariableAtoms();
+        float[] variableValues = termStore.getVariableValues();
         float dot = dot(variableValues);
 
-        for (int i = 0; i < size; i++) {
-            partial = computePartial(i, dot);
+        for (int i = 0 ; i < size; i++) {
+            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                continue;
+            }
+
+            partial = computePartial(i, dot, rule.getWeight());
             variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
                     accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
                     sgdExtension);
@@ -160,7 +175,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return step;
     }
 
-    private float computePartial(int varId, float dot) {
+    private float computePartial(int varId, float dot, float weight) {
         if (hinge && dot <= 0.0f) {
             return 0.0f;
         }
@@ -190,7 +205,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         int bitSize =
             Byte.SIZE  // squared
             + Byte.SIZE  // hinge
-            + Float.SIZE  // weight
+            + Integer.SIZE  // rule hash
             + Float.SIZE  // constant
             + Short.SIZE  // size
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
@@ -205,7 +220,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
         fixedBuffer.put((byte)(hinge ? 1 : 0));
-        fixedBuffer.putFloat(weight);
+        fixedBuffer.putInt(System.identityHashCode(rule));
         fixedBuffer.putFloat(constant);
         fixedBuffer.putShort(size);
 
@@ -221,7 +236,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer) {
         squared = (fixedBuffer.get() == 1);
         hinge = (fixedBuffer.get() == 1);
-        weight = fixedBuffer.getFloat();
+        rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
         constant = fixedBuffer.getFloat();
         size = fixedBuffer.getShort();
 
@@ -242,12 +257,12 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return toString(null);
     }
 
-    public String toString(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    public String toString(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         // weight * [max(coeffs^T * x - constant, 0.0)]^2
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(weight);
+        builder.append(rule.getWeight());
         builder.append(" * ");
 
         if (hinge) {

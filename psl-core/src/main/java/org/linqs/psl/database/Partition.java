@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,10 @@ public class Partition {
      * value to this so that we can tell them apart.
      * Afterwards, they will be reset to the correct value (the write partition
      * of the database).
-     * Note that no valid partition is actaully allowed to have negative values.
+     * Note that no valid partition is actually allowed to have negative values.
      */
-    public static final int LAZY_PARTITION_ID = -1;
+    public static final int SPECIAL_WRITE_ID = -1;
+    public static final int SPECIAL_READ_ID = -2;
 
     private final int id;
     private final String name;
@@ -46,7 +47,7 @@ public class Partition {
         return id;
     }
 
-    public String getName(){
+    public String getName() {
         return name;
     }
 

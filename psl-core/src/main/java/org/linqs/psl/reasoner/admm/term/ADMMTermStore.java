@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,12 +37,12 @@ import java.util.Map;
  * A TermStore specifically for ADMM terms.
  */
 public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm, LocalVariable> {
-    protected LocalVariable createLocalVariableInternal(int consensusIndex, float value) {
+    protected LocalVariable createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value) {
         return new LocalVariable(consensusIndex, value);
     }
 
     protected void resetLocalVariables() {
-        for (int i = 0; i < store.getNumVariables(); i++) {
+        for (int i = 0; i < getNumConsensusVariables(); i++) {
             float value = store.getVariableValue(i);
             for (LocalVariable local : localVariables.get(i)) {
                 local.setValue(value);

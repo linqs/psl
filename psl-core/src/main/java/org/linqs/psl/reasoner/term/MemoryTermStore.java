@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, RandomVariableAtom> {
+public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, GroundAtom> {
     private ArrayList<T> store;
 
     public MemoryTermStore() {
@@ -41,7 +41,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
-    public synchronized void add(GroundRule rule, T term) {
+    public synchronized void add(GroundRule rule, T term, Hyperplane hyperplane) {
         store.add(term);
     }
 
@@ -106,7 +106,7 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
     }
 
     @Override
-    public RandomVariableAtom createLocalVariable(RandomVariableAtom atom) {
+    public GroundAtom createLocalVariable(GroundAtom atom) {
         return atom;
     }
 

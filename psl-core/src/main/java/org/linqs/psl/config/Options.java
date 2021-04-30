@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
-import org.linqs.psl.evaluation.statistics.RankingEvaluator;
+import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -511,6 +511,14 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option PARTIAL_GROUNDING_POWERSET = new Option(
+        "partialgrounding.powerset",
+        false,
+        "Whether or not to iterate over the powerset of partial targets during a partial grounding."
+        + " If true the partial grounding will result in no regret in the inference. "
+        + " If false an approximation will be made such that only one atom in a ground rule can come from a special partition."
+    );
+
     public static final Option PAM_THROW_ACCESS_EXCEPTION = new Option(
         "persistedatommanager.throwaccessexception",
         true,
@@ -590,14 +598,14 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option EVAL_RANKING_REPRESENTATIVE = new Option(
-        "rankingevaluator.representative",
-        RankingEvaluator.RepresentativeMetric.AUROC.toString(),
-        "The representative metric (see RankingEvaluator.RepresentativeMetric)."
+    public static final Option EVAL_AUC_REPRESENTATIVE = new Option(
+        "aucevaluator.representative",
+        AUCEvaluator.RepresentativeMetric.AUROC.toString(),
+        "The representative metric (see AUCEvaluator.RepresentativeMetric)."
     );
 
-    public static final Option EVAL_RANKING_THRESHOLD = new Option(
-        "rankingevaluator.threshold",
+    public static final Option EVAL_AUC_THRESHOLD = new Option(
+        "aucevaluator.threshold",
         0.5,
         "The truth threshold.",
         Option.FLAG_NON_NEGATIVE
@@ -620,15 +628,6 @@ public class Options {
         "reasoner.objectivebreak",
         true,
         "Stop if the objective has not changed since the last iteration (or logging period)."
-    );
-
-    public static final Option REASONER_PRINT_INITIAL_OBJECTIVE = new Option(
-        "reasoner.printinitialobj",
-        false,
-        "Print the objective before any optimization."
-        + " Note that this will require a pass through all the terms,"
-        + " and therefore may affect performance."
-        + " Has no effect if logging is not set to TRACE."
     );
 
     public static final Option REASONER_RUN_FULL_ITERATIONS = new Option(

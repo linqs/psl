@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,8 +70,8 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition() {
-        GeneralFunction sum = new GeneralFunction(true, isSquared(), coefficients.length);
+    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
+        GeneralFunction sum = new GeneralFunction(true, isSquared(), coefficients.length, mergeConstants);
 
         float termSign = FunctionComparator.GTE.equals(comparator) ? -1.0f : 1.0f;
         for (int i = 0; i < coefficients.length; i++) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
@@ -43,7 +44,7 @@ public class SGDStreamingInference extends MPEInference {
 
     @Override
     protected TermStore createTermStore() {
-        return new SGDStreamingTermStore(rules, atomManager);
+        return new SGDStreamingTermStore(rules, atomManager, (SGDTermGenerator)termGenerator);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class SGDStreamingInference extends MPEInference {
 
     @Override
     protected TermGenerator createTermGenerator() {
-        return null;
+        return new SGDTermGenerator();
     }
 
     @Override

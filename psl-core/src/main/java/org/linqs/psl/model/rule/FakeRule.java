@@ -15,32 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.rule.logical;
+package org.linqs.psl.model.rule;
 
-import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.RawQuery;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
 
 import java.util.List;
+import java.util.Map;
 
-public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
+public class FakeRule extends AbstractRule implements WeightedRule {
     protected float weight;
     protected boolean squared;
 
-    public WeightedLogicalRule(Formula formula, float weight, boolean squared) {
-        this(formula, weight, squared, formula.toString());
-    }
-
-    public WeightedLogicalRule(Formula formula, float weight, boolean squared, String name) {
-        super(formula, name);
+    public FakeRule(float weight, boolean squared) {
+        super("fake");
 
         this.weight = weight;
         this.squared = squared;
-    }
-
-    @Override
-    protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
-        return new WeightedGroundLogicalRule(this, posLiterals, negLiterals, rvaCount);
     }
 
     @Override
@@ -60,13 +55,42 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 
     @Override
     public String toString() {
-        String squaredSuffix = (squared) ? " ^2" : "";
-        return "" + weight + ": " + formula + squaredSuffix;
+        return "fake";
+    }
+
+    @Override
+    public long groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        return 0;
     }
 
     @Override
     public boolean isWeighted() {
         return true;
+    }
+
+    @Override
+    public boolean supportsGroundingQueryRewriting() {
+        return false;
+    }
+
+    @Override
+    public Formula getRewritableGroundingFormula() {
+        return null;
+    }
+
+    @Override
+    public boolean supportsIndividualGrounding() {
+        return false;
+    }
+
+    @Override
+    public RawQuery getGroundingQuery(AtomManager atomManager) {
+        return null;
+    }
+
+    @Override
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
+        // Pass.
     }
 
     @Override
@@ -79,7 +103,7 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
             return false;
         }
 
-        WeightedLogicalRule otherRule = (WeightedLogicalRule)other;
+        FakeRule otherRule = (FakeRule)other;
         if (this.squared != otherRule.squared) {
             return false;
         }

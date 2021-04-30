@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,15 +280,15 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
         StringBuilder s = new StringBuilder();
         if (predicate instanceof GroundingOnlyPredicate)  {
             s.append("(");
-            if (predicate == GroundingOnlyPredicate.NotEqual) {
+            if (predicate.equals(GroundingOnlyPredicate.NotEqual)) {
                 s.append(arguments[0]);
                 s.append(" != ");
                 s.append(arguments[1]);
-            } else if (predicate == GroundingOnlyPredicate.Equal) {
+            } else if (predicate.equals(GroundingOnlyPredicate.Equal)) {
                 s.append(arguments[0]);
                 s.append(" == ");
                 s.append(arguments[1]);
-            } else if (predicate == GroundingOnlyPredicate.NonSymmetric) {
+            } else if (predicate.equals(GroundingOnlyPredicate.NonSymmetric)) {
                 s.append(arguments[0]);
                 s.append(" % ");
                 s.append(arguments[1]);

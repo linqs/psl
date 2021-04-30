@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * All the tools necessary to perform infernce.
+ * All the tools necessary to perform inference.
  * An inference application owns the ground atoms (Database/AtomManager), ground rules (GroundRuleStore), the terms (TermStore),
  * how terms are generated (TermGenerator), and how inference is actually performed (Reasoner).
  * As such, the inference application is the top level authority for these items and methods.
@@ -93,16 +93,16 @@ public abstract class InferenceApplication implements ModelApplication {
      * This will call into the abstract method completeInitialize().
      */
     protected void initialize() {
-        log.debug("Creating persisted atom mannager.");
+        log.debug("Creating persisted atom manager.");
         atomManager = createAtomManager(db);
         log.debug("Atom manager initialization complete.");
 
         initializeAtoms();
 
         reasoner = createReasoner();
+        termGenerator = createTermGenerator();
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
-        termGenerator = createTermGenerator();
 
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
@@ -139,7 +139,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
     /**
      * Complete the initialization process.
-     * Most of the infrastructure will have been constructued.
+     * Most of the infrastructure will have been constructed.
      * The child is responsible for constructing the AtomManager
      * and populating the ground rule store.
      */
@@ -352,7 +352,7 @@ public abstract class InferenceApplication implements ModelApplication {
         try {
             constructor = classObject.getConstructor(List.class, Database.class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No sutible constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
+            throw new IllegalArgumentException("No suitable constructor (List<Rules>, Database) found for inference application: " + className + ".", ex);
         }
 
         InferenceApplication inferenceApplication = null;

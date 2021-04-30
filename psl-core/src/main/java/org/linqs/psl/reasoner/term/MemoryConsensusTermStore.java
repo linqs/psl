@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 
@@ -56,7 +57,13 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public synchronized V createLocalVariable(RandomVariableAtom atom) {
+    public synchronized V createLocalVariable(GroundAtom groundAtom) {
+        if (!(groundAtom instanceof RandomVariableAtom)) {
+            throw new IllegalArgumentException("MemoryConsensusTermStores do not keep track of observed atoms (" + groundAtom + ").");
+        }
+
+        RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
+
         numLocalVariables++;
 
         store.createLocalVariable(atom);
@@ -69,7 +76,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
             localVariables.add(new ArrayList<V>());
         }
 
-        V localVariable = createLocalVariableInternal(consensusId, (float)atom.getValue());
+        V localVariable = createLocalVariableInternal(atom, consensusId, (float)atom.getValue());
         localVariables.get(consensusId).add(localVariable);
 
         return localVariable;
@@ -80,7 +87,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     public int getNumConsensusVariables() {
-        return store.getNumVariables();
+        return store.getNumRandomVariables();
     }
 
     public List<V> getLocalVariables(int consensusId) {
@@ -96,8 +103,8 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public void add(GroundRule rule, T term) {
-        store.add(rule, term);
+    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
+        store.add(rule, term, hyperplane);
     }
 
     @Override
@@ -134,11 +141,25 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     @Override
     public void initForOptimization() {
         store.initForOptimization();
+
+        if (store.getVariablesExternallyUpdatedFlag()) {
+            variablesExternallyUpdated();
+            store.resetVariablesExternallyUpdatedFlag();
+        }
     }
 
     @Override
     public void iterationComplete() {
         store.iterationComplete();
+
+        if (store.getVariablesExternallyUpdatedFlag()) {
+            variablesExternallyUpdated();
+            store.resetVariablesExternallyUpdatedFlag();
+        }
+    }
+
+    public RandomVariableAtom getAtom(int index) {
+        return store.getAtom(index);
     }
 
     @Override
@@ -177,7 +198,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
         return iterator();
     }
 
-    protected abstract V createLocalVariableInternal(int consensusIndex, float value);
+    protected abstract V createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value);
 
     protected abstract void resetLocalVariables();
 }

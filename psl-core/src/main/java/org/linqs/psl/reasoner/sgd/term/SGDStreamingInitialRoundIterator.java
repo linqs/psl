@@ -1,7 +1,7 @@
 /**
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
 import org.linqs.psl.util.RuntimeStats;
@@ -29,19 +29,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-/**
- * Iterate over all the terms that come up from grounding.
- * On this first iteration, we will build the term cache up from ground rules
- * and flush the terms to disk.
- */
 public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundIterator<SGDObjectiveTerm> {
     public SGDStreamingInitialRoundIterator(
-            SGDStreamingTermStore parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, RandomVariableAtom> termGenerator,
+            SGDStreamingTermStore parentStore, List<Rule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize) {
-        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);
+            int pageSize, int numPages) {
+        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer,
+                pageSize, numPages);
     }
 
     @Override

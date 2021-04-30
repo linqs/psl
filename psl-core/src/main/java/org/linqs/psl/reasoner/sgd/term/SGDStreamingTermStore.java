@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,40 +18,28 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
-import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
- * Note that the iterators given by this class are meant to be exhaustd (at least the first time).
+ * Note that the iterators given by this class are meant to be exhausted (at least the first time).
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
 public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
-    public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
-        super(rules, atomManager, new SGDTermGenerator());
+    public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager, SGDTermGenerator termGenerator) {
+        super(rules, atomManager, termGenerator);
     }
 
     @Override
-    protected boolean supportsRule(Rule rule) {
-        // No special requirements for rules.
-        return true;
-    }
-
-    @Override
-    protected StreamingIterator<SGDObjectiveTerm> getInitialRoundIterator() {
+    protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
         return new SGDStreamingInitialRoundIterator(
                 this, rules, atomManager, termGenerator,
-                termCache, termPool, termBuffer, volatileBuffer, pageSize);
+                termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }
 
     @Override

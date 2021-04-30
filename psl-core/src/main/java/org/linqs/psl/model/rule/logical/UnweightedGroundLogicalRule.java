@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,14 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
     }
 
     @Override
-    public ConstraintTerm getConstraintDefinition() {
-        return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
+    public ConstraintTerm getConstraintDefinition(boolean mergeConstants) {
+        // We have already built the function for this ground rule by merging constants.
+        // If we want that one, return it right away.
+        if (mergeConstants) {
+            return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
+        }
+
+        return new ConstraintTerm(getFunction(false), FunctionComparator.LTE, 0.0f);
     }
 
     @Override

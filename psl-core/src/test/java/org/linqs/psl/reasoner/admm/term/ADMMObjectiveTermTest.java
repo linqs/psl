@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,11 @@ package org.linqs.psl.reasoner.admm.term;
 
 import static org.junit.Assert.assertEquals;
 
+import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 
-import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ADMMObjectiveTermTest {
     @Test
@@ -237,19 +234,19 @@ public class ADMMObjectiveTermTest {
         } else if (!squared && !hinge) {
             term = ADMMObjectiveTerm.createLinearLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, 0.0f, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         } else if (!squared && hinge) {
             term = ADMMObjectiveTerm.createHingeLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         } else if (squared && !hinge) {
             term = ADMMObjectiveTerm.createSquaredLinearLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         } else if (squared && hinge) {
             term = ADMMObjectiveTerm.createSquaredHingeLossTerm(
                     new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
-                    new FakeGroundRule(weight));
+                    new FakeRule(weight, squared));
         }
 
         term.minimize(stepSize, consensus);

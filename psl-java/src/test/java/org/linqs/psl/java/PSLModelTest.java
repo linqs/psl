@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,23 +57,19 @@ public class PSLModelTest {
 
     @Test
     public void testBaseAddRule() {
-        model.addRule("1: Single(A) & Sim(A, B) >> Single(B) ^2");
-        model.addWeightedRule("Single(A) & Sim(A, B) >> Single(B)", 10.0f, false);
-        model.addWeightedRule("Single(A) & Sim(A, B) >> Single(B)", 20.0f, true);
+        model.addRule("10: Single(A) & Sim(A, B) >> Single(B) ^2");
+        model.addWeightedRule("Single(A) & Sim(A, B) >> Single(B)", 20.0f, false);
 
         model.addRule("Sim(A, B) = Sim(B, A) .");
         model.addUnweightedRule("Sim(B, A) = Sim(A, B) .");
 
-        model.addRule("Single(A) & Sim(A, B) >> Single(B)", true, 30.0f, true);
         model.addRule("Sim(B, C) = Sim(C, B)", false, 40.0f, true);
 
         String[] expected = new String[]{
-            "1.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
-            "10.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B)",
-            "20.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
+            "10.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
+            "20.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B)",
             "1.0 * SIM(A, B) + -1.0 * SIM(B, A) = 0.0 .",
             "1.0 * SIM(B, A) + -1.0 * SIM(A, B) = 0.0 .",
-            "30.0: ( SINGLE(A) & SIM(A, B) ) >> SINGLE(B) ^2",
             "1.0 * SIM(B, C) + -1.0 * SIM(C, B) = 0.0 ."
         };
 

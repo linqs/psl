@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.FloatMatrix;
@@ -60,7 +61,8 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         SquaredHingeLossTerm,
     }
 
-    protected float weight;
+    protected final Rule rule;
+
     protected int size;
 
     protected float[] coefficients;
@@ -100,9 +102,11 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * Construct an ADMM objective term by taking ownership of the hyperplane and all members of it.
      * Use the static creation methods.
      */
-    private ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule,
+    private ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, Rule rule,
             boolean squared, boolean hinge,
             FunctionComparator comparator) {
+        this.rule = rule;
+
         this.squared = squared;
         this.hinge = hinge;
         this.comparator = comparator;
@@ -112,41 +116,33 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
 
-        if (groundRule instanceof WeightedGroundRule) {
-            this.weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        } else {
-            this.weight = Float.POSITIVE_INFINITY;
-        }
-
         TermType termType = getTermType();
         if (termType == TermType.HingeLossTerm || termType == TermType.LinearConstraintTerm) {
             initUnitNormal();
         }
     }
 
-    public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule, FunctionComparator comparator) {
-        return new ADMMObjectiveTerm(hyperplane, groundRule, false, false, comparator);
+    public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane<LocalVariable> hyperplane, Rule rule, FunctionComparator comparator) {
+        return new ADMMObjectiveTerm(hyperplane, rule, false, false, comparator);
     }
 
-    public static ADMMObjectiveTerm createLinearLossTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
-        return new ADMMObjectiveTerm(hyperplane, groundRule, false, false, null);
+    public static ADMMObjectiveTerm createLinearLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+        return new ADMMObjectiveTerm(hyperplane, rule, false, false, null);
     }
 
-    public static ADMMObjectiveTerm createHingeLossTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
-        return new ADMMObjectiveTerm(hyperplane,groundRule, false, true, null);
+    public static ADMMObjectiveTerm createHingeLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+        return new ADMMObjectiveTerm(hyperplane,rule, false, true, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredLinearLossTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
-        return new ADMMObjectiveTerm(hyperplane, groundRule, true, false, null);
+    public static ADMMObjectiveTerm createSquaredLinearLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+        return new ADMMObjectiveTerm(hyperplane, rule, true, false, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredHingeLossTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
-        return new ADMMObjectiveTerm(hyperplane, groundRule, true, true, null);
+    public static ADMMObjectiveTerm createSquaredHingeLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+        return new ADMMObjectiveTerm(hyperplane, rule, true, true, null);
     }
 
     public void updateLagrange(float stepSize, float[] consensusValues) {
-        // Use index instead of iterator here so we can see clear results in the profiler.
-        // http://psy-lob-saw.blogspot.co.uk/2014/12/the-escape-of-arraylistiterator.html
         for (int i = 0; i < size; i++) {
             LocalVariable variable = variables[i];
             variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
@@ -167,6 +163,11 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public void adjustConstant(float oldValue, float newValue) {
+        constant = constant - oldValue + newValue;
     }
 
     public boolean isConstraint() {
@@ -196,21 +197,26 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * Modify the local variables to minimize this term (within the bounds of the step size).
      */
     public void minimize(float stepSize, float[] consensusValues) {
+        float weight = Float.POSITIVE_INFINITY;
+        if (rule != null && rule.isWeighted()) {
+            weight = ((WeightedRule)rule).getWeight();
+        }
+
         switch (getTermType()) {
             case LinearConstraintTerm:
                 minimizeConstraint(stepSize, consensusValues);
                 break;
             case LinearLossTerm:
-                minimizeLinearLoss(stepSize, consensusValues);
+                minimizeLinearLoss(stepSize, weight, consensusValues);
                 break;
             case HingeLossTerm:
-                minimizeHingeLoss(stepSize, consensusValues);
+                minimizeHingeLoss(stepSize, weight, consensusValues);
                 break;
             case SquaredLinearLossTerm:
-                minimizeSquaredLinearLoss(stepSize, consensusValues);
+                minimizeSquaredLinearLoss(stepSize, weight, consensusValues);
                 break;
             case SquaredHingeLossTerm:
-                minimizeSquaredHingeLoss(stepSize, consensusValues);
+                minimizeSquaredHingeLoss(stepSize, weight, consensusValues);
                 break;
             default:
                 throw new IllegalStateException("Unknown term type.");
@@ -221,17 +227,22 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * Evaluate this potential using the local variables.
      */
     public float evaluate() {
+        float weight = Float.POSITIVE_INFINITY;
+        if (rule != null && rule.isWeighted()) {
+            weight = ((WeightedRule)rule).getWeight();
+        }
+
         switch (getTermType()) {
             case LinearConstraintTerm:
                 return evaluateConstraint();
             case LinearLossTerm:
-                return evaluateLinearLoss();
+                return evaluateLinearLoss(weight);
             case HingeLossTerm:
-                return evaluateHingeLoss();
+                return evaluateHingeLoss(weight);
             case SquaredLinearLossTerm:
-                return evaluateSquaredLinearLoss();
+                return evaluateSquaredLinearLoss(weight);
             case SquaredHingeLossTerm:
-                return evaluateSquaredHingeLoss();
+                return evaluateSquaredHingeLoss(weight);
             default:
                 throw new IllegalStateException("Unknown term type.");
         }
@@ -241,17 +252,22 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * Evaluate this potential using the given consensus values.
      */
     public float evaluate(float[] consensusValues) {
+        float weight = Float.POSITIVE_INFINITY;
+        if (rule != null && rule.isWeighted()) {
+            weight = ((WeightedRule)rule).getWeight();
+        }
+
         switch (getTermType()) {
             case LinearConstraintTerm:
                 return evaluateConstraint(consensusValues);
             case LinearLossTerm:
-                return evaluateLinearLoss(consensusValues);
+                return evaluateLinearLoss(weight, consensusValues);
             case HingeLossTerm:
-                return evaluateHingeLoss(consensusValues);
+                return evaluateHingeLoss(weight, consensusValues);
             case SquaredLinearLossTerm:
-                return evaluateSquaredLinearLoss(consensusValues);
+                return evaluateSquaredLinearLoss(weight, consensusValues);
             case SquaredHingeLossTerm:
-                return evaluateSquaredHingeLoss(consensusValues);
+                return evaluateSquaredHingeLoss(weight, consensusValues);
             default:
                 throw new IllegalStateException("Unknown term type.");
         }
@@ -322,7 +338,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
     // Functionality for linear loss terms.
 
-    private void minimizeLinearLoss(float stepSize, float[] consensusValues) {
+    private void minimizeLinearLoss(float stepSize, float weight, float[] consensusValues) {
         // Linear losses can be directly minimized.
 
         for (int i = 0; i < size; i++) {
@@ -340,20 +356,20 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * weight * coefficients^T * local
      */
-    private float evaluateLinearLoss() {
+    private float evaluateLinearLoss(float weight) {
         return weight * computeInnerPotential();
     }
 
     /**
      * weight * coefficients^T * consensus
      */
-    private float evaluateLinearLoss(float[] consensusValues) {
+    private float evaluateLinearLoss(float weight, float[] consensusValues) {
         return weight * computeInnerPotential(consensusValues);
     }
 
     // Functionality for hinge-loss terms.
 
-    private void minimizeHingeLoss(float stepSize, float[] consensusValues) {
+    private void minimizeHingeLoss(float stepSize, float weight, float[] consensusValues) {
         // Look to see if the solution is in one of three sections (in increasing order of difficulty):
         // 1) The flat region.
         // 2) The linear region.
@@ -392,40 +408,40 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * weight * max(0.0, coefficients^T * local - constant)
      */
-    private float evaluateHingeLoss() {
+    private float evaluateHingeLoss(float weight) {
         return weight * Math.max(0.0f, computeInnerPotential());
     }
 
     /**
      * weight * max(0.0, coefficients^T * consensus - constant)
      */
-    private float evaluateHingeLoss(float[] consensusValues) {
+    private float evaluateHingeLoss(float weight, float[] consensusValues) {
         return weight * Math.max(0.0f, computeInnerPotential(consensusValues));
     }
 
     // Functionality for squared linear loss terms.
 
-    public void minimizeSquaredLinearLoss(float stepSize, float[] consensusValues) {
-        minWeightedSquaredHyperplane(stepSize, consensusValues);
+    private void minimizeSquaredLinearLoss(float stepSize, float weight, float[] consensusValues) {
+        minWeightedSquaredHyperplane(stepSize, weight, consensusValues);
     }
 
     /**
      * weight * (coefficients^T * local - constant)^2
      */
-    public float evaluateSquaredLinearLoss() {
+    private float evaluateSquaredLinearLoss(float weight) {
         return weight * (float)Math.pow(computeInnerPotential(), 2.0);
     }
 
     /**
      * weight * (coefficients^T * consensus - constant)^2
      */
-    public float evaluateSquaredLinearLoss(float[] consensusValues) {
+    private float evaluateSquaredLinearLoss(float weight, float[] consensusValues) {
         return weight * (float)Math.pow(computeInnerPotential(consensusValues), 2.0);
     }
 
     // Functionality for squared hinge-loss terms.
 
-    public void minimizeSquaredHingeLoss(float stepSize, float[] consensusValues) {
+    private void minimizeSquaredHingeLoss(float stepSize, float weight, float[] consensusValues) {
         // Take a gradient step and see if we are in the flat region.
         float total = 0.0f;
         for (int i = 0; i < size; i++) {
@@ -440,20 +456,20 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         }
 
         // We are in the quadratic region, so solve that to find a solution.
-        minWeightedSquaredHyperplane(stepSize, consensusValues);
+        minWeightedSquaredHyperplane(stepSize, weight, consensusValues);
     }
 
     /**
      * weight * [max(0, coefficients^T * local - constant)]^2
      */
-    public float evaluateSquaredHingeLoss() {
+    private float evaluateSquaredHingeLoss(float weight) {
         return weight * (float)Math.pow(Math.max(0.0f, computeInnerPotential()), 2.0);
     }
 
     /**
      * weight * [max(0, coefficients^T * consensus - constant)]^2
      */
-    public float evaluateSquaredHingeLoss(float[] consensusValues) {
+    private float evaluateSquaredHingeLoss(float weight, float[] consensusValues) {
         return weight * (float)Math.pow(Math.max(0.0f, computeInnerPotential(consensusValues)), 2.0);
     }
 
@@ -484,7 +500,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * coefficients^T * local - constant
      */
-    protected float computeInnerPotential() {
+    private float computeInnerPotential() {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variables[i].getValue();
@@ -496,7 +512,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * coefficients^T * consensus - constant
      */
-    protected float computeInnerPotential(float[] consensusValues) {
+    private float computeInnerPotential(float[] consensusValues) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
@@ -513,7 +529,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * while this hyperplane is: [coefficients^T * local = constant].
      * The result of the projection is stored in the local variables.
      */
-    protected void project(float stepSize, float[] consensusValues) {
+    private void project(float stepSize, float[] consensusValues) {
         // When there is only one variable, there is only one answer.
         // This answer must satisfy the constraint.
         if (size == 1) {
@@ -551,12 +567,12 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
     /**
      * Minimizes the term as a weighted, squared hyperplane.
-     * This function to minimize takes the form:
+     * The function to minimize takes the form:
      * weight * [coefficients^T * local - constant]^2 + (stepsize / 2) * || local - consensus + lagrange / stepsize ||_2^2.
      *
      * The result of the minimization will be stored in the local variables.
      */
-    protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
+    private void minWeightedSquaredHyperplane(float stepSize, float weight, float[] consensusValues) {
         // Different solving methods will be used depending on the size of the hyperplane.
 
         // Pre-load the local variable with a term that is common in all the solutions:
@@ -600,7 +616,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
         // In the case of larger hyperplanes, we can use a Cholesky decomposition to minimize.
 
-        FloatMatrix lowerTriangle = fetchLowerTriangle(stepSize);
+        FloatMatrix lowerTriangle = fetchLowerTriangle(stepSize, weight);
 
         for (int i = 0; i < size; i++) {
             float newValue = variables[i].getValue();
@@ -626,7 +642,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * Get the lower triangle if it already exists, compute and cache it otherwise.
      */
-    private FloatMatrix fetchLowerTriangle(float stepSize) {
+    private FloatMatrix fetchLowerTriangle(float stepSize, float weight) {
         int hash = HashCode.build(weight);
         hash = HashCode.build(hash, stepSize);
         for (int i = 0; i < size; i++) {
@@ -641,14 +657,14 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         }
 
         // If we didn't find it, then synchronize and compute it on this thread.
-        return computeLowerTriangle(stepSize, hash);
+        return computeLowerTriangle(stepSize, weight, hash);
     }
 
     /**
      * Actually copute the lower triangle and store it in the cache.
      * There is one triangle per rule, so most ground rules will just pull off the same cache.
      */
-    private synchronized FloatMatrix computeLowerTriangle(float stepSize, int hash) {
+    private synchronized FloatMatrix computeLowerTriangle(float stepSize, float weight, int hash) {
         // There is still a race condition in the map fetch before getting here,
         // so we will check one more time while synchronized.
         if (lowerTriangleCache.containsKey(hash)) {

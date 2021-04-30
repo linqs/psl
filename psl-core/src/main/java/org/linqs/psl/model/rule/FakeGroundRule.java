@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm.term;
+package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 
 import java.util.List;
 import java.util.Set;
 
 public class FakeGroundRule implements WeightedGroundRule {
-    private float weight;
+    private FakeRule rule;
 
-    public FakeGroundRule(float weight) {
-        this.weight = weight;
+    public FakeGroundRule(FakeRule rule) {
+        this.rule = rule;
     }
 
     @Override
@@ -45,7 +42,7 @@ public class FakeGroundRule implements WeightedGroundRule {
 
     @Override
     public WeightedRule getRule() {
-        return null;
+        return rule;
     }
 
     @Override
@@ -55,16 +52,16 @@ public class FakeGroundRule implements WeightedGroundRule {
 
     @Override
     public float getWeight() {
-        return weight;
+        return rule.getWeight();
     }
 
     @Override
     public void setWeight(float weight) {
-        this.weight = weight;
+        this.rule.setWeight(weight);
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition() {
+    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
         return null;
     }
 

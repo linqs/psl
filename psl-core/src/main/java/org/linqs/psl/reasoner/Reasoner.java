@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import org.linqs.psl.reasoner.term.TermStore;
 public abstract class Reasoner {
     protected double budget;
 
-    protected boolean printInitialObj;
     protected boolean objectiveBreak;
     protected boolean runFullIterations;
 
@@ -37,7 +36,6 @@ public abstract class Reasoner {
         budget = 1.0;
 
         objectiveBreak = Options.REASONER_OBJECTIVE_BREAK.getBoolean();
-        printInitialObj = Options.REASONER_PRINT_INITIAL_OBJECTIVE.getBoolean();
         runFullIterations = Options.REASONER_RUN_FULL_ITERATIONS.getBoolean();
 
         tolerance = Options.REASONER_TOLERANCE.getFloat();

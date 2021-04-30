@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2020 The Regents of the University of California
+ * Copyright 2013-2021 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,27 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.atom.GroundAtom;
+
 /**
  * An interface for term stores that can handle some variable operations.
  */
 public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends TermStore<T, V> {
+    /**
+     * Get the total number of variables (dead or alive) tracked by this term store.
+     * The number here must coincide with the size (not length) of the array returned by getVariableValues().
+     */
     public int getNumVariables();
+
+    /**
+     * Get the total number of random variables tracked by this term store.
+     */
+    public int getNumRandomVariables();
+
+    /**
+     * Get the total number of observed variables tracked by this term store.
+     */
+    public int getNumObservedVariables();
 
     public Iterable<V> getVariables();
 
@@ -31,7 +47,7 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public boolean isLoaded();
 
     /**
-     * Get the truth values for variable atoms.
+     * Get the values for the variable atoms.
      * Changing a value in this array and calling syncAtoms() will change the actual atom's value.
      */
     public float[] getVariableValues();
@@ -49,5 +65,11 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     /**
      * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().
      */
-    public void syncAtoms();
+    public double syncAtoms();
+
+    /**
+     * Get all the variables tracked by this term store.
+     * Note that variables are allowed to be null if they have been deleted.
+     */
+    public GroundAtom[] getVariableAtoms();
 }
