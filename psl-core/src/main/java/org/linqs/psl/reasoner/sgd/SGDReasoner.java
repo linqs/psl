@@ -46,9 +46,8 @@ public class SGDReasoner extends Reasoner {
 
     private float learningRate;
     private float learningRateInverseScaleExp;
-    private String learningSchedule;
-
     private boolean coordinateStep;
+    private String learningSchedule;
     private String sgdExtension;
 
     public SGDReasoner() {
@@ -58,11 +57,9 @@ public class SGDReasoner extends Reasoner {
         movementThreshold = Options.SGD_MOVEMENT_THRESHOLD.getFloat();
 
         learningRate = Options.SGD_LEARNING_RATE.getFloat();
-        learningSchedule = Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase();
         learningRateInverseScaleExp = Options.SGD_INVERSE_TIME_EXP.getFloat();
-
         coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
-
+        learningSchedule = Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase();
         sgdExtension = Options.SGD_EXTENSION.getString().toUpperCase();
     }
 
@@ -108,6 +105,7 @@ public class SGDReasoner extends Reasoner {
 
         long totalTime = 0;
         boolean converged = false;
+
         int iteration = 1;
         for (; iteration < (maxIterations * budget) && !converged; iteration++) {
             long start = System.currentTimeMillis();

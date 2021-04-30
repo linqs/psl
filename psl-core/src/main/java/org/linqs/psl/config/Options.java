@@ -669,18 +669,18 @@ public class Options {
     );
 
     public static final Option SGD_COORDINATE_STEP = new Option(
-            "sgd.coordinatestep",
-            false,
-            "Take coordinate steps during sgd."
+        "sgd.coordinatestep",
+        false,
+        "Take coordinate steps during sgd."
     );
 
     public static final Option SGD_EXTENSION = new Option(
-            "sgd.extension",
-            "NONE",
-            "The SGD extension to use for SGD reasoning."
-            + "NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
-            + "ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
-            + "ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
+        "sgd.extension",
+        "NONE",
+        "The SGD extension to use for SGD reasoning."
+        + "NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+        + "ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
+        + "ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
     );
 
     public static final Option SGD_INVERSE_TIME_EXP = new Option(
@@ -701,6 +701,8 @@ public class Options {
         "sgd.learningschedule",
         "STEPDECAY",
         "The learning schedule of the SGD inference reasoner changes the learning rate during learning."
+        + "STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by sgd.inversescaleexp."
+        + "CONSTANT: The learning rate is constant during learning."
     );
 
     public static final Option SGD_MAX_ITER = new Option(

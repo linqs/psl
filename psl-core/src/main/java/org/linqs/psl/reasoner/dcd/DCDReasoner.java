@@ -89,8 +89,6 @@ public class DCDReasoner extends Reasoner {
                 term.minimize(truncateEveryStep, termStore.getVariableValues(), termStore.getVariableAtoms());
             }
 
-            termStore.iterationComplete();
-
             // If we are truncating every step, then the variables are already in valid state.
             if (!truncateEveryStep) {
                 float[] variableValues = termStore.getVariableValues();
