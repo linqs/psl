@@ -30,6 +30,8 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
+import org.linqs.psl.reasoner.sgd.SGDExtension;
+import org.linqs.psl.reasoner.sgd.SGDLearningSchedule;
 import org.linqs.psl.util.SystemUtils;
 
 import org.json.JSONArray;
@@ -676,7 +678,7 @@ public class Options {
 
     public static final Option SGD_EXTENSION = new Option(
         "sgd.extension",
-        "NONE",
+        SGDExtension.NONE.getName(),
         "The SGD extension to use for SGD reasoning."
         + "NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
         + "ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
@@ -699,7 +701,7 @@ public class Options {
 
     public static final Option SGD_LEARNING_SCHEDULE = new Option(
         "sgd.learningschedule",
-        "STEPDECAY",
+        SGDLearningSchedule.STEPDECAY.getName(),
         "The learning schedule of the SGD inference reasoner changes the learning rate during learning."
         + "STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by sgd.inversescaleexp."
         + "CONSTANT: The learning rate is constant during learning."
