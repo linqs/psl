@@ -106,8 +106,8 @@ public class SGDReasoner extends Reasoner {
 
         long totalTime = 0;
         boolean converged = false;
-
         int iteration = 1;
+
         for (; iteration < (maxIterations * budget) && !converged; iteration++) {
             long start = System.currentTimeMillis();
 
