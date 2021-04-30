@@ -47,9 +47,8 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
     /**
      * @param posLiterals the positive literals (ground atoms) in the negated DNF.
      * @param negLiterals the negative literals (ground atoms) in the negated DNF.
-     * @param rvaCount the number of RandomVariableAtoms (non-constants) in the literals.
      */
-    protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
+    protected AbstractGroundLogicalRule(AbstractLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
         this.rule = rule;
         this.posLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(posLiterals));
         this.negLiterals = Collections.unmodifiableList(new ArrayList<GroundAtom>(negLiterals));

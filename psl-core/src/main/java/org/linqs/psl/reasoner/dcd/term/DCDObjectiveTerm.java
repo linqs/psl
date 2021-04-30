@@ -87,7 +87,6 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
         value -= constant;
 
-
         if (squared) {
             // weight * [max(coeffs^T * x - constant, 0.0)]^2
             return adjustedWeight * (float)Math.pow(Math.max(0.0f, value), 2.0f);
