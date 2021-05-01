@@ -51,6 +51,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -141,7 +142,9 @@ public class RDBMSDatabase extends Database {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = getAtomDelete(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()), atom.getArguments());
+            PreparedStatement statement = getAtomDelete(connection,
+                    ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()),
+                    atom.getArguments(), allPartitionIDs);
         ) {
             if (statement.executeUpdate() > 0) {
                 return true;
@@ -388,7 +391,11 @@ public class RDBMSDatabase extends Database {
     }
 
     private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
-        PreparedStatement statement = predicate.createDeleteStatement(connection, allPartitionIDs);
+        return getAtomDelete(connection, predicate, arguments, Arrays.asList(writeID));
+    }
+
+    private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments, List<Integer> partitions) {
+        PreparedStatement statement = predicate.createDeleteStatement(connection, partitions);
 
         try {
             for (int i = 0; i < arguments.length; i++) {
@@ -403,8 +410,8 @@ public class RDBMSDatabase extends Database {
 
     /**
      * Given a ResultSet, column name, and ConstantType,
-     * get the value as a Constnt from the results.
-     * columnIndex should be 0-indexed (eventhough jdbc uses 1-index).
+     * get the value as a Constant from the results.
+     * columnIndex should be 0-indexed (even though jdbc uses 1-index).
      */
     private Constant extractConstantFromResult(ResultSet results, int columnIndex, ConstantType type) {
         try {
