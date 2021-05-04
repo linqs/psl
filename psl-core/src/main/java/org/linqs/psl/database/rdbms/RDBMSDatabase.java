@@ -135,6 +135,14 @@ public class RDBMSDatabase extends Database {
 
     @Override
     public boolean deleteAtom(GroundAtom atom) {
+        return deleteAtom(atom, Arrays.asList(writeID));
+    }
+
+    public boolean deleteAtomAllPartitions(GroundAtom atom) {
+        return deleteAtom(atom, allPartitionIDs);
+    }
+
+    public boolean deleteAtom(GroundAtom atom, List<Integer> partitions) {
         QueryAtom queryAtom = new QueryAtom(atom.getPredicate(), atom.getArguments());
         if (cache.getCachedAtom(queryAtom) != null) {
             cache.removeCachedAtom(queryAtom);
@@ -144,7 +152,7 @@ public class RDBMSDatabase extends Database {
             Connection connection = getConnection();
             PreparedStatement statement = getAtomDelete(connection,
                     ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()),
-                    atom.getArguments(), allPartitionIDs);
+                    atom.getArguments(), partitions);
         ) {
             if (statement.executeUpdate() > 0) {
                 return true;
