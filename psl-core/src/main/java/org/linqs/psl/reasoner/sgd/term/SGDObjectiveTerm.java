@@ -155,7 +155,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 if (accumulatedGradientSquares.length <= variableIndex) {
                     accumulatedGradientSquares = Arrays.copyOf(accumulatedGradientSquares, (variableIndex + 1) * 2);
                 }
-                accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + (float)Math.pow(partial, 2.0f);
+                accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + partial * partial;
 
                 adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[variableIndex] + EPSILON);
                 step = partial * adaptedLearningRate;
@@ -173,7 +173,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                     accumulatedGradientVariance = Arrays.copyOf(accumulatedGradientVariance, (variableIndex + 1) * 2);
                 }
                 accumulatedGradientVariance[variableIndex] = ADAM_BETA2 * accumulatedGradientVariance[variableIndex]
-                            + (1.0f - ADAM_BETA2) * (float)Math.pow(partial, 2.0f);
+                            + (1.0f - ADAM_BETA2) * partial * partial;
 
                 biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA1, iteration));
                 biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA2, iteration));
