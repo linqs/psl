@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Set;
 
 public abstract class InferenceTest {
+    public static final int NUM_INFERENCE_RUNS = 10;
+
     protected abstract InferenceApplication getInference(List<Rule> rules, Database db);
 
     @After
@@ -287,11 +289,11 @@ public abstract class InferenceTest {
             Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 
             double avgObjective = 0.0;
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < NUM_INFERENCE_RUNS; i++) {
                 Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
                 InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
-                avgObjective += inference.inference() / 10.0;
+                avgObjective += inference.inference() / NUM_INFERENCE_RUNS;
 
                 inference.close();
                 inferDB.close();
