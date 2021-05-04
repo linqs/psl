@@ -24,6 +24,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 
 import org.junit.After;
+import org.linqs.psl.reasoner.sgd.SGDReasoner;
 
 import java.util.List;
 
@@ -54,7 +55,7 @@ public class SGDInferenceTest extends InferenceTest {
         cleanup();
 
         // Adam.
-        Options.SGD_EXTENSION.set("ADAM");
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAM);
         // Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
         Options.SGD_COORDINATE_STEP.set(false);
@@ -67,7 +68,7 @@ public class SGDInferenceTest extends InferenceTest {
         cleanup();
 
         // AdaGrad.
-        Options.SGD_EXTENSION.set("ADAGRAD");
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAGRAD);
         // Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
         Options.SGD_COORDINATE_STEP.set(false);

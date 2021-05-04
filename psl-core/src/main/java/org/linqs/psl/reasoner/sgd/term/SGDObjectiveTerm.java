@@ -17,22 +17,27 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.sgd.SGDExtension;
+import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
+import java.util.Arrays;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
  */
 public class SGDObjectiveTerm implements ReasonerTerm  {
+    public static final float EPSILON = 1.0e-8f;
+    public static final float ADAM_BETA1 = Options.SGD_ADAM_BETA_1.getFloat();
+    public static final float ADAM_BETA2 = Options.SGD_ADAM_BETA_2.getFloat();
+
     private boolean squared;
     private boolean hinge;
 
@@ -96,10 +101,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
     public float minimize(int iteration, VariableTermStore termStore, float learningRate,
-            Map<Integer, Float> accumulatedGradientSquares,
-            Map<Integer, Float> accumulatedGradientMean,
-            Map<Integer, Float> accumulatedGradientVariance,
-            SGDExtension sgdExtension, boolean coordinateStep) {
+           float[] accumulatedGradientSquares, float[] accumulatedGradientMean, float[] accumulatedGradientVariance,
+           SGDReasoner.SGDExtension sgdExtension, boolean coordinateStep) {
         float movement = 0.0f;
         float variableStep = 0.0f;
         float newValue = 0.0f;
@@ -131,12 +134,16 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return movement;
     }
 
+    /**
+     * Compute the step for a single variable according SGD or one of it's extensions.
+     * For details on the math behind the SGD extensions see the corresponding papers listed below:
+     *  - AdaGrad: https://jmlr.org/papers/volume12/duchi11a/duchi11a.pdf
+     *  - Adam: https://arxiv.org/pdf/1412.6980.pdf
+     */
     private float computeVariableStep(
             int variableIndex, int iteration, float learningRate, float partial,
-            Map<Integer, Float> accumulatedGradientSquares,
-            Map<Integer, Float> accumulatedGradientMean,
-            Map<Integer, Float> accumulatedGradientVariance,
-            SGDExtension sgdExtension) {
+            float[] accumulatedGradientSquares, float[] accumulatedGradientMean, float[] accumulatedGradientVariance,
+            SGDReasoner.SGDExtension sgdExtension) {
         float step = 0.0f;
         float adaptedLearningRate = 0.0f;
 
@@ -145,44 +152,36 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 step = partial * learningRate;
                 break;
             case ADAGRAD:
-                if (accumulatedGradientSquares.get(variableIndex) == null) {
-                    accumulatedGradientSquares.put(variableIndex, (float)Math.pow(partial, 2.0f));
-                } else {
-                    accumulatedGradientSquares.put(variableIndex, accumulatedGradientSquares.get(variableIndex)
-                            + (float)Math.pow(partial, 2.0f));
+                if (accumulatedGradientSquares.length <= variableIndex) {
+                    accumulatedGradientSquares = Arrays.copyOf(accumulatedGradientSquares, (variableIndex + 1) * 2);
                 }
+                accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + (float)Math.pow(partial, 2.0f);
 
-                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares.get(variableIndex) + 1e-8f);
-
+                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[variableIndex] + EPSILON);
                 step = partial * adaptedLearningRate;
                 break;
             case ADAM:
-                float beta1 = 0.9f * (float)Math.pow(1.0f - 1.0e-8f, iteration - 1.0f);
-                float beta2 = 0.999f;
                 float meanHat = 0.0f;
                 float varianceHat = 0.0f;
 
-                if (accumulatedGradientMean.get(variableIndex) == null) {
-                    accumulatedGradientMean.put(variableIndex, (1.0f - beta1) * partial);
-                } else {
-                    accumulatedGradientMean.put(variableIndex, beta1 * accumulatedGradientMean.get(variableIndex) + (1.0f - beta1) * partial);
+                if (accumulatedGradientMean.length  <= variableIndex) {
+                    accumulatedGradientMean = Arrays.copyOf(accumulatedGradientMean, (variableIndex + 1) * 2);
                 }
+                accumulatedGradientMean[variableIndex] = ADAM_BETA1 * accumulatedGradientMean[variableIndex] + (1.0f - ADAM_BETA1) * partial;
 
-                if (accumulatedGradientVariance.get(variableIndex) == null) {
-                    accumulatedGradientVariance.put(variableIndex, (1.0f - beta2) * (float)Math.pow(partial, 2.0f));
-                } else {
-                    accumulatedGradientVariance.put(variableIndex, beta2 * accumulatedGradientVariance.get(variableIndex)
-                            + (1.0f - beta2) * (float)Math.pow(partial, 2.0f));
+                if (accumulatedGradientVariance.length <= variableIndex) {
+                    accumulatedGradientVariance = Arrays.copyOf(accumulatedGradientVariance, (variableIndex + 1) * 2);
                 }
+                accumulatedGradientVariance[variableIndex] = ADAM_BETA2 * accumulatedGradientVariance[variableIndex]
+                            + (1.0f - ADAM_BETA2) * (float)Math.pow(partial, 2.0f);
 
-                meanHat = accumulatedGradientMean.get(variableIndex) / (1.0f - beta1);
-                varianceHat = accumulatedGradientVariance.get(variableIndex) / (1.0f - beta2);
-
-                adaptedLearningRate = learningRate / ((float)Math.sqrt(varianceHat) + 1e-8f);
+                meanHat = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA1, iteration));
+                varianceHat = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA2, iteration));
+                adaptedLearningRate = learningRate / ((float)Math.sqrt(varianceHat) + EPSILON);
                 step = meanHat * adaptedLearningRate;
                 break;
             default:
-                throw new IllegalArgumentException(String.format("Unsupported SGD extension: %s", sgdExtension.getName()));
+                throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
         }
 
         return step;

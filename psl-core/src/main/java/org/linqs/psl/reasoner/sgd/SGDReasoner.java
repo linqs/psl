@@ -30,15 +30,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Uses an SGD optimization method to optimize its GroundRules.
  */
 public class SGDReasoner extends Reasoner {
     private static final Logger log = LoggerFactory.getLogger(SGDReasoner.class);
+
+    /**
+     * The SGD Extension to use.
+     */
+    public static enum SGDExtension {
+        NONE,
+        ADAGRAD,
+        ADAM
+    }
+
+    /**
+     * The SGD learning schedule to use.
+     */
+    public static enum SGDLearningSchedule {
+        CONSTANT,
+        STEPDECAY
+    }
 
     private int maxIterations;
 
@@ -86,22 +101,22 @@ public class SGDReasoner extends Reasoner {
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
 
-        Map<Integer, Float> accumulatedGradientSquares = null;
-        Map<Integer, Float> accumulatedGradientMean = null;
-        Map<Integer, Float> accumulatedGradientVariance = null;
+        float[] accumulatedGradientSquares = null;
+        float[] accumulatedGradientMean = null;
+        float[] accumulatedGradientVariance = null;
 
         switch (sgdExtension) {
             case NONE:
                 break;
             case ADAGRAD:
-                accumulatedGradientSquares = new HashMap<Integer, Float>(termStore.getNumRandomVariables());
+                accumulatedGradientSquares = new float[termStore.getNumRandomVariables()];
                 break;
             case ADAM:
-                accumulatedGradientMean = new HashMap<Integer, Float>(termStore.getNumRandomVariables());
-                accumulatedGradientVariance = new HashMap<Integer, Float>(termStore.getNumRandomVariables());
+                accumulatedGradientMean = new float[termStore.getNumRandomVariables()];
+                accumulatedGradientVariance = new float[termStore.getNumRandomVariables()];
                 break;
             default:
-                throw new IllegalArgumentException(String.format("Unsupported SGD extension: %s", sgdExtension.getName()));
+                throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
         }
 
         long totalTime = 0;
@@ -202,10 +217,10 @@ public class SGDReasoner extends Reasoner {
 
     private float calculateAnnealedLearningRate(int iteration) {
         switch (learningSchedule) {
-            case STEPDECAY:
-                return learningRate / ((float) Math.pow(iteration, learningRateInverseScaleExp));
             case CONSTANT:
                 return learningRate;
+            case STEPDECAY:
+                return learningRate / ((float)Math.pow(iteration, learningRateInverseScaleExp));
             default:
                 throw new IllegalArgumentException(String.format("Illegal value found for SGD learning schedule: '%s'", learningSchedule));
         }

@@ -287,7 +287,7 @@ public abstract class InferenceTest {
             Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
 
             double avgObjective = 0.0;
-            for (int i = 0; i < 25; i++) {
+            for (int i = 0; i < 10; i++) {
                 Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
                 InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
