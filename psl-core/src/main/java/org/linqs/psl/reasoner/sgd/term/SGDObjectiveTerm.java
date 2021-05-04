@@ -161,8 +161,8 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 step = partial * adaptedLearningRate;
                 break;
             case ADAM:
-                float meanHat = 0.0f;
-                float varianceHat = 0.0f;
+                float biasedGradientMean = 0.0f;
+                float biasedGradientVariance = 0.0f;
 
                 if (accumulatedGradientMean.length  <= variableIndex) {
                     accumulatedGradientMean = Arrays.copyOf(accumulatedGradientMean, (variableIndex + 1) * 2);
@@ -175,10 +175,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 accumulatedGradientVariance[variableIndex] = ADAM_BETA2 * accumulatedGradientVariance[variableIndex]
                             + (1.0f - ADAM_BETA2) * (float)Math.pow(partial, 2.0f);
 
-                meanHat = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA1, iteration));
-                varianceHat = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA2, iteration));
-                adaptedLearningRate = learningRate / ((float)Math.sqrt(varianceHat) + EPSILON);
-                step = meanHat * adaptedLearningRate;
+                biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA1, iteration));
+                biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA2, iteration));
+                adaptedLearningRate = learningRate / ((float)Math.sqrt(biasedGradientVariance) + EPSILON);
+                step = biasedGradientMean * adaptedLearningRate;
                 break;
             default:
                 throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
