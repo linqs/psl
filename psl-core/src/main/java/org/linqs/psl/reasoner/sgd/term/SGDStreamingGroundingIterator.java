@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.term;
+package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -29,16 +29,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-/**
- * Iterate over all the terms that come up from grounding.
- * On this first iteration, we will build the term cache up from ground rules
- * and flush the terms to disk.
- */
-public class DCDStreamingInitialRoundIterator extends StreamingInitialRoundIterator<DCDObjectiveTerm> {
-    public DCDStreamingInitialRoundIterator(
-            DCDStreamingTermStore parentStore, List<Rule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, GroundAtom> termGenerator,
-            List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
+public class SGDStreamingGroundingIterator extends StreamingGroundingIterator<SGDObjectiveTerm> {
+    public SGDStreamingGroundingIterator(
+            SGDStreamingTermStore parentStore, List<Rule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
+            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize, int numPages) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer,
@@ -48,15 +43,19 @@ public class DCDStreamingInitialRoundIterator extends StreamingInitialRoundItera
     @Override
     protected void writeFullPage(String termPagePath, String volatilePagePath) {
         flushTermCache(termPagePath);
-        flushVolatileCache(volatilePagePath);
 
         termCache.clear();
+
+        // SGD doesn't use a volatile buffer.
+        if (volatileBuffer == null) {
+            volatileBuffer = ByteBuffer.allocate(0);
+        }
     }
 
     private void flushTermCache(String termPagePath) {
         // Count the exact size we will need to write.
         int termsSize = 0;
-        for (DCDObjectiveTerm term : termCache) {
+        for (SGDObjectiveTerm term : termCache) {
             termsSize += term.fixedByteSize();
         }
 
@@ -73,7 +72,7 @@ public class DCDStreamingInitialRoundIterator extends StreamingInitialRoundItera
         termBuffer.putInt(termCache.size());
 
         // Now put in all the terms.
-        for (DCDObjectiveTerm term : termCache) {
+        for (SGDObjectiveTerm term : termCache) {
             term.writeFixedValues(termBuffer);
         }
 
@@ -85,28 +84,5 @@ public class DCDStreamingInitialRoundIterator extends StreamingInitialRoundItera
 
         // Log io.
         RuntimeStats.logDiskWrite(termBufferSize);
-    }
-
-    private void flushVolatileCache(String volatilePagePath) {
-        int volatileBufferSize = (Float.SIZE / 8) * termCache.size();
-
-        if (volatileBuffer == null || volatileBuffer.capacity() < volatileBufferSize) {
-            volatileBuffer = ByteBuffer.allocate((int)(volatileBufferSize * OVERALLOCATION_RATIO));
-        }
-        volatileBuffer.clear();
-
-        // Put in all the volatile values.
-        for (DCDObjectiveTerm term : termCache) {
-            volatileBuffer.putFloat(term.getLagrange());
-        }
-
-        try (FileOutputStream stream = new FileOutputStream(volatilePagePath)) {
-            stream.write(volatileBuffer.array(), 0, volatileBufferSize);
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to write volatile cache page: " + volatilePagePath, ex);
-        }
-
-        // Log io.
-        RuntimeStats.logDiskWrite(volatileBufferSize);
     }
 }
