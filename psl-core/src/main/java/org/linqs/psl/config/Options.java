@@ -672,17 +672,17 @@ public class Options {
     public static final Option SGD_ADAM_BETA_1 = new Option(
         "sgd.adambeta1",
         0.9f,
-        "The beta1 parameter for Adam optimization. "
-        + "This parameter controls the exponential decay rate of the first moment estimate. "
-        + "See paper for details: https://arxiv.org/pdf/1412.6980.pdf"
+        "The beta1 parameter for Adam optimization."
+        + " This parameter controls the exponential decay rate of the first moment estimate. "
+        + " See paper for details: https://arxiv.org/pdf/1412.6980.pdf"
     );
 
     public static final Option SGD_ADAM_BETA_2 = new Option(
         "sgd.adambeta2",
         0.999f,
-        "The beta2 parameter for Adam optimization. "
-        + "This parameter controls the exponential decay rate of the second moment estimate. "
-        + "See paper for details: https://arxiv.org/pdf/1412.6980.pdf"
+        "The beta2 parameter for Adam optimization."
+        + " This parameter controls the exponential decay rate of the second moment estimate. "
+        + " See paper for details: https://arxiv.org/pdf/1412.6980.pdf"
     );
 
     public static final Option SGD_COORDINATE_STEP = new Option(
@@ -695,16 +695,16 @@ public class Options {
         "sgd.extension",
         SGDReasoner.SGDExtension.NONE.toString(),
         "The SGD extension to use for SGD reasoning."
-        + "NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
-        + "ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
-        + "ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
+        + " NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+        + " ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
+        + " ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
     );
 
     public static final Option SGD_INVERSE_TIME_EXP = new Option(
         "sgd.inversescaleexp",
         1.0f,
-        "If SGD is using the STEPDECAY learning schedule, then this value is the negative "
-        + "exponent of the iteration count which scales the gradient step using:"
+        "If SGD is using the STEPDECAY learning schedule, then this value is the negative"
+        + " exponent of the iteration count which scales the gradient step using:"
         + " (learning_rate / ( iteration ^ - SGD_INVERSE_TIME_EXP)).",
         Option.FLAG_POSITIVE
     );
@@ -720,8 +720,8 @@ public class Options {
         "sgd.learningschedule",
         SGDReasoner.SGDLearningSchedule.STEPDECAY.toString(),
         "The learning schedule of the SGD inference reasoner changes the learning rate during learning."
-        + "STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by sgd.inversescaleexp."
-        + "CONSTANT: The learning rate is constant during learning."
+        + " STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by sgd.inversescaleexp."
+        + " CONSTANT: The learning rate is constant during learning."
     );
 
     public static final Option SGD_MAX_ITER = new Option(
