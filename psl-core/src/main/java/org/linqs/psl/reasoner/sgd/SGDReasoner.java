@@ -62,6 +62,12 @@ public class SGDReasoner extends Reasoner {
 
     private float learningRate;
     private float learningRateInverseScaleExp;
+    private float epsilon;
+    private float adamBeta1;
+    private float adamBeta2;
+    float[] accumulatedGradientSquares;
+    float[] accumulatedGradientMean;
+    float[] accumulatedGradientVariance;
     private boolean coordinateStep;
     private SGDLearningSchedule learningSchedule;
     private SGDExtension sgdExtension;
@@ -74,6 +80,11 @@ public class SGDReasoner extends Reasoner {
 
         learningRate = Options.SGD_LEARNING_RATE.getFloat();
         learningRateInverseScaleExp = Options.SGD_INVERSE_TIME_EXP.getFloat();
+        adamBeta1 = Options.SGD_ADAM_BETA_1.getFloat();
+        adamBeta2 = Options.SGD_ADAM_BETA_2.getFloat();
+        accumulatedGradientSquares = null;
+        accumulatedGradientMean = null;
+        accumulatedGradientVariance = null;
         coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
         learningSchedule = SGDLearningSchedule.valueOf(Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase());
         sgdExtension = SGDExtension.valueOf(Options.SGD_EXTENSION.getString().toUpperCase());
@@ -100,10 +111,6 @@ public class SGDReasoner extends Reasoner {
         // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] oldVariableValues = null;
-
-        float[] accumulatedGradientSquares = null;
-        float[] accumulatedGradientMean = null;
-        float[] accumulatedGradientVariance = null;
 
         switch (sgdExtension) {
             case NONE:
@@ -137,8 +144,7 @@ public class SGDReasoner extends Reasoner {
 
                 termCount++;
                 meanMovement += term.minimize(iteration, termStore, calculateAnnealedLearningRate(iteration),
-                        accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
-                        sgdExtension, coordinateStep);
+                        this, coordinateStep);
             }
 
             termStore.iterationComplete();
@@ -224,6 +230,42 @@ public class SGDReasoner extends Reasoner {
             default:
                 throw new IllegalArgumentException(String.format("Illegal value found for SGD learning schedule: '%s'", learningSchedule));
         }
+    }
+
+    public SGDExtension getSgdExtension() {
+        return sgdExtension;
+    }
+
+    public float getAdamBeta1() {
+        return adamBeta1;
+    }
+
+    public float getAdamBeta2() {
+        return adamBeta1;
+    }
+
+    public float[] getAccumulatedGradientMean() {
+        return accumulatedGradientMean;
+    }
+
+    public void setAccumulatedGradientMean(float[] accumulatedGradientMean) {
+        this.accumulatedGradientMean = accumulatedGradientMean;
+    }
+
+    public float[] getAccumulatedGradientVariance() {
+        return accumulatedGradientVariance;
+    }
+
+    public void setAccumulatedGradientVariance(float[] accumulatedGradientVariance) {
+        this.accumulatedGradientVariance = accumulatedGradientVariance;
+    }
+
+    public float[] getAccumulatedGradientSquares() {
+        return accumulatedGradientSquares;
+    }
+
+    public void setAccumulatedGradientSquares(float[] accumulatedGradientSquares) {
+        this.accumulatedGradientSquares = accumulatedGradientSquares;
     }
 
     @Override

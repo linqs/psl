@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.AbstractRule;
@@ -34,9 +33,7 @@ import java.util.Arrays;
  * A term in the objective to be optimized by a SGDReasoner.
  */
 public class SGDObjectiveTerm implements ReasonerTerm  {
-    public static final float EPSILON = 1.0e-8f;
-    public static final float ADAM_BETA1 = Options.SGD_ADAM_BETA_1.getFloat();
-    public static final float ADAM_BETA2 = Options.SGD_ADAM_BETA_2.getFloat();
+    public static final float EPSILON = 1e-8f;
 
     private boolean squared;
     private boolean hinge;
@@ -101,8 +98,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
     public float minimize(int iteration, VariableTermStore termStore, float learningRate,
-           float[] accumulatedGradientSquares, float[] accumulatedGradientMean, float[] accumulatedGradientVariance,
-           SGDReasoner.SGDExtension sgdExtension, boolean coordinateStep) {
+                          SGDReasoner sgdReasoner, boolean coordinateStep) {
         float movement = 0.0f;
         float variableStep = 0.0f;
         float newValue = 0.0f;
@@ -118,9 +114,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             }
 
             partial = computePartial(i, dot, rule.getWeight());
-            variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial,
-                    accumulatedGradientSquares, accumulatedGradientMean, accumulatedGradientVariance,
-                    sgdExtension);
+            variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial, sgdReasoner);
 
             newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
             movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
@@ -141,19 +135,20 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
      *  - Adam: https://arxiv.org/pdf/1412.6980.pdf
      */
     private float computeVariableStep(
-            int variableIndex, int iteration, float learningRate, float partial,
-            float[] accumulatedGradientSquares, float[] accumulatedGradientMean, float[] accumulatedGradientVariance,
-            SGDReasoner.SGDExtension sgdExtension) {
+            int variableIndex, int iteration, float learningRate, float partial, SGDReasoner sgdReasoner) {
         float step = 0.0f;
         float adaptedLearningRate = 0.0f;
 
-        switch (sgdExtension) {
+        switch (sgdReasoner.getSgdExtension()) {
             case NONE:
                 step = partial * learningRate;
                 break;
             case ADAGRAD:
+                float[] accumulatedGradientSquares = sgdReasoner.getAccumulatedGradientSquares();
+
                 if (accumulatedGradientSquares.length <= variableIndex) {
                     accumulatedGradientSquares = Arrays.copyOf(accumulatedGradientSquares, (variableIndex + 1) * 2);
+                    sgdReasoner.setAccumulatedGradientSquares(accumulatedGradientSquares);
                 }
                 accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + partial * partial;
 
@@ -161,27 +156,31 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 step = partial * adaptedLearningRate;
                 break;
             case ADAM:
+                float[] accumulatedGradientMean = sgdReasoner.getAccumulatedGradientMean();
+                float[] accumulatedGradientVariance = sgdReasoner.getAccumulatedGradientVariance();
                 float biasedGradientMean = 0.0f;
                 float biasedGradientVariance = 0.0f;
 
                 if (accumulatedGradientMean.length  <= variableIndex) {
                     accumulatedGradientMean = Arrays.copyOf(accumulatedGradientMean, (variableIndex + 1) * 2);
+                    sgdReasoner.setAccumulatedGradientMean(accumulatedGradientMean);
                 }
-                accumulatedGradientMean[variableIndex] = ADAM_BETA1 * accumulatedGradientMean[variableIndex] + (1.0f - ADAM_BETA1) * partial;
+                accumulatedGradientMean[variableIndex] = sgdReasoner.getAdamBeta1() * accumulatedGradientMean[variableIndex] + (1.0f - sgdReasoner.getAdamBeta1()) * partial;
 
                 if (accumulatedGradientVariance.length <= variableIndex) {
                     accumulatedGradientVariance = Arrays.copyOf(accumulatedGradientVariance, (variableIndex + 1) * 2);
+                    sgdReasoner.setAccumulatedGradientVariance(accumulatedGradientVariance);
                 }
-                accumulatedGradientVariance[variableIndex] = ADAM_BETA2 * accumulatedGradientVariance[variableIndex]
-                            + (1.0f - ADAM_BETA2) * partial * partial;
+                accumulatedGradientVariance[variableIndex] = sgdReasoner.getAdamBeta2() * accumulatedGradientVariance[variableIndex]
+                            + (1.0f - sgdReasoner.getAdamBeta2()) * partial * partial;
 
-                biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA1, iteration));
-                biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(ADAM_BETA2, iteration));
+                biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(sgdReasoner.getAdamBeta1(), iteration));
+                biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(sgdReasoner.getAdamBeta2(), iteration));
                 adaptedLearningRate = learningRate / ((float)Math.sqrt(biasedGradientVariance) + EPSILON);
                 step = biasedGradientMean * adaptedLearningRate;
                 break;
             default:
-                throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
+                throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdReasoner.getSgdExtension()));
         }
 
         return step;
