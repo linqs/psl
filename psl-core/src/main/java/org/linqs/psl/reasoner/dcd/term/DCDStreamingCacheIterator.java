@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileInputStream;
@@ -26,11 +26,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 
 public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjectiveTerm> {
     public DCDStreamingCacheIterator(
-            DCDStreamingTermStore parentStore, boolean readonly,
+            StreamingTermStore<DCDObjectiveTerm> parentStore, boolean readonly,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
@@ -69,7 +68,6 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
 
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
-
         for (int i = 0; i < numTerms; i++) {
             DCDObjectiveTerm term = termPool.get(i);
             term.read(termBuffer, volatileBuffer);

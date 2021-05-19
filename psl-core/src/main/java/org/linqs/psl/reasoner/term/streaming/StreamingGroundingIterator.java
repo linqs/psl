@@ -37,7 +37,7 @@ import java.util.List;
  * This will typically be the first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
+public abstract class StreamingGroundingIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;
 
@@ -75,7 +75,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
     protected int pageSize;
     protected int nextPage;
 
-    public StreamingInitialRoundIterator(
+    public StreamingGroundingIterator(
             StreamingTermStore<T> parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
@@ -84,7 +84,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
         this(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, 0);
     }
 
-    public StreamingInitialRoundIterator(
+    public StreamingGroundingIterator(
             StreamingTermStore<T> parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,

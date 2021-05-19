@@ -37,7 +37,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
-        return new SGDStreamingInitialRoundIterator(
+        return new SGDStreamingGroundingIterator(
                 this, rules, atomManager, termGenerator,
                 termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }
