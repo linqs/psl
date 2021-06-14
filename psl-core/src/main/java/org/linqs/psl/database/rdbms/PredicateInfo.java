@@ -167,10 +167,10 @@ public class PredicateInfo {
 
     /**
      * Create a prepared statement that deletes ground atoms that match all the arguments.
-     * Note that we will only delete from the write partition.
+     * Note that we will only delete from the provided partitions.
      */
-    public PreparedStatement createDeleteStatement(Connection connection, int writePartition) {
-        return prepareSQL(connection, buildDeleteStatement(writePartition));
+    public PreparedStatement createDeleteStatement(Connection connection, List<Integer> partitions) {
+        return prepareSQL(connection, buildDeleteStatement(partitions));
     }
 
     /**
@@ -407,8 +407,8 @@ public class PredicateInfo {
         return sql;
     }
 
-    private synchronized String buildDeleteStatement(int writePartition) {
-        String key = "delete_" + writePartition;
+    private synchronized String buildDeleteStatement(List<Integer> partitions) {
+        String key = "delete_" + partitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
         }
@@ -416,8 +416,8 @@ public class PredicateInfo {
         DeleteQuery delete = new DeleteQuery(tableName);
         QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
 
-        // Only delete in the write partition.
-        delete.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
+        // Delete from all provided partitions.
+        delete.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
 
         // Set placeholders for the arguments.
         for (String colName : argCols) {

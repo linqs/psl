@@ -280,15 +280,15 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
         StringBuilder s = new StringBuilder();
         if (predicate instanceof GroundingOnlyPredicate)  {
             s.append("(");
-            if (predicate == GroundingOnlyPredicate.NotEqual) {
+            if (predicate.equals(GroundingOnlyPredicate.NotEqual)) {
                 s.append(arguments[0]);
                 s.append(" != ");
                 s.append(arguments[1]);
-            } else if (predicate == GroundingOnlyPredicate.Equal) {
+            } else if (predicate.equals(GroundingOnlyPredicate.Equal)) {
                 s.append(arguments[0]);
                 s.append(" == ");
                 s.append(arguments[1]);
-            } else if (predicate == GroundingOnlyPredicate.NonSymmetric) {
+            } else if (predicate.equals(GroundingOnlyPredicate.NonSymmetric)) {
                 s.append(arguments[0]);
                 s.append(" % ");
                 s.append(arguments[1]);

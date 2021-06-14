@@ -114,11 +114,13 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
             return false;
         }
 
-        nextTerm = fetchNextTerm();
-        if (nextTerm == null) {
-            close();
-            return false;
-        }
+        do {
+            nextTerm = fetchNextTerm();
+            if (nextTerm == null) {
+                close();
+                return false;
+            }
+        } while (parentStore.rejectCacheTerm(nextTerm));
 
         return true;
     }
@@ -145,7 +147,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * We will always settle outstanding pages before trying to get the next term.
      */
     private T fetchNextTerm() {
-        // The cache is exhaused, fill it up.
+        // The cache is exhausted, fill it up.
         if (nextCachedTermIndex >= termCache.size()) {
             // Flush all the volatile terms.
             flushCache();

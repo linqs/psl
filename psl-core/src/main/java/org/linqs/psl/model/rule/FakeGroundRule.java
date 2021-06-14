@@ -61,7 +61,7 @@ public class FakeGroundRule implements WeightedGroundRule {
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition() {
+    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
         return null;
     }
 
