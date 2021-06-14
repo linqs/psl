@@ -18,10 +18,10 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -34,14 +34,15 @@ import java.util.List;
  * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public class DCDStreamingInitialRoundIterator extends StreamingInitialRoundIterator<DCDObjectiveTerm> {
-    public DCDStreamingInitialRoundIterator(
-            DCDStreamingTermStore parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, RandomVariableAtom> termGenerator,
+public class DCDStreamingGroundingIterator extends StreamingGroundingIterator<DCDObjectiveTerm> {
+    public DCDStreamingGroundingIterator(
+            DCDStreamingTermStore parentStore, List<Rule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, GroundAtom> termGenerator,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize) {
-        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);
+            int pageSize, int numPages) {
+        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer,
+                pageSize, numPages);
     }
 
     @Override

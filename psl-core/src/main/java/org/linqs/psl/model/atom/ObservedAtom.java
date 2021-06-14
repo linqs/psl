@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.atom;
 
-import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 

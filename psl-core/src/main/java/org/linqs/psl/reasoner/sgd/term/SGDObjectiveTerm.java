@@ -17,7 +17,8 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -46,19 +47,19 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
+    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared, boolean hinge,
-            Hyperplane<RandomVariableAtom> hyperplane,
+            Hyperplane<GroundAtom> hyperplane,
             float learningRate) {
         this(termStore, rule, squared, hinge, 0.0f, hyperplane, learningRate);
     }
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
+    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared, boolean hinge,
             float deterEpsilon,
-            Hyperplane<RandomVariableAtom> hyperplane,
+            Hyperplane<GroundAtom> hyperplane,
             float learningRate) {
         this.squared = squared;
         this.hinge = hinge;
@@ -72,15 +73,15 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         constant = hyperplane.getConstant();
 
         variableIndexes = new int[size];
-        RandomVariableAtom[] variables = hyperplane.getVariables();
+        GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
     }
 
     public static SGDObjectiveTerm createDeterTerm(
-            VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-            Hyperplane<RandomVariableAtom> hyperplane,
+            VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+            Hyperplane<GroundAtom> hyperplane,
             float learningRate,
             float deterWeight, float deterEpsilon) {
         return new SGDObjectiveTerm(termStore, new FakeRule(deterWeight, false), false, false, deterEpsilon, hyperplane, learningRate);
@@ -124,15 +125,22 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
     /**
      * Minimize the term by changing the random variables and return how much the random variables were moved by.
      */
-    public float minimize(int iteration, float[] variableValues) {
+    public float minimize(int iteration, VariableTermStore termStore) {
         float movement = 0.0f;
         float weight = getWeight();
+        float[] variableValues = termStore.getVariableValues();
 
         if (!MathUtils.isZero(deterEpsilon)) {
             return minimizeDeter(weight, iteration, variableValues);
         }
 
+        GroundAtom[] variableAtoms = termStore.getVariableAtoms();
+
         for (int i = 0 ; i < size; i++) {
+            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                continue;
+            }
+
             float dot = dot(variableValues);
             float gradient = computeGradient(i, dot);
             float gradientStep = weight * gradient * (learningRate / iteration);
@@ -287,7 +295,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return toString(null);
     }
 
-    public String toString(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    public String toString(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         // weight * [max(coeffs^T * x - constant, 0.0)]^2
 
         StringBuilder builder = new StringBuilder();

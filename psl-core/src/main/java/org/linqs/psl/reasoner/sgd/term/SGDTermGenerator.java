@@ -18,13 +18,12 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -38,24 +37,29 @@ import java.util.Collection;
 /**
  * A TermGenerator for SGD objective terms.
  */
-public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, RandomVariableAtom> {
+public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(SGDTermGenerator.class);
 
     private float learningRate;
 
     public SGDTermGenerator() {
+        this(true);
+    }
+
+    public SGDTermGenerator(boolean mergeConstants) {
+        super(mergeConstants);
         learningRate = Options.SGD_LEARNING_RATE.getFloat();
     }
 
     @Override
-    public Class<RandomVariableAtom> getLocalVariableType() {
-        return RandomVariableAtom.class;
+    public Class<GroundAtom> getLocalVariableType() {
+        return GroundAtom.class;
     }
 
     @Override
-    public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, RandomVariableAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane) {
-        VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+    public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
+            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
+        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
 
         newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane, learningRate));
         if (!addDeterTerms) {
@@ -82,8 +86,8 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     }
 
     @Override
-    public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, RandomVariableAtom> termStore,
-            GroundRule groundRule, Hyperplane<RandomVariableAtom> hyperplane, FunctionComparator comparator) {
+    public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> termStore,
+            GroundRule groundRule, Hyperplane<GroundAtom> hyperplane, FunctionComparator comparator) {
         log.warn("SGD does not support hard constraints, i.e. " + groundRule);
         return 0;
     }

@@ -32,8 +32,8 @@ import java.util.List;
 public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
         implements UnweightedGroundRule {
 
-    protected UnweightedGroundLogicalRule(UnweightedLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, short rvaCount) {
-        super(rule, posLiterals, negLiterals, rvaCount);
+    protected UnweightedGroundLogicalRule(UnweightedLogicalRule rule, List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+        super(rule, posLiterals, negLiterals);
     }
 
     @Override
@@ -47,8 +47,14 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
     }
 
     @Override
-    public ConstraintTerm getConstraintDefinition() {
-        return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
+    public ConstraintTerm getConstraintDefinition(boolean mergeConstants) {
+        // We have already built the function for this ground rule by merging constants.
+        // If we want that one, return it right away.
+        if (mergeConstants) {
+            return new ConstraintTerm(dissatisfaction, FunctionComparator.LTE, 0.0f);
+        }
+
+        return new ConstraintTerm(getFunction(false), FunctionComparator.LTE, 0.0f);
     }
 
     @Override
@@ -60,14 +66,7 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
     protected GroundRule instantiateNegatedGroundRule(
             Formula disjunction, List<GroundAtom> positiveAtoms,
             List<GroundAtom> negativeAtoms, String name) {
-        short rvaCount = 0;
-        for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
-            if (atom instanceof RandomVariableAtom) {
-                rvaCount++;
-            }
-        }
-
         UnweightedLogicalRule newRule = new UnweightedLogicalRule(rule.getFormula(), name);
-        return new UnweightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
+        return new UnweightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms);
     }
 }

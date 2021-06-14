@@ -30,8 +30,8 @@ import java.util.List;
 
 public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements WeightedGroundRule {
     protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
-            List<GroundAtom> negLiterals, short rvaCount) {
-        super(rule, posLiterals, negLiterals, rvaCount);
+            List<GroundAtom> negLiterals) {
+        super(rule, posLiterals, negLiterals);
         dissatisfaction.setSquared(rule.isSquared());
     }
 
@@ -56,8 +56,16 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition() {
-        return dissatisfaction;
+    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
+        // We have already built the function for this ground rule with merged constants.
+        if (mergeConstants) {
+            return dissatisfaction;
+        }
+
+        GeneralFunction function = getFunction(false);
+        function.setSquared(((WeightedLogicalRule)rule).isSquared());
+
+        return function;
     }
 
     @Override
@@ -79,14 +87,7 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     protected GroundRule instantiateNegatedGroundRule(
             Formula disjunction, List<GroundAtom> positiveAtoms,
             List<GroundAtom> negativeAtoms, String name) {
-        short rvaCount = 0;
-        for (GroundAtom atom : IteratorUtils.join(positiveAtoms, negativeAtoms)) {
-            if (atom instanceof RandomVariableAtom) {
-                rvaCount++;
-            }
-        }
-
         WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0f * ((WeightedLogicalRule)rule).getWeight(), isSquared(), name);
-        return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms, rvaCount);
+        return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms);
     }
 }
