@@ -23,6 +23,7 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.util.ArrayUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
@@ -251,28 +252,34 @@ public class SGDReasoner extends Reasoner {
         return adamBeta1;
     }
 
-    public float[] getAccumulatedGradientMean() {
-        return accumulatedGradientMean;
+    public float getAccumulatedGradientMean(int variableIndex) {
+        this.accumulatedGradientMean = ArrayUtils.ensureCapacity(this.accumulatedGradientMean, variableIndex);
+        return accumulatedGradientMean[variableIndex];
     }
 
-    public void setAccumulatedGradientMean(float[] accumulatedGradientMean) {
-        this.accumulatedGradientMean = accumulatedGradientMean;
+    public void setAccumulatedGradientMean(int variableIndex, float newAccumulatedGradientMean) {
+        this.accumulatedGradientMean = ArrayUtils.ensureCapacity(this.accumulatedGradientMean, variableIndex);
+        accumulatedGradientMean[variableIndex] = newAccumulatedGradientMean;
     }
 
-    public float[] getAccumulatedGradientVariance() {
-        return accumulatedGradientVariance;
+    public float getAccumulatedGradientVariance(int variableIndex) {
+        this.accumulatedGradientVariance = ArrayUtils.ensureCapacity(this.accumulatedGradientVariance, variableIndex);
+        return accumulatedGradientVariance[variableIndex];
     }
 
-    public void setAccumulatedGradientVariance(float[] accumulatedGradientVariance) {
-        this.accumulatedGradientVariance = accumulatedGradientVariance;
+    public void setAccumulatedGradientVariance(int variableIndex, float newAccumulatedGradientVariance) {
+        this.accumulatedGradientVariance = ArrayUtils.ensureCapacity(this.accumulatedGradientVariance, variableIndex);
+        accumulatedGradientVariance[variableIndex] = newAccumulatedGradientVariance;
     }
 
-    public float[] getAccumulatedGradientSquares() {
-        return accumulatedGradientSquares;
+    public float getAccumulatedGradientSquares(int variableIndex) {
+        this.accumulatedGradientSquares = ArrayUtils.ensureCapacity(this.accumulatedGradientSquares, variableIndex);
+        return accumulatedGradientSquares[variableIndex];
     }
 
-    public void setAccumulatedGradientSquares(float[] accumulatedGradientSquares) {
-        this.accumulatedGradientSquares = accumulatedGradientSquares;
+    public void setAccumulatedGradientSquares(int variableIndex, float newAccumulatedGradientSquare) {
+        this.accumulatedGradientSquares = ArrayUtils.ensureCapacity(this.accumulatedGradientSquares, variableIndex);
+        accumulatedGradientSquares[variableIndex] = newAccumulatedGradientSquare;
     }
 
     @Override

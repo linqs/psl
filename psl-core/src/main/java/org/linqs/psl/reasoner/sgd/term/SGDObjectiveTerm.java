@@ -144,38 +144,29 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
                 step = partial * learningRate;
                 break;
             case ADAGRAD:
-                float[] accumulatedGradientSquares = sgdReasoner.getAccumulatedGradientSquares();
+                float accumulatedGradientSquares = 0.0f;
 
-                if (accumulatedGradientSquares.length <= variableIndex) {
-                    accumulatedGradientSquares = Arrays.copyOf(accumulatedGradientSquares, (variableIndex + 1) * 2);
-                    sgdReasoner.setAccumulatedGradientSquares(accumulatedGradientSquares);
-                }
-                accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + partial * partial;
+                accumulatedGradientSquares = sgdReasoner.getAccumulatedGradientSquares(variableIndex) + partial * partial;
+                sgdReasoner.setAccumulatedGradientSquares(variableIndex, accumulatedGradientSquares);
 
-                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[variableIndex] + EPSILON);
+                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares + EPSILON);
                 step = partial * adaptedLearningRate;
                 break;
             case ADAM:
-                float[] accumulatedGradientMean = sgdReasoner.getAccumulatedGradientMean();
-                float[] accumulatedGradientVariance = sgdReasoner.getAccumulatedGradientVariance();
+                float accumulatedGradientMean = 0.0f;
+                float accumulatedGradientVariance = 0.0f;
                 float biasedGradientMean = 0.0f;
                 float biasedGradientVariance = 0.0f;
 
-                if (accumulatedGradientMean.length  <= variableIndex) {
-                    accumulatedGradientMean = Arrays.copyOf(accumulatedGradientMean, (variableIndex + 1) * 2);
-                    sgdReasoner.setAccumulatedGradientMean(accumulatedGradientMean);
-                }
-                accumulatedGradientMean[variableIndex] = sgdReasoner.getAdamBeta1() * accumulatedGradientMean[variableIndex] + (1.0f - sgdReasoner.getAdamBeta1()) * partial;
+                accumulatedGradientMean = sgdReasoner.getAdamBeta1() * sgdReasoner.getAccumulatedGradientMean(variableIndex) + (1.0f - sgdReasoner.getAdamBeta1()) * partial;
+                sgdReasoner.setAccumulatedGradientMean(variableIndex, accumulatedGradientMean);
 
-                if (accumulatedGradientVariance.length <= variableIndex) {
-                    accumulatedGradientVariance = Arrays.copyOf(accumulatedGradientVariance, (variableIndex + 1) * 2);
-                    sgdReasoner.setAccumulatedGradientVariance(accumulatedGradientVariance);
-                }
-                accumulatedGradientVariance[variableIndex] = sgdReasoner.getAdamBeta2() * accumulatedGradientVariance[variableIndex]
-                            + (1.0f - sgdReasoner.getAdamBeta2()) * partial * partial;
+                accumulatedGradientVariance = sgdReasoner.getAdamBeta2() * sgdReasoner.getAccumulatedGradientVariance(variableIndex)
+                        + (1.0f - sgdReasoner.getAdamBeta2()) * partial * partial;
+                sgdReasoner.setAccumulatedGradientVariance(variableIndex, accumulatedGradientVariance);
 
-                biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(sgdReasoner.getAdamBeta1(), iteration));
-                biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(sgdReasoner.getAdamBeta2(), iteration));
+                biasedGradientMean = accumulatedGradientMean / (1.0f - (float)Math.pow(sgdReasoner.getAdamBeta1(), iteration));
+                biasedGradientVariance = accumulatedGradientVariance / (1.0f - (float)Math.pow(sgdReasoner.getAdamBeta2(), iteration));
                 adaptedLearningRate = learningRate / ((float)Math.sqrt(biasedGradientVariance) + EPSILON);
                 step = biasedGradientMean * adaptedLearningRate;
                 break;
