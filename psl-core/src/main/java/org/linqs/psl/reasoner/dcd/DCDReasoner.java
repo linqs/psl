@@ -74,7 +74,7 @@ public class DCDReasoner extends Reasoner {
         boolean converged = false;
         int iteration = 1;
 
-        for (; iteration < (maxIterations * budget) && !converged; iteration++) {
+        while(!converged) {
             long start = System.currentTimeMillis();
 
             termCount = 0;
@@ -99,7 +99,7 @@ public class DCDReasoner extends Reasoner {
 
             termStore.iterationComplete();
 
-            converged = breakOptimization(objective, oldObjective, termCount);
+            converged = breakOptimization(iteration, objective, oldObjective, termCount);
 
             if (iteration == 1) {
                 // Initialize old variables values.
@@ -117,6 +117,8 @@ public class DCDReasoner extends Reasoner {
                 log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
                         iteration - 1, objective, objective / termCount, (end - start), totalTime);
             }
+
+            iteration++;
         }
 
         objective = computeObjective(termStore);
@@ -129,7 +131,12 @@ public class DCDReasoner extends Reasoner {
         return objective;
     }
 
-    private boolean breakOptimization(double objective, double oldObjective, long termCount) {
+    private boolean breakOptimization(int iteration, double objective, double oldObjective, long termCount) {
+        // Always break when the allocated iterations is up.
+        if (iteration > (int)(maxIterations * budget)) {
+            return true;
+        }
+
         // Run through the maximum number of iterations.
         if (runFullIterations) {
             return false;

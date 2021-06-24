@@ -130,7 +130,7 @@ public class SGDReasoner extends Reasoner {
         boolean converged = false;
         int iteration = 1;
 
-        for (; iteration < (maxIterations * budget) && !converged; iteration++) {
+        while(!converged) {
             long start = System.currentTimeMillis();
 
             termCount = 0;
@@ -153,7 +153,7 @@ public class SGDReasoner extends Reasoner {
                 meanMovement /= termCount;
             }
 
-            converged = breakOptimization(objective, oldObjective, meanMovement, termCount);
+            converged = breakOptimization(iteration, objective, oldObjective, meanMovement, termCount);
 
             if (iteration == 1) {
                 // Initialize old variables values.
@@ -171,6 +171,8 @@ public class SGDReasoner extends Reasoner {
                 log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
                         iteration - 1, objective, objective / termCount, (end - start), totalTime);
             }
+
+            iteration++;
         }
 
         objective = computeObjective(termStore);
@@ -183,7 +185,12 @@ public class SGDReasoner extends Reasoner {
         return objective;
     }
 
-    private boolean breakOptimization(double objective, double oldObjective, float movement, long termCount) {
+    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement, long termCount) {
+        // Always break when the allocated iterations is up.
+        if (iteration > (int)(maxIterations * budget)) {
+            return true;
+        }
+
         // Run through the maximum number of iterations.
         if (runFullIterations) {
             return false;
