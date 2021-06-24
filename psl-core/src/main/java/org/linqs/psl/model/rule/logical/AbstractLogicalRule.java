@@ -301,6 +301,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             }
 
             atom = ((QueryAtom)literals.get(i)).ground(atomManager, row, variableMap, argumentBuffer[i]);
+            if (atom == null) {
+                return -1;
+            }
 
             if (atom instanceof RandomVariableAtom) {
                 // If we got an atom that is in violation of an access policy, then we may need to throw an exception.
