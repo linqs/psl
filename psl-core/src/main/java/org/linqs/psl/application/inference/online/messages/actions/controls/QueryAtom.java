@@ -18,7 +18,6 @@
 package org.linqs.psl.application.inference.online.messages.actions.controls;
 
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;

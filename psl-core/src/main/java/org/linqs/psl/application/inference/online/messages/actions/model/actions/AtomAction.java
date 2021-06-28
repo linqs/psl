@@ -37,6 +37,4 @@ public class AtomAction extends OnlineAction {
     public Constant[] getArguments() {
         return arguments;
     }
-
-
 }
