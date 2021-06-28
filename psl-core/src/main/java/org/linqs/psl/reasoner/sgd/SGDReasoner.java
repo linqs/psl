@@ -257,7 +257,7 @@ public class SGDReasoner extends Reasoner {
     /**
      * Update the random variables by taking a step in the direction of the negative gradient of the term.
      */
-    public float variableUpdate(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+    private float variableUpdate(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
                                 int iteration, float learningRate) {
         float movement = 0.0f;
         float variableStep = 0.0f;
