@@ -235,13 +235,12 @@ public class Launcher {
             outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, false);
         }
 
-        learner.close();
-
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
             outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, true);
         }
 
+        learner.close();
         randomVariableDatabase.close();
         observedTruthDatabase.close();
 
