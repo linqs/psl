@@ -23,15 +23,15 @@ import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.rule.Rule;
 
 import java.util.HashSet;
+import java.util.Set;
 
 public abstract class TemplateAction extends OnlineAction {
     protected Rule rule;
 
     public TemplateAction(Rule rule) {
         super();
-        // Block attempt to serialize ExternalFunctionalPredicates.
-        HashSet<Atom> atomSet = new HashSet<Atom>();
-        rule.getRewritableGroundingFormula().getAtoms(atomSet);
+
+        Set<Atom> atomSet = rule.getRewritableGroundingFormula().getAtoms(new HashSet<Atom>());
         for (Atom atom: atomSet) {
             if (atom.getPredicate() instanceof ExternalFunctionalPredicate) {
                 throw new UnsupportedOperationException(
