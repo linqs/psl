@@ -21,7 +21,7 @@ import org.linqs.psl.model.rule.Rule;
 
 /**
  * Add a new rule to the model.
- * String format: ACTIVATE <predicate> <args> ... [value]
+ * String format: ActivateRule <rule>
  */
 public class ActivateRule extends TemplateAction {
     public ActivateRule(Rule rule) {

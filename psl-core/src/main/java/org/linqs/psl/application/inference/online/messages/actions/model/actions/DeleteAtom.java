@@ -23,7 +23,7 @@ import org.linqs.psl.util.StringUtils;
 
 /**
  * Delete an atom from the existing model.
- * String format: UUID DELETE <READ/WRITE> <predicate> <args> ...
+ * String format: DeleteAtom <READ/WRITE> <predicate> <args> ...
  */
 public class DeleteAtom extends AtomAction {
     private String partition;
@@ -40,7 +40,7 @@ public class DeleteAtom extends AtomAction {
     @Override
     public String toString() {
         return String.format(
-                "DELETE\t%s\t%s\t%s",
+                "DELETEATOM\t%s\t%s\t%s",
                 partition, predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""));
     }

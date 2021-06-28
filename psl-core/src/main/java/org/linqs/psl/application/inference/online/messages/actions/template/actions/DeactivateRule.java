@@ -21,7 +21,7 @@ import org.linqs.psl.model.rule.Rule;
 
 /**
  * Add a new rule to the model.
- * String format: DEACTIVATE <predicate> <args> ... [value]
+ * String format: DeactivateRule <predicate> <args> ... <value>
  */
 public class DeactivateRule extends TemplateAction {
     public DeactivateRule(Rule rule) {

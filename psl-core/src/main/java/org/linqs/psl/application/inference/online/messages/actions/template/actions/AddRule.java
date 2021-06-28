@@ -21,7 +21,7 @@ import org.linqs.psl.model.rule.Rule;
 
 /**
  * Add a new rule to the model.
- * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
+ * String format: AddRule <READ/WRITE> <predicate> <args> ... <value>
  */
 public class AddRule extends TemplateAction {
     public AddRule(Rule rule) {

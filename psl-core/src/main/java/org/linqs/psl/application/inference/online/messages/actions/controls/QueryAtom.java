@@ -23,8 +23,8 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
 /**
- * Query an existing observation from the model.
- * String format: Query <predicate> <args> ...
+ * Query the value of an existing atom.
+ * String format: QueryAtom <predicate> <args> ...
  */
 public class QueryAtom extends OnlineAction {
     private StandardPredicate predicate;
@@ -47,7 +47,7 @@ public class QueryAtom extends OnlineAction {
     @Override
     public String toString() {
         return String.format(
-                "QUERY\t%s\t%s",
+                "QUERYATOM\t%s\t%s",
                 predicate.getName(),
                 StringUtils.join("\t", arguments).replace("'", ""));
     }

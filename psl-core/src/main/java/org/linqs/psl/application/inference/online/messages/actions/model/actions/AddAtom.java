@@ -24,7 +24,7 @@ import org.linqs.psl.util.StringUtils;
 
 /**
  * Add a new atom to the model.
- * String format: ADD <READ/WRITE> <predicate> <args> ... [value]
+ * String format: AddAtom <READ/WRITE> <predicate> <args> ... <value>
  */
 public class AddAtom extends AtomAction {
     private float value;
@@ -54,13 +54,13 @@ public class AddAtom extends AtomAction {
     public String toString() {
         if (value == -1.0f) {
             return String.format(
-                    "ADD\t%s\t%s\t%s",
+                    "ADDATOM\t%s\t%s\t%s",
                     partition,
                     predicate.getName(),
                     StringUtils.join("\t", arguments).replace("'", ""));
         } else {
             return String.format(
-                    "ADD\t%s\t%s\t%s\t%.2f",
+                    "ADDATOM\t%s\t%s\t%s\t%.2f",
                     partition,
                     predicate.getName(),
                     StringUtils.join("\t", arguments).replace("'", ""),

@@ -21,7 +21,7 @@ import org.linqs.psl.model.rule.Rule;
 
 /**
  * Add a new rule to the model.
- * String format: DELETE <READ/WRITE> <predicate> <args> ... [value]
+ * String format: DeleteRule <READ/WRITE> <predicate> <args> ... <value>
  */
 public class DeleteRule extends TemplateAction {
     public DeleteRule(Rule rule) {

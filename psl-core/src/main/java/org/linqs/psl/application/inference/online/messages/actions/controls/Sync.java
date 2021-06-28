@@ -19,6 +19,11 @@ package org.linqs.psl.application.inference.online.messages.actions.controls;
 
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 
+/**
+ * Sync the atom values of the online model.
+ * Specifically, execute queued actions and optimize.
+ * String format: Sync
+ */
 public class Sync extends OnlineAction {
     public Sync() {
         super();

@@ -20,8 +20,8 @@ package org.linqs.psl.application.inference.online.messages.actions.controls;
 import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 
 /**
- * Write out targets on the server side.
- * String format: WRITE [path]
+ * Write inferred predicates at a specified location on the server.
+ * String format: WriteInferredPredicates <path>
  */
 public class WriteInferredPredicates extends OnlineAction {
     private String outputDirectoryPath;
@@ -38,9 +38,9 @@ public class WriteInferredPredicates extends OnlineAction {
     @Override
     public String toString() {
         if (outputDirectoryPath == null) {
-            return String.format("WRITE");
+            return String.format("WRITEINFERREDPREDICATES");
         } else {
-            return String.format("WRITE\t%s", outputDirectoryPath);
+            return String.format("WRITEINFERREDPREDICATES\t%s", outputDirectoryPath);
         }
     }
 }

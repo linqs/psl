@@ -23,7 +23,7 @@ import org.linqs.psl.util.StringUtils;
 
 /**
  * Update an existing observation from the model.
- * String format: UPDATE <predicate> <args> ... [value]
+ * String format: UpdateAtom <predicate> <args> ... <value>
  */
 public class UpdateObservation extends AtomAction {
     private float value;
@@ -40,7 +40,7 @@ public class UpdateObservation extends AtomAction {
     @Override
     public String toString() {
         return String.format(
-                "UPDATE\t%s\t%s\t%.2f",
+                "UPDATEATOM\t%s\t%s\t%.2f",
                 predicate.getName(), StringUtils.join("\t", arguments).replace("'", ""),
                 value);
     }
