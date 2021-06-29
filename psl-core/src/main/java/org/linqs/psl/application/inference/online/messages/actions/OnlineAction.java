@@ -26,7 +26,6 @@ import java.util.UUID;
  * All actions should be able to freely convert to and from strings.
  */
 public abstract class OnlineAction extends OnlineMessage {
-
     public OnlineAction(UUID identifier) {
         super(identifier);
     }
