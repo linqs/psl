@@ -24,6 +24,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ import java.util.Map;
  * A Rule is responsible for instantiating GroundRules.
  * A Rule must instantiate only WeightedGroundRules or only UnweightedGroundRules.
  */
-public interface Rule {
+public interface Rule extends Serializable {
     /**
      * Adds all GroundRules to a GroundRuleStore using the AtomManager
      * to instantiate ground atoms.
