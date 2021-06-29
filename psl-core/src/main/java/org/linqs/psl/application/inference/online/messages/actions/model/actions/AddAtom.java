@@ -30,10 +30,18 @@ public class AddAtom extends AtomAction {
     private float value;
     private String partition;
 
+    public AddAtom(String partition, StandardPredicate predicate, Constant[] arguments) {
+        super(predicate, arguments);
+        init(partition, -1.0f);
+    }
+
     public AddAtom(String partition, StandardPredicate predicate, Constant[] arguments, float value) {
         super(predicate, arguments);
+        init(partition, value);
+    }
+
+    private void init(String partition, float value) {
         this.partition = partition.toUpperCase();
-        // A value of -1 indicates no value was provided.
         this.value = value;
     }
 
