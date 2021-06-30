@@ -15,23 +15,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.template.actions;
+package org.linqs.psl.application.inference.online.messages.actions.model;
 
-import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.StringUtils;
 
 /**
- * Add a new rule to the model.
- * String format: DeleteRule <READ/WRITE> <predicate> <args> ... <value>
+ * Update an existing observation from the model.
+ * String format: UpdateAtom <predicate> <arg>... <value>
  */
-public class DeleteRule extends TemplateAction {
-    public DeleteRule(Rule rule) {
-        super(rule);
+public class UpdateObservation extends AtomAction {
+    private float value;
+
+    public UpdateObservation(StandardPredicate predicate, Constant[] arguments, float value) {
+        super(predicate, arguments);
+        this.value = value;
+    }
+
+    public float getValue() {
+        return value;
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DELETERULE\t%s",
-                rule.toString());
+                "UPDATEATOM\t%s\t%s\t%.2f",
+                predicate.getName(), StringUtils.join("\t", arguments),
+                value);
     }
 }

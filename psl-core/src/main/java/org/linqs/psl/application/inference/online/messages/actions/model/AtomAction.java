@@ -15,23 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.template.actions;
+package org.linqs.psl.application.inference.online.messages.actions.model;
 
-import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
 
-/**
- * Add a new rule to the model.
- * String format: ActivateRule <rule>
- */
-public class ActivateRule extends TemplateAction {
-    public ActivateRule(Rule rule) {
-        super(rule);
+public class AtomAction extends OnlineMessage {
+    protected StandardPredicate predicate;
+    protected Constant[] arguments;
+
+    public AtomAction(StandardPredicate predicate, Constant[] arguments) {
+        this.predicate = predicate;
+        this.arguments = arguments;
     }
 
-    @Override
-    public String toString() {
-        return String.format(
-                "ACTIVATERULE\t%s",
-                rule.toString());
+    public StandardPredicate getPredicate() {
+        return predicate;
+    }
+
+    public Constant[] getArguments() {
+        return arguments;
     }
 }

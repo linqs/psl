@@ -15,16 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.model.actions;
+package org.linqs.psl.application.inference.online.messages.actions.model;
 
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
 /**
  * Add a new atom to the model.
- * String format: AddAtom <READ/WRITE> <predicate> <args> ... <value>
+ * Note that a value must be provided for atoms being added to the READ partition.
+ * String format: AddAtom <READ/WRITE> <predicate> <arg>... [value]
  */
 public class AddAtom extends AtomAction {
     private float value;
@@ -46,7 +48,7 @@ public class AddAtom extends AtomAction {
     }
 
     public float getValue() {
-        if (value == -1.0f) {
+        if (MathUtils.equals(value, -1.0f)) {
             // Default value when a value is not provided.
             return RandUtils.nextFloat();
         } else {
@@ -65,13 +67,13 @@ public class AddAtom extends AtomAction {
                     "ADDATOM\t%s\t%s\t%s",
                     partition,
                     predicate.getName(),
-                    StringUtils.join("\t", arguments).replace("'", ""));
+                    StringUtils.join("\t", arguments));
         } else {
             return String.format(
                     "ADDATOM\t%s\t%s\t%s\t%.2f",
                     partition,
                     predicate.getName(),
-                    StringUtils.join("\t", arguments).replace("'", ""),
+                    StringUtils.join("\t", arguments),
                     value);
         }
     }

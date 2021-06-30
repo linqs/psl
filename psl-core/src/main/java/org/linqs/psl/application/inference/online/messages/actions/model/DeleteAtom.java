@@ -15,40 +15,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.controls;
+package org.linqs.psl.application.inference.online.messages.actions.model;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
 /**
- * Query the value of an existing atom.
- * String format: QueryAtom <predicate> <args> ...
+ * Delete an atom from the existing model.
+ * String format: DeleteAtom <READ/WRITE> <predicate> <arg>...
  */
-public class QueryAtom extends OnlineAction {
-    private StandardPredicate predicate;
-    private Constant[] arguments;
+public class DeleteAtom extends AtomAction {
+    private String partition;
 
-    public QueryAtom(StandardPredicate predicate, Constant[] arguments) {
-        super();
-        this.predicate = predicate;
-        this.arguments = arguments;
+    public DeleteAtom(String partition, StandardPredicate predicate, Constant[] arguments) {
+        super(predicate, arguments);
+        this.partition = partition.toUpperCase();
     }
 
-    public StandardPredicate getPredicate() {
-        return predicate;
-    }
-
-    public Constant[] getArguments() {
-        return arguments;
+    public String getPartitionName() {
+        return partition;
     }
 
     @Override
     public String toString() {
         return String.format(
-                "QUERYATOM\t%s\t%s",
-                predicate.getName(),
-                StringUtils.join("\t", arguments).replace("'", ""));
+                "DELETEATOM\t%s\t%s\t%s",
+                partition, predicate.getName(),
+                StringUtils.join("\t", arguments));
     }
 }

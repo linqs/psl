@@ -15,33 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.model.actions;
+package org.linqs.psl.application.inference.online.messages.actions.template;
 
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.util.StringUtils;
+import org.linqs.psl.model.rule.Rule;
 
 /**
- * Delete an atom from the existing model.
- * String format: DeleteAtom <READ/WRITE> <predicate> <args> ...
+ * Delete an existing rule in the model.
+ * String format: DeleteRule <rule>
  */
-public class DeleteAtom extends AtomAction {
-    private String partition;
-
-    public DeleteAtom(String partition, StandardPredicate predicate, Constant[] arguments) {
-        super(predicate, arguments);
-        this.partition = partition.toUpperCase();
-    }
-
-    public String getPartitionName() {
-        return partition;
+public class DeleteRule extends TemplateAction {
+    public DeleteRule(Rule rule) {
+        super(rule);
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DELETEATOM\t%s\t%s\t%s",
-                partition, predicate.getName(),
-                StringUtils.join("\t", arguments).replace("'", ""));
+                "DELETERULE\t%s",
+                rule.toString());
     }
 }

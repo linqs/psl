@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.application.inference.online.messages.actions.controls;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 
 /**
  * Cleanly end session with online client.
  * String format: Exit
  */
-public class Exit extends OnlineAction {
+public class Exit extends OnlineMessage {
     public Exit() {
         super();
     }

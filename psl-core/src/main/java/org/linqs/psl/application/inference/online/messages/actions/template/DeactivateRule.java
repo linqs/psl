@@ -15,22 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions;
+package org.linqs.psl.application.inference.online.messages.actions.template;
 
-import org.linqs.psl.application.inference.online.messages.OnlineMessage;
-
-import java.util.UUID;
+import org.linqs.psl.model.rule.Rule;
 
 /**
- * Base class for online actions.
- * All actions should be able to freely convert to and from strings.
+ * Deactivate an existing rule in the model.
+ * String format: DeactivateRule <rule>
  */
-public abstract class OnlineAction extends OnlineMessage {
-    public OnlineAction(UUID identifier) {
-        super(identifier);
+public class DeactivateRule extends TemplateAction {
+    public DeactivateRule(Rule rule) {
+        super(rule);
     }
 
-    public OnlineAction() {
-        super();
+    @Override
+    public String toString() {
+        return String.format(
+                "DEACTIVATERULE\t%s",
+                rule.toString());
     }
 }

@@ -15,23 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.template.actions;
+package org.linqs.psl.application.inference.online.messages.actions.template;
 
 import org.linqs.psl.model.rule.Rule;
 
 /**
  * Add a new rule to the model.
- * String format: DeactivateRule <predicate> <args> ... <value>
+ * String format: AddRule <rule>
  */
-public class DeactivateRule extends TemplateAction {
-    public DeactivateRule(Rule rule) {
+public class AddRule extends TemplateAction {
+    public AddRule(Rule rule) {
         super(rule);
     }
 
     @Override
     public String toString() {
         return String.format(
-                "DEACTIVATERULE\t%s",
+                "ADDRULE\t%s",
                 rule.toString());
     }
 }

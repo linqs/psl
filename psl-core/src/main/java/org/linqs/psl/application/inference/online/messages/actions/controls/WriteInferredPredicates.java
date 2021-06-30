@@ -17,13 +17,14 @@
  */
 package org.linqs.psl.application.inference.online.messages.actions.controls;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 
 /**
- * Write inferred predicates at a specified location on the server.
- * String format: WriteInferredPredicates <path>
+ * Write inferred predicates at a location on the server.
+ * If no path is specified then inferred predicates are written to stdout.
+ * String format: WriteInferredPredicates [path]
  */
-public class WriteInferredPredicates extends OnlineAction {
+public class WriteInferredPredicates extends OnlineMessage {
     private String outputDirectoryPath;
 
     public WriteInferredPredicates(String outputDirectoryPath) {

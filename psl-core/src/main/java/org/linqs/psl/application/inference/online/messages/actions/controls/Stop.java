@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.application.inference.online.messages.actions.controls;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 
 /**
  * Cleanly stop online inference.
  * String format: Stop
  */
-public class Stop extends OnlineAction {
+public class Stop extends OnlineMessage {
     public Stop() {
         super();
     }

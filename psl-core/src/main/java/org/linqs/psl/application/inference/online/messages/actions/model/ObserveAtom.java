@@ -15,26 +15,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.online.messages.actions.model.actions;
+package org.linqs.psl.application.inference.online.messages.actions.model;
 
-import org.linqs.psl.application.inference.online.messages.actions.OnlineAction;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.StringUtils;
 
-public class AtomAction extends OnlineAction {
-    protected StandardPredicate predicate;
-    protected Constant[] arguments;
+/**
+ * Add a new atom to the model.
+ * String format: ObserveAtom <predicate> <arg>... <value>
+ */
+public class ObserveAtom extends AtomAction {
+    private float value;
 
-    public AtomAction(StandardPredicate predicate, Constant[] arguments) {
-        this.predicate = predicate;
-        this.arguments = arguments;
+    public ObserveAtom(StandardPredicate predicate, Constant[] arguments, float value) {
+        super(predicate, arguments);
+        this.value = value;
     }
 
-    public StandardPredicate getPredicate() {
-        return predicate;
+    public float getValue() {
+        return value;
     }
 
-    public Constant[] getArguments() {
-        return arguments;
+    @Override
+    public String toString() {
+        return String.format(
+                "OBSERVEATOM\t%s\t%s\t%.2f",
+                predicate.getName(),
+                StringUtils.join("\t", arguments),
+                value);
     }
 }
