@@ -18,13 +18,11 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
-import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 
@@ -73,10 +71,6 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         lagrange = 0.0f;
     }
 
-    public float getLagrange() {
-        return lagrange;
-    }
-
     public float evaluate(float[] variableValues) {
         float value = 0.0f;
         float adjustedWeight = rule.getWeight() * c;
@@ -97,21 +91,13 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(boolean truncateEveryStep, float[] variableValues, GroundAtom[] variableAtoms) {
-        float adjustedWeight = rule.getWeight() * c;
-
-        if (squared) {
-            float gradient = computeGradient(variableValues);
-            gradient += lagrange / (2.0f * adjustedWeight);
-            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, variableValues, variableAtoms);
-        } else {
-            minimize(truncateEveryStep, computeGradient(variableValues), adjustedWeight, variableValues, variableAtoms);
-        }
-    }
-
     @Override
     public int size() {
         return size;
+    }
+
+    public boolean isSquared() {
+        return squared;
     }
 
     @Override
@@ -119,7 +105,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         constant = constant - oldValue + newValue;
     }
 
-    private float computeGradient(float[] variableValues) {
+    public float computeGradient(float[] variableValues) {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
@@ -129,35 +115,28 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return constant - val;
     }
 
-    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] variableValues, GroundAtom[] variableAtoms) {
-        float pg = gradient;
-        float adjustedWeight = rule.getWeight() * c;
+    public float[] getCoefficients() {
+        return coefficients;
+    }
 
-        if (MathUtils.isZero(lagrange)) {
-            pg = Math.min(0.0f, gradient);
-        }
+    public float getLagrange() {
+        return lagrange;
+    }
 
-        if (MathUtils.equals(lim, adjustedWeight) && MathUtils.equals(lagrange, adjustedWeight)) {
-            pg = Math.max(0.0f, gradient);
-        }
+    public void setLagrange(float lagrange) {
+        this.lagrange = lagrange;
+    }
 
-        if (MathUtils.isZero(pg)) {
-            return;
-        }
+    public WeightedRule getRule() {
+        return rule;
+    }
 
-        float pa = lagrange;
-        lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
-        for (int i = 0; i < size; i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
-                continue;
-            }
+    public int[] getVariableIndexes() {
+        return variableIndexes;
+    }
 
-            float val = variableValues[variableIndexes[i]] - ((lagrange - pa) * coefficients[i]);
-            if (truncateEveryStep) {
-                val = Math.max(0.0f, Math.min(1.0f, val));
-            }
-            variableValues[variableIndexes[i]] = val;
-        }
+    public float getQii() {
+        return qii;
     }
 
     /**
