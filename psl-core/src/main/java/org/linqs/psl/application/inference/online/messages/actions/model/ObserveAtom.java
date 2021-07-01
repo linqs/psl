@@ -22,8 +22,9 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
 /**
- * Add a new atom to the model.
- * String format: ObserveAtom <predicate> <arg>... <value>
+ * Observe an existing random variable atom,
+ * i.e., fix an existing random variable to a specified value.
+ * String format: Observe <predicate> <arg>... <value>
  */
 public class ObserveAtom extends AtomAction {
     private float value;
