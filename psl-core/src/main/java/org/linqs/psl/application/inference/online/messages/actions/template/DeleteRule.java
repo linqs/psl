@@ -15,21 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.term;
+package org.linqs.psl.application.inference.online.messages.actions.template;
 
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
-
-import java.io.Serializable;
+import org.linqs.psl.model.rule.Rule;
 
 /**
- * An argument to a {@link Predicate}.
- * All terms are immutable.
+ * Delete an existing rule in the model.
+ * String format: DeleteRule <rule>
  */
-public interface Term extends Comparable<Term>, SummationVariableOrTerm, Serializable {
-    public String toString();
+public class DeleteRule extends TemplateAction {
+    public DeleteRule(Rule rule) {
+        super(rule);
+    }
 
-    public int hashCode();
-
-    public boolean equals(Object other);
+    @Override
+    public String toString() {
+        return String.format(
+                "DELETERULE\t%s",
+                rule.toString());
+    }
 }

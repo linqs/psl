@@ -15,21 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.term;
+package org.linqs.psl.application.inference.online.messages.actions.model;
 
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
-
-import java.io.Serializable;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.StringUtils;
 
 /**
- * An argument to a {@link Predicate}.
- * All terms are immutable.
+ * Query the value of an existing atom.
+ * String format: QueryAtom <predicate> <arg>...
  */
-public interface Term extends Comparable<Term>, SummationVariableOrTerm, Serializable {
-    public String toString();
+public class QueryAtom extends AtomAction {
+    public QueryAtom(StandardPredicate predicate, Constant[] arguments) {
+        super(predicate, arguments);
+    }
 
-    public int hashCode();
-
-    public boolean equals(Object other);
+    @Override
+    public String toString() {
+        return String.format(
+                "QUERYATOM\t%s\t%s",
+                predicate.getName(),
+                StringUtils.join("\t", arguments));
+    }
 }

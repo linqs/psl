@@ -15,21 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.term;
+package org.linqs.psl.application.inference.online.messages.actions.controls;
 
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
-
-import java.io.Serializable;
+import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 
 /**
- * An argument to a {@link Predicate}.
- * All terms are immutable.
+ * Sync the atom values of the online model.
+ * Specifically, execute queued actions and optimize.
+ * String format: Sync
  */
-public interface Term extends Comparable<Term>, SummationVariableOrTerm, Serializable {
-    public String toString();
+public class Sync extends OnlineMessage {
+    public Sync() {
+        super();
+    }
 
-    public int hashCode();
-
-    public boolean equals(Object other);
+    @Override
+    public String toString() {
+        return "SYNC";
+    }
 }

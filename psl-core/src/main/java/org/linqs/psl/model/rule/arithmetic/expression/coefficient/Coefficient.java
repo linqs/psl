@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,7 +32,7 @@ import org.linqs.psl.model.term.Constant;
  * Its subclasses are defined as inner classes, because there are
  * a lot of them and they are simple.
  */
-public abstract class Coefficient {
+public abstract class Coefficient implements Serializable {
     /**
      * Get the value of a coefficient (which may require a reqursive descent).
      * For performance reasons, instead of passing the full subtitution set to this method,

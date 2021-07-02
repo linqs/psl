@@ -15,21 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.model.term;
-
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
+package org.linqs.psl.application.inference.online.messages;
 
 import java.io.Serializable;
+import java.util.UUID;
 
-/**
- * An argument to a {@link Predicate}.
- * All terms are immutable.
- */
-public interface Term extends Comparable<Term>, SummationVariableOrTerm, Serializable {
-    public String toString();
+public abstract class OnlineMessage implements Serializable {
+    private UUID identifier;
 
-    public int hashCode();
+    public OnlineMessage(UUID identifier) {
+        this.identifier = identifier;
+    }
 
-    public boolean equals(Object other);
+    public OnlineMessage() {
+        this.identifier = UUID.randomUUID();
+    }
+
+    public UUID getIdentifier() {
+        return identifier;
+    }
 }
