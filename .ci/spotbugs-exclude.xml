@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter
+            xmlns="https://github.com/spotbugs/filter/3.0.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
+
+    <Match>
+        <!-- Note that the reports we want to ignore occur in anynonymous classes, so we need a regex. -->
+        <Class name="~org.linqs.psl.application.learning.weight.maxlikelihood.MaxPiecewisePseudoLikelihood\$\d+" />
+        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
+    </Match>
+
+    <Match>
+        <Class name="org.linqs.psl.application.learning.weight.search.bayesian.SquaredExpKernel" />
+        <Method name="kernel" />
+        <Bug pattern="RV_RETURN_VALUE_IGNORED_INFERRED" />
+    </Match>
+
+    <Match>
+        <Class name="org.linqs.psl.reasoner.term.MemoryVariableTermStore" />
+        <Method name="updateModelAtoms" />
+        <Bug pattern="WMI_WRONG_MAP_ITERATOR" />
+    </Match>
+
+    <Match>
+        <Class name="org.linqs.psl.util.RandUtils" />
+        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
+    </Match>
+
+</FindBugsFilter>
