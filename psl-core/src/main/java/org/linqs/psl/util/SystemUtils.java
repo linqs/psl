@@ -20,13 +20,12 @@ package org.linqs.psl.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.nio.file.Paths;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
- * Utilities for interfacing with a filesystem.
+ * Utilities for interfacing with a system.
  */
 public class SystemUtils {
     private static final Logger log = LoggerFactory.getLogger(SystemUtils.class);
@@ -62,65 +61,4 @@ public class SystemUtils {
 
         return hostname;
     }
-
-    /**
-     * Recursively make directories (mkdir -p).
-     */
-    public static void mkdir(String path) {
-        mkdir(new File(path));
-    }
-
-    public static void mkdir(File file) {
-        if (file.mkdirs()) {
-            return;
-        }
-
-        // A false return from mkdirs() can mean a directory already existed.
-        if (file.exists() && file.isDirectory()) {
-            throw new RuntimeException("Failed to mkdirs(\"" + file.getPath() + "\").");
-        }
-    }
-
-    public static void delete(String path) {
-        delete(new File(path));
-    }
-
-    /**
-     * Delete a file or empty directory.
-     */
-    public static void delete(File file) {
-        if (file.delete()) {
-            return;
-        }
-
-        // A false return from delete() can mean the dirent never existed.
-        if (file.exists()) {
-            throw new RuntimeException("Failed to delete(\"" + file.getPath() + "\").");
-        }
-    }
-
-    public static void recursiveDelete(String path) {
-        recursiveDelete(new File(path));
-    }
-
-    public static void recursiveDelete(File target) {
-        if (!target.exists()) {
-            return;
-        }
-
-        if (!target.isDirectory()) {
-            delete(target);
-            return;
-        }
-
-        File[] dirents = target.listFiles();
-        if (dirents != null) {
-            for (File dirent : dirents) {
-                recursiveDelete(dirent);
-            }
-        }
-
-        delete(target);
-    }
-
 }
