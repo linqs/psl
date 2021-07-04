@@ -94,7 +94,7 @@ public class CategoricalEvaluator extends Evaluator {
                 throw new IllegalArgumentException("Category indexes must be non-negative. Found: " + catIndex);
             }
 
-            categoryIndexes.add(new Integer(catIndex));
+            categoryIndexes.add(Integer.valueOf(catIndex));
         }
     }
 

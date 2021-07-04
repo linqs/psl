@@ -196,7 +196,7 @@ public class Formula2SQL {
             if (arg instanceof Attribute) {
                 convert[i] = ((Attribute)arg).getValue();
             } else if (arg instanceof UniqueIntID) {
-                convert[i] = new Integer(((UniqueIntID)arg).getID());
+                convert[i] = Integer.valueOf(((UniqueIntID)arg).getID());
             } else if (arg instanceof UniqueStringID) {
                 convert[i] = ((UniqueStringID)arg).getID();
             } else {
@@ -251,7 +251,7 @@ public class Formula2SQL {
                 if (arg instanceof Attribute) {
                     value = ((Attribute)arg).getValue();
                 } else if (arg instanceof UniqueIntID) {
-                    value = new Integer(((UniqueIntID)arg).getID());
+                    value = Integer.valueOf(((UniqueIntID)arg).getID());
                 } else {
                     value = ((UniqueStringID)arg).getID();
                 }
