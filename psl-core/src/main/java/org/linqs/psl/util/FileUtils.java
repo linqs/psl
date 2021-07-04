@@ -93,7 +93,7 @@ public class FileUtils {
         }
 
         // A false return from mkdirs() can mean a directory already existed.
-        if (file.exists() && file.isDirectory()) {
+        if (!file.exists() || !file.isDirectory()) {
             throw new RuntimeException("Failed to mkdirs(\"" + file.getPath() + "\").");
         }
     }
