@@ -109,13 +109,15 @@ public class CategoricalEvaluator extends Evaluator {
 
     @Override
     public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
+        assert(predicate != null);
+
         hits = 0;
         misses = 0;
 
         Set<GroundAtom> predictedCategories = getPredictedCategories(trainingMap, predicate);
 
         for (GroundAtom truthAtom : trainingMap.getAllTruths()) {
-            if (predicate != null && truthAtom.getPredicate() != predicate) {
+            if (truthAtom.getPredicate() != predicate) {
                 continue;
             }
 
