@@ -63,6 +63,42 @@ public class SystemUtils {
         return hostname;
     }
 
+    /**
+     * Recursively make directories (mkdir -p).
+     */
+    public static void mkdir(String path) {
+        mkdir(new File(path));
+    }
+
+    public static void mkdir(File file) {
+        if (file.mkdirs()) {
+            return;
+        }
+
+        // A false return from mkdirs() can mean a directory already existed.
+        if (file.exists() && file.isDirectory()) {
+            throw new RuntimeException("Failed to mkdirs(\"" + file.getPath() + "\").");
+        }
+    }
+
+    public static void delete(String path) {
+        delete(new File(path));
+    }
+
+    /**
+     * Delete a file or empty directory.
+     */
+    public static void delete(File file) {
+        if (file.delete()) {
+            return;
+        }
+
+        // A false return from delete() can mean the dirent never existed.
+        if (file.exists()) {
+            throw new RuntimeException("Failed to delete(\"" + file.getPath() + "\").");
+        }
+    }
+
     public static void recursiveDelete(String path) {
         recursiveDelete(new File(path));
     }
@@ -73,15 +109,18 @@ public class SystemUtils {
         }
 
         if (!target.isDirectory()) {
-            target.delete();
+            delete(target);
             return;
         }
 
-        for (File child : target.listFiles()) {
-            recursiveDelete(child);
+        File[] dirents = target.listFiles();
+        if (dirents != null) {
+            for (File dirent : dirents) {
+                recursiveDelete(dirent);
+            }
         }
 
-        target.delete();
+        delete(target);
     }
 
 }
