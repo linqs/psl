@@ -35,6 +35,12 @@
     </Match>
 
     <Match>
+        <Class name="org.linqs.psl.evaluation.statistics.AUCEvaluator" />
+        <Method name="getLabel" />
+        <Bug pattern="NP_BOOLEAN_RETURN_NULL" />
+    </Match>
+
+    <Match>
         <Class name="org.linqs.psl.reasoner.admm.ADMMReasoner" />
         <Or>
             <Field name="AxNorm" />
