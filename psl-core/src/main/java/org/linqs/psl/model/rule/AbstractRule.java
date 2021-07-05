@@ -23,6 +23,11 @@ import java.util.Map;
 
 /**
  * Base class for all (first order, i.e., not ground) rules.
+ *
+ * Care should always be taken when creating multiple instance of the same rule (e.g. through deserialization) or checking rules for equality.
+ * In general, there should only be one instance of each rule, but this is not tightly enforced.
+ * Rule hashes are by default their identity hash code (object id).
+ * This means that it may be possible to have rules that are equal(), but that do not have matching hashes.
  */
 public abstract class AbstractRule implements Rule {
     private static Map<Integer, AbstractRule> rules = new HashMap<Integer, AbstractRule>();
@@ -40,6 +45,14 @@ public abstract class AbstractRule implements Rule {
 
     public String getName() {
         return this.name;
+    }
+
+    /**
+     * Explicitly define the hash for rules to be the identity hash code (object id).
+     */
+    @Override
+    public int hashCode() {
+        return System.identityHashCode(this);
     }
 
     @Override

@@ -78,4 +78,10 @@
         <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
     </Match>
 
+    <!-- Rules explicitly define their hashcode to be the rules' identity hash code (object id). Rules are generally meant to be created once. -->
+    <Match>
+        <Class name="~org.linqs.psl.model.rule..*Rule.*" />
+        <Bug pattern="HE_EQUALS_NO_HASHCODE,HE_EQUALS_USE_HASHCODE" />
+    </Match>
+
 </FindBugsFilter>
