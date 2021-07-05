@@ -155,8 +155,9 @@ public class PostgreSQLDriver implements DatabaseDriver {
     public void setColumnDefault(String tableName, String columnName, String defaultValue) {
         String sql = String.format("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s", tableName, columnName, defaultValue);
 
-        try (Connection connection = getConnection()) {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        try (
+                Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new RuntimeException(String.format("Could not set the column default of %s for %s.%s.",
@@ -170,8 +171,9 @@ public class PostgreSQLDriver implements DatabaseDriver {
     public void dropColumnDefault(String tableName, String columnName) {
         String sql = String.format("ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", tableName, columnName);
 
-        try (Connection connection = getConnection()) {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        try (
+                Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new RuntimeException(String.format("Could not drop the column default for %s.%s.",

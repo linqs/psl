@@ -398,10 +398,6 @@ public class RDBMSDatabase extends Database {
         return predicate.createUpsertStatement(connection, ((RDBMSDataStore)parentDataStore).getDriver());
     }
 
-    private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
-        return getAtomDelete(connection, predicate, arguments, Arrays.asList(writeID));
-    }
-
     private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments, List<Integer> partitions) {
         PreparedStatement statement = predicate.createDeleteStatement(connection, partitions);
 
