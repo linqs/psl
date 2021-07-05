@@ -420,7 +420,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
         if (bound instanceof Long) {
             return Integer.valueOf(((Long)bound).intValue());
         } else if (bound instanceof Integer) {
-            return Integer.valueOf(((Integer)bound).intValue());
+            return (Integer)bound;
         } else {
             return bound.toString();
         }

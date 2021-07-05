@@ -241,7 +241,7 @@ public abstract class SupportingModel {
                 // Pull the features out of text.
                 float[] features = new float[numFeatures];
                 for (int i = 0; i < numFeatures; i++) {
-                    features[i] = Float.valueOf(parts[i + entityArgumentIndexes.length]);
+                    features[i] = Float.parseFloat(parts[i + entityArgumentIndexes.length]);
                 }
 
                 rawFeatures.add(features);
@@ -312,7 +312,7 @@ public abstract class SupportingModel {
 
                 float value = 1.0f;
                 if (parts.length == (minWidth + 1)) {
-                    value = Float.valueOf(parts[minWidth]);
+                    value = Float.parseFloat(parts[minWidth]);
                 }
 
                 if (!observedLabels.containsKey(entityIndex)) {
