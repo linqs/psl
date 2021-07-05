@@ -25,6 +25,16 @@
     </Match>
 
     <Match>
+        <Class name="org.linqs.psl.database.rdbms.PredicateInfo" />
+        <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE" />
+    </Match>
+
+    <Match>
+        <Class name="~org.linqs.psl.database.rdbms.driver..*Driver" />
+        <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING" />
+    </Match>
+
+    <Match>
         <Class name="org.linqs.psl.reasoner.term.MemoryVariableTermStore" />
         <Method name="updateModelAtoms" />
         <Bug pattern="WMI_WRONG_MAP_ITERATOR" />
