@@ -35,9 +35,36 @@
     </Match>
 
     <Match>
+        <Class name="org.linqs.psl.reasoner.admm.ADMMReasoner" />
+        <Or>
+            <Field name="AxNorm" />
+            <Field name="AyNorm" />
+            <Field name="BzNorm" />
+            <Field name="lagrangePenalty" />
+            <Field name="augmentedLagrangePenalty" />
+        </Or>
+        <Bug pattern="IS2_INCONSISTENT_SYNC" />
+    </Match>
+
+    <Match>
         <Class name="org.linqs.psl.reasoner.term.MemoryVariableTermStore" />
         <Method name="updateModelAtoms" />
         <Bug pattern="WMI_WRONG_MAP_ITERATOR" />
+    </Match>
+
+    <Match>
+        <Class name="org.linqs.psl.reasoner.term.MemoryConsensusTermStore" />
+        <Field name="numLocalVariables" />
+        <Bug pattern="IS2_INCONSISTENT_SYNC" />
+    </Match>
+
+    <Match>
+        <Class name="org.linqs.psl.reasoner.term.streaming.StreamingTermStore" />
+        <Or>
+            <Field name="numObservedAtoms" />
+            <Field name="numRandomVariableAtoms" />
+        </Or>
+        <Bug pattern="IS2_INCONSISTENT_SYNC" />
     </Match>
 
     <Match>
