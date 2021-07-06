@@ -175,8 +175,6 @@ public class CategoricalEvaluator extends Evaluator {
      * Build up a set that has all the atoms that represet the best categorical assignments.
      */
     protected Set<GroundAtom> getPredictedCategories(TrainingMap trainingMap, StandardPredicate predicate) {
-        int numArgs = predicate.getArity();
-
         // This map will be as deep as the number of category arguments.
         // The value will either be a GroundAtom representing the current best category,
         // or another Map<Constant, Object>, and so on.

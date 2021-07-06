@@ -206,7 +206,6 @@ public abstract class SupportingModel {
 
         int width = -1;
 
-        StringBuilder entityIDBuilder = new StringBuilder();
         List<float[]> rawFeatures = new ArrayList<float[]>();
 
         try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
