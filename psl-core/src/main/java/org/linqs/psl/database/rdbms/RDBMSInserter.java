@@ -106,7 +106,7 @@ public class RDBMSInserter extends Inserter {
         multiInsert.add("VALUES");
         multiInsert.add("    " + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
 
-        return ListUtils.join("\n", multiInsert);
+        return ListUtils.join(System.lineSeparator(), multiInsert);
     }
 
     @Override

@@ -89,25 +89,26 @@ public class Model {
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
-        s.append("Model:\n");
-        s.append(asString());
-        return s.toString();
+        StringBuilder builder = new StringBuilder();
+        builder.append("Model:");
+        builder.append(System.lineSeparator());
+        builder.append(asString());
+        return builder.toString();
     }
 
     /**
      * Create a model string that can be directly interpreted by the parser.
      */
     public String asString() {
-        StringBuilder s = new StringBuilder();
+        StringBuilder builder = new StringBuilder();
         if (rules.size() > 0) {
-            s.append(rules.get(0));
+            builder.append(rules.get(0));
         }
 
         for (int i = 1; i < rules.size(); i++) {
-            s.append("\n").append(rules.get(i));
+            builder.append(System.lineSeparator()).append(rules.get(i));
         }
 
-        return s.toString();
+        return builder.toString();
     }
 }

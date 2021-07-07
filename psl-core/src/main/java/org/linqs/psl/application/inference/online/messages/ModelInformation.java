@@ -42,8 +42,8 @@ public class ModelInformation extends OnlineMessage {
     @Override
     public String toString() {
         return String.format(
-                "ModelInfo:\nPredicates:%s\nRules:%s",
+                "ModelInfo:%nPredicates:%s%nRules:%s",
                 StringUtils.join("\t", predicates),
-                StringUtils.join("\n", rules));
+                StringUtils.join(System.lineSeparator(), rules));
     }
 }

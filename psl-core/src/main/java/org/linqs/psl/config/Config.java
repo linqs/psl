@@ -369,7 +369,7 @@ public class Config {
         Iterator<String> keys = config.getKeys();
         while (keys.hasNext()) {
             String key = keys.next();
-            string.append(key + ": " + config.getProperty(key) + "\n");
+            string.append(key + ": " + config.getProperty(key) + System.lineSeparator());
         }
 
         return string.toString();

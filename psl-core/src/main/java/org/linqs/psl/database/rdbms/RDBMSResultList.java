@@ -84,7 +84,7 @@ public class RDBMSResultList implements ResultList {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append("Size: ").append(size()).append("\n");
+        s.append("Size: ").append(size()).append(System.lineSeparator());
         int len = getArity();
         for (Constant[] res : results) {
             for (int i = 0; i < len; i++) {
@@ -93,7 +93,7 @@ public class RDBMSResultList implements ResultList {
                 }
                 s.append(res[i]);
             }
-            s.append("\n");
+            s.append(System.lineSeparator());
         }
         s.append("-------");
 

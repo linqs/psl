@@ -260,7 +260,7 @@ public class Launcher {
         try (BufferedWriter learnedFileWriter = FileUtils.getBufferedWriter(learnedFilename)) {
             learnedFileWriter.write(outModel);
         } catch (IOException ex) {
-            log.error("Failed to write learned model:\n" + outModel);
+            log.error("Failed to write learned model:" + System.lineSeparator() + outModel);
             throw new RuntimeException("Failed to write learned model to: " + learnedFilename, ex);
         }
     }
