@@ -404,7 +404,7 @@ public class Launcher {
             CommandLineLoader commandLineLoader = new CommandLineLoader(args);
             CommandLine givenOptions = commandLineLoader.getParsedOptions();
             // Return for command line parse errors or PSL errors.
-            if (( givenOptions == null) || (!(isCommandLineValid(givenOptions)))) {
+            if ((givenOptions == null) || (!(isCommandLineValid(givenOptions)))) {
                 return;
             }
             Launcher pslLauncher = new Launcher(givenOptions);
