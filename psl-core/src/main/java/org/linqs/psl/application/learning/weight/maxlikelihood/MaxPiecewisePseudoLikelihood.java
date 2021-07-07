@@ -121,8 +121,9 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
                 double accumulateIncompatibility = 0.0;
                 double weight = rule.getWeight();
 
-                for (RandomVariableAtom atom : groundRuleMap.keySet()) {
-                    List<WeightedGroundRule> groundRules = groundRuleMap.get(atom);
+                for (Map.Entry<RandomVariableAtom, List<WeightedGroundRule>> entry : groundRuleMap.entrySet()) {
+                    RandomVariableAtom atom = entry.getKey();
+                    List<WeightedGroundRule> groundRules = entry.getValue();
 
                     double numerator = 0.0;
                     double denominator = 1e-6;
@@ -161,8 +162,9 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
                 WeightedRule rule = mutableRules.get(ruleIndex);
                 double weight = rule.getWeight();
 
-                for (RandomVariableAtom atom : groundRuleMap.keySet()) {
-                    List<WeightedGroundRule> groundRules = groundRuleMap.get(atom);
+                for (Map.Entry<RandomVariableAtom, List<WeightedGroundRule>> entry : groundRuleMap.entrySet()) {
+                    RandomVariableAtom atom = entry.getKey();
+                    List<WeightedGroundRule> groundRules = entry.getValue();
 
                     double expInc = 0;
                     for (int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
@@ -208,8 +210,8 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
             double weight = ((WeightedRule) rule).getWeight();
             double obsInc = 0;
 
-            for (RandomVariableAtom atom : groundRuleMap.keySet()) {
-                for (WeightedGroundRule groundRule : groundRuleMap.get(atom)) {
+            for (List<WeightedGroundRule> groundRules : groundRuleMap.values()) {
+                for (WeightedGroundRule groundRule : groundRules) {
                     obsInc += groundRule.getIncompatibility();
                 }
             }

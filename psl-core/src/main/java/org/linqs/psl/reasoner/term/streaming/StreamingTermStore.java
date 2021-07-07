@@ -28,7 +28,7 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
-import org.linqs.psl.util.SystemUtils;
+import org.linqs.psl.util.FileUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,7 +159,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         termBuffer = null;
         volatileBuffer = null;
 
-        SystemUtils.recursiveDelete(pageDir);
+        FileUtils.recursiveDelete(pageDir);
         if (pageSize <= 1) {
             throw new IllegalArgumentException("Page size is too small.");
         }
@@ -168,7 +168,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         termPool = new ArrayList<T>(pageSize);
         shuffleMap = new int[pageSize];
 
-        (new File(pageDir)).mkdirs();
+        FileUtils.mkdir(pageDir);
     }
 
     /**
@@ -442,7 +442,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             termPool.clear();
         }
 
-        SystemUtils.recursiveDelete(pageDir);
+        FileUtils.recursiveDelete(pageDir);
     }
 
     @Override

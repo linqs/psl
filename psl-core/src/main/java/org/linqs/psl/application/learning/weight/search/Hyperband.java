@@ -22,6 +22,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -184,17 +185,36 @@ public class Hyperband extends WeightLearningApplication {
     }
 
     private static class RunResult implements Comparable<RunResult> {
-        public float[] weights;
-        public double objective;
+        private final float[] weights;
+        private final double objective;
 
         public RunResult(float[] weights, double objective) {
             this.weights = weights;
             this.objective = objective;
         }
 
+        public float[] getWeights() {
+            return weights;
+        }
+
         @Override
         public int compareTo(RunResult other) {
             return Double.compare(objective, other.objective);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof RunResult)) {
+                return false;
+            }
+
+            return MathUtils.equals(objective, ((RunResult)other).objective);
+        }
+
+        @Override
+        public int hashCode() {
+            // Since the objective is fixed, just offset it and truncate it.
+            return (int)(objective * 1000000);
         }
     }
 }

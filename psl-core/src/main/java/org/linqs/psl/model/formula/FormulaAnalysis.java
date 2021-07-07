@@ -37,11 +37,11 @@ import java.util.Set;
  * and makes the clauses available.
  */
 public class FormulaAnalysis implements Serializable {
-    private final Formula f;
+    private final Formula formula;
     private final List<DNFClause> clauses;
 
     public FormulaAnalysis(Formula formula) {
-        f = formula;
+        this.formula = formula;
 
         // Converts the Formula to Disjunctive Normal Form and collects the clauses
         formula = formula.getDNF();
@@ -103,7 +103,7 @@ public class FormulaAnalysis implements Serializable {
      * @return the original Formula that was analyzed
      */
     public Formula getFormula() {
-        return f;
+        return formula;
     }
 
     /**
@@ -124,7 +124,7 @@ public class FormulaAnalysis implements Serializable {
         return clauses.get(index);
     }
 
-    public class DNFClause implements Serializable {
+    public static class DNFClause implements Serializable {
         private List<Atom> posLiterals;
         private List<Atom> negLiterals;
         private Formula query;

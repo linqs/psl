@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.config;
 
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.RuntimeStats;
 
@@ -30,10 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
@@ -119,7 +118,7 @@ public class Config {
     public static void loadResource(InputStream stream, String resourceName) {
         try {
             PropertiesConfiguration props = new PropertiesConfiguration();
-            props.read(new InputStreamReader(stream));
+            props.read(FileUtils.getInputStreamReader(stream));
             config.append(props);
         } catch (IOException | ConfigurationException ex) {
             throw new RuntimeException("Failed to load config resource: " + resourceName, ex);
@@ -132,7 +131,7 @@ public class Config {
     public static void loadResource(String path) {
         try {
             PropertiesConfiguration props = new PropertiesConfiguration();
-            props.read(new FileReader(path));
+            props.read(FileUtils.getInputStreamReader(path));
             config.append(props);
         } catch (IOException | ConfigurationException ex) {
             throw new RuntimeException("Failed to load config resource: " + path, ex);

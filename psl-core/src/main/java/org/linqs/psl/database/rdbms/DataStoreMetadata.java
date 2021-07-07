@@ -215,8 +215,8 @@ public class DataStoreMetadata {
         Map<String, Integer> names = new HashMap<String, Integer>();
 
         Map<String, String> vals = getAllValuesByType(PARTITION_NAMESPACE, NAME_KEY);
-        for (String name : vals.keySet()) {
-            names.put(name, Integer.parseInt(vals.get(name)));
+        for (Map.Entry<String, String> entry : vals.entrySet()) {
+            names.put(entry.getKey(), Integer.parseInt(entry.getValue()));
         }
 
         return names;

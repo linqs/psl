@@ -346,8 +346,6 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             negativeAtoms = new ArrayList<GroundAtom>(4);
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
 
-            int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
-
             positiveAtomArgs = new Constant[negatedDNF.getPosLiterals().size()][];
             for (int i = 0; i < negatedDNF.getPosLiterals().size(); i++) {
                 positiveAtomArgs[i] = new Constant[negatedDNF.getPosLiterals().get(i).getArity()];

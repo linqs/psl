@@ -94,7 +94,7 @@ public class CategoricalEvaluator extends Evaluator {
                 throw new IllegalArgumentException("Category indexes must be non-negative. Found: " + catIndex);
             }
 
-            categoryIndexes.add(new Integer(catIndex));
+            categoryIndexes.add(Integer.valueOf(catIndex));
         }
     }
 
@@ -109,13 +109,15 @@ public class CategoricalEvaluator extends Evaluator {
 
     @Override
     public void compute(TrainingMap trainingMap, StandardPredicate predicate) {
+        assert(predicate != null);
+
         hits = 0;
         misses = 0;
 
         Set<GroundAtom> predictedCategories = getPredictedCategories(trainingMap, predicate);
 
         for (GroundAtom truthAtom : trainingMap.getAllTruths()) {
-            if (predicate != null && truthAtom.getPredicate() != predicate) {
+            if (truthAtom.getPredicate() != predicate) {
                 continue;
             }
 
@@ -173,8 +175,6 @@ public class CategoricalEvaluator extends Evaluator {
      * Build up a set that has all the atoms that represet the best categorical assignments.
      */
     protected Set<GroundAtom> getPredictedCategories(TrainingMap trainingMap, StandardPredicate predicate) {
-        int numArgs = predicate.getArity();
-
         // This map will be as deep as the number of category arguments.
         // The value will either be a GroundAtom representing the current best category,
         // or another Map<Constant, Object>, and so on.

@@ -716,13 +716,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         // Then, we can use those replacements in the flat expression.
         Formula queryFormula = expression.getQueryFormula();
 
-        // In the query, ignore the summation variables (since we already queried for those).
-        Set<Variable> ignoreVariables = new HashSet<Variable>();
-        for (SummationVariable summationVariable : expression.getSummationMapping().keySet()) {
-            ignoreVariables.add(summationVariable.getVariable());
-        }
-
         // The distinct here is unfortunate, but we need it since we are ignoring the summation variables.
+        // Note that ArithmeticRuleExpression.getVariables() does not return SummationVariables.
         Formula2SQL sqler = new Formula2SQL(expression.getVariables(), database, true);
         SelectQuery query = sqler.getQuery(queryFormula);
 

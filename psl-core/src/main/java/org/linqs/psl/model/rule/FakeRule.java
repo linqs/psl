@@ -94,6 +94,11 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
+    public int hashCode() {
+        throw new UnsupportedOperationException("FakeRules should not be stored in hashing structures.");
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (this == other) {
             return true;
