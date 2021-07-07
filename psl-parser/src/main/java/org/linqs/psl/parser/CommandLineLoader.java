@@ -21,6 +21,7 @@ import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.SystemUtils;
 import org.linqs.psl.util.Version;
 
@@ -87,7 +88,8 @@ public class CommandLineLoader {
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     private static Options options = setupOptions();
-    private static Logger log;
+
+    private Logger log;
     private CommandLine parsedOptions;
 
     public CommandLineLoader(String[] args) {
@@ -101,7 +103,7 @@ public class CommandLineLoader {
             ex.printStackTrace(System.err);
         }
 
-        this.log = initLogger();
+        log = initLogger();
         initConfig();
     }
 
@@ -116,7 +118,7 @@ public class CommandLineLoader {
      * Returns the parsedOptions object.
      */
     public CommandLine getParsedOptions() {
-        return this.parsedOptions;
+        return parsedOptions;
     }
 
     /**
@@ -127,7 +129,7 @@ public class CommandLineLoader {
 
         if (parsedOptions.hasOption(OPTION_LOG4J)) {
             try {
-                props.load(new FileReader(parsedOptions.getOptionValue(OPTION_LOG4J)));
+                props.load(FileUtils.getInputStreamReader(parsedOptions.getOptionValue(OPTION_LOG4J)));
             } catch (IOException ex) {
                 throw new RuntimeException("Failed to read logger configuration from a file.", ex);
             }
