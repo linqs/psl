@@ -26,12 +26,10 @@ import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
-import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 
 import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
