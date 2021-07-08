@@ -88,7 +88,7 @@ public class OnlineClient implements Runnable {
     /**
      * Private class for reading OnlineResponse objects from server.
      */
-    private class ServerConnectionThread extends Thread {
+    private static class ServerConnectionThread extends Thread {
         private ObjectInputStream inputStream;
         private List<OnlineResponse> serverResponses;
 

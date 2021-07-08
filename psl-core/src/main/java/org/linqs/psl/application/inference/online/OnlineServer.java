@@ -53,7 +53,7 @@ public class OnlineServer {
 
     private boolean listening;
     private ServerConnectionThread serverThread;
-    private Set<Thread> clientConnectionThreads;
+    private Set<ClientConnectionThread> clientConnectionThreads;
     private BlockingQueue<OnlineMessage> queue;
     private ConcurrentMap<UUID, ClientConnectionThread> messageIDConnectionMap;
     private List<Rule> rules;
@@ -61,11 +61,11 @@ public class OnlineServer {
 
     public OnlineServer(List<Rule> rules) {
         listening = false;
-        serverThread = new ServerConnectionThread(this);
+        serverThread = new ServerConnectionThread();
         tmpFile = null;
         queue = new LinkedBlockingQueue<OnlineMessage>();
         messageIDConnectionMap = new ConcurrentHashMap<UUID, ClientConnectionThread>();
-        clientConnectionThreads = new HashSet<Thread>();
+        clientConnectionThreads = new HashSet<ClientConnectionThread>();
         this.rules = rules;
     }
 
@@ -121,12 +121,12 @@ public class OnlineServer {
         }
     }
 
-    public void closeClient(Thread clientConnectionThread) {
-        ((ClientConnectionThread)clientConnectionThread).close();
+    public void closeClient(ClientConnectionThread clientConnectionThread) {
+        clientConnectionThread.close();
         clientConnectionThreads.remove(clientConnectionThread);
     }
 
-    public void addClient(Thread clientConnectionThread) {
+    public void addClient(ClientConnectionThread clientConnectionThread) {
         clientConnectionThreads.add(clientConnectionThread);
     }
 
@@ -149,7 +149,7 @@ public class OnlineServer {
         }
 
         if (clientConnectionThreads != null) {
-            for (Thread clientConnection : clientConnectionThreads) {
+            for (ClientConnectionThread clientConnection : clientConnectionThreads) {
                 closeClient(clientConnection);
             }
             clientConnectionThreads = null;
@@ -167,11 +167,8 @@ public class OnlineServer {
     private class ServerConnectionThread extends Thread {
         private int port;
         private ServerSocket socket;
-        private OnlineServer server;
 
-        public ServerConnectionThread(OnlineServer server) {
-            this.server = server;
-
+        public ServerConnectionThread() {
             port = Options.ONLINE_PORT_NUMBER.getInt();
             socket = null;
         }
@@ -204,7 +201,7 @@ public class OnlineServer {
                     throw new RuntimeException(ex);
                 }
 
-                connectionThread = new ClientConnectionThread(client, server);
+                connectionThread = new ClientConnectionThread(client);
                 addClient(connectionThread);
                 connectionThread.start();
             }
@@ -223,13 +220,11 @@ public class OnlineServer {
 
     private class ClientConnectionThread extends Thread {
         public Socket socket;
-        public OnlineServer server;
         public ObjectInputStream inputStream;
         public ObjectOutputStream outputStream;
 
-        public ClientConnectionThread(Socket socket, OnlineServer server) {
+        public ClientConnectionThread(Socket socket) {
             this.socket = socket;
-            this.server = server;
 
             setUncaughtExceptionHandler(new ClientConnectionExceptionHandler());
         }
@@ -293,9 +288,15 @@ public class OnlineServer {
 
     private class ClientConnectionExceptionHandler implements Thread.UncaughtExceptionHandler {
         @Override
-        public void uncaughtException(Thread clientConnectionThread, Throwable ex) {
+        public void uncaughtException(Thread thread, Throwable ex) {
+            if (!(thread instanceof ClientConnectionThread)) {
+                throw new RuntimeException("ClientConnectionExceptionHandler can only be used by ClientConnectionThreads", ex);
+            }
+
             log.warn(String.format("Uncaught exception in ClientConnectionThread. "
                     + " Exception message: %s", ex.getMessage()));
+
+            ClientConnectionThread clientConnectionThread = (ClientConnectionThread)thread;
             closeClient(clientConnectionThread);
         }
     }
