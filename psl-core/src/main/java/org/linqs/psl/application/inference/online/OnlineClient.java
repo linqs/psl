@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 /**
- * A client that takes input on stdin and passes it to the online host specified in configuration.
+ * A client that communicates with an OnlineServer using OnlineMessages.
  */
 public class OnlineClient implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
@@ -86,7 +86,7 @@ public class OnlineClient implements Runnable {
     }
 
     /**
-     * Private class for reading OnlineResponse objects from server.
+     * Private class for reading OnlineResponses from the OnlineServer.
      */
     private static class ServerConnectionThread extends Thread {
         private ObjectInputStream inputStream;

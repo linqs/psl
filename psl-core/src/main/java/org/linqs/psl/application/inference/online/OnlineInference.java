@@ -33,7 +33,6 @@ public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
     private OnlineServer server;
-
     private boolean modelUpdates;
     private boolean stopped;
     private double objective;
@@ -74,7 +73,7 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     private void startServer() {
-        server = new OnlineServer(this.rules);
+        server = new OnlineServer();
         server.start();
     }
 

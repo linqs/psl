@@ -49,14 +49,10 @@ public class SGDOnlineInferenceTest {
     public void setup() {
         cleanup();
 
-        Options.SGD_LEARNING_RATE.set(10.0);
-
         modelInfo = TestModel.getModel(true);
 
-        // Close the predicates we are using.
-        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
-
-        inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition, toClose, modelInfo.observationPartition);
+        inferDB = modelInfo.dataStore.getDatabase(modelInfo.targetPartition,
+                new HashSet<StandardPredicate>(), modelInfo.observationPartition);
 
         // Start up inference on separate thread.
         onlineInferenceThread = new OnlineInferenceThread();

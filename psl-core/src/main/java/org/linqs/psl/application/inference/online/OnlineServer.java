@@ -45,8 +45,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * A class for listening for new client connections and establishing socket connections for client server communication.
- * Actions provided via client connections will be stored in a shared queue that is accessible via the getAction() method.
+ * A class for listening for new client connections, queueing actions from OnlineClients, and sending OnlineResponses.
  */
 public class OnlineServer {
     private static final Logger log = LoggerFactory.getLogger(OnlineServer.class);
@@ -56,17 +55,13 @@ public class OnlineServer {
     private Set<ClientConnectionThread> clientConnectionThreads;
     private BlockingQueue<OnlineMessage> queue;
     private ConcurrentMap<UUID, ClientConnectionThread> messageIDConnectionMap;
-    private List<Rule> rules;
-    private File tmpFile;
 
-    public OnlineServer(List<Rule> rules) {
+    public OnlineServer() {
         listening = false;
         serverThread = new ServerConnectionThread();
-        tmpFile = null;
         queue = new LinkedBlockingQueue<OnlineMessage>();
         messageIDConnectionMap = new ConcurrentHashMap<UUID, ClientConnectionThread>();
         clientConnectionThreads = new HashSet<ClientConnectionThread>();
-        this.rules = rules;
     }
 
     /**
@@ -130,16 +125,6 @@ public class OnlineServer {
         clientConnectionThreads.add(clientConnectionThread);
     }
 
-    private void createServerTempFile() {
-        try {
-            tmpFile = File.createTempFile("OnlinePSLServer", ".tmp");
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-        tmpFile.deleteOnExit();
-        log.info("Temporary server config file at: " + tmpFile.getAbsolutePath());
-    }
-
     public void close() {
         listening = false;
 
@@ -187,8 +172,6 @@ public class OnlineServer {
             ClientConnectionThread connectionThread = null;
 
             openListenSocket();
-
-            createServerTempFile();
             log.info(String.format("Online server started on port %s.", port));
 
             while (listening) {
