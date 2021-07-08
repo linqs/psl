@@ -491,6 +491,18 @@ public class Options {
         "A comma separated list of indexes to the predicate arguments that identity the target label (as opposed to the identity of the data point)."
     );
 
+    public static final Option ONLINE_HOST = new Option(
+            "inference.onlinehostname",
+            "127.0.0.1",
+            "The hostname for the online server."
+    );
+
+    public static final Option ONLINE_PORT_NUMBER = new Option(
+            "inference.onlineportnumber",
+            56734,
+            "The port number for the online server."
+    );
+
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
         "pairedduallearner.admmsteps",
         1,
