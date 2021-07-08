@@ -273,7 +273,7 @@ public class OnlineServer {
         @Override
         public void uncaughtException(Thread thread, Throwable ex) {
             if (!(thread instanceof ClientConnectionThread)) {
-                throw new RuntimeException("ClientConnectionExceptionHandler can only be used by ClientConnectionThreads", ex);
+                throw new RuntimeException("ClientConnectionExceptionHandler can only be used by ClientConnectionThreads.", ex);
             }
 
             log.warn(String.format("Uncaught exception in ClientConnectionThread. "

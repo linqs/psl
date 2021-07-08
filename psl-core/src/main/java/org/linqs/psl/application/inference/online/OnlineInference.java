@@ -95,7 +95,7 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     /**
-     * Optimize if there were any new or deleted atoms since last optimization.
+     * Optimize if there were any modelUpdates since the last optimization.
      */
     private void optimize() {
         if (!modelUpdates) {
