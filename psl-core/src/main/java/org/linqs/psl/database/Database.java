@@ -327,7 +327,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
                         row.append("\t");
                     }
                     row.append(atom.getValue());
-                    row.append("\n");
+                    row.append(System.lineSeparator());
 
                     bufferedPredWriter.write(row.toString());
                 }

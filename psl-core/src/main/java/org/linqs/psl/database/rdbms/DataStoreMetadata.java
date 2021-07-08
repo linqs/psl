@@ -75,7 +75,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.execute();
         } catch (SQLException ex) {
@@ -125,7 +125,7 @@ public class DataStoreMetadata {
         ResultSet resultSet = null;
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -162,7 +162,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -186,7 +186,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);

@@ -229,7 +229,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
         sql.add("DO UPDATE SET");
         sql.add("    " + ListUtils.join(", ", updateValues));
 
-        return ListUtils.join("\n", sql);
+        return ListUtils.join(System.lineSeparator(), sql);
     }
 
     private void executeUpdate(String sql) {
@@ -287,7 +287,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
             ResultSet result = statement.executeQuery();
         ) {
             while (result.next()) {
