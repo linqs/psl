@@ -121,6 +121,7 @@ public abstract class OnlineInference extends InferenceApplication {
             }
 
             try {
+                log.trace(String.format("Executing action: %s", action));
                 executeAction(action);
             } catch (IllegalArgumentException ex) {
                 server.onActionExecution(action, new ActionStatus(action, false, ex.getMessage()));
