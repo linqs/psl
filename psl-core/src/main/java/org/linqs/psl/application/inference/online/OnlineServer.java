@@ -101,7 +101,7 @@ public class OnlineServer {
         try {
             outputStream.writeObject(onlineResponse);
         } catch (IOException ex) {
-            log.warn(String.format("Failed to send client onlineResponse: %s", onlineResponse));
+            log.warn(String.format("Failed to send client onlineResponse: %s", onlineResponse), ex);
         }
 
         if (action instanceof Exit || action instanceof Stop) {
@@ -228,6 +228,7 @@ public class OnlineServer {
             while (true) {
                 try {
                     newAction = (OnlineMessage)inputStream.readObject();
+                    log.trace(String.format("Server received action from client: %s", newAction));
                 } catch (EOFException ex) {
                     throw new RuntimeException("Client closed socket without Exit or Stop action.", ex);
                 } catch (IOException ex) {
