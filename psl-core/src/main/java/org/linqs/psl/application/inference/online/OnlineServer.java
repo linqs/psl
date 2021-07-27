@@ -23,19 +23,16 @@ import org.linqs.psl.application.inference.online.messages.actions.controls.Stop
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.rule.Rule;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -80,7 +77,7 @@ public class OnlineServer {
     public OnlineMessage getAction() {
         OnlineMessage nextAction = null;
 
-        while (nextAction == null) {
+        do {
             try {
                 nextAction = queue.take();
             } catch (InterruptedException ex) {
@@ -92,7 +89,7 @@ public class OnlineServer {
                 onActionExecution(nextAction, new ActionStatus(nextAction, true, "Session Closed."));
                 nextAction = null;
             }
-        }
+        } while (nextAction == null);
 
         return nextAction;
     }
