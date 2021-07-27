@@ -64,24 +64,27 @@ public class OnlineClient implements Runnable {
             serverConnectionThread.start();
 
             // Deque actions and send to server.
-            while (!(onlineAction instanceof Exit || onlineAction instanceof Stop)) {
+            do {
                 // Dequeue next action.
                 try {
                     onlineAction = actionQueue.take();
                 } catch (InterruptedException ex) {
-                    log.warn("Interrupted while taking an online action from the queue.", ex);
-                    continue;
+                    log.warn("Interrupted while taking an online action from the queue."
+                            + " Stopping client session and not waiting for server responses.", ex);
+                    socketOutputStream.writeObject(new Exit());
+                    socketInputStream.close();
+                    return;
                 }
                 log.trace("Sending Action {}", onlineAction);
                 socketOutputStream.writeObject(onlineAction);
-            }
+            } while (!(onlineAction instanceof Exit || onlineAction instanceof Stop));
 
             // Wait for serverConnectionThread.
             serverConnectionThread.join();
         } catch(IOException ex) {
             throw new RuntimeException(ex);
         } catch (InterruptedException ex) {
-            log.error("Client session interrupted");
+            log.warn("Client session interrupted. Client stopped.");
         }
     }
 
