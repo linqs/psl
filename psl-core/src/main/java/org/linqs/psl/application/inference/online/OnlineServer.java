@@ -35,8 +35,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -61,7 +61,7 @@ public class OnlineServer {
         serverThread = new ServerConnectionThread();
         queue = new LinkedBlockingQueue<OnlineMessage>();
         messageIDConnectionMap = new ConcurrentHashMap<UUID, ClientConnectionThread>();
-        clientConnectionThreads = new HashSet<ClientConnectionThread>();
+        clientConnectionThreads = Collections.newSetFromMap(new ConcurrentHashMap<ClientConnectionThread, Boolean>());
     }
 
     /**
