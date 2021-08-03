@@ -80,6 +80,8 @@ public abstract class OnlineInference extends InferenceApplication {
     protected void executeAction(OnlineMessage action) {
         String response = null;
 
+        // Switch on action class and execute.
+        // All supported actions except for Exit should have a corresponding method that is called here.
         if (action.getClass() == Stop.class) {
             response = doStop();
         } else {
