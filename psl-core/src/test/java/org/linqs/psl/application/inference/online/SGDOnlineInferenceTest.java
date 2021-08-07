@@ -63,6 +63,16 @@ public class SGDOnlineInferenceTest {
             onlineInferenceThread.close();
             onlineInferenceThread = null;
         }
+
+        if (inferDB != null) {
+            inferDB.close();
+            inferDB = null;
+        }
+
+        if (modelInfo != null) {
+            modelInfo.dataStore.close();
+            modelInfo = null;
+        }
     }
 
     /**
