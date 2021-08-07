@@ -22,13 +22,15 @@ import java.util.UUID;
 
 public abstract class OnlineMessage implements Serializable {
     private UUID identifier;
+    private long timestamp;
+
+    public OnlineMessage() {
+        this(UUID.randomUUID());
+    }
 
     public OnlineMessage(UUID identifier) {
         this.identifier = identifier;
-    }
-
-    public OnlineMessage() {
-        this.identifier = UUID.randomUUID();
+        timestamp = System.currentTimeMillis();
     }
 
     public UUID getIdentifier() {
