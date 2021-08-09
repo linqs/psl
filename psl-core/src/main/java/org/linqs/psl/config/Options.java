@@ -503,6 +503,13 @@ public class Options {
             "The port number for the online server."
     );
 
+    public static final Option ONLINE_READ_PARTITION = new Option(
+            "onlineatommanager.read",
+            -1,
+            "The partition to add new observations to."
+            + " If negative, the first read partition in the database will be used."
+    );
+
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
         "pairedduallearner.admmsteps",
         1,

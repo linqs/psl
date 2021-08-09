@@ -23,13 +23,14 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 
 import java.nio.ByteBuffer;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
  */
-public class SGDObjectiveTerm implements ReasonerTerm  {
+public class SGDObjectiveTerm implements StreamingTerm {
     private boolean squared;
     private boolean hinge;
 
@@ -58,6 +59,10 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
+    }
+
+    public int getVariableIndex(int i) {
+        return variableIndexes[i];
     }
 
     @Override
@@ -119,10 +124,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return variableIndexes;
     }
 
-    /**
-     * The number of bytes that writeFixedValues() will need to represent this term.
-     * This is just all the member datum.
-     */
+    @Override
     public int fixedByteSize() {
         int bitSize =
             Byte.SIZE  // squared
@@ -135,10 +137,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         return bitSize / 8;
     }
 
-    /**
-     * Write a binary representation of the fixed values of this term to a buffer.
-     * Note that the variableIndexes are written using the term store indexing.
-     */
+    @Override
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
         fixedBuffer.put((byte)(hinge ? 1 : 0));
@@ -152,9 +151,7 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    /**
-     * Assume the term that will be next read from the buffers.
-     */
+    @Override
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer) {
         squared = (fixedBuffer.get() == 1);
         hinge = (fixedBuffer.get() == 1);

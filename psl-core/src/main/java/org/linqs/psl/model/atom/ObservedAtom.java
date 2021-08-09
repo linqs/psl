@@ -34,10 +34,19 @@ import org.linqs.psl.model.term.Constant;
  */
 public class ObservedAtom extends GroundAtom {
     /**
-     * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
+     * Instantiation of GroundAtoms should typically be left to the Database so it can maintain a cache.
      */
     public ObservedAtom(Predicate predicate, Constant[] args, float value) {
         super(predicate, args, value);
+    }
+
+    /**
+     * This method should only be used in VERY specific situations and with a considerable amount of preparation.
+     * This method sets the truth value of the atom.
+     * However, in most circumstances observed atoms have a fixed value.
+     */
+    public void _assumeValue(float newValue) {
+        value = newValue;
     }
 
     @Override

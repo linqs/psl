@@ -23,11 +23,17 @@ import org.junit.Test;
 import org.linqs.psl.OnlineTest;
 import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
+import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.model.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.UniqueStringID;
 
 import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
@@ -46,6 +52,8 @@ public class SGDOnlineInferenceTest {
     @Before
     public void setup() {
         cleanup();
+
+        Options.SGD_LEARNING_RATE.set(10.0);
 
         modelInfo = TestModel.getModel(true);
 
@@ -89,6 +97,65 @@ public class SGDOnlineInferenceTest {
         expectedResponses[0] = new ActionStatus(stop, true, "OnlinePSL inference stopped.");
 
         OnlineTest.assertServerResponse(commands, expectedResponses);
+    }
+
+    /**
+     * Make sure that new atoms are added to model, are considered during inference, and
+     * result in the expected groundings.
+     */
+    @Test
+    public void testAddAtoms() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+
+        // Check that adding atoms will not create new random variable atoms.
+        commands.add(new AddAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+        commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {-1.0, -1.0, -1.0, -1.0});
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        // Check that atoms added to the model have the expected values at the MAP state.
+        commands.add(new AddAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+        commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}, 0.0f));
+        commands.add(new QueryAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {1.0, 0.0, 0.0, 0.0, 0.0, 0.0});
+    }
+
+    /**
+     * Add an atom with predicates and arguments that already exists in the model but with a different partition.
+     */
+    @Test
+    public void testChangeAtomPartition() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+
+        // Add existing atom with different partition.
+        commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
+                new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        double[] values = {0.5};
+
+        OnlineTest.assertAtomValues(commands, values);
     }
 
     private class OnlineInferenceThread extends Thread {

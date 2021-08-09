@@ -25,8 +25,10 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.util.RuntimeStats;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,7 +39,7 @@ import java.util.List;
  * This will typically be the first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public abstract class StreamingGroundingIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
+public abstract class StreamingGroundingIterator<T extends StreamingTerm> implements StreamingIterator<T> {
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;
 
@@ -272,6 +274,40 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         nextPage++;
     }
 
+    protected void flushTermCache(String termPagePath) {
+        // Count the exact size we will need to write.
+        int termsSize = 0;
+        for (T term : termCache) {
+            termsSize += term.fixedByteSize();
+        }
+
+        // Allocate an extra two ints for the number of terms and size of terms in that page.
+        int termBufferSize = termsSize + (Integer.SIZE / 8) * 2;
+
+        if (termBuffer == null || termBuffer.capacity() < termBufferSize) {
+            termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
+        }
+        termBuffer.clear();
+
+        // First put the size of the terms and number of terms.
+        termBuffer.putInt(termsSize);
+        termBuffer.putInt(termCache.size());
+
+        // Now put in all the terms.
+        for (T term : termCache) {
+            term.writeFixedValues(termBuffer);
+        }
+
+        try (FileOutputStream stream = new FileOutputStream(termPagePath)) {
+            stream.write(termBuffer.array(), 0, termBufferSize);
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to write term cache page: " + termPagePath, ex);
+        }
+
+        // Log io.
+        RuntimeStats.logDiskWrite(termBufferSize);
+    }
+
     @Override
     public void close() {
         if (closed) {
@@ -294,9 +330,21 @@ public abstract class StreamingGroundingIterator<T extends ReasonerTerm> impleme
         parentStore.groundingIterationComplete(termCount, nextPage, termBuffer, volatileBuffer);
     }
 
+    protected void flushVolatileCache(String volatilePagePath) {
+        // Do not use a volatile buffer by default.
+        if (volatileBuffer == null) {
+            volatileBuffer = ByteBuffer.allocate(0);
+        }
+    }
+
     /**
      * Write a full page (including any volatile page that the child may use).
      * This is responsible for creating/reallocating both the term buffer and volatile buffer.
      */
-    protected abstract void writeFullPage(String termPagePath, String volatilePagePath);
+    protected void writeFullPage(String termPagePath, String volatilePagePath) {
+        flushTermCache(termPagePath);
+        flushVolatileCache(volatilePagePath);
+
+        termCache.clear();
+    }
 }

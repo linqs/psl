@@ -46,48 +46,7 @@ public class DCDStreamingGroundingIterator extends StreamingGroundingIterator<DC
     }
 
     @Override
-    protected void writeFullPage(String termPagePath, String volatilePagePath) {
-        flushTermCache(termPagePath);
-        flushVolatileCache(volatilePagePath);
-
-        termCache.clear();
-    }
-
-    private void flushTermCache(String termPagePath) {
-        // Count the exact size we will need to write.
-        int termsSize = 0;
-        for (DCDObjectiveTerm term : termCache) {
-            termsSize += term.fixedByteSize();
-        }
-
-        // Allocate an extra two ints for the number of terms and size of terms in that page.
-        int termBufferSize = termsSize + (Integer.SIZE / 8) * 2;
-
-        if (termBuffer == null || termBuffer.capacity() < termBufferSize) {
-            termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
-        }
-        termBuffer.clear();
-
-        // First put the size of the terms and number of terms.
-        termBuffer.putInt(termsSize);
-        termBuffer.putInt(termCache.size());
-
-        // Now put in all the terms.
-        for (DCDObjectiveTerm term : termCache) {
-            term.writeFixedValues(termBuffer);
-        }
-
-        try (FileOutputStream stream = new FileOutputStream(termPagePath)) {
-            stream.write(termBuffer.array(), 0, termBufferSize);
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to write term cache page: " + termPagePath, ex);
-        }
-
-        // Log io.
-        RuntimeStats.logDiskWrite(termBufferSize);
-    }
-
-    private void flushVolatileCache(String volatilePagePath) {
+    protected void flushVolatileCache(String volatilePagePath) {
         int volatileBufferSize = (Float.SIZE / 8) * termCache.size();
 
         if (volatileBuffer == null || volatileBuffer.capacity() < volatileBufferSize) {

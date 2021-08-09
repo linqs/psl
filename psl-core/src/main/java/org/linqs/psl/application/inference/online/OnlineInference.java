@@ -20,10 +20,18 @@ package org.linqs.psl.application.inference.online;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.model.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
+import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.OnlineAtomManager;
+import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 
+import org.linqs.psl.reasoner.term.online.OnlineTermStore;
+import org.linqs.psl.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +67,11 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     @Override
+    protected PersistedAtomManager createAtomManager(Database database) {
+        return new OnlineAtomManager(database, this.initialValue);
+    }
+
+    @Override
     public void close() {
         stopped = true;
         closeServer();
@@ -82,13 +95,57 @@ public abstract class OnlineInference extends InferenceApplication {
 
         // Switch on action class and execute.
         // All supported actions except for Exit should have a corresponding method that is called here.
-        if (action.getClass() == Stop.class) {
+        if (action.getClass() == AddAtom.class) {
+            response = doAddAtom((AddAtom)action);
+        } else if (action.getClass() == QueryAtom.class) {
+            response = doQueryAtom((QueryAtom)action);
+        } else if (action.getClass() == Stop.class) {
             response = doStop();
         } else {
             throw new IllegalArgumentException("Unsupported action: " + action.getClass().getName() + ".");
         }
 
         server.onActionExecution(action, new ActionStatus(action, true, response));
+    }
+
+    protected String doAddAtom(AddAtom action) {
+        GroundAtom atom = null;
+
+        if (atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
+            atom = ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
+            ((OnlineTermStore)termStore).deleteLocalVariable(atom);
+        }
+
+        if (action.getPartitionName().equalsIgnoreCase("READ")) {
+            atom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), action.getArguments());
+        } else {
+            atom = ((OnlineAtomManager)atomManager).addRandomVariableAtom(action.getPredicate(), action.getValue(), action.getArguments());
+        }
+
+        atom = ((OnlineTermStore)termStore).createLocalVariable(atom);
+
+        modelUpdates = true;
+        return String.format("Added atom: %s", atom.toStringWithValue());
+    }
+
+    protected String doQueryAtom(QueryAtom action) {
+        double atomValue = -1.0;
+
+        optimize();
+
+        if (((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
+            atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
+        }
+
+        server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
+
+        if (atomValue == -1.0) {
+            return String.format("Atom: %s(%s) not found.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
+
+        return String.format("Atom: %s(%s) found. Returned to client.",
+                action.getPredicate(), StringUtils.join(", ", action.getArguments()));
     }
 
     protected String doStop() {

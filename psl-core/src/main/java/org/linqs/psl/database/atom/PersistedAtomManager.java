@@ -63,7 +63,7 @@ public class PersistedAtomManager extends AtomManager {
      */
     private InitialValue initialValueOnIllegalAccess;
 
-    private int persistedAtomCount;
+    protected int persistedAtomCount;
 
     public PersistedAtomManager(Database db) {
         this(db, false);
@@ -192,10 +192,14 @@ public class PersistedAtomManager extends AtomManager {
 
     protected void addToPersistedCache(Set<RandomVariableAtom> atoms) {
         for (RandomVariableAtom atom : atoms) {
-            if (!atom.getPersisted()) {
-                atom.setPersisted(true);
-                persistedAtomCount++;
-            }
+            addToPersistedCache(atom);
+        }
+    }
+
+    protected void addToPersistedCache(RandomVariableAtom atom) {
+        if (!atom.getPersisted()) {
+            atom.setPersisted(true);
+            persistedAtomCount++;
         }
     }
 
