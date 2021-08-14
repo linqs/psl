@@ -28,6 +28,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.IteratorUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +43,8 @@ import java.util.List;
 public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingTermStore<T> {
     private static final Logger log = LoggerFactory.getLogger(OnlineTermStore.class);
 
-    protected ArrayList<Integer> activeTermPages;
-    protected ArrayList<Integer> activeVolatilePages;
+    protected List<Integer> activeTermPages;
+    protected List<Integer> activeVolatilePages;
     protected Integer nextTermPageIndex;
     protected Integer nextVolatilePageIndex;
 

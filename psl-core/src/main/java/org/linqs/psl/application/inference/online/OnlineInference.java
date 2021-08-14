@@ -29,9 +29,9 @@ import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
-
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +122,7 @@ public abstract class OnlineInference extends InferenceApplication {
             atom = ((OnlineAtomManager)atomManager).addRandomVariableAtom(action.getPredicate(), action.getValue(), action.getArguments());
         }
 
-        atom = ((OnlineTermStore)termStore).createLocalVariable(atom);
+        ((OnlineTermStore)termStore).createLocalVariable(atom);
 
         modelUpdates = true;
         return String.format("Added atom: %s", atom.toStringWithValue());

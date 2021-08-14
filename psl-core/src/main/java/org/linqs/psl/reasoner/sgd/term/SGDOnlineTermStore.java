@@ -26,7 +26,6 @@ import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import java.util.List;
 
 public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
-
     public SGDOnlineTermStore(List<Rule> rules, AtomManager atomManager, SGDTermGenerator termGenerator) {
         super(rules, atomManager, termGenerator);
     }

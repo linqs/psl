@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
  * A term that may be used in a streaming term store
  */
 public interface StreamingTerm extends ReasonerTerm {
-
     /**
      * The number of bytes that writeFixedValues() will need to represent this term.
      */
