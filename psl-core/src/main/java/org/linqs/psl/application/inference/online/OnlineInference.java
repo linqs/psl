@@ -129,20 +129,17 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected String doQueryAtom(QueryAtom action) {
-        double atomValue = -1.0;
+        if (!((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
+            server.onActionExecution(action, new QueryAtomResponse(action, -1.0));
 
-        optimize();
-
-        if (((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
-            atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
-        }
-
-        server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
-
-        if (atomValue == -1.0) {
             return String.format("Atom: %s(%s) not found.",
                     action.getPredicate(), StringUtils.join(", ", action.getArguments()));
         }
+
+        optimize();
+
+        double atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
+        server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
 
         return String.format("Atom: %s(%s) found. Returned to client.",
                 action.getPredicate(), StringUtils.join(", ", action.getArguments()));
