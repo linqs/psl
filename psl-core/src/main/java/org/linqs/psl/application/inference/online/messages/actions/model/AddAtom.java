@@ -25,6 +25,7 @@ import org.linqs.psl.util.StringUtils;
 
 /**
  * Add a new atom to the model.
+ * If the atom already exists as READ or WRITE, then the atom is first deleted.
  * Note that a value must be provided for atoms being added to the READ partition.
  * String format: AddAtom <READ/WRITE> <predicate> <arg>... [value]
  */
