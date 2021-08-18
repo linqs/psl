@@ -23,3 +23,7 @@ before_script:
 script:
   - mvn integration-test -B
   - ./.ci/deploy-docs.sh
+
+cache:
+  directories:
+  - $HOME/.m2
