@@ -23,7 +23,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDOnlineTermStore;
 import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
@@ -45,7 +45,7 @@ public class SGDOnlineInference extends OnlineInference {
 
     @Override
     protected StreamingTermStore<SGDObjectiveTerm> createTermStore() {
-        return new SGDStreamingTermStore(rules, atomManager, (SGDTermGenerator)termGenerator);
+        return new SGDOnlineTermStore(rules, atomManager, (SGDTermGenerator)termGenerator);
     }
 
     @Override

@@ -21,17 +21,14 @@ import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
-import org.linqs.psl.util.RuntimeStats;
+import org.linqs.psl.reasoner.term.online.OnlineGroundingIterator;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class SGDStreamingGroundingIterator extends StreamingGroundingIterator<SGDObjectiveTerm> {
-    public SGDStreamingGroundingIterator(
-            SGDStreamingTermStore parentStore, List<Rule> rules,
+public class SGDOnlineGroundingIterator extends OnlineGroundingIterator<SGDObjectiveTerm> {
+    public SGDOnlineGroundingIterator(
+            SGDOnlineTermStore parentStore, List<Rule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,

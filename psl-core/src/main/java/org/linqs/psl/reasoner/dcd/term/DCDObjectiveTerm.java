@@ -23,13 +23,14 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 
 import java.nio.ByteBuffer;
 
 /**
  * A term in the objective to be optimized by a DCDReasoner.
  */
-public class DCDObjectiveTerm implements ReasonerTerm  {
+public class DCDObjectiveTerm implements StreamingTerm {
     private boolean squared;
 
     private WeightedRule rule;
@@ -80,7 +81,6 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
 
         value -= constant;
-
 
         if (squared) {
             // weight * [max(coeffs^T * x - constant, 0.0)]^2
@@ -139,10 +139,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return qii;
     }
 
-    /**
-     * The number of bytes that writeFixedValues() will need to represent this term.
-     * This is just all the member datum minus the lagrange value.
-     */
+    @Override
     public int fixedByteSize() {
         int bitSize =
             Byte.SIZE  // squared
@@ -156,10 +153,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return bitSize / 8;
     }
 
-    /**
-     * Write a binary representation of the fixed values of this term to a buffer.
-     * Note that the variableIndexes are written using the term store indexing.
-     */
+    @Override
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
         fixedBuffer.putInt(System.identityHashCode(rule));
@@ -174,9 +168,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    /**
-     * Assume the term that will be next read from the buffers.
-     */
+    @Override
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer) {
         squared = (fixedBuffer.get() == 1);
         rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
