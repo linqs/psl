@@ -86,6 +86,19 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         }
     }
 
+    public synchronized void updateLocalVariable(ObservedAtom atom, float newValue) {
+        if (!variables.containsKey(atom)) {
+            // Atom does not exist in current model.
+            return;
+        } else if (variableAtoms[getVariableIndex(atom)] instanceof RandomVariableAtom) {
+            numRandomVariableAtoms--;
+            numObservedAtoms++;
+        }
+
+        variableAtoms[getVariableIndex(atom)] = atom;
+        variableValues[getVariableIndex(atom)] = newValue;
+    }
+
     public abstract StreamingIterator<T> getGroundingIterator(List<Rule> rules);
 
     /**

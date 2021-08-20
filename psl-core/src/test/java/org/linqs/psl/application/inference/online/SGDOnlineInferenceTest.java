@@ -26,7 +26,10 @@ import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
 import org.linqs.psl.application.inference.online.messages.actions.model.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.ObserveAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.UpdateObservation;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
@@ -140,9 +143,55 @@ public class SGDOnlineInferenceTest {
         OnlineTest.assertAtomValues(commands, new double[] {1.0, 0.0, 0.0, 0.0, 0.0, 0.0});
     }
 
+    @Test
+    public void testAtomDeleting() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+
+        commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 1.0f));
+        commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new Exit());
+
+        double[] values = {-1.0};
+
+        OnlineTest.assertAtomValues(commands, values);
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new DeleteAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new Exit());
+
+        values = new double[]{-1.0, -1.0};
+
+        OnlineTest.assertAtomValues(commands, values);
+    }
+
     /**
-     * Add an atom with predicates and arguments that already exists in the model but with a different partition.
+     * Make sure that updates issued by client commands are made as expected.
      */
+    @Test
+    public void testUpdateObservation() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+
+        commands.add(new UpdateObservation(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 0.0f));
+        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[]{0.0});
+    }
+
+    /**
+     * Test three ways to change the partition of an atom.
+     * 1. Add an atom with predicates and arguments that already exists in the model but with a different partition.
+     * 2. Delete and then Add an atom.
+     * 3. Using the Observe action for random variables and observations respectively. (preferred).
+     * */
     @Test
     public void testChangeAtomPartition() {
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
@@ -154,6 +203,30 @@ public class SGDOnlineInferenceTest {
         commands.add(new Exit());
 
         double[] values = {0.5};
+
+        OnlineTest.assertAtomValues(commands, values);
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        // Delete and then Add an atom.
+        commands.add(new DeleteAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
+                new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, values);
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        // Observe atom.
+        commands.add(new ObserveAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, values);
     }
