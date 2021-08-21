@@ -54,8 +54,6 @@ public class SGDOnlineInferenceTest {
 
     @Before
     public void setup() {
-        cleanup();
-
         Options.SGD_LEARNING_RATE.set(10.0);
 
         modelInfo = TestModel.getModel(true);
@@ -195,14 +193,13 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testChangeAtomPartition() {
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+        double[] values = {0.5};
 
         // Add existing atom with different partition.
         commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
                 new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
         commands.add(new Stop());
-
-        double[] values = {0.5};
 
         OnlineTest.assertAtomValues(commands, values);
 
@@ -240,7 +237,7 @@ public class SGDOnlineInferenceTest {
 
         @Override
         public void run() {
-            onlineInference.inference();
+            onlineInference.inference(false, false);
         }
 
         public void close() {
