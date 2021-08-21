@@ -117,7 +117,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         OnlineTest.assertAtomValues(commands, new double[] {-1.0, -1.0, -1.0, -1.0});
 
@@ -138,7 +138,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         OnlineTest.assertAtomValues(commands, new double[] {1.0, 0.0, 0.0, 0.0, 0.0, 0.0});
     }
@@ -151,7 +151,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 1.0f));
         commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
         commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         double[] values = {-1.0};
 
@@ -165,7 +165,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new DeleteAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
         commands.add(new QueryAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
         commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         values = new double[]{-1.0, -1.0};
 
@@ -181,7 +181,7 @@ public class SGDOnlineInferenceTest {
 
         commands.add(new UpdateObservation(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 0.0f));
         commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         OnlineTest.assertAtomValues(commands, new double[]{0.0});
     }
@@ -200,7 +200,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
                 new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         double[] values = {0.5};
 
@@ -215,7 +215,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
                 new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         OnlineTest.assertAtomValues(commands, values);
 
@@ -226,7 +226,7 @@ public class SGDOnlineInferenceTest {
         // Observe atom.
         commands.add(new ObserveAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
-        commands.add(new Exit());
+        commands.add(new Stop());
 
         OnlineTest.assertAtomValues(commands, values);
     }
