@@ -81,6 +81,27 @@ public class FileUtils {
     }
 
     /**
+     * Check if a dirent exists.
+     */
+    public static boolean exists(String path) {
+        return ((new File(path)).exists());
+    }
+
+    /**
+     * Check if a dirent exists and is a file.
+     */
+    public static boolean isFile(String path) {
+        return ((new File(path)).isFile());
+    }
+
+    /**
+     * Check if a dirent exists and is a directory.
+     */
+    public static boolean isDir(String path) {
+        return ((new File(path)).isDirectory());
+    }
+
+    /**
      * Recursively make directories (mkdir -p).
      */
     public static void mkdir(String path) {
