@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -40,15 +39,12 @@ import java.util.Collection;
 public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(SGDTermGenerator.class);
 
-    private float learningRate;
-
     public SGDTermGenerator() {
         this(true);
     }
 
     public SGDTermGenerator(boolean mergeConstants) {
         super(mergeConstants);
-        learningRate = Options.SGD_LEARNING_RATE.getFloat();
     }
 
     @Override
@@ -61,7 +57,7 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
 
-        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane, learningRate));
+        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane));
         if (!addDeterTerms) {
             return 1;
         }
@@ -77,7 +73,7 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
         }
 
         if (collectiveDeter) {
-            newTerms.add(SGDObjectiveTerm.createDeterTerm(termStore, hyperplane, learningRate, deterWeight, deterEpsilon));
+            newTerms.add(SGDObjectiveTerm.createDeterTerm(termStore, hyperplane, deterWeight, deterEpsilon));
             return 2;
         }
 

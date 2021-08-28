@@ -23,4 +23,5 @@ before_script:
 
 script:
   - mvn integration-test -B
+  - ./.ci/style-and-lint.sh
   - ./.ci/deploy-docs.sh

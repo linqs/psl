@@ -246,7 +246,7 @@ public class SelectivityHistogram<T extends Comparable<? super T>> {
             }
 
             if (histogramBounds != null) {
-                builder.append("\n");
+                builder.append(System.lineSeparator());
             }
         }
 

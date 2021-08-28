@@ -19,13 +19,13 @@ package org.linqs.psl.model.predicate.model;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -173,7 +173,7 @@ public abstract class SupportingModel {
 
         labelIndexMapping = new HashMap<String, Integer>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
             String line = null;
             int lineNumber = 0;
 
@@ -213,10 +213,9 @@ public abstract class SupportingModel {
 
         int width = -1;
 
-        StringBuilder entityIDBuilder = new StringBuilder();
         List<float[]> rawFeatures = new ArrayList<float[]>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
             String line = null;
             int lineNumber = 0;
 
@@ -248,7 +247,7 @@ public abstract class SupportingModel {
                 // Pull the features out of text.
                 float[] features = new float[numFeatures];
                 for (int i = 0; i < numFeatures; i++) {
-                    features[i] = Float.valueOf(parts[i + entityArgumentIndexes.length]);
+                    features[i] = Float.parseFloat(parts[i + entityArgumentIndexes.length]);
                 }
 
                 rawFeatures.add(features);
@@ -283,7 +282,7 @@ public abstract class SupportingModel {
 
         int minWidth = entityArgumentIndexes.length + labelArgumentIndexes.length;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
             String line = null;
             int lineNumber = 0;
 
@@ -319,7 +318,7 @@ public abstract class SupportingModel {
 
                 float value = 1.0f;
                 if (parts.length == (minWidth + 1)) {
-                    value = Float.valueOf(parts[minWidth]);
+                    value = Float.parseFloat(parts[minWidth]);
                 }
 
                 if (!observedLabels.containsKey(entityIndex)) {

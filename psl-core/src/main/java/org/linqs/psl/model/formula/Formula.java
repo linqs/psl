@@ -21,12 +21,13 @@ import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 
+import java.io.Serializable;
 import java.util.Set;
 
 /**
  * A logical formula composed of {@link Atom Atoms} and logical operators.
  */
-public interface Formula {
+public interface Formula extends Serializable {
     /**
      * @return a logically equivalent Formula in disjunctive normal form
      */

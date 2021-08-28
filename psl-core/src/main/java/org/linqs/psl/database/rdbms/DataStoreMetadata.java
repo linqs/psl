@@ -75,7 +75,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.execute();
         } catch (SQLException ex) {
@@ -125,7 +125,7 @@ public class DataStoreMetadata {
         ResultSet resultSet = null;
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -162,7 +162,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -186,7 +186,7 @@ public class DataStoreMetadata {
 
         try (
             Connection connection = dataStore.getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
         ) {
             statement.setString(1, namespace);
             statement.setString(2, type);
@@ -215,8 +215,8 @@ public class DataStoreMetadata {
         Map<String, Integer> names = new HashMap<String, Integer>();
 
         Map<String, String> vals = getAllValuesByType(PARTITION_NAMESPACE, NAME_KEY);
-        for (String name : vals.keySet()) {
-            names.put(name, Integer.parseInt(vals.get(name)));
+        for (Map.Entry<String, String> entry : vals.entrySet()) {
+            names.put(entry.getKey(), Integer.parseInt(entry.getValue()));
         }
 
         return names;

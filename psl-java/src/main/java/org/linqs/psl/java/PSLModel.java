@@ -93,7 +93,7 @@ public class PSLModel extends Model {
         Rule rule = null;
 
         if (weighted) {
-            rule = rulePartial.toRule(new Float(weight), new Boolean(squared));
+            rule = rulePartial.toRule(Float.valueOf(weight), Boolean.valueOf(squared));
         } else {
             rule = rulePartial.toRule(null, null);
         }

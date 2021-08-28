@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.util;
 
-import java.util.List;
+import java.util.Arrays;
 
 /**
  * Various static array utilities.
@@ -25,6 +25,42 @@ import java.util.List;
 public final class ArrayUtils {
     // Static only.
     private ArrayUtils() {}
+
+    public static double[] ensureCapacity(double[] array, int capacity) {
+        assert(capacity >= 0);
+
+        if (array.length  <= capacity) {
+            array = Arrays.copyOf(array, (capacity + 1) * 2);
+        }
+        return array;
+    }
+
+    public static float[] ensureCapacity(float[] array, int capacity) {
+        assert(capacity >= 0);
+
+        if (array.length  <= capacity) {
+            array = Arrays.copyOf(array, (capacity + 1) * 2);
+        }
+        return array;
+    }
+
+    public static int[] ensureCapacity(int[] array, int capacity) {
+        assert(capacity >= 0);
+
+        if (array.length  <= capacity) {
+            array = Arrays.copyOf(array, (capacity + 1) * 2);
+        }
+        return array;
+    }
+
+    public static <T> T[] ensureCapacity(T[] array, int capacity) {
+        assert(capacity >= 0);
+
+        if (array.length  <= capacity) {
+            array = Arrays.copyOf(array, (capacity + 1) * 2);
+        }
+        return array;
+    }
 
     public static <T> int indexOf(T[] haystack, T needle) {
         if (haystack == null) {

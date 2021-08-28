@@ -27,6 +27,7 @@ import org.linqs.psl.model.predicate.model.SupportingModel;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.configuration2.YAMLConfiguration;
@@ -35,12 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -66,17 +66,15 @@ public class DataLoader {
     public static final String PROPERTY_MODEL_TYPE = "modeltype";
     public static final String PROPERTY_CONFIG = "config";
 
-    public static final Set<String> TOP_LEVEL_PROPS = new HashSet<String>(Arrays.asList(
-            new String[]{KEY_PREDICATE, KEY_PARTITION_OBS, KEY_PARTITION_TARGETS, KEY_PARTITION_TRUTH}));
+    public static final Set<String> TOP_LEVEL_PROPS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
+            new String[]{KEY_PREDICATE, KEY_PARTITION_OBS, KEY_PARTITION_TARGETS, KEY_PARTITION_TRUTH})));
 
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     public static Set<StandardPredicate> load(DataStore dataStore, String path, boolean useIntIds)
             throws ConfigurationException, FileNotFoundException {
-        InputStream inputStream = new FileInputStream(path);
-
         YAMLConfiguration yaml = new YAMLConfiguration();
-        yaml.read(inputStream);
+        yaml.read(FileUtils.getInputStreamReader(path));
 
         // Make sure to get the absolute path so we can take the parent.
         path = (new File(path)).getAbsolutePath();
@@ -225,9 +223,9 @@ public class DataLoader {
             if (property instanceof String) {
                 String stringProperty = (String)property;
                 if (stringProperty.equals(PROPERTY_OPEN)) {
-                    isClosed = new Boolean(false);
+                    isClosed = Boolean.valueOf(false);
                 } else if (stringProperty.equals(PROPERTY_CLOSED)) {
-                    isClosed = new Boolean(true);
+                    isClosed = Boolean.valueOf(true);
                 } else if (stringProperty.equals(PROPERTY_BLOCK)) {
                     isBlock = true;
                 } else {
@@ -236,10 +234,13 @@ public class DataLoader {
             } else if (property instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> mapProperty = (Map<String, Object>)property;
-                for (String key : mapProperty.keySet()) {
+                for (Map.Entry<String, Object> propEntry : mapProperty.entrySet()) {
+                    String key = propEntry.getKey();
+                    Object rawValue = propEntry.getValue();
+
                     if (key.equals(PROPERTY_TYPES)) {
                         @SuppressWarnings("unchecked")
-                        List<String> rawTypes = (List<String>)(mapProperty.get(key));
+                        List<String> rawTypes = (List<String>)(rawValue);
 
                         for (String rawType : rawTypes) {
                             types.add(ConstantType.valueOf(rawType));
@@ -251,21 +252,18 @@ public class DataLoader {
 
                         arity = types.size();
                     } else if (key.equals(PROPERTY_FUNCTION)) {
-                        Object rawValue = mapProperty.get(key);
                         if (!(rawValue instanceof String)) {
                             throw new IllegalStateException(String.format("Predicate, %s, has a function with an unknown type (%s). The value should be the target class name (as a string).", name, rawValue.getClass().getName()));
                         }
 
                         externalFunctionImplementation = (String)rawValue;
                     } else if (key.equals(PROPERTY_MODEL_TYPE)) {
-                        Object rawValue = mapProperty.get(key);
                         if (!(rawValue instanceof String)) {
                             throw new IllegalStateException(String.format("Predicate, %s, has a model type key with an unknown type (%s), should be a string.", name, rawValue.getClass().getName()));
                         }
 
                         modelType = (String)rawValue;
                     } else if (key.equals(PROPERTY_CONFIG)) {
-                        Object rawValue = mapProperty.get(key);
                         if (!(rawValue instanceof Map)) {
                             throw new IllegalStateException(String.format("Predicate, %s, has a config key with an unknown type (%s), should be a Map<String, String>.", name, rawValue.getClass().getName()));
                         }

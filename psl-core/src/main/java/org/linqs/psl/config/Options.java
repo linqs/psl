@@ -30,6 +30,7 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
+import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.util.SystemUtils;
 
 import org.json.JSONArray;
@@ -535,6 +536,25 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option ONLINE_HOST = new Option(
+            "inference.onlinehostname",
+            "127.0.0.1",
+            "The hostname for the online server."
+    );
+
+    public static final Option ONLINE_PORT_NUMBER = new Option(
+            "inference.onlineportnumber",
+            56734,
+            "The port number for the online server."
+    );
+
+    public static final Option ONLINE_READ_PARTITION = new Option(
+            "onlineatommanager.read",
+            -1,
+            "The partition to add new observations to."
+            + " If negative, the first read partition in the database will be used."
+    );
+
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
         "pairedduallearner.admmsteps",
         1,
@@ -702,7 +722,7 @@ public class Options {
     public static final Option REASONER_TOLERANCE = new Option(
         "reasoner.tolerance",
         1e-5f,
-        "How close towo objective values need to be to be considered the same.",
+        "How close two objective values need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
     );
 
@@ -731,11 +751,59 @@ public class Options {
         "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
+    public static final Option SGD_ADAM_BETA_1 = new Option(
+        "sgd.adambeta1",
+        0.9f,
+        "The beta1 parameter for Adam optimization."
+        + " This parameter controls the exponential decay rate of the first moment estimate. "
+        + " See paper for details: https://arxiv.org/pdf/1412.6980.pdf"
+    );
+
+    public static final Option SGD_ADAM_BETA_2 = new Option(
+        "sgd.adambeta2",
+        0.999f,
+        "The beta2 parameter for Adam optimization."
+        + " This parameter controls the exponential decay rate of the second moment estimate. "
+        + " See paper for details: https://arxiv.org/pdf/1412.6980.pdf"
+    );
+
+    public static final Option SGD_COORDINATE_STEP = new Option(
+        "sgd.coordinatestep",
+        false,
+        "Take coordinate steps during sgd."
+    );
+
+    public static final Option SGD_EXTENSION = new Option(
+        "sgd.extension",
+        SGDReasoner.SGDExtension.NONE.toString(),
+        "The SGD extension to use for SGD reasoning."
+        + " NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+        + " ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
+        + " ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
+    );
+
+    public static final Option SGD_INVERSE_TIME_EXP = new Option(
+        "sgd.inversescaleexp",
+        1.0f,
+        "If SGD is using the STEPDECAY learning schedule, then this value is the negative"
+        + " exponent of the iteration count which scales the gradient step using:"
+        + " (learning_rate / ( iteration ^ - SGD_INVERSE_TIME_EXP)).",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option SGD_LEARNING_RATE = new Option(
         "sgd.learningrate",
         1.0f,
         null,
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option SGD_LEARNING_SCHEDULE = new Option(
+        "sgd.learningschedule",
+        SGDReasoner.SGDLearningSchedule.STEPDECAY.toString(),
+        "The learning schedule of the SGD inference reasoner changes the learning rate during learning."
+        + " STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by sgd.inversescaleexp."
+        + " CONSTANT: The learning rate is constant during learning."
     );
 
     public static final Option SGD_MAX_ITER = new Option(

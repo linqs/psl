@@ -24,6 +24,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 
 import org.junit.After;
+import org.linqs.psl.reasoner.sgd.SGDReasoner;
 
 import java.util.List;
 
@@ -31,6 +32,8 @@ public class SGDInferenceTest extends InferenceTest {
     @After
     public void cleanup() {
         Options.SGD_LEARNING_RATE.clear();
+        Options.SGD_COORDINATE_STEP.clear();
+        Options.SGD_EXTENSION.clear();
     }
 
     @Override
@@ -40,7 +43,39 @@ public class SGDInferenceTest extends InferenceTest {
 
     @Override
     public void initialValueTest() {
+        // SGD Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
+
+        // SGD Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
+        super.initialValueTest();
+
+        cleanup();
+
+        // Adam.
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAM);
+        // Non-coordinate step.
+        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
+
+        // Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
+        super.initialValueTest();
+
+        cleanup();
+
+        // AdaGrad.
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAGRAD);
+        // Non-coordinate step.
+        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.initialValueTest();
+
+        // Coordinate step.
+        Options.SGD_COORDINATE_STEP.set(true);
         super.initialValueTest();
     }
 }

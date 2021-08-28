@@ -29,6 +29,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +43,7 @@ import java.util.Set;
  *
  * Full equality checks (when two expressions are the equal, but not the same refernce) are epensive.
  */
-public class ArithmeticRuleExpression {
+public class ArithmeticRuleExpression implements Serializable {
     protected final List<Coefficient> coefficients;
     protected final List<SummationAtomOrAtom> atoms;
     protected final FunctionComparator comparator;

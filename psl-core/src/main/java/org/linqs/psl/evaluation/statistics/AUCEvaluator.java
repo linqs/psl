@@ -233,7 +233,7 @@ public class AUCEvaluator extends Evaluator {
             }
 
             // Assume we predicted everything positive.
-            if (label != null && label) {
+            if (label.booleanValue()) {
                 tp++;
             } else {
                 fp++;

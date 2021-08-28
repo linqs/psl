@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.FileUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +27,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -85,10 +84,8 @@ public abstract class ExecutableReasoner extends Reasoner {
         log.debug("Writing model file: " + executableInputPath);
         File modelFile = new File(executableInputPath);
 
-        try {
-            BufferedWriter modelWriter = new BufferedWriter(new FileWriter(modelFile));
+        try (BufferedWriter modelWriter = FileUtils.getBufferedWriter(modelFile)) {
             writeModel(modelWriter, termStore);
-            modelWriter.close();
         } catch (IOException ex) {
             throw new RuntimeException("Failed to write model file: " + executableInputPath, ex);
         }
@@ -102,15 +99,13 @@ public abstract class ExecutableReasoner extends Reasoner {
 
         log.debug("Reasoner finished. Reading results file: " + executableOutputPath);
         File resultsFile = new File(executableOutputPath);
-        try {
-            BufferedReader resultsReader = new BufferedReader(new FileReader(resultsFile));
+        try (BufferedReader resultsReader = FileUtils.getBufferedReader(resultsFile)) {
             readResults(resultsReader, termStore);
-            resultsReader.close();
         } catch (IOException ex) {
             throw new RuntimeException("Failed to read results file: " + executableOutputPath, ex);
         }
-        log.debug("Finished reading results file.");
 
+        log.debug("Finished reading results file.");
         return -1.0;
     }
 
@@ -123,7 +118,7 @@ public abstract class ExecutableReasoner extends Reasoner {
         pb.redirectErrorStream(true);
         Process proc = pb.start();
 
-        BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+        BufferedReader stdout = FileUtils.getBufferedReader(proc.getInputStream());
         String line;
         while ((line = stdout.readLine()) != null) {
             log.debug(line);
@@ -145,11 +140,11 @@ public abstract class ExecutableReasoner extends Reasoner {
     @Override
     public void close() {
         if (cleanupInput) {
-            (new File(executableInputPath)).delete();
+            FileUtils.delete(executableInputPath);
         }
 
         if (cleanupOutput) {
-            (new File(executableOutputPath)).delete();
+            FileUtils.delete(executableOutputPath);
         }
     }
 

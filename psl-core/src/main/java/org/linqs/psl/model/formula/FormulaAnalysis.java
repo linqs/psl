@@ -20,16 +20,13 @@ package org.linqs.psl.model.formula;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.ListUtils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -39,12 +36,12 @@ import java.util.Set;
  * Converts a {@link Formula} to a simplified Disjunctive Normal Form view
  * and makes the clauses available.
  */
-public class FormulaAnalysis {
-    private final Formula f;
+public class FormulaAnalysis implements Serializable {
+    private final Formula formula;
     private final List<DNFClause> clauses;
 
     public FormulaAnalysis(Formula formula) {
-        f = formula;
+        this.formula = formula;
 
         // Converts the Formula to Disjunctive Normal Form and collects the clauses
         formula = formula.getDNF();
@@ -106,7 +103,7 @@ public class FormulaAnalysis {
      * @return the original Formula that was analyzed
      */
     public Formula getFormula() {
-        return f;
+        return formula;
     }
 
     /**
@@ -127,7 +124,7 @@ public class FormulaAnalysis {
         return clauses.get(index);
     }
 
-    public class DNFClause {
+    public static class DNFClause implements Serializable {
         private List<Atom> posLiterals;
         private List<Atom> negLiterals;
         private Formula query;
