@@ -45,13 +45,23 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
 
         try (FileInputStream termStream = new FileInputStream(termPagePath)) {
             // First read the term size information.
-            termStream.read(termBuffer.array(), 0, headerSize);
+            int readSize = termStream.read(termBuffer.array(), 0, headerSize);
+            if (readSize != headerSize) {
+                throw new RuntimeException(String.format(
+                    "Short read for page header. Page: [%s], expected size: %d, read size: %d.",
+                    termPagePath, headerSize, readSize));
+            }
 
             termsSize = termBuffer.getInt();
             numTerms = termBuffer.getInt();
 
             // Now read in all the terms.
-            termStream.read(termBuffer.array(), headerSize, termsSize);
+            readSize = termStream.read(termBuffer.array(), headerSize, termsSize);
+            if (readSize != termsSize) {
+                throw new RuntimeException(String.format(
+                    "Short read for page terms. Page: [%s], expected size: %d, read size: %d.",
+                    termPagePath, termsSize, readSize));
+            }
         } catch (IOException ex) {
             throw new RuntimeException(String.format("Unable to read cache page: [%s].", termPagePath), ex);
         }

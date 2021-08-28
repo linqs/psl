@@ -80,7 +80,7 @@ public final class RuntimeStats {
     }
 
     public static synchronized void stopCollection() {
-        if (collectionTimer != null) {
+        if (collectionTimer == null) {
             return;
         }
 

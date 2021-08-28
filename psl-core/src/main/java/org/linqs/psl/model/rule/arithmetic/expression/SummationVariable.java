@@ -21,12 +21,14 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.io.Serializable;
+
 /**
  * Special argument to a {@link Predicate} in an {@link SummationAtom}.
  * It is a placeholder for constants that are allowed to vary in a summation.
  * Note that SummationVariable is not a subclass of Variable.
  */
-public class SummationVariable implements SummationVariableOrTerm {
+public class SummationVariable implements Serializable, SummationVariableOrTerm {
     private final Variable variable;
 
     public SummationVariable(String name) {

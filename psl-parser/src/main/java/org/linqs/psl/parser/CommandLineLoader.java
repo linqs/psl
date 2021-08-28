@@ -21,6 +21,7 @@ import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.SystemUtils;
 import org.linqs.psl.util.Version;
 
@@ -45,9 +46,8 @@ import java.util.Properties;
 import java.util.Map;
 
 /**
- * Load the command line options into PSL Config's configuration values and
- * log4j configuration appropriately. This is done by instatiating the object
- * of type CommandLine and object log of type Logger.
+ * Load the command line options into PSL Config's configuration values
+ * and log4j configuration appropriately.
  */
 public class CommandLineLoader {
     // Command line options.
@@ -87,7 +87,7 @@ public class CommandLineLoader {
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
 
     private static Options options = setupOptions();
-    private static Logger log;
+
     private CommandLine parsedOptions;
 
     public CommandLineLoader(String[] args) {
@@ -101,7 +101,7 @@ public class CommandLineLoader {
             ex.printStackTrace(System.err);
         }
 
-        this.log = initLogger();
+        initLogger();
         initConfig();
     }
 
@@ -116,18 +116,18 @@ public class CommandLineLoader {
      * Returns the parsedOptions object.
      */
     public CommandLine getParsedOptions() {
-        return this.parsedOptions;
+        return parsedOptions;
     }
 
     /**
      * Initializes logging.
      */
-    private Logger initLogger() {
+    private void initLogger() {
         Properties props = new Properties();
 
         if (parsedOptions.hasOption(OPTION_LOG4J)) {
             try {
-                props.load(new FileReader(parsedOptions.getOptionValue(OPTION_LOG4J)));
+                props.load(FileUtils.getInputStreamReader(parsedOptions.getOptionValue(OPTION_LOG4J)));
             } catch (IOException ex) {
                 throw new RuntimeException("Failed to read logger configuration from a file.", ex);
             }
@@ -163,7 +163,6 @@ public class CommandLineLoader {
         }
 
         PropertyConfigurator.configure(props);
-        return LoggerFactory.getLogger(getClass().getName());
     }
 
     /**

@@ -25,12 +25,12 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Parallel;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -125,8 +125,8 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
             this.readIDs.add(read[i].getID());
         }
 
-        if (readIDs.contains(new Integer(writeID))) {
-            readIDs.remove(new Integer(writeID));
+        if (readIDs.contains(Integer.valueOf(writeID))) {
+            readIDs.remove(Integer.valueOf(writeID));
         }
 
         allPartitionIDs = new ArrayList<Integer>(readIDs.size() + 1);
@@ -236,7 +236,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         List<ObservedAtom> atoms = new ArrayList<ObservedAtom>(groundAtoms.size());
         for (GroundAtom atom : groundAtoms) {
             // This is only possible if the predicate is partially observed and this ground atom
-            // was specified as a target and an observation/
+            // was specified as a target and an observation.
             if (atom instanceof RandomVariableAtom) {
                 throw new IllegalStateException(String.format(
                         "Found a ground atom (%s) that is both observed and a target." +
@@ -280,6 +280,10 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         return parentDataStore;
     }
 
+    public AtomCache getCache() {
+        return cache;
+    }
+
     public List<Partition> getReadPartitions() {
         return Collections.unmodifiableList(readPartitions);
     }
@@ -304,9 +308,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
      */
     public void outputRandomVariableAtoms(String outputDirectoryPath) {
         File outputDirectory = new File(outputDirectoryPath);
-
-        // mkdir -p
-        outputDirectory.mkdirs();
+        FileUtils.mkdir(outputDirectory);
 
         for (StandardPredicate predicate : parentDataStore.getRegisteredPredicates()) {
             if (isClosed(predicate)) {
@@ -318,8 +320,8 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
                 continue;
             }
 
-            try (BufferedWriter bufferedPredWriter = new BufferedWriter(
-                    new FileWriter(new File(outputDirectory, predicate.getName() + ".txt")))) {
+            File outputFile = new File(outputDirectory, predicate.getName() + ".txt");
+            try (BufferedWriter bufferedPredWriter = FileUtils.getBufferedWriter(outputFile)) {
                 StringBuilder row = new StringBuilder();
                 for (GroundAtom atom : atoms) {
                     row.setLength(0);
@@ -329,7 +331,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
                         row.append("\t");
                     }
                     row.append(atom.getValue());
-                    row.append("\n");
+                    row.append(System.lineSeparator());
 
                     bufferedPredWriter.write(row.toString());
                 }

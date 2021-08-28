@@ -29,6 +29,10 @@
         <version>2.3.0-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <rootdir>${project.basedir}/..</rootdir>
+    </properties>
+
     <dependencies>
         <!-- linear algebra dependencies -->
         <dependency>

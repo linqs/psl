@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,12 +27,14 @@ import org.linqs.psl.model.term.Constant;
 
 /**
  * Numeric coefficient in a {@link ArithmeticRuleExpression}.
- * <p>
+ *
  * Coefficient and its subclasses are composable to represent complex definitions.
  * Its subclasses are defined as inner classes, because there are
  * a lot of them and they are simple.
+ *
+ * All coefficients should define a hashCode(), as it will be used in equality checks.
  */
-public abstract class Coefficient {
+public abstract class Coefficient implements Serializable {
     /**
      * Get the value of a coefficient (which may require a reqursive descent).
      * For performance reasons, instead of passing the full subtitution set to this method,
@@ -46,6 +49,8 @@ public abstract class Coefficient {
      */
     public abstract Coefficient simplify();
 
+    public abstract int hashCode();
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -56,6 +61,6 @@ public abstract class Coefficient {
             return false;
         }
 
-        return this.hashCode() == other.hashCode();
+        return this.hashCode() == ((Coefficient)other).hashCode();
     }
 }

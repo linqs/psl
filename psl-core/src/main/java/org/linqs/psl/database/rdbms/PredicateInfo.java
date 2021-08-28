@@ -298,6 +298,8 @@ public class PredicateInfo {
     }
 
     private synchronized String buildCountAllStatement(List<Integer> partitions) {
+        assert(partitions != null);
+
         String key = "countAll_" + partitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
@@ -310,12 +312,10 @@ public class PredicateInfo {
 
         // If there is only 1 partition, just do equality, otherwise use IN.
         // All DBMSs should optimize a single IN the same as equality, but just in case.
-        if (partitions != null && partitions.size() > 0) {
-            if (partitions.size() == 1) {
-                query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
-            } else {
-                query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
-            }
+        if (partitions.size() == 1) {
+            query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+        } else if (partitions.size() > 1) {
+            query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
         }
 
         String sql = query.validate().toString();
@@ -324,6 +324,8 @@ public class PredicateInfo {
     }
 
     private synchronized String buildQueryAllStatement(List<Integer> partitions) {
+        assert(partitions != null);
+
         String key = "queryAll_" + partitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
@@ -342,12 +344,10 @@ public class PredicateInfo {
 
         // If there is only 1 partition, just do equality, otherwise use IN.
         // All DBMSs should optimize a single IN the same as equality, but just in case.
-        if (partitions != null && partitions.size() > 0) {
-            if (partitions.size() == 1) {
-                query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
-            } else {
-                query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
-            }
+        if (partitions.size() == 1) {
+            query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+        } else if (partitions.size() > 1) {
+            query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
         }
 
         String sql = query.validate().toString();

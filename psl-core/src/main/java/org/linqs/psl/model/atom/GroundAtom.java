@@ -69,24 +69,23 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
      */
     @Override
     public int compareTo(GroundAtom other) {
-        if (this.getValue() < other.getValue()) {
-            return 1;
-        } else if (this.getValue() > other.getValue()) {
-            return -1;
-        } else {
-            int val = this.predicate.getName().compareTo(other.predicate.getName());
+        int comparisonResult = Double.compare(other.value, this.value);
+        if (comparisonResult != 0) {
+            return comparisonResult;
+        }
+
+        int val = this.predicate.getName().compareTo(other.predicate.getName());
+        if (val != 0) {
+            return val;
+        }
+
+        for (int i = 0; i < this.arguments.length; i++) {
+            val = this.arguments[i].compareTo(other.arguments[i]);
             if (val != 0) {
                 return val;
             }
-
-            for (int i = 0; i < this.arguments.length; i++) {
-                val = this.arguments[i].compareTo(other.arguments[i]);
-                if (val != 0) {
-                    return val;
-                }
-            }
-
-            return 0;
         }
+
+        return 0;
     }
 }

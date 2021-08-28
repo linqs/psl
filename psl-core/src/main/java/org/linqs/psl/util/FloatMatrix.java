@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.util;
 
+import org.linqs.psl.util.HashCode;
+
 import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.LAPACK;
 import org.netlib.util.intW;
@@ -244,6 +246,11 @@ public final class FloatMatrix {
 
     public int numCols() {
         return numCols;
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCode.build(HashCode.build(numRows), numCols);
     }
 
     @Override
