@@ -37,7 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -244,21 +243,20 @@ public class NeuralModel extends SupportingModel {
 
         log.trace("Initial fitting {}.", this);
 
+        List<INDArray> rawInitialFitFeatures = new ArrayList<INDArray>(observedLabels.size());
+        float[][] rawInitialFitLabels = new float[observedLabels.size()][labelIndexMapping.size()];
+
+        for (Map.Entry<Integer, float[]> entry : observedLabels.entrySet()) {
+            System.arraycopy(entry.getValue(), 0, rawInitialFitLabels[rawInitialFitFeatures.size()], 0, labelIndexMapping.size());
+            rawInitialFitFeatures.add(features.getRow(entry.getKey().intValue()));
+        }
+
+        INDArray initialFitFeatures = Nd4j.create(rawInitialFitFeatures, observedLabels.size(), numFeatures);
+        INDArray initialFitLabels = Nd4j.create(rawInitialFitLabels);
+
         for (int i = 0; i < initialEpochs; i++) {
-            // Note that we need to create a new Iterable because the inner Iterable does not support resetting.
-            Iterable<Pair<INDArray, INDArray>> pairs = IteratorUtils.map(
-                    observedLabels.entrySet(),
-                    new IteratorUtils.MapFunction<Map.Entry<Integer, float[]>, Pair<INDArray, INDArray>> () {
-                        @Override
-                        public Pair<INDArray, INDArray> map(Map.Entry<Integer, float[]> entry) {
-                            return Pair.create(features.getRow(entry.getKey().intValue()), Nd4j.create(entry.getValue()));
-                        }
-                    });
-
-            DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(initialMaxBatchSize, observedLabels.size()));
-
             model.clear();
-            model.fit(data);
+            model.fit(initialFitFeatures, initialFitLabels);
 
             log.trace("Epoch: {} / {}, Score: {} {}", i + 1, initialEpochs, model.score(), lossFunction);
         }
@@ -289,20 +287,8 @@ public class NeuralModel extends SupportingModel {
         INDArray labels = Nd4j.create(manualLabels);
 
         for (int i = 0; i < epochs; i++) {
-            // Note that we need to create a new Iterable because the inner Iterable does not support resetting.
-            Iterable<Pair<INDArray, INDArray>> pairs = IteratorUtils.map(
-                    IteratorUtils.newIterable(IteratorUtils.count(entityIndexMapping.size())),
-                    new IteratorUtils.MapFunction<Integer, Pair<INDArray, INDArray>> () {
-                        @Override
-                        public Pair<INDArray, INDArray> map(Integer index) {
-                            return Pair.create(features.getRow(index.intValue()), labels.getRow(index.intValue()));
-                        }
-                    });
-
-            DataSetIterator data = new INDArrayDataSetIterator(pairs, Math.min(maxBatchSize, entityIndexMapping.size()));
-
             model.clear();
-            model.fit(data);
+            model.fit(features, labels);
 
             log.trace("Epoch: {} / {}, Score: {} {}", i + 1, epochs, model.score(), lossFunction);
         }
@@ -387,6 +373,7 @@ public class NeuralModel extends SupportingModel {
 
         // Construct the new model with the configuration and parameters.
         model = new MultiLayerNetwork(newConfig, rawModel.params());
+        log.trace(model.summary());
 
         iterationCount = model.getIterationCount();
 
