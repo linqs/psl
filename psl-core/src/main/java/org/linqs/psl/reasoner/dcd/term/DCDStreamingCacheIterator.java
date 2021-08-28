@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileInputStream;
@@ -26,11 +26,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 
 public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjectiveTerm> {
     public DCDStreamingCacheIterator(
-            DCDStreamingTermStore parentStore, boolean readonly,
+            StreamingTermStore<DCDObjectiveTerm> parentStore, boolean readonly,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
@@ -50,15 +49,32 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
                 FileInputStream termStream = new FileInputStream(termPagePath);
                 FileInputStream volatileStream = new FileInputStream(volatilePagePath)) {
             // First read the term size information.
-            termStream.read(termBuffer.array(), 0, headerSize);
+            int readSize = termStream.read(termBuffer.array(), 0, headerSize);
+            if (readSize != headerSize) {
+                throw new RuntimeException(String.format(
+                    "Short read for page header. Page: [%s], expected size: %d, read size: %d.",
+                    termPagePath, headerSize, readSize));
+            }
 
             termsSize = termBuffer.getInt();
             numTerms = termBuffer.getInt();
             volatilesSize = (Float.SIZE / 8) * numTerms;
 
             // Now read in all the terms and volatile values.
-            termStream.read(termBuffer.array(), headerSize, termsSize);
-            volatileStream.read(volatileBuffer.array(), 0, volatilesSize);
+
+            readSize = termStream.read(termBuffer.array(), headerSize, termsSize);
+            if (readSize != termsSize) {
+                throw new RuntimeException(String.format(
+                    "Short read for page terms. Page: [%s], expected size: %d, read size: %d.",
+                    termPagePath, termsSize, readSize));
+            }
+
+            readSize = volatileStream.read(volatileBuffer.array(), 0, volatilesSize);
+            if (readSize != volatilesSize) {
+                throw new RuntimeException(String.format(
+                    "Short read for volitile page. Page: [%s], expected size: %d, read size: %d.",
+                    volatilePagePath, volatilesSize, readSize));
+            }
         } catch (IOException ex) {
             throw new RuntimeException(String.format("Unable to read cache pages: [%s ; %s].", termPagePath, volatilePagePath), ex);
         }
@@ -69,7 +85,6 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
 
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
-
         for (int i = 0; i < numTerms; i++) {
             DCDObjectiveTerm term = termPool.get(i);
             term.read(termBuffer, volatileBuffer);

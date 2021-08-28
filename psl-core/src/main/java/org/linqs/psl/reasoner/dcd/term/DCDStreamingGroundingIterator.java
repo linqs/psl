@@ -18,10 +18,10 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
+import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -34,59 +34,19 @@ import java.util.List;
  * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public class DCDStreamingInitialRoundIterator extends StreamingInitialRoundIterator<DCDObjectiveTerm> {
-    public DCDStreamingInitialRoundIterator(
-            DCDStreamingTermStore parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, RandomVariableAtom> termGenerator,
+public class DCDStreamingGroundingIterator extends StreamingGroundingIterator<DCDObjectiveTerm> {
+    public DCDStreamingGroundingIterator(
+            DCDStreamingTermStore parentStore, List<Rule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, GroundAtom> termGenerator,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize) {
-        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);
+            int pageSize, int numPages) {
+        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer,
+                pageSize, numPages);
     }
 
     @Override
-    protected void writeFullPage(String termPagePath, String volatilePagePath) {
-        flushTermCache(termPagePath);
-        flushVolatileCache(volatilePagePath);
-
-        termCache.clear();
-    }
-
-    private void flushTermCache(String termPagePath) {
-        // Count the exact size we will need to write.
-        int termsSize = 0;
-        for (DCDObjectiveTerm term : termCache) {
-            termsSize += term.fixedByteSize();
-        }
-
-        // Allocate an extra two ints for the number of terms and size of terms in that page.
-        int termBufferSize = termsSize + (Integer.SIZE / 8) * 2;
-
-        if (termBuffer == null || termBuffer.capacity() < termBufferSize) {
-            termBuffer = ByteBuffer.allocate((int)(termBufferSize * OVERALLOCATION_RATIO));
-        }
-        termBuffer.clear();
-
-        // First put the size of the terms and number of terms.
-        termBuffer.putInt(termsSize);
-        termBuffer.putInt(termCache.size());
-
-        // Now put in all the terms.
-        for (DCDObjectiveTerm term : termCache) {
-            term.writeFixedValues(termBuffer);
-        }
-
-        try (FileOutputStream stream = new FileOutputStream(termPagePath)) {
-            stream.write(termBuffer.array(), 0, termBufferSize);
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to write term cache page: " + termPagePath, ex);
-        }
-
-        // Log io.
-        RuntimeStats.logDiskWrite(termBufferSize);
-    }
-
-    private void flushVolatileCache(String volatilePagePath) {
+    protected void flushVolatileCache(String volatilePagePath) {
         int volatileBufferSize = (Float.SIZE / 8) * termCache.size();
 
         if (volatileBuffer == null || volatileBuffer.capacity() < volatileBufferSize) {

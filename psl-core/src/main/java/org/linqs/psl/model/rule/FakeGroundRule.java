@@ -15,12 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm.term;
+package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 
 import java.util.List;
@@ -64,7 +61,7 @@ public class FakeGroundRule implements WeightedGroundRule {
     }
 
     @Override
-    public GeneralFunction getFunctionDefinition() {
+    public GeneralFunction getFunctionDefinition(boolean mergeConstants) {
         return null;
     }
 

@@ -170,7 +170,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
         sql.add("VALUES");
         sql.add("    (" + StringUtils.repeat("?", ", ", columns.length) + ")");
 
-        return ListUtils.join("\n", sql);
+        return ListUtils.join(System.lineSeparator(), sql);
     }
 
     @Override
@@ -204,7 +204,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
             ResultSet result = statement.executeQuery();
         ) {
             while (result.next()) {

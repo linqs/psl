@@ -77,7 +77,7 @@ public final class IteratorUtils {
     public static <T> Iterable<T> newIterable(Iterator<T> items) {
         final Iterator<T> finalItems = items;
 
-        return new Iterable<T>(){
+        return new Iterable<T>() {
             @Override
             public Iterator<T> iterator() {
                 return finalItems;
@@ -86,13 +86,27 @@ public final class IteratorUtils {
     }
 
     /**
-     * Get an iterator that iterates over all the given iterables in whatever iteration order each provides.
+     * Get an iterable over all the given iterables in whatever iteration order each provides.
      * It is up to the caller to make sure the underlying iterables are not changed during iteration.
      * The benefit of using this is that is does not perform variable allocations.
      */
     @SafeVarargs
     public static <T> Iterable<T> join(Iterable<? extends T>... collections) {
         return new ConcatenationIterable<T>(collections);
+    }
+
+    /**
+     * Get an iterator over all the given iterators in whatever iteration order each provides.
+     */
+    @SafeVarargs
+    public static <T> Iterator<T> join(Iterator<? extends T>... iterators) {
+        @SuppressWarnings("unchecked")
+        Iterable<? extends T>[] iterables = new Iterable[iterators.length];
+        for (int i = 0; i < iterators.length; i++) {
+            iterables[i] = newIterable(iterators[i]);
+        }
+
+        return new ConcatenationIterator<T>(iterables);
     }
 
     /**
@@ -331,7 +345,7 @@ public final class IteratorUtils {
 
         @Override
         public boolean hasNext() {
-            // If primeNext() does not set a null iteraotr, then we have a next.
+            // If primeNext() does not set a null iterator, then we have a next.
             return currentIterator != null;
         }
 

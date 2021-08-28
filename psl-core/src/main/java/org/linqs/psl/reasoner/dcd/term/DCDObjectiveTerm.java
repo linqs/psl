@@ -17,20 +17,20 @@
  */
 package org.linqs.psl.reasoner.dcd.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
-import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 
 import java.nio.ByteBuffer;
 
 /**
  * A term in the objective to be optimized by a DCDReasoner.
  */
-public class DCDObjectiveTerm implements ReasonerTerm  {
+public class DCDObjectiveTerm implements StreamingTerm {
     private boolean squared;
 
     private WeightedRule rule;
@@ -43,10 +43,10 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, RandomVariableAtom> termStore,
+    public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared,
-            Hyperplane<RandomVariableAtom> hyperplane,
+            Hyperplane<GroundAtom> hyperplane,
             float c) {
         this.squared = squared;
 
@@ -55,7 +55,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         constant = hyperplane.getConstant();
 
         variableIndexes = new int[size];
-        RandomVariableAtom[] variables = hyperplane.getVariables();
+        GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             variableIndexes[i] = termStore.getVariableIndex(variables[i]);
         }
@@ -72,10 +72,6 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         lagrange = 0.0f;
     }
 
-    public float getLagrange() {
-        return lagrange;
-    }
-
     public float evaluate(float[] variableValues) {
         float value = 0.0f;
         float adjustedWeight = rule.getWeight() * c;
@@ -86,7 +82,6 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
 
         value -= constant;
 
-
         if (squared) {
             // weight * [max(coeffs^T * x - constant, 0.0)]^2
             return adjustedWeight * (float)Math.pow(Math.max(0.0f, value), 2.0f);
@@ -96,21 +91,13 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    public void minimize(boolean truncateEveryStep, float[] variableValues) {
-        float adjustedWeight = rule.getWeight() * c;
-
-        if (squared) {
-            float gradient = computeGradient(variableValues);
-            gradient += lagrange / (2.0f * adjustedWeight);
-            minimize(truncateEveryStep, gradient, Float.POSITIVE_INFINITY, variableValues);
-        } else {
-            minimize(truncateEveryStep, computeGradient(variableValues), adjustedWeight, variableValues);
-        }
-    }
-
     @Override
     public int size() {
         return size;
+    }
+
+    public boolean isSquared() {
+        return squared;
     }
 
     @Override
@@ -118,7 +105,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         constant = constant - oldValue + newValue;
     }
 
-    private float computeGradient(float[] variableValues) {
+    public float computeGradient(float[] variableValues) {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
@@ -128,37 +115,31 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return constant - val;
     }
 
-    private void minimize(boolean truncateEveryStep, float gradient, float lim, float[] variableValues) {
-        float pg = gradient;
-        float adjustedWeight = rule.getWeight() * c;
-
-        if (MathUtils.isZero(lagrange)) {
-            pg = Math.min(0.0f, gradient);
-        }
-
-        if (MathUtils.equals(lim, adjustedWeight) && MathUtils.equals(lagrange, adjustedWeight)) {
-            pg = Math.max(0.0f, gradient);
-        }
-
-        if (MathUtils.isZero(pg)) {
-            return;
-        }
-
-        float pa = lagrange;
-        lagrange = Math.min(lim, Math.max(0.0f, lagrange - gradient / qii));
-        for (int i = 0; i < size; i++) {
-            float val = variableValues[variableIndexes[i]] - ((lagrange - pa) * coefficients[i]);
-            if (truncateEveryStep) {
-                val = Math.max(0.0f, Math.min(1.0f, val));
-            }
-            variableValues[variableIndexes[i]] = val;
-        }
+    public float[] getCoefficients() {
+        return coefficients;
     }
 
-    /**
-     * The number of bytes that writeFixedValues() will need to represent this term.
-     * This is just all the member datum minus the lagrange value.
-     */
+    public float getLagrange() {
+        return lagrange;
+    }
+
+    public void setLagrange(float lagrange) {
+        this.lagrange = lagrange;
+    }
+
+    public WeightedRule getRule() {
+        return rule;
+    }
+
+    public int[] getVariableIndexes() {
+        return variableIndexes;
+    }
+
+    public float getQii() {
+        return qii;
+    }
+
+    @Override
     public int fixedByteSize() {
         int bitSize =
             Byte.SIZE  // squared
@@ -172,10 +153,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         return bitSize / 8;
     }
 
-    /**
-     * Write a binary representation of the fixed values of this term to a buffer.
-     * Note that the variableIndexes are written using the term store indexing.
-     */
+    @Override
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
         fixedBuffer.putInt(System.identityHashCode(rule));
@@ -190,9 +168,7 @@ public class DCDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
-    /**
-     * Assume the term that will be next read from the buffers.
-     */
+    @Override
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer) {
         squared = (fixedBuffer.get() == 1);
         rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());

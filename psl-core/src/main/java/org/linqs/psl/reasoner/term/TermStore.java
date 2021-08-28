@@ -17,13 +17,10 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * A place to store terms that are to be optimized.
@@ -69,14 +66,14 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
     public long size();
 
     /**
-     * Ensure that the underlying stuctures can have the required term capacity.
+     * Ensure that the underlying structures can have the required term capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      */
     public void ensureCapacity(long capacity);
 
     /**
-     * Ensure that the underlying stuctures can have the required variable capacity.
+     * Ensure that the underlying structures can have the required variable capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      * Not all term stores will even manage variables.
@@ -84,9 +81,9 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
     public void ensureVariableCapacity(int capacity);
 
     /**
-     * Create a variable local to a specific term.
+     * Create a variable local to a specific reasoner term.
      */
-    public V createLocalVariable(RandomVariableAtom atom);
+    public V createLocalVariable(GroundAtom atom);
 
     /**
      * Notify the term store that the variables have been updated through a process external to standard optimization.

@@ -155,8 +155,9 @@ public class PostgreSQLDriver implements DatabaseDriver {
     public void setColumnDefault(String tableName, String columnName, String defaultValue) {
         String sql = String.format("ALTER TABLE %s ALTER COLUMN %s SET DEFAULT %s", tableName, columnName, defaultValue);
 
-        try (Connection connection = getConnection()) {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        try (
+                Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new RuntimeException(String.format("Could not set the column default of %s for %s.%s.",
@@ -170,8 +171,9 @@ public class PostgreSQLDriver implements DatabaseDriver {
     public void dropColumnDefault(String tableName, String columnName) {
         String sql = String.format("ALTER TABLE %s ALTER COLUMN %s DROP DEFAULT", tableName, columnName);
 
-        try (Connection connection = getConnection()) {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        try (
+                Connection connection = getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         } catch (SQLException ex) {
             throw new RuntimeException(String.format("Could not drop the column default for %s.%s.",
@@ -227,7 +229,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
         sql.add("DO UPDATE SET");
         sql.add("    " + ListUtils.join(", ", updateValues));
 
-        return ListUtils.join("\n", sql);
+        return ListUtils.join(System.lineSeparator(), sql);
     }
 
     private void executeUpdate(String sql) {
@@ -285,7 +287,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join("\n", sql));
+            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
             ResultSet result = statement.executeQuery();
         ) {
             while (result.next()) {
@@ -328,7 +330,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
                 for (int i = 1; i < histogram.length(); i++) {
                     bounds.add(convertHistogramBound(histogram.get(i)));
-                    counts.add(new Integer(bucketCount));
+                    counts.add(Integer.valueOf(bucketCount));
                 }
             }
         }
@@ -347,7 +349,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
                     double proportion = ((Number)mostCommonCounts.get(i)).doubleValue();
                     int count = Math.max(1, (int)(proportion * rowCount));
 
-                    mostCommonHistogram.put(convertHistogramBound(mostCommonVals.get(i)), new Integer(count));
+                    mostCommonHistogram.put(convertHistogramBound(mostCommonVals.get(i)), Integer.valueOf(count));
                 }
             }
         }
@@ -392,7 +394,7 @@ public class PostgreSQLDriver implements DatabaseDriver {
                 currentCommonIndex++;
 
                 int index = counts.size() - 1;
-                counts.set(index, new Integer(counts.get(index).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
+                counts.set(index, Integer.valueOf(counts.get(index).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
 
                 continue;
             }
@@ -412,15 +414,15 @@ public class PostgreSQLDriver implements DatabaseDriver {
 
             currentCommonIndex++;
 
-            counts.set(bucketIndex, new Integer(counts.get(bucketIndex).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
+            counts.set(bucketIndex, Integer.valueOf(counts.get(bucketIndex).intValue() + mostCommonHistogram.get(currentCommonValue).intValue()));
         }
     }
 
     private Comparable convertHistogramBound(Object bound) {
         if (bound instanceof Long) {
-            return new Integer(((Long)bound).intValue());
+            return Integer.valueOf(((Long)bound).intValue());
         } else if (bound instanceof Integer) {
-            return new Integer(((Integer)bound).intValue());
+            return (Integer)bound;
         } else {
             return bound.toString();
         }

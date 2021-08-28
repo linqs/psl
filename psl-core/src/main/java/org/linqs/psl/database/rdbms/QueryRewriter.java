@@ -109,10 +109,6 @@ public class QueryRewriter {
                 }
             }
 
-            if (bestAtom == null) {
-                break;
-            }
-
             // We couldn't find any viable plans.
             if (bestAtom == null) {
                 break;

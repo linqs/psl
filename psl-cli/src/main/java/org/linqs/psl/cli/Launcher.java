@@ -37,6 +37,7 @@ import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
@@ -47,14 +48,12 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.List;
-
 import java.util.Set;
 
 /**
@@ -126,16 +125,12 @@ public class Launcher {
             return;
         }
 
-        PrintStream stream = System.out;
-        boolean closeStream = false;
+        PrintWriter out = new PrintWriter(System.out);
+        boolean closeOut = false;
 
         if (path != null) {
-            try {
-                stream = new PrintStream(path);
-                closeStream = true;
-            } catch (IOException ex) {
-                log.error(String.format("Unable to open file (%s) for ground rules, using stdout instead.", path), ex);
-            }
+            out = new PrintWriter(FileUtils.getBufferedWriter(path));
+            closeOut = true;
         }
 
         // Write a header.
@@ -143,7 +138,7 @@ public class Launcher {
         if (includeSatisfaction) {
             header = StringUtils.join("\t", header, "Satisfaction");
         }
-        stream.println(header);
+        out.println(header);
 
         for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
             String row = "";
@@ -164,11 +159,11 @@ public class Launcher {
                 row = StringUtils.join("\t", row, "" + satisfaction);
             }
 
-            stream.println(row);
+            out.println(row);
         }
 
-        if (closeStream) {
-            stream.close();
+        if (closeOut) {
+            out.close();
         }
     }
 
@@ -235,13 +230,12 @@ public class Launcher {
             outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, false);
         }
 
-        learner.close();
-
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
             outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, true);
         }
 
+        learner.close();
         randomVariableDatabase.close();
         observedTruthDatabase.close();
 
@@ -263,10 +257,10 @@ public class Launcher {
         // Remove excess parens.
         outModel = outModel.replaceAll("\\( | \\)", "");
 
-        try (FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename))) {
+        try (BufferedWriter learnedFileWriter = FileUtils.getBufferedWriter(learnedFilename)) {
             learnedFileWriter.write(outModel);
         } catch (IOException ex) {
-            log.error("Failed to write learned model:\n" + outModel);
+            log.error("Failed to write learned model:" + System.lineSeparator() + outModel);
             throw new RuntimeException("Failed to write learned model to: " + learnedFilename, ex);
         }
     }
@@ -319,7 +313,7 @@ public class Launcher {
 
         Model model = null;
 
-        try (FileReader reader = new FileReader(new File(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL)))) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL))) {
             model = ModelLoader.load(reader);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL), ex);
@@ -410,7 +404,7 @@ public class Launcher {
             CommandLineLoader commandLineLoader = new CommandLineLoader(args);
             CommandLine givenOptions = commandLineLoader.getParsedOptions();
             // Return for command line parse errors or PSL errors.
-            if (( givenOptions == null) || (!(isCommandLineValid(givenOptions)))) {
+            if ((givenOptions == null) || (!(isCommandLineValid(givenOptions)))) {
                 return;
             }
             Launcher pslLauncher = new Launcher(givenOptions);

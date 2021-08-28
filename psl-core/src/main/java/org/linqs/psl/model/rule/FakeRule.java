@@ -15,15 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm.term;
+package org.linqs.psl.model.rule;
 
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.rule.AbstractRule;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
@@ -77,7 +74,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public Formula getRewritableGroundingFormula(AtomManager atomManager) {
+    public Formula getRewritableGroundingFormula() {
         return null;
     }
 
@@ -94,6 +91,11 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     @Override
     public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
         // Pass.
+    }
+
+    @Override
+    public int hashCode() {
+        throw new UnsupportedOperationException("FakeRules should not be stored in hashing structures.");
     }
 
     @Override

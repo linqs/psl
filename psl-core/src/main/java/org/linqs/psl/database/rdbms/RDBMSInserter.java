@@ -106,7 +106,7 @@ public class RDBMSInserter extends Inserter {
         multiInsert.add("VALUES");
         multiInsert.add("    " + StringUtils.repeat("(" + placeholders + ")", ", ", DEFAULT_MULTIROW_COUNT));
 
-        return ListUtils.join("\n", multiInsert);
+        return ListUtils.join(System.lineSeparator(), multiInsert);
     }
 
     @Override
@@ -256,15 +256,15 @@ public class RDBMSInserter extends Inserter {
     private Object convertString(String value, int argumentIndex) {
         switch (predicateInfo.predicate().getArgumentType(argumentIndex)) {
             case Double:
-                return new Double(Double.parseDouble(value));
+                return Double.valueOf(Double.parseDouble(value));
             case Integer:
             case UniqueIntID:
-                return new Integer(Integer.parseInt(value));
+                return Integer.valueOf(Integer.parseInt(value));
             case String:
             case UniqueStringID:
                 return value;
             case Long:
-                return new Long(Long.parseLong(value));
+                return Long.valueOf(Long.parseLong(value));
             default:
                 throw new IllegalArgumentException("Unknown argument type: " + predicateInfo.predicate().getArgumentType(argumentIndex));
         }

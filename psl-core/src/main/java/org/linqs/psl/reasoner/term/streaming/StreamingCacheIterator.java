@@ -29,7 +29,7 @@ import java.util.List;
  * On these non-initial iterations, we will fill the term cache from disk and drain it.
  *
  * This iterator can be constructed as read-only.
- * In this case, pages will not be witten to disk.
+ * In this case, pages will not be written to disk.
  */
 public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
     protected StreamingTermStore<T> parentStore;
@@ -114,11 +114,13 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
             return false;
         }
 
-        nextTerm = fetchNextTerm();
-        if (nextTerm == null) {
-            close();
-            return false;
-        }
+        do {
+            nextTerm = fetchNextTerm();
+            if (nextTerm == null) {
+                close();
+                return false;
+            }
+        } while (parentStore.rejectCacheTerm(nextTerm));
 
         return true;
     }
@@ -145,7 +147,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * We will always settle outstanding pages before trying to get the next term.
      */
     private T fetchNextTerm() {
-        // The cache is exhaused, fill it up.
+        // The cache is exhausted, fill it up.
         if (nextCachedTermIndex >= termCache.size()) {
             // Flush all the volatile terms.
             flushCache();
@@ -237,6 +239,10 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         closed = true;
 
         flushCache();
+
+        // All the terms have been iterated over and the volatile buffer has been flushed,
+        // the term cache is now invalid.
+        termCache.clear();
 
         parentStore.cacheIterationComplete();
     }

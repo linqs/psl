@@ -19,6 +19,8 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
@@ -28,10 +30,6 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
@@ -50,9 +48,11 @@ import java.util.Set;
 public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
     private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
+    private boolean mergeConstants;
     private boolean invertNegativeWeight;
 
-    public HyperplaneTermGenerator() {
+    public HyperplaneTermGenerator(boolean mergeConstants) {
+        this.mergeConstants = mergeConstants;
         invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
     }
 
@@ -155,7 +155,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
         Hyperplane<V> hyperplane = null;
 
         if (groundRule instanceof WeightedGroundRule) {
-            GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
+            GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition(mergeConstants);
             hyperplane = processHyperplane(function, termStore);
             if (hyperplane == null) {
                 return 0;
@@ -164,7 +164,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             // Non-negative functions have a hinge.
             count = createLossTerm(newTerms, termStore, function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
         } else if (groundRule instanceof UnweightedGroundRule) {
-            ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition();
+            ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition(mergeConstants);
             GeneralFunction function = constraint.getFunction();
             hyperplane = processHyperplane(function, termStore);
             if (hyperplane == null) {
@@ -195,10 +195,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             float coefficient = (float)sum.getCoefficient(i);
             FunctionTerm term = sum.getTerm(i);
 
-            if (term.isConstant()) {
-                // Subtract because hyperplane is stored as coeffs^T * x = constant.
-                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
-            } else if ((term instanceof RandomVariableAtom) && (((RandomVariableAtom)term).getPredicate().isFixedMirror())) {
+            if ((term instanceof RandomVariableAtom) && (((RandomVariableAtom)term).getPredicate().isFixedMirror())) {
                 // These types of RVAs get treated as observations and integrated into the constant.
 
                 // Subtract because hyperplane is stored as coeffs^T * x = constant.
@@ -207,8 +204,8 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                 // Negate the coefficient so that "incorporating" this term would mean adding it,
                 // and "removing" this term would be subtracting.
                 hyperplane.addIntegratedRVA((RandomVariableAtom)term, -coefficient);
-            } else if (term instanceof RandomVariableAtom) {
-                V variable = termStore.createLocalVariable((RandomVariableAtom)term);
+            } else if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
+                V variable = termStore.createLocalVariable((GroundAtom)term);
 
                 // Check to see if we have seen this variable before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
@@ -230,6 +227,9 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                 } else {
                     hyperplane.addTerm(variable, coefficient);
                 }
+            } else if (term.isConstant()) {
+                // Subtract because hyperplane is stored as coeffs^T * x = constant.
+                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
             } else {
                 throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
             }

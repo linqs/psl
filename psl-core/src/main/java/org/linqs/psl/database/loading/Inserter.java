@@ -17,11 +17,12 @@
  */
 package org.linqs.psl.database.loading;
 
+import org.linqs.psl.util.FileUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -138,7 +139,7 @@ public abstract class Inserter {
 
     public void loadDelimitedDataAutomatic(String path, String delimiter) {
         boolean hasTruth = false;
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
             String line = null;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -168,7 +169,7 @@ public abstract class Inserter {
     private static List<List<Object>> loadDelimitedDataInternal(String path, String delimiter) {
         List<List<Object>> rows = new ArrayList<List<Object>>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
             String line = null;
             int lineNumber = 0;
 

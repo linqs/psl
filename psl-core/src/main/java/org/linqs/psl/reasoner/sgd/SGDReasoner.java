@@ -18,17 +18,21 @@
 package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.util.ArrayUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -37,16 +41,57 @@ import java.util.Iterator;
 public class SGDReasoner extends Reasoner {
     private static final Logger log = LoggerFactory.getLogger(SGDReasoner.class);
 
+    private static final float EPSILON = 1e-8f;
+
+    /**
+     * The SGD Extension to use.
+     */
+    public static enum SGDExtension {
+        NONE,
+        ADAGRAD,
+        ADAM
+    }
+
+    /**
+     * The SGD learning schedule to use.
+     */
+    public static enum SGDLearningSchedule {
+        CONSTANT,
+        STEPDECAY
+    }
+
     private int maxIterations;
 
     private boolean watchMovement;
     private float movementThreshold;
+
+    private float initialLearningRate;
+    private float learningRateInverseScaleExp;
+    private float adamBeta1;
+    private float adamBeta2;
+    private float[] accumulatedGradientSquares;
+    private float[] accumulatedGradientMean;
+    private float[] accumulatedGradientVariance;
+    private boolean coordinateStep;
+    private SGDLearningSchedule learningSchedule;
+    private SGDExtension sgdExtension;
 
     public SGDReasoner() {
         maxIterations = Options.SGD_MAX_ITER.getInt();
 
         watchMovement = Options.SGD_MOVEMENT.getBoolean();
         movementThreshold = Options.SGD_MOVEMENT_THRESHOLD.getFloat();
+
+        initialLearningRate = Options.SGD_LEARNING_RATE.getFloat();
+        learningRateInverseScaleExp = Options.SGD_INVERSE_TIME_EXP.getFloat();
+        adamBeta1 = Options.SGD_ADAM_BETA_1.getFloat();
+        adamBeta2 = Options.SGD_ADAM_BETA_2.getFloat();
+        accumulatedGradientSquares = null;
+        accumulatedGradientMean = null;
+        accumulatedGradientVariance = null;
+        coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
+        learningSchedule = SGDLearningSchedule.valueOf(Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase());
+        sgdExtension = SGDExtension.valueOf(Options.SGD_EXTENSION.getString().toUpperCase());
     }
 
     @Override
@@ -56,64 +101,106 @@ public class SGDReasoner extends Reasoner {
         }
 
         @SuppressWarnings("unchecked")
-        VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore = (VariableTermStore<SGDObjectiveTerm, RandomVariableAtom>)baseTermStore;
+        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
 
         termStore.initForOptimization();
+        initForOptimization(termStore);
 
-        double objective = -1.0;
+        long termCount = 0;
+        float meanMovement = 0.0f;
+        float learningRate = 0.0f;
+        double change = 0.0;
+        double objective = 0.0;
+        // Starting on the second iteration, keep track of the previous iteration's objective value.
+        // The variable values from the term store cannot be used to calculate the objective during an
+        // optimization pass because they are being updated in the variableUpdate() method.
+        // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
+        float[] oldVariableValues = null;
 
-        if (printInitialObj && log.isTraceEnabled()) {
-            objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0.0f, 0, 0);
-        }
-
-        int iteration = 1;
         long totalTime = 0;
-        while (true) {
+        boolean breakSGD = false;
+        int iteration = 1;
+
+        while(!breakSGD) {
             long start = System.currentTimeMillis();
 
-            // Keep track of the mean movement of the random variables.
-            float movement = 0.0f;
+            termCount = 0;
+            meanMovement = 0.0f;
+            objective = 0.0;
+            learningRate = calculateAnnealedLearningRate(iteration);
 
-            float[] variableValues = termStore.getVariableValues();
             for (SGDObjectiveTerm term : termStore) {
-                movement += term.minimize(iteration, variableValues);
+                if (iteration > 1) {
+                    objective += term.evaluate(oldVariableValues);
+                }
+
+                termCount++;
+                meanMovement += variableUpdate(term, termStore, iteration, learningRate);
             }
 
-            if (variableValues.length != 0) {
-                movement /= variableValues.length;
+            termStore.iterationComplete();
+
+            if (termCount != 0) {
+                meanMovement /= termCount;
+            }
+
+            breakSGD = breakOptimization(iteration, objective, oldObjective, meanMovement, termCount);
+
+            if (iteration == 1) {
+                // Initialize old variables values.
+                oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+            } else {
+                // Update old variables values and objective.
+                System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+                oldObjective = objective;
             }
 
             long end = System.currentTimeMillis();
-
-            oldObjective = objective;
-            objective = computeObjective(termStore);
             totalTime += end - start;
 
-            if (log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Mean Movement: {}, Iteration Time: {}, Total Optimiztion Time: {}",
-                        iteration, objective, movement, (end - start), totalTime);
+            if (iteration > 1 && log.isTraceEnabled()) {
+                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
+                        iteration - 1, objective, objective / termCount, (end - start), totalTime);
             }
 
             iteration++;
-            termStore.iterationComplete();
-
-            if (breakOptimization(iteration, objective, oldObjective, movement)) {
-                break;
-            }
         }
+        optimizationComplete();
 
-        log.info("Optimization completed in {} iterations. Objective: {}, Total Optimiztion Time: {}",
-                iteration - 1, objective, totalTime);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumVariables(), termStore.size());
+        objective = computeObjective(termStore);
+        change = termStore.syncAtoms();
 
-        termStore.syncAtoms();
+        log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", objective, objective / termCount, totalTime, iteration);
+        log.debug("Movement of variables from initial state: {}", change);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
 
         return objective;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement) {
+    private void initForOptimization(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+        switch (sgdExtension) {
+            case NONE:
+                break;
+            case ADAGRAD:
+                accumulatedGradientSquares = new float[termStore.getNumRandomVariables()];
+                break;
+            case ADAM:
+                accumulatedGradientMean = new float[termStore.getNumRandomVariables()];
+                accumulatedGradientVariance = new float[termStore.getNumRandomVariables()];
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
+        }
+    }
+
+    private void optimizationComplete() {
+        accumulatedGradientSquares = null;
+        accumulatedGradientMean = null;
+        accumulatedGradientVariance = null;
+    }
+
+    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement, long termCount) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
@@ -130,14 +217,14 @@ public class SGDReasoner extends Reasoner {
         }
 
         // Break if the objective has not changed.
-        if (objectiveBreak && MathUtils.equals(objective, oldObjective, tolerance)) {
+        if (objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
             return true;
         }
 
         return false;
     }
 
-    public double computeObjective(VariableTermStore<SGDObjectiveTerm, RandomVariableAtom> termStore) {
+    private double computeObjective(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         double objective = 0.0;
 
         // If possible, use a readonly iterator.
@@ -154,6 +241,98 @@ public class SGDReasoner extends Reasoner {
         }
 
         return objective;
+    }
+
+    private float calculateAnnealedLearningRate(int iteration) {
+        switch (learningSchedule) {
+            case CONSTANT:
+                return initialLearningRate;
+            case STEPDECAY:
+                return initialLearningRate / ((float)Math.pow(iteration, learningRateInverseScaleExp));
+            default:
+                throw new IllegalArgumentException(String.format("Illegal value found for SGD learning schedule: '%s'", learningSchedule));
+        }
+    }
+
+    /**
+     * Update the random variables by taking a step in the direction of the negative gradient of the term.
+     */
+    private float variableUpdate(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+                                int iteration, float learningRate) {
+        float movement = 0.0f;
+        float variableStep = 0.0f;
+        float newValue = 0.0f;
+        float partial = 0.0f;
+
+        GroundAtom[] variableAtoms = termStore.getVariableAtoms();
+        float[] variableValues = termStore.getVariableValues();
+
+        int size = term.size();
+        WeightedRule rule = term.getRule();
+        int[] variableIndexes = term.getVariableIndexes();
+        float dot = term.dot(variableValues);
+
+        for (int i = 0 ; i < size; i++) {
+            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                continue;
+            }
+
+            partial = term.computePartial(i, dot, rule.getWeight());
+            variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial);
+
+            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
+            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
+            variableValues[variableIndexes[i]] = newValue;
+
+            if (coordinateStep) {
+                dot = term.dot(variableValues);
+            }
+        }
+
+        return movement;
+    }
+
+    /**
+     * Compute the step for a single variable according SGD or one of it's extensions.
+     * For details on the math behind the SGD extensions see the corresponding papers listed below:
+     *  - AdaGrad: https://jmlr.org/papers/volume12/duchi11a/duchi11a.pdf
+     *  - Adam: https://arxiv.org/pdf/1412.6980.pdf
+     */
+    private float computeVariableStep(int variableIndex, int iteration, float learningRate, float partial) {
+        float step = 0.0f;
+        float adaptedLearningRate = 0.0f;
+
+        switch (sgdExtension) {
+            case NONE:
+                step = partial * learningRate;
+                break;
+            case ADAGRAD:
+                accumulatedGradientSquares = ArrayUtils.ensureCapacity(accumulatedGradientSquares, variableIndex);
+                accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + partial * partial;
+
+                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[variableIndex] + EPSILON);
+                step = partial * adaptedLearningRate;
+                break;
+            case ADAM:
+                float biasedGradientMean = 0.0f;
+                float biasedGradientVariance = 0.0f;
+
+                accumulatedGradientMean = ArrayUtils.ensureCapacity(accumulatedGradientMean, variableIndex);
+                accumulatedGradientMean[variableIndex] = adamBeta1 * accumulatedGradientMean[variableIndex] + (1.0f - adamBeta1) * partial;
+
+                accumulatedGradientVariance = ArrayUtils.ensureCapacity(accumulatedGradientVariance, variableIndex);
+                accumulatedGradientVariance[variableIndex] = adamBeta2 * accumulatedGradientVariance[variableIndex] + (1.0f - adamBeta2) * partial * partial;
+
+                biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(adamBeta1, iteration));
+                biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(adamBeta2, iteration));
+                adaptedLearningRate = learningRate / ((float)Math.sqrt(biasedGradientVariance) + EPSILON);
+                step = biasedGradientMean * adaptedLearningRate;
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
+        }
+
+        return step;
     }
 
     @Override

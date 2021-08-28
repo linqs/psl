@@ -17,12 +17,13 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression;
 
-import java.util.Arrays;
-
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Term;
+
+import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * A variant of an {@link Atom} that can additionally take {@link SummationVariable SummationVariables}
@@ -34,7 +35,7 @@ import org.linqs.psl.model.term.Term;
  *
  * @author Stephen Bach
  */
-public class SummationAtom implements SummationAtomOrAtom {
+public class SummationAtom implements Serializable, SummationAtomOrAtom {
     protected final Predicate predicate;
     protected final SummationVariableOrTerm[] args;
 

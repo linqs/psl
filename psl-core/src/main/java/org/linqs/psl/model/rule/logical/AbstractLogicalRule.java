@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
@@ -34,11 +33,8 @@ import org.linqs.psl.model.formula.FormulaAnalysis.DNFClause;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
@@ -49,7 +45,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +133,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
-    public Formula getRewritableGroundingFormula(AtomManager atomManager) {
+    public Formula getRewritableGroundingFormula() {
         return negatedDNF.getQueryFormula();
     }
 
@@ -149,7 +144,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     @Override
     public RawQuery getGroundingQuery(AtomManager atomManager) {
-        return new RawQuery((RDBMSDatabase)atomManager.getDatabase(), getRewritableGroundingFormula(atomManager));
+        return new RawQuery((RDBMSDatabase)atomManager.getDatabase(), getRewritableGroundingFormula());
     }
 
     @Override
@@ -233,7 +228,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                 (new HashSet<Atom>(thisNegLiterals)).equals(new HashSet<Atom>(otherNegLiterals));
     }
 
-    protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms, short rvaCount);
+    protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms);
 
     private GroundRule groundInternal(Constant[] row, Map<Variable, Integer> variableMap,
             AtomManager atomManager, GroundingResources resources) {
@@ -289,7 +284,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             atomManager.reportAccessException(ex, resources.accessExceptionAtoms.iterator().next());
         }
 
-        return groundFormulaInstance(resources.positiveAtoms, resources.negativeAtoms, rvaCount);
+        return groundFormulaInstance(resources.positiveAtoms, resources.negativeAtoms);
     }
 
     private short createAtoms(AtomManager atomManager, Map<Variable, Integer> variableMap,
@@ -306,6 +301,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             }
 
             atom = ((QueryAtom)literals.get(i)).ground(atomManager, row, variableMap, argumentBuffer[i]);
+            if (atom == null) {
+                return -1;
+            }
 
             if (atom instanceof RandomVariableAtom) {
                 // If we got an atom that is in violation of an access policy, then we may need to throw an exception.
@@ -347,8 +345,6 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             positiveAtoms = new ArrayList<GroundAtom>(4);
             negativeAtoms = new ArrayList<GroundAtom>(4);
             accessExceptionAtoms = new HashSet<GroundAtom>(4);
-
-            int numLiterals = negatedDNF.getPosLiterals().size() + negatedDNF.getNegLiterals().size();
 
             positiveAtomArgs = new Constant[negatedDNF.getPosLiterals().size()][];
             for (int i = 0; i < negatedDNF.getPosLiterals().size(); i++) {

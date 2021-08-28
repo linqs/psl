@@ -51,6 +51,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,6 +135,14 @@ public class RDBMSDatabase extends Database {
 
     @Override
     public boolean deleteAtom(GroundAtom atom) {
+        return deleteAtom(atom, Arrays.asList(writeID));
+    }
+
+    public boolean deleteAtomAllPartitions(GroundAtom atom) {
+        return deleteAtom(atom, allPartitionIDs);
+    }
+
+    public boolean deleteAtom(GroundAtom atom, List<Integer> partitions) {
         QueryAtom queryAtom = new QueryAtom(atom.getPredicate(), atom.getArguments());
         if (cache.getCachedAtom(queryAtom) != null) {
             cache.removeCachedAtom(queryAtom);
@@ -141,7 +150,9 @@ public class RDBMSDatabase extends Database {
 
         try (
             Connection connection = getConnection();
-            PreparedStatement statement = getAtomDelete(connection, ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()), atom.getArguments());
+            PreparedStatement statement = getAtomDelete(connection,
+                    ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()),
+                    atom.getArguments(), partitions);
         ) {
             if (statement.executeUpdate() > 0) {
                 return true;
@@ -387,8 +398,8 @@ public class RDBMSDatabase extends Database {
         return predicate.createUpsertStatement(connection, ((RDBMSDataStore)parentDataStore).getDriver());
     }
 
-    private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments) {
-        PreparedStatement statement = predicate.createDeleteStatement(connection, writeID);
+    private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments, List<Integer> partitions) {
+        PreparedStatement statement = predicate.createDeleteStatement(connection, partitions);
 
         try {
             for (int i = 0; i < arguments.length; i++) {
@@ -403,8 +414,8 @@ public class RDBMSDatabase extends Database {
 
     /**
      * Given a ResultSet, column name, and ConstantType,
-     * get the value as a Constnt from the results.
-     * columnIndex should be 0-indexed (eventhough jdbc uses 1-index).
+     * get the value as a Constant from the results.
+     * columnIndex should be 0-indexed (even though jdbc uses 1-index).
      */
     private Constant extractConstantFromResult(ResultSet results, int columnIndex, ConstantType type) {
         try {

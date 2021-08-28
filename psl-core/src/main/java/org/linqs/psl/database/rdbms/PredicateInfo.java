@@ -167,10 +167,10 @@ public class PredicateInfo {
 
     /**
      * Create a prepared statement that deletes ground atoms that match all the arguments.
-     * Note that we will only delete from the write partition.
+     * Note that we will only delete from the provided partitions.
      */
-    public PreparedStatement createDeleteStatement(Connection connection, int writePartition) {
-        return prepareSQL(connection, buildDeleteStatement(writePartition));
+    public PreparedStatement createDeleteStatement(Connection connection, List<Integer> partitions) {
+        return prepareSQL(connection, buildDeleteStatement(partitions));
     }
 
     /**
@@ -298,6 +298,8 @@ public class PredicateInfo {
     }
 
     private synchronized String buildCountAllStatement(List<Integer> partitions) {
+        assert(partitions != null);
+
         String key = "countAll_" + partitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
@@ -310,12 +312,10 @@ public class PredicateInfo {
 
         // If there is only 1 partition, just do equality, otherwise use IN.
         // All DBMSs should optimize a single IN the same as equality, but just in case.
-        if (partitions != null && partitions.size() > 0) {
-            if (partitions.size() == 1) {
-                query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
-            } else {
-                query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
-            }
+        if (partitions.size() == 1) {
+            query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+        } else if (partitions.size() > 1) {
+            query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
         }
 
         String sql = query.validate().toString();
@@ -324,6 +324,8 @@ public class PredicateInfo {
     }
 
     private synchronized String buildQueryAllStatement(List<Integer> partitions) {
+        assert(partitions != null);
+
         String key = "queryAll_" + partitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
@@ -342,12 +344,10 @@ public class PredicateInfo {
 
         // If there is only 1 partition, just do equality, otherwise use IN.
         // All DBMSs should optimize a single IN the same as equality, but just in case.
-        if (partitions != null && partitions.size() > 0) {
-            if (partitions.size() == 1) {
-                query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
-            } else {
-                query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
-            }
+        if (partitions.size() == 1) {
+            query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
+        } else if (partitions.size() > 1) {
+            query.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
         }
 
         String sql = query.validate().toString();
@@ -407,8 +407,8 @@ public class PredicateInfo {
         return sql;
     }
 
-    private synchronized String buildDeleteStatement(int writePartition) {
-        String key = "delete_" + writePartition;
+    private synchronized String buildDeleteStatement(List<Integer> partitions) {
+        String key = "delete_" + partitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
         }
@@ -416,8 +416,8 @@ public class PredicateInfo {
         DeleteQuery delete = new DeleteQuery(tableName);
         QueryPreparer.MultiPlaceHolder placeHolder = (new QueryPreparer()).getNewMultiPlaceHolder();
 
-        // Only delete in the write partition.
-        delete.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), writePartition));
+        // Delete from all provided partitions.
+        delete.addCondition(new InCondition(new CustomSql(PARTITION_COLUMN_NAME), partitions));
 
         // Set placeholders for the arguments.
         for (String colName : argCols) {
