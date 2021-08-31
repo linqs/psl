@@ -67,7 +67,7 @@ public abstract class SupportingModel {
      */
     protected Map<String, Integer> labelIndexMapping;
 
-    protected int numFeatures;
+    private int numFeatures;
 
     /**
      * Labels manually set by the reasoner to use for fitting.
@@ -81,6 +81,28 @@ public abstract class SupportingModel {
      * {entity index: labels}
      */
     protected Map<Integer, float[]> observedLabels;
+
+    public void close() {
+        if (entityIndexMapping != null) {
+            entityIndexMapping.clear();
+            entityIndexMapping = null;
+        }
+
+        if (labelIndexMapping != null) {
+            labelIndexMapping.clear();
+            labelIndexMapping = null;
+        }
+
+        if (observedLabels != null) {
+            observedLabels.clear();
+            observedLabels = null;
+        }
+
+        entityArgumentIndexes = null;
+        labelArgumentIndexes = null;
+        numFeatures = -1;
+        manualLabels = null;
+    }
 
     public SupportingModel() {
         entityIndexMapping = null;
@@ -120,6 +142,14 @@ public abstract class SupportingModel {
      * This will typically involve using only observed values.
      */
     public abstract void initialFit();
+
+    public int numFeatures() {
+        return numFeatures;
+    }
+
+    public int numLabels() {
+        return labelIndexMapping.size();
+    }
 
     public float getValue(RandomVariableAtom atom) {
         AtomIndexes indexes = getAtomIndexes(atom);
@@ -193,7 +223,7 @@ public abstract class SupportingModel {
                             lineNumber, labelArgumentIndexes.length, parts.length));
                 }
 
-                labelIndexMapping.put(line, Integer.valueOf(labelIndexMapping.size()));
+                labelIndexMapping.put(line, Integer.valueOf(numLabels()));
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse labels file: " + path, ex);
@@ -322,7 +352,7 @@ public abstract class SupportingModel {
                 }
 
                 if (!observedLabels.containsKey(entityIndex)) {
-                    observedLabels.put(entityIndex, new float[labelIndexMapping.size()]);
+                    observedLabels.put(entityIndex, new float[numLabels()]);
                 }
 
                 observedLabels.get(entityIndex)[labelIndex.intValue()] = value;
