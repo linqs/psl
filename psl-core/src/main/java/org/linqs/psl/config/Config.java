@@ -97,7 +97,7 @@ public class Config {
 
         // Load the configuration file directly if the path exists.
         String path = OptionConverter.getSystemProperty(PSL_CONFIG, PSL_CONFIG_DEFAULT);
-        if ((new File(path)).isFile()) {
+        if (FileUtils.isFile(path)) {
             loadResource(path);
             return;
         }
