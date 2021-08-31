@@ -54,6 +54,16 @@ public class ModelPredicate extends StandardPredicate {
         return true;
     }
 
+    @Override
+    public void close() {
+        super.close();
+
+        if (model != null) {
+            model.close();
+            model = null;
+        }
+    }
+
     /**
      * Load a supporting model.
      * If any relative paths are supplied in the config, |relativeDir| can be used to resilve them.
