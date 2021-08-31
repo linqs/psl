@@ -30,7 +30,8 @@
     </parent>
 
     <properties>
-        <dl4j.version>1.0.0-M1.1</dl4j.version>
+        <!-- <tf-java.version>0.3.1</tf-java.version> -->
+        <tf-java.version>0.4.0-SNAPSHOT</tf-java.version>
     </properties>
 
     <dependencies>
@@ -43,16 +44,28 @@
         <!-- deep learning dependencies -->
 
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>${dl4j.version}</version>
+            <groupId>org.tensorflow</groupId>
+            <artifactId>tensorflow-core-platform</artifactId>
+            <version>${tf-java.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-platform</artifactId>
-            <version>${dl4j.version}</version>
+            <groupId>org.tensorflow</groupId>
+            <artifactId>tensorflow-framework</artifactId>
+            <version>${tf-java.version}</version>
         </dependency>
+
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>tensorflow-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
@@ -75,22 +88,6 @@
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
-                                    <excludes>
-                                        <!-- Unsupported Architectures -->
-                                        <exclude>**/arm64-v8a/**</exclude>
-                                        <exclude>**/armeabi-v7a/**</exclude>
-                                        <exclude>**/ios-arm64/**</exclude>
-                                        <exclude>**/ios-x86_64/**</exclude>
-                                        <exclude>**/linux-arm64/**</exclude>
-                                        <exclude>**/linux-armhf/**</exclude>
-                                        <exclude>**/linux-ppc64le/**</exclude>
-                                        <exclude>**/linux-x86/**</exclude>
-                                        <exclude>**/windows-x86/**</exclude>
-                                        <exclude>**/x86/**</exclude>
-
-                                        <!-- Unsupported Features -->
-                                        <exclude>**/opencv/**</exclude>
-                                    </excludes>
                                 </filter>
                             </filters>
                         </configuration>
@@ -100,300 +97,4 @@
         </plugins>
     </build>
 
-    <profiles>
-
-        <profile>
-            <id>linux</id>
-
-            <activation>
-                <os>
-                    <family>unix</family>
-                </os>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <version>2.4.3</version>
-                        <executions>
-                            <execution>
-                                <configuration>
-                                    <filters>
-                                        <filter>
-                                            <artifact>*:*</artifact>
-                                            <excludes>
-                                                <!-- Unsupported Architectures -->
-                                                <exclude>**/arm64-v8a/**</exclude>
-                                                <exclude>**/armeabi-v7a/**</exclude>
-                                                <exclude>**/ios-arm64/**</exclude>
-                                                <exclude>**/ios-x86_64/**</exclude>
-                                                <exclude>**/linux-arm64/**</exclude>
-                                                <exclude>**/linux-armhf/**</exclude>
-                                                <exclude>**/linux-ppc64le/**</exclude>
-                                                <exclude>**/linux-x86/**</exclude>
-                                                <exclude>**/windows-x86/**</exclude>
-                                                <exclude>**/x86/**</exclude>
-
-                                                <!-- Unsupported Features -->
-                                                <exclude>**/opencv/**</exclude>
-
-                                                <!-- Non-local OSs -->
-                                                <exclude>**/macosx-x86_64/**</exclude>
-                                                <exclude>**/windows-x86_64/**</exclude>
-                                            </excludes>
-                                        </filter>
-                                    </filters>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>mac</id>
-
-            <activation>
-                <os>
-                    <family>mac</family>
-                </os>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <version>2.4.3</version>
-                        <executions>
-                            <execution>
-                                <configuration>
-                                    <filters>
-                                        <filter>
-                                            <artifact>*:*</artifact>
-                                            <excludes>
-                                                <!-- Unsupported Architectures -->
-                                                <exclude>**/arm64-v8a/**</exclude>
-                                                <exclude>**/armeabi-v7a/**</exclude>
-                                                <exclude>**/ios-arm64/**</exclude>
-                                                <exclude>**/ios-x86_64/**</exclude>
-                                                <exclude>**/linux-arm64/**</exclude>
-                                                <exclude>**/linux-armhf/**</exclude>
-                                                <exclude>**/linux-ppc64le/**</exclude>
-                                                <exclude>**/linux-x86/**</exclude>
-                                                <exclude>**/windows-x86/**</exclude>
-                                                <exclude>**/x86/**</exclude>
-
-                                                <!-- Unsupported Features -->
-                                                <exclude>**/opencv/**</exclude>
-
-                                                <!-- Non-local OSs -->
-                                                <exclude>**/linux-x86_64/**</exclude>
-                                                <exclude>**/windows-x86_64/**</exclude>
-                                            </excludes>
-                                        </filter>
-                                    </filters>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>windows</id>
-
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <version>2.4.3</version>
-                        <executions>
-                            <execution>
-                                <configuration>
-                                    <filters>
-                                        <filter>
-                                            <artifact>*:*</artifact>
-                                            <excludes>
-                                                <!-- Unsupported Architectures -->
-                                                <exclude>**/arm64-v8a/**</exclude>
-                                                <exclude>**/armeabi-v7a/**</exclude>
-                                                <exclude>**/ios-arm64/**</exclude>
-                                                <exclude>**/ios-x86_64/**</exclude>
-                                                <exclude>**/linux-arm64/**</exclude>
-                                                <exclude>**/linux-armhf/**</exclude>
-                                                <exclude>**/linux-ppc64le/**</exclude>
-                                                <exclude>**/linux-x86/**</exclude>
-                                                <exclude>**/windows-x86/**</exclude>
-                                                <exclude>**/x86/**</exclude>
-
-                                                <!-- Unsupported Features -->
-                                                <exclude>**/opencv/**</exclude>
-
-                                                <!-- Non-local OSs -->
-                                                <exclude>**/linux-x86_64/**</exclude>
-                                                <exclude>**/macosx-x86_64/**</exclude>
-                                            </excludes>
-                                        </filter>
-                                    </filters>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>avx2</id>
-
-            <activation>
-                <property>
-                    <name>env.AVX2</name>
-                </property>
-            </activation>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>linux-x86_64-avx2</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>macosx-x86_64-avx2</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>windows-x86_64-avx2</classifier>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>cuda</id>
-
-            <activation>
-                <property>
-                    <name>env.CUDA</name>
-                </property>
-            </activation>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-cuda-10.2</artifactId>
-                    <version>${dl4j.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.2-platform</artifactId>
-                    <version>${dl4j.version}</version>
-                </dependency>
-
-                <!-- Change this dependency to be expected at runtime, effectively ignoring it. -->
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native-platform</artifactId>
-                    <version>${dl4j.version}</version>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>release</id>
-
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>linux-x86_64-avx2</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>macosx-x86_64-avx2</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${dl4j.version}</version>
-                    <classifier>windows-x86_64-avx2</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-cuda-10.2</artifactId>
-                    <version>${dl4j.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.2-platform</artifactId>
-                    <version>${dl4j.version}</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <version>2.4.3</version>
-                        <executions>
-                            <execution>
-                                <configuration>
-                                    <filters>
-                                        <filter>
-                                            <artifact>*:*</artifact>
-                                            <excludes>
-                                                <!-- Unsupported Architectures -->
-                                                <exclude>**/arm64-v8a/**</exclude>
-                                                <exclude>**/armeabi-v7a/**</exclude>
-                                                <exclude>**/ios-arm64/**</exclude>
-                                                <exclude>**/ios-x86_64/**</exclude>
-                                                <exclude>**/linux-arm64/**</exclude>
-                                                <exclude>**/linux-armhf/**</exclude>
-                                                <exclude>**/linux-ppc64le/**</exclude>
-                                                <exclude>**/linux-x86/**</exclude>
-                                                <exclude>**/windows-x86/**</exclude>
-                                                <exclude>**/x86/**</exclude>
-
-                                                <!-- Unsupported Features -->
-                                                <exclude>**/opencv/**</exclude>
-                                            </excludes>
-                                        </filter>
-                                    </filters>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
