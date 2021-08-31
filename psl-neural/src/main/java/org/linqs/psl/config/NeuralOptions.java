@@ -19,64 +19,53 @@ package org.linqs.psl.config;
 
 /**
  * Additional options for the psl-neural module.
+ *
+ * When adding new options, remember to statically add them to Options
+ * (see the static block near the end of this class).
  */
 public class NeuralOptions {
-    public static final Option NEURAL_BIN_RANK_LOWER = new Option(
-        "neural.binarize.rank.lower",
-        0.0f,
-        "Trainning values for the neural net below this percentage ranking will be set to zero.",
-        Option.FLAG_NON_NEGATIVE
+    public static final Option NEURAL_TF_BUNDLE_TAG = new Option(
+        "neural.tf.bundletag",
+        "serve",
+        "The tag to load the saved model with."
     );
 
-    public static final Option NEURAL_BIN_RANK_UPPER = new Option(
-        "neural.binarize.rank.upper",
-        1.0f,
-        "Trainning values for the neural net above this percentage ranking will be set to one.",
-        Option.FLAG_NON_NEGATIVE
+    public static final Option NEURAL_TF_FUNCTION_FIT = new Option(
+        "neural.tf.function.fit",
+        "fit",
+        "The named fit/training function to grab from the Tensorflow saved model bundle."
     );
 
-    public static final Option NEURAL_BIN_THRESHOLD_LOWER = new Option(
-        "neural.binarize.threshold.lower",
-        0.0f,
-        "Trainning values for the neural net below this threshold will be set to zero.",
-        Option.FLAG_NON_NEGATIVE
+    public static final Option NEURAL_TF_FUNCTION_PREDICT = new Option(
+        "neural.tf.function.predict",
+        "predict",
+        "The named prediction function to grab from the Tensorflow saved model bundle."
     );
 
-    public static final Option NEURAL_BIN_THRESHOLD_UPPER = new Option(
-        "neural.binarize.threshold.upper",
-        1.0f,
-        "Trainning values for the neural net above this threshold will be set to one.",
-        Option.FLAG_NON_NEGATIVE
+    public static final Option NEURAL_TF_TENSOR_INPUT = new Option(
+        "neural.tf.tensor.input",
+        "data",
+        "The name for the input tensor in the saved model."
     );
 
-    public static final Option NEURAL_NORMALIZE_LABELS = new Option(
-        "neural.normalize",
-        false,
-        "Normalize the labels before fitting so that the minimum label is zero and the sum of the labels is 1.0."
-        + " This is applied before any binarization."
+    public static final Option NEURAL_TF_TENSOR_LABELS = new Option(
+        "neural.tf.tensor.labels",
+        "labels",
+        "The name for the labels tensor in the saved model."
     );
 
-    public static final Option NEURAL_LEARNING_RATE = new Option(
-        "neural.learningrate",
-        0,
-        "The global learning rate of the neural net. If zero, don't override the learning rate.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option NEURAL_LOSS_FUNCTION = new Option(
-        "neural.lossfunction",
-        "MSE",
-        "The loss function for the neural net."
-        + " See https://deeplearning4j.org/api/latest/index.html?org/nd4j/linalg/factory/Nd4j.html"
+    public static final Option NEURAL_TF_TENSOR_OUTPUT = new Option(
+        "neural.tf.tensor.output",
+        "output_0",
+        "The name for the output tensor in the saved model."
     );
 
     static {
-        Options.addOption(NEURAL_BIN_RANK_LOWER);
-        Options.addOption(NEURAL_BIN_RANK_UPPER);
-        Options.addOption(NEURAL_BIN_THRESHOLD_LOWER);
-        Options.addOption(NEURAL_BIN_THRESHOLD_UPPER);
-        Options.addOption(NEURAL_LEARNING_RATE);
-        Options.addOption(NEURAL_LOSS_FUNCTION);
+        Options.addOption(NEURAL_TF_BUNDLE_TAG);
+        Options.addOption(NEURAL_TF_FUNCTION_FIT);
+        Options.addOption(NEURAL_TF_FUNCTION_PREDICT);
+        Options.addOption(NEURAL_TF_TENSOR_INPUT);
+        Options.addOption(NEURAL_TF_TENSOR_OUTPUT);
     }
 
     // Static only.

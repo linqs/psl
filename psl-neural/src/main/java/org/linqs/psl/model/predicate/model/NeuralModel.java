@@ -20,29 +20,22 @@ package org.linqs.psl.model.predicate.model;
 import org.linqs.psl.config.NeuralOptions;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.deeplearning4j.datasets.iterator.INDArrayDataSetIterator;
-import org.deeplearning4j.nn.conf.layers.LossLayer;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfigurationAccess;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tensorflow.SavedModelBundle;
+import org.tensorflow.Tensor;
+import org.tensorflow.ndarray.Shape;
+import org.tensorflow.types.TFloat32;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,23 +46,23 @@ public class NeuralModel extends SupportingModel {
     private static final Logger log = LoggerFactory.getLogger(NeuralModel.class);
 
     /**
-     * All the features indexed by the entity ID.
-     * [entities x features].
-     */
-    private INDArray features;
-
-    private MultiLayerNetwork model;
-    private int iterationCount;
-
-    /**
      * The most recent output from the model.
      * This is the full output for all entities.
      * [entities x labels]
      */
-    private INDArray output;
+    private TFloat32 output;
 
-    private double newLearningRate;
-    private String lossFunction;
+    /**
+     * All features for all entities.
+     * [entities x features]
+     */
+    private TFloat32 features;
+
+    /**
+     * A tensor representation of the current labels.
+     * [entities x labels]
+     */
+    private TFloat32 labelsTensor;
 
     // Always take the min of the batch size and number of data points.
     private int maxBatchSize;
@@ -78,26 +71,22 @@ public class NeuralModel extends SupportingModel {
     private int initialMaxBatchSize;
     private int initialEpochs;
 
-    private float lowerBinarizeRank;
-    private float upperBinarizeRank;
-    private boolean binarizeWithRank;
+    private SavedModelBundle bundle;
 
-    private float lowerBinarizeThreshold;
-    private float upperBinarizeThreshold;
-    private boolean binarizeWithThreshold;
-
-    private boolean normalizeLabels;
+    // Keys for working with the saved model.
+    private String bundleTag;
+    private String fitFunction;
+    private String predictFunction;
+    private String labelsTensorName;
+    private String inputTensorName;
+    private String outputTensorName;
 
     public NeuralModel() {
+        bundle = null;
+
         features = null;
-
-        model = null;
-        iterationCount = -1;
-
         output = null;
-
-        newLearningRate = NeuralOptions.NEURAL_LEARNING_RATE.getDouble();
-        lossFunction = NeuralOptions.NEURAL_LOSS_FUNCTION.getString();
+        labelsTensor = null;
 
         epochs = Options.MODEL_PREDICATE_ITERATIONS.getInt();
         maxBatchSize = Options.MODEL_PREDICATE_BATCH_SIZE.getInt();
@@ -105,15 +94,12 @@ public class NeuralModel extends SupportingModel {
         initialEpochs = Options.MODEL_PREDICATE_INITIAL_ITERATIONS.getInt();
         initialMaxBatchSize = Options.MODEL_PREDICATE_INITIAL_BATCH_SIZE.getInt();
 
-        lowerBinarizeRank = NeuralOptions.NEURAL_BIN_RANK_LOWER.getFloat();
-        upperBinarizeRank = NeuralOptions.NEURAL_BIN_RANK_UPPER.getFloat();
-        binarizeWithRank = (lowerBinarizeRank > 0.0f || upperBinarizeRank < 1.0f);
-
-        lowerBinarizeThreshold = NeuralOptions.NEURAL_BIN_THRESHOLD_LOWER.getFloat();
-        upperBinarizeThreshold = NeuralOptions.NEURAL_BIN_THRESHOLD_UPPER.getFloat();
-        binarizeWithThreshold = (lowerBinarizeThreshold > 0.0f || upperBinarizeThreshold < 1.0f);
-
-        normalizeLabels = NeuralOptions.NEURAL_NORMALIZE_LABELS.getBoolean();
+        bundleTag = NeuralOptions.NEURAL_TF_BUNDLE_TAG.getString();
+        fitFunction = NeuralOptions.NEURAL_TF_FUNCTION_FIT.getString();
+        predictFunction = NeuralOptions.NEURAL_TF_FUNCTION_PREDICT.getString();
+        inputTensorName = NeuralOptions.NEURAL_TF_TENSOR_INPUT.getString();
+        labelsTensorName = NeuralOptions.NEURAL_TF_TENSOR_LABELS.getString();
+        outputTensorName = NeuralOptions.NEURAL_TF_TENSOR_OUTPUT.getString();
     }
 
     @Override
@@ -143,12 +129,18 @@ public class NeuralModel extends SupportingModel {
 
         loadLabels(labelsPath);
 
-        float[][] arrayFeatures = loadFeatures(featuresPath);
-        features = Nd4j.create(arrayFeatures);
+        float[][] rawFeatures = loadFeatures(featuresPath);
+
+        features = TFloat32.tensorOf(Shape.of(rawFeatures.length, numFeatures()));
+        for (int i = 0; i < rawFeatures.length; i++) {
+            for (int j = 0; j < numFeatures(); j++) {
+                features.setFloat(rawFeatures[i][j], i, j);
+            }
+        }
 
         loadModel(modelPath);
 
-        manualLabels = new float[entityIndexMapping.size()][labelIndexMapping.size()];
+        manualLabels = new float[entityIndexMapping.size()][numLabels()];
 
         if (observationsPath != null) {
             loadObservations(observationsPath);
@@ -162,76 +154,16 @@ public class NeuralModel extends SupportingModel {
 
     @Override
     public void run() {
-        output = model.output(features);
-        long[] shape = output.shape();
-
-        if (shape.length != 2 || shape[0] != entityIndexMapping.size() || shape[1] != labelIndexMapping.size()) {
-            throw new RuntimeException(String.format(
-                    "Unexpected shape for model output. Expected [%d, %d], found [%s].",
-                    entityIndexMapping.size(), labelIndexMapping.size(),
-                    StringUtils.join(", ", shape)));
-        }
-    }
-
-    private void thresholdBinarize() {
-        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
-            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
-                if (manualLabels[entityIndex][labelIndex] < lowerBinarizeThreshold) {
-                    manualLabels[entityIndex][labelIndex] = 0.0f;
-                }
-
-                if (manualLabels[entityIndex][labelIndex] > upperBinarizeThreshold) {
-                    manualLabels[entityIndex][labelIndex] = 1.0f;
-                }
-            }
-        }
-    }
-
-    private void rankBinarize() {
-        IndexSortable[] values = new IndexSortable[labelIndexMapping.size()];
-        for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
-            values[labelIndex] = new IndexSortable();
+        // Close any previous output tensor.
+        if (output != null) {
+            output.close();
         }
 
-        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
-            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
-                values[labelIndex].index = labelIndex;
-                values[labelIndex].value = manualLabels[entityIndex][labelIndex];
-            }
+        Map<String, Tensor> inputMap = new HashMap<String, Tensor>(1);
+        inputMap.put(inputTensorName, features);
 
-            Arrays.sort(values);
-
-            for (int i = 0; i < values.length; i++) {
-                if (((float)(i + 1) / values.length) < lowerBinarizeRank) {
-                    manualLabels[entityIndex][values[i].index] = 0.0f;
-                }
-
-                if (((float)(i + 1) / values.length) > upperBinarizeRank) {
-                    manualLabels[entityIndex][values[i].index] = 1.0f;
-                }
-            }
-        }
-    }
-
-    private static class IndexSortable implements Comparable<IndexSortable> {
-        public int index;
-        public float value;
-
-        public IndexSortable() {
-            index = -1;
-            value = 0.0f;
-        }
-
-        @Override
-        public int compareTo(IndexSortable other) {
-            if (this.value < other.value) {
-                return -1;
-            } else if (this.value < other.value) {
-                return 1;
-            } else {
-                return 0;
-            }
-        }
+        Map<String, Tensor> outputMap = bundle.function(predictFunction).call(inputMap);
+        output = validateOutputTensor(outputMap, predictFunction, Shape.of(features.shape().size(0), numLabels()));
     }
 
     @Override
@@ -243,164 +175,138 @@ public class NeuralModel extends SupportingModel {
 
         log.trace("Initial fitting {}.", this);
 
-        List<INDArray> rawInitialFitFeatures = new ArrayList<INDArray>(observedLabels.size());
-        float[][] rawInitialFitLabels = new float[observedLabels.size()][labelIndexMapping.size()];
+        TFloat32 initialFeatures = TFloat32.tensorOf(Shape.of(observedLabels.size(), numFeatures()));
+        TFloat32 initialLabels = TFloat32.tensorOf(Shape.of(observedLabels.size(), numLabels()));
 
         for (Map.Entry<Integer, float[]> entry : observedLabels.entrySet()) {
-            System.arraycopy(entry.getValue(), 0, rawInitialFitLabels[rawInitialFitFeatures.size()], 0, labelIndexMapping.size());
-            rawInitialFitFeatures.add(features.getRow(entry.getKey().intValue()));
+            int entityIndex = entry.getKey().intValue();
+            float[] labels = entry.getValue();
+
+            for (int i = 0; i < numFeatures(); i++) {
+                initialFeatures.setFloat(features.getFloat(entityIndex, i), entityIndex, i);
+            }
+
+            for (int i = 0; i < numLabels(); i++) {
+                initialLabels.setFloat(labels[i], entityIndex, i);
+            }
         }
 
-        INDArray initialFitFeatures = Nd4j.create(rawInitialFitFeatures, observedLabels.size(), numFeatures);
-        INDArray initialFitLabels = Nd4j.create(rawInitialFitLabels);
+        Map<String, Tensor> inputMap = new HashMap<String, Tensor>(1);
+        inputMap.put(inputTensorName, initialFeatures);
+        inputMap.put(labelsTensorName, initialLabels);
+
+        float loss = -1.0f;
+        float metricScore = -1.0f;
 
         for (int i = 0; i < initialEpochs; i++) {
-            model.clear();
-            model.fit(initialFitFeatures, initialFitLabels);
+            Map<String, Tensor> outputMap = bundle.function(fitFunction).call(inputMap);
+            TFloat32 result = validateOutputTensor(outputMap, fitFunction, Shape.of(2));
 
-            log.trace("Epoch: {} / {}, Score: {} {}", i + 1, initialEpochs, model.score(), lossFunction);
+            loss = result.getFloat(0);
+            metricScore = result.getFloat(1);
+            result.close();
+
+            log.trace("Epoch: {} / {}, Loss: {}, Score: {}", i + 1, initialEpochs, loss, metricScore);
         }
 
-        log.debug("Done initial fitting {} with {} epochs. Score: {} {}.", this, initialEpochs, model.score(), lossFunction);
+        log.debug("Done initial fitting {} with {} epochs. Loss: {}, Score: {}.", this, initialEpochs, loss, metricScore);
+
+        initialFeatures.close();
+        initialLabels.close();
     }
 
     @Override
     public void fit() {
         log.trace("Fitting {}.", this);
 
-        if (normalizeLabels) {
-            normalizeLabels();
+        if (labelsTensor == null) {
+            labelsTensor = TFloat32.tensorOf(Shape.of(manualLabels.length, numLabels()));
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("Mean label range: " + computeMeanLabelRange());
+        // Reset all labels.
+        for (int i = 0; i < manualLabels.length; i++) {
+            for (int j = 0; j < numLabels(); j++) {
+                labelsTensor.setFloat(manualLabels[i][j], i, j);
+            }
         }
 
-        if (binarizeWithThreshold) {
-            thresholdBinarize();
+        Map<String, Tensor> inputMap = new HashMap<String, Tensor>(1);
+        inputMap.put(inputTensorName, features);
+        inputMap.put(labelsTensorName, labelsTensor);
+
+        float loss = -1.0f;
+        float metricScore = -1.0f;
+
+        for (int i = 0; i < initialEpochs; i++) {
+            Map<String, Tensor> outputMap = bundle.function(fitFunction).call(inputMap);
+            TFloat32 result = validateOutputTensor(outputMap, fitFunction, Shape.of(2));
+
+            loss = result.getFloat(0);
+            metricScore = result.getFloat(1);
+            result.close();
+
+            log.trace("Epoch: {} / {}, Loss: {}, Score: {}", i + 1, initialEpochs, loss, metricScore);
         }
 
-        if (binarizeWithRank) {
-            rankBinarize();
-        }
-
-        INDArray labels = Nd4j.create(manualLabels);
-
-        for (int i = 0; i < epochs; i++) {
-            model.clear();
-            model.fit(features, labels);
-
-            log.trace("Epoch: {} / {}, Score: {} {}", i + 1, epochs, model.score(), lossFunction);
-        }
-
-        log.debug("Done fitting {} with {} epochs. Score: {} {}.", this, epochs, model.score(), lossFunction);
+        log.debug("Done fitting {} with {} epochs. Loss: {}, Score: {}.", this, initialEpochs, loss, metricScore);
     }
 
-    private void normalizeLabels() {
-        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
-            // Start with a small number to avoid any division issues.
-            float sum = 1.0e-7f;
-            float min = 0.0f;
-
-            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
-                float value = manualLabels[entityIndex][labelIndex];
-                sum += value;
-
-                if (labelIndex == 0 || value < min) {
-                    min = value;
-                }
-            }
-
-            // Adjust the sum to retroactively subtract the min from all values.
-            sum -= min * labelIndexMapping.size();
-
-            // Adjust every value so the new sum will be one.
-            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
-                manualLabels[entityIndex][labelIndex] = Math.min(1.0f, Math.max(0.0f, (manualLabels[entityIndex][labelIndex] - min) / sum));
-            }
+    private TFloat32 validateOutputTensor(Map<String, Tensor> outputMap, String identifier, Shape expectedShape) {
+        if (!outputMap.containsKey(outputTensorName)) {
+            throw new RuntimeException(String.format(
+                    "[%s] Neural model (%s) does not have an output named '%s'.",
+                    identifier, this, outputTensorName));
         }
+
+        Tensor rawOutput = outputMap.get(outputTensorName);
+
+        if (!rawOutput.shape().equals(expectedShape)) {
+            throw new RuntimeException(String.format(
+                    "[%s] Unexpected output shape for nerual model (%s). Expected: %s. Found: %s.",
+                    identifier, this, expectedShape, rawOutput.shape()));
+
+        }
+
+        if (!(rawOutput instanceof TFloat32)) {
+            throw new RuntimeException(String.format(
+                    "[%s] Unexpected type for output of nerual model (%s). Expected: %s. Found: %s.",
+                    identifier, this, TFloat32.class, rawOutput.getClass()));
+        }
+
+        return (TFloat32)(rawOutput);
     }
 
-    private double computeMeanLabelRange() {
-        double meanRange = 0.0;
+    public void close() {
+        super.close();
 
-        if (entityIndexMapping.size() == 0) {
-            return -1.0;
+        if (output != null) {
+            output.close();
+            output = null;
         }
 
-        for (int entityIndex = 0; entityIndex < entityIndexMapping.size(); entityIndex++) {
-            float min = 0.0f;
-            float max = 0.0f;
-
-            for (int labelIndex = 0; labelIndex < labelIndexMapping.size(); labelIndex++) {
-                float value = manualLabels[entityIndex][labelIndex];
-
-                if (labelIndex == 0 || value < min) {
-                    min = value;
-                }
-
-                if (labelIndex == 0 || value > max) {
-                    max = value;
-                }
-            }
-
-            meanRange += (max - min);
+        if (features != null) {
+            features.close();
+            features = null;
         }
 
-        return meanRange / entityIndexMapping.size();
+        if (labelsTensor != null) {
+            labelsTensor.close();
+            labelsTensor = null;
+        }
+
+        if (bundle != null) {
+            bundle.close();
+            bundle = null;
+        }
     }
 
     private void loadModel(String path) {
         log.debug("Loading model for {} from {}", this, path);
 
-        MultiLayerNetwork rawModel = null;
-
-        try {
-            rawModel = KerasModelImport.importKerasSequentialModelAndWeights(path, false);
-        } catch (InvalidKerasConfigurationException ex) {
-            throw new RuntimeException("Unable to load Keras model at: " + path);
-        } catch (UnsupportedKerasConfigurationException ex) {
-            throw new RuntimeException("The provided Keras model is unsupported by DL4J: " + path);
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to load model at: " + path);
+        if (!FileUtils.isDir(path)) {
+            throw new RuntimeException("Expecting a Tensorflow SavedModel directory, not a file (see: https://www.tensorflow.org/guide/keras/save_and_serialize#savedmodel_format).");
         }
 
-        MultiLayerConfiguration layerConfigs = rawModel.getLayerWiseConfigurations();
-        NeuralNetConfiguration outputLayerConfig = createOutputLayerConfig();
-
-        MultiLayerConfiguration.Builder builder = MultiLayerConfigurationAccess.getBuilder(layerConfigs, outputLayerConfig);
-        MultiLayerConfiguration newConfig = builder.build();
-
-        // Construct the new model with the configuration and parameters.
-        model = new MultiLayerNetwork(newConfig, rawModel.params());
-        log.trace(model.summary());
-
-        iterationCount = model.getIterationCount();
-
-        if (!MathUtils.isZero(newLearningRate)) {
-            model.setLearningRate(newLearningRate);
-        }
-    }
-
-    /**
-     * Construct a configuration for an output layer.
-     * This layer will have no parameters.
-     */
-    private NeuralNetConfiguration createOutputLayerConfig() {
-        // Build a dummy network (so we can fetch out the network config).
-        MultiLayerConfiguration dummyConfig = new NeuralNetConfiguration.Builder()
-            .list()
-            .layer(new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                .nIn(labelIndexMapping.size())
-                .nOut(labelIndexMapping.size())
-                .build())
-            .layer(new LossLayer.Builder(LossFunctions.LossFunction.valueOf(lossFunction))
-                .build())
-            .build();
-
-        MultiLayerNetwork dummyModel = new MultiLayerNetwork(dummyConfig);
-        dummyModel.init();
-
-        return dummyModel.getOutputLayer().conf();
+        bundle = SavedModelBundle.load(path, bundleTag);
     }
 }
