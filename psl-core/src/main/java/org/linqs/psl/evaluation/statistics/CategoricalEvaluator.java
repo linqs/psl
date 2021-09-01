@@ -26,6 +26,9 @@ import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -47,13 +50,18 @@ import java.util.Set;
  * Anything else is a miss.
  */
 public class CategoricalEvaluator extends Evaluator {
+    private static final Logger log = LoggerFactory.getLogger(CategoricalEvaluator.class);
+
     public enum RepresentativeMetric {
         ACCURACY
     }
 
     public static final String DELIM = ":";
 
-    private Set<Integer> categoryIndexes;
+    // The category indexes, but may include negative indexes.
+    // The indexes will be fully resolved once we have a predicate.
+    private Set<Integer> virtualCategoryIndexes;
+
     private RepresentativeMetric representative;
     private String defaultPredicate;
 
@@ -75,7 +83,7 @@ public class CategoricalEvaluator extends Evaluator {
 
     public CategoricalEvaluator(RepresentativeMetric representative, int... rawCategoryIndexes) {
         this.representative = representative;
-        setCategoryIndexes(rawCategoryIndexes);
+        setVirtualCategoryIndexes(rawCategoryIndexes);
 
         defaultPredicate = Options.EVAL_CAT_DEFAULT_PREDICATE.getString();
 
@@ -83,19 +91,17 @@ public class CategoricalEvaluator extends Evaluator {
         misses = 0;
     }
 
-    public void setCategoryIndexes(int... rawCategoryIndexes) {
+    public void setVirtualCategoryIndexes(int... rawCategoryIndexes) {
         if (rawCategoryIndexes == null || rawCategoryIndexes.length == 0) {
             throw new IllegalArgumentException("Found no category indexes.");
         }
 
-        categoryIndexes = new HashSet<Integer>(rawCategoryIndexes.length);
+        virtualCategoryIndexes = new HashSet<Integer>(rawCategoryIndexes.length);
         for (int catIndex : rawCategoryIndexes) {
-            if (catIndex < 0) {
-                throw new IllegalArgumentException("Category indexes must be non-negative. Found: " + catIndex);
-            }
-
-            categoryIndexes.add(Integer.valueOf(catIndex));
+            virtualCategoryIndexes.add(Integer.valueOf(catIndex));
         }
+
+        log.debug("Virtual category indexes: [{}].", StringUtils.join(", ", virtualCategoryIndexes.toArray()));
     }
 
     @Override
@@ -171,6 +177,30 @@ public class CategoricalEvaluator extends Evaluator {
         return String.format("Categorical Accuracy: %f", accuracy());
     }
 
+    private Set<Integer> getTrueCategoryIndexes(StandardPredicate predicate) {
+        Set<Integer> categoryIndexes = new HashSet<Integer>();
+
+        for (Integer rawIndex : virtualCategoryIndexes) {
+            int index = rawIndex.intValue();
+
+            if (index < 0) {
+                index += predicate.getArity();
+            }
+
+            if (index < 0 || index >= predicate.getArity()) {
+                throw new RuntimeException(String.format(
+                        "Categorical index (%d) out of bounds for %s/%d.",
+                        index, predicate.getName(), predicate.getArity()));
+            }
+
+            categoryIndexes.add(Integer.valueOf(index));
+        }
+
+        log.trace("True category indexes for {}: [{}].", predicate.getName(), StringUtils.join(", ", categoryIndexes.toArray()));
+
+        return categoryIndexes;
+    }
+
     /**
      * Build up a set that has all the atoms that represet the best categorical assignments.
      */
@@ -180,13 +210,15 @@ public class CategoricalEvaluator extends Evaluator {
         // or another Map<Constant, Object>, and so on.
         Map<Constant, Object> predictedCategories = null;
 
+        Set<Integer> categoryIndexes = getTrueCategoryIndexes(predicate);
+
         for (GroundAtom atom : getTargets(trainingMap)) {
             if (atom.getPredicate() != predicate) {
                 continue;
             }
 
             @SuppressWarnings("unchecked")
-            Map<Constant, Object> ignoreWarning = (Map<Constant, Object>)putPredictedCategories(predictedCategories, atom, 0);
+            Map<Constant, Object> ignoreWarning = (Map<Constant, Object>)putPredictedCategories(predictedCategories, atom, 0, categoryIndexes);
             predictedCategories = ignoreWarning;
         }
 
@@ -200,12 +232,12 @@ public class CategoricalEvaluator extends Evaluator {
      * Recursively descend into the map and put the atom in if it is a best category.
      * Return what should be at the map where we descended (classic tree building style).
      */
-    private Object putPredictedCategories(Object currentNode, GroundAtom atom, int argIndex) {
+    private Object putPredictedCategories(Object currentNode, GroundAtom atom, int argIndex, Set<Integer> categoryIndexes) {
         assert(argIndex <= atom.getArity());
 
         // Skip this arg if it is a category.
         if (categoryIndexes.contains(argIndex)) {
-            return putPredictedCategories(currentNode, atom, argIndex + 1);
+            return putPredictedCategories(currentNode, atom, argIndex + 1, categoryIndexes);
         }
 
         // If we have coverd all the arguments, then we are either looking at a null
@@ -245,7 +277,7 @@ public class CategoricalEvaluator extends Evaluator {
         }
 
         Constant arg = atom.getArguments()[argIndex];
-        predictedCategories.put(arg, putPredictedCategories(predictedCategories.get(arg), atom, argIndex + 1));
+        predictedCategories.put(arg, putPredictedCategories(predictedCategories.get(arg), atom, argIndex + 1, categoryIndexes));
 
         return predictedCategories;
     }

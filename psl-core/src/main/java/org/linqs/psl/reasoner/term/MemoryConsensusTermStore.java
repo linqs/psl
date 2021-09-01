@@ -98,8 +98,9 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
         return store.getVariableValues();
     }
 
-    public void syncAtoms() {
-        store.syncAtoms();
+    @Override
+    public double syncAtoms() {
+        return store.syncAtoms();
     }
 
     @Override
