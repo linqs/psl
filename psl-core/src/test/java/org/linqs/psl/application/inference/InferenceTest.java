@@ -25,6 +25,8 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -45,6 +47,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -309,5 +312,27 @@ public abstract class InferenceTest {
             oldAvgObjective = avgObjective;
             oldInitialValue = initialValue;
         }
+    }
+
+    /**
+     * Test that inference using evaluation within optimization runs.
+     */
+    @Test
+    public void reasonerEvaluateTest() {
+        TestModel.ModelInformation info = TestModel.getModel();
+
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+        Database truthDatabase = info.dataStore.getDatabase(info.truthPartition, info.dataStore.getRegisteredPredicates());
+
+        List<Evaluator> evaluators = new ArrayList<Evaluator>();
+        evaluators.add(new ContinuousEvaluator());
+
+        inference.inference(true, false, evaluators, truthDatabase);
+        inference.close();
+        inferDB.close();
+        truthDatabase.close();
     }
 }

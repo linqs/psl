@@ -658,6 +658,12 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option REASONER_EVALUATE = new Option(
+        "reasoner.evaluate",
+        false,
+        "If true, run the suite of evaluators specified for the post-inference evlaution stage at regular intervals during inference."
+    );
+
     public static final Option REASONER_OBJECTIVE_BREAK = new Option(
         "reasoner.objectivebreak",
         true,

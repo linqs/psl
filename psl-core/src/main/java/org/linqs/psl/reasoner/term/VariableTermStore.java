@@ -63,11 +63,6 @@ public interface VariableTermStore<T extends ReasonerTerm, V extends ReasonerLoc
     public float getVariableValue(int index);
 
     /**
-     * Ensure that all the variable atoms have the same value as the array returned by getVariableValues().
-     */
-    public double syncAtoms();
-
-    /**
      * Get all the variables tracked by this term store.
      * Note that variables are allowed to be null if they have been deleted.
      */
