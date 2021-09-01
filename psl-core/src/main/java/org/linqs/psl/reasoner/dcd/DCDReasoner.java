@@ -17,9 +17,12 @@
  */
 package org.linqs.psl.reasoner.dcd;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
@@ -33,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Uses a DCD optimization method to optimize its GroundRules.
@@ -52,7 +57,8 @@ public class DCDReasoner extends Reasoner {
     }
 
     @Override
-    public double optimize(TermStore baseTermStore) {
+    public double optimize(TermStore baseTermStore,
+            List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
         if (!(baseTermStore instanceof VariableTermStore)) {
             throw new IllegalArgumentException("DCDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -98,6 +104,8 @@ public class DCDReasoner extends Reasoner {
                     variableValues[i] = Math.max(0.0f, Math.min(1.0f, variableValues[i]));
                 }
             }
+
+            evaluate(termStore, iteration, evaluators, trainingMap, evaluationPredicates);
 
             termStore.iterationComplete();
 
