@@ -18,10 +18,13 @@
 package org.linqs.psl.application.inference;
 
 import org.linqs.psl.application.ModelApplication;
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
@@ -41,7 +44,9 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * All the tools necessary to perform inference.
@@ -54,7 +59,7 @@ public abstract class InferenceApplication implements ModelApplication {
     private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
 
     protected List<Rule> rules;
-    protected Database db;
+    protected Database database;
     protected Reasoner reasoner;
     protected InitialValue initialValue;
 
@@ -70,13 +75,13 @@ public abstract class InferenceApplication implements ModelApplication {
 
     private boolean atomsCommitted;
 
-    protected InferenceApplication(List<Rule> rules, Database db) {
-        this(rules, db, Options.INFERENCE_RELAX.getBoolean());
+    protected InferenceApplication(List<Rule> rules, Database database) {
+        this(rules, database, Options.INFERENCE_RELAX.getBoolean());
     }
 
-    protected InferenceApplication(List<Rule> rules, Database db, boolean relaxHardConstraints) {
+    protected InferenceApplication(List<Rule> rules, Database database, boolean relaxHardConstraints) {
         this.rules = new ArrayList<Rule>(rules);
-        this.db = db;
+        this.database = database;
         this.atomsCommitted = false;
 
         this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
@@ -94,7 +99,7 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void initialize() {
         log.debug("Creating persisted atom manager.");
-        atomManager = createAtomManager(db);
+        atomManager = createAtomManager(database);
         log.debug("Atom manager initialization complete.");
 
         initializeAtoms();
@@ -117,8 +122,8 @@ public abstract class InferenceApplication implements ModelApplication {
         completeInitialize();
     }
 
-    protected PersistedAtomManager createAtomManager(Database db) {
-        return new PersistedAtomManager(db, false, initialValue);
+    protected PersistedAtomManager createAtomManager(Database database) {
+        return new PersistedAtomManager(database, false, initialValue);
     }
 
     protected GroundRuleStore createGroundRuleStore() {
@@ -162,14 +167,24 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     /**
+     * Alias for inference() without evaluation.
+     */
+    public double inference(boolean commitAtoms, boolean reset) {
+        return inference(commitAtoms, reset, null, null);
+    }
+
+    /**
      * Minimize the total weighted incompatibility of the atoms according to the rules,
      * and optionally commit the updated atoms back to the database.
      *
      * All RandomVariableAtoms which the model might access must be persisted in the Database.
      *
+     * If available, the evlauators and database (converted into a TrainingMap)
+     * will be presented to reasoners to use during optimization.
+     *
      * @return the final objective of the reasoner.
      */
-    public double inference(boolean commitAtoms, boolean reset) {
+    public double inference(boolean commitAtoms, boolean reset, List<Evaluator> evaluators, Database truthDatabase) {
         if (reset) {
             initializeAtoms();
 
@@ -178,8 +193,21 @@ public abstract class InferenceApplication implements ModelApplication {
             }
         }
 
+        TrainingMap trainingMap = null;
+        Set<StandardPredicate> evaluationPredicates = null;
+        if (truthDatabase != null) {
+            trainingMap = new TrainingMap(atomManager, truthDatabase);
+            evaluationPredicates = new HashSet<StandardPredicate>();
+
+            for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
+                if (truthDatabase.countAllGroundAtoms(predicate) > 0) {
+                    evaluationPredicates.add(predicate);
+                }
+            }
+        }
+
         log.info("Beginning inference.");
-        double objective = internalInference();
+        double objective = internalInference(evaluators, trainingMap, evaluationPredicates);
         log.info("Inference complete.");
         atomsCommitted = false;
 
@@ -196,8 +224,8 @@ public abstract class InferenceApplication implements ModelApplication {
      *
      * @return the final objective of the reasoner.
      */
-    protected double internalInference() {
-        return reasoner.optimize(termStore);
+    protected double internalInference(List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
+        return reasoner.optimize(termStore, evaluators, trainingMap, evaluationPredicates);
     }
 
     public Reasoner getReasoner() {
@@ -265,7 +293,7 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         rules = null;
-        db = null;
+        database = null;
     }
 
     /**
@@ -336,7 +364,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * Construct an inference application given the data.
      * Look for a constructor like: (List<Rule>, Database).
      */
-    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database db) {
+    public static InferenceApplication getInferenceApplication(String className, List<Rule> rules, Database database) {
         className = Reflection.resolveClassName(className);
 
         Class<? extends InferenceApplication> classObject = null;
@@ -357,7 +385,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         InferenceApplication inferenceApplication = null;
         try {
-            inferenceApplication = constructor.newInstance(rules, db);
+            inferenceApplication = constructor.newInstance(rules, database);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate inference application (" + className + ")", ex);
         } catch (IllegalAccessException ex) {

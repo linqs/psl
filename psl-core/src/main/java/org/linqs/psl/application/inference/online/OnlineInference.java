@@ -24,10 +24,13 @@ import org.linqs.psl.application.inference.online.messages.actions.model.AddAtom
 import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.StringUtils;
@@ -36,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
@@ -44,6 +48,11 @@ public abstract class OnlineInference extends InferenceApplication {
     private boolean modelUpdates;
     private boolean stopped;
     private double objective;
+
+    // Optional evaluation resources.
+    private List<Evaluator> evaluators;
+    private TrainingMap trainingMap;
+    private Set<StandardPredicate> evaluationPredicates;
 
     protected OnlineInference(List<Rule> rules, Database database) {
         super(rules, database);
@@ -58,6 +67,10 @@ public abstract class OnlineInference extends InferenceApplication {
         stopped = false;
         modelUpdates = true;
         objective = 0.0;
+
+        evaluators = null;
+        trainingMap = null;
+        evaluationPredicates = null;
 
         startServer();
 
@@ -159,14 +172,18 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         log.trace("Optimization Start");
-        objective = reasoner.optimize(termStore);
+        objective = reasoner.optimize(termStore, evaluators, trainingMap, evaluationPredicates);
         log.trace("Optimization End");
 
         modelUpdates = false;
     }
 
     @Override
-    public double internalInference() {
+    public double internalInference(List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
+        this.evaluators = evaluators;
+        this.trainingMap = trainingMap;
+        this.evaluationPredicates = evaluationPredicates;
+
         // Initial round of inference.
         optimize();
 
