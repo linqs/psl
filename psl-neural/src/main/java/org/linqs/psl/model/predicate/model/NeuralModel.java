@@ -64,6 +64,7 @@ public class NeuralModel extends SupportingModel {
      */
     private TFloat32 labelsTensor;
 
+    // TODO(eriq): batch size is not being honored.
     // Always take the min of the batch size and number of data points.
     private int maxBatchSize;
     private int epochs;
@@ -237,7 +238,7 @@ public class NeuralModel extends SupportingModel {
         float loss = -1.0f;
         float metricScore = -1.0f;
 
-        for (int i = 0; i < initialEpochs; i++) {
+        for (int i = 0; i < epochs; i++) {
             Map<String, Tensor> outputMap = bundle.function(fitFunction).call(inputMap);
             TFloat32 result = validateOutputTensor(outputMap, fitFunction, Shape.of(2));
 
@@ -245,10 +246,10 @@ public class NeuralModel extends SupportingModel {
             metricScore = result.getFloat(1);
             result.close();
 
-            log.trace("Epoch: {} / {}, Loss: {}, Score: {}", i + 1, initialEpochs, loss, metricScore);
+            log.trace("Epoch: {} / {}, Loss: {}, Score: {}", i + 1, epochs, loss, metricScore);
         }
 
-        log.debug("Done fitting {} with {} epochs. Loss: {}, Score: {}.", this, initialEpochs, loss, metricScore);
+        log.debug("Done fitting {} with {} epochs. Loss: {}, Score: {}.", this, epochs, loss, metricScore);
     }
 
     private TFloat32 validateOutputTensor(Map<String, Tensor> outputMap, String identifier, Shape expectedShape) {
