@@ -359,8 +359,9 @@ public class Launcher {
         Model model = loadModel();
 
         // Initialize evaluators.
-        List<Evaluator> evaluators = new ArrayList<Evaluator>();
+        List<Evaluator> evaluators = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+            evaluators = new ArrayList<Evaluator>();
             for (String evalClassName : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
                 evaluators.add((Evaluator)Reflection.newObject(evalClassName));
             }
@@ -379,7 +380,9 @@ public class Launcher {
         }
 
         // Evaluation
-        evaluation(dataStore, evalDB, closedPredicates, evaluators);
+        if (evaluators != null) {
+            evaluation(dataStore, evalDB, closedPredicates, evaluators);
+        }
 
         if (evalDB != null) {
             evalDB.close();
