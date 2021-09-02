@@ -114,9 +114,11 @@ public class Options {
 
     public static final Option EVAL_CAT_CATEGORY_INDEXES = new Option(
         "categoricalevaluator.categoryindexes",
-        "1",
-        "The indexes (zero-indexed) of arguments in the predicate that indicate a category."
+        "-1",
+        "The indexes (zero-indexed, " + CategoricalEvaluator.DELIM + " separated)"
+        + " of arguments in the predicate that indicate a category."
         + " The other arguments will be treated as identifiers."
+        + " Negative indexes are accepted, with -1 referring to the last element."
     );
 
     public static final Option EVAL_CAT_DEFAULT_PREDICATE = new Option(
@@ -642,6 +644,12 @@ public class Options {
         500,
         "The number of records to fetch from the database at a time.",
         Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option REASONER_EVALUATE = new Option(
+        "reasoner.evaluate",
+        false,
+        "If true, run the suite of evaluators specified for the post-inference evlaution stage at regular intervals during inference."
     );
 
     public static final Option REASONER_OBJECTIVE_BREAK = new Option(

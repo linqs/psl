@@ -17,9 +17,12 @@
  */
 package org.linqs.psl.reasoner.sgd;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
@@ -34,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Uses an SGD optimization method to optimize its GroundRules.
@@ -95,7 +100,8 @@ public class SGDReasoner extends Reasoner {
     }
 
     @Override
-    public double optimize(TermStore baseTermStore) {
+    public double optimize(TermStore baseTermStore,
+            List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
         if (!(baseTermStore instanceof VariableTermStore)) {
             throw new IllegalArgumentException("SGDReasoner requires a VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -138,6 +144,8 @@ public class SGDReasoner extends Reasoner {
                 termCount++;
                 meanMovement += variableUpdate(term, termStore, iteration, learningRate);
             }
+
+            evaluate(termStore, iteration, evaluators, trainingMap, evaluationPredicates);
 
             termStore.iterationComplete();
 

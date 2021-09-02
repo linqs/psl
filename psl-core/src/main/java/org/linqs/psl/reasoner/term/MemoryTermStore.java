@@ -118,6 +118,11 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Gro
     public void variablesExternallyUpdated() {
     }
 
+    @Override
+    public double syncAtoms() {
+        return 0.0;
+    }
+
     public void shuffle() {
         RandUtils.shuffle(store);
     }
