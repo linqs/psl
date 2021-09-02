@@ -195,7 +195,7 @@ public class Launcher {
 
         boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
 
-        // If we are going to evalaute during inference, we need to construct the truth database.
+        // If we are going to evaluate during inference, we need to construct the truth database.
         if (Options.REASONER_EVALUATE.getBoolean()) {
             truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
         }
