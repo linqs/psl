@@ -195,7 +195,7 @@ public class Launcher {
 
         boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
 
-        // If we are going to evalaute during inference, we need to construct the truth database.
+        // If we are going to evaluate during inference, we need to construct the truth database.
         if (Options.REASONER_EVALUATE.getBoolean()) {
             truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
         }
@@ -359,8 +359,9 @@ public class Launcher {
         Model model = loadModel();
 
         // Initialize evaluators.
-        List<Evaluator> evaluators = new ArrayList<Evaluator>();
+        List<Evaluator> evaluators = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+            evaluators = new ArrayList<Evaluator>();
             for (String evalClassName : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
                 evaluators.add((Evaluator)Reflection.newObject(evalClassName));
             }
@@ -379,7 +380,9 @@ public class Launcher {
         }
 
         // Evaluation
-        evaluation(dataStore, evalDB, closedPredicates, evaluators);
+        if (evaluators != null) {
+            evaluation(dataStore, evalDB, closedPredicates, evaluators);
+        }
 
         if (evalDB != null) {
             evalDB.close();
