@@ -40,6 +40,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 
 /**
  * A class for listening for new client connections, queueing actions from OnlineClients, and sending OnlineResponses.
@@ -68,6 +69,7 @@ public class OnlineServer {
     public void start() {
         listening = true;
         serverThread.start();
+        serverThread.blockUntilReady();
     }
 
     /**
@@ -149,10 +151,18 @@ public class OnlineServer {
     private class ServerConnectionThread extends Thread {
         private int port;
         private ServerSocket socket;
+        private Semaphore readyLock;
 
         public ServerConnectionThread() {
             port = Options.ONLINE_PORT_NUMBER.getInt();
             socket = null;
+
+            readyLock = new Semaphore(1);
+            try {
+                readyLock.acquire();
+            } catch (InterruptedException ex) {
+                throw new RuntimeException("Unable to acquire a new lock.", ex);
+            }
         }
 
         private void openListenSocket() {
@@ -161,6 +171,19 @@ public class OnlineServer {
             } catch (IOException ex) {
                 throw new RuntimeException(String.format("Could not establish socket on port %s.", port));
             }
+        }
+
+        /**
+         * Block until the server is ready to accept new connections.
+         */
+        public void blockUntilReady() {
+            try {
+                readyLock.acquire();
+            } catch (InterruptedException ex) {
+                throw new RuntimeException("Unable to acquire ready lock.", ex);
+            }
+
+            readyLock.release();
         }
 
         @Override
@@ -173,6 +196,7 @@ public class OnlineServer {
 
             while (listening) {
                 try {
+                    readyLock.release();
                     client = socket.accept();
                 } catch (IOException ex) {
                     if (socket.isClosed()) {
