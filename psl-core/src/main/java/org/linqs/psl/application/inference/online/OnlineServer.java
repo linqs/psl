@@ -174,7 +174,7 @@ public class OnlineServer {
         }
 
         /**
-         * Block until the server is ready to accept new connections.
+         * Block until the server has opened its socket.
          */
         public void blockUntilReady() {
             try {
@@ -192,11 +192,11 @@ public class OnlineServer {
             ClientConnectionThread connectionThread = null;
 
             openListenSocket();
+            readyLock.release();
             log.info(String.format("Online server started on port %s.", port));
 
             while (listening) {
                 try {
-                    readyLock.release();
                     client = socket.accept();
                 } catch (IOException ex) {
                     if (socket.isClosed()) {

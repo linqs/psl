@@ -79,11 +79,6 @@ public class SGDOnlineInferenceTest {
             onlineInferenceThread = null;
         }
 
-        if (onlineInferenceThread != null) {
-            onlineInferenceThread.close();
-            onlineInferenceThread = null;
-        }
-
         if (inferDB != null) {
             inferDB.close();
             inferDB = null;
