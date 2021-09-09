@@ -164,6 +164,7 @@
         <profile>
             <id>test-release</id>
 
+            <!-- TEST
             <build>
                 <plugins>
                     <plugin>
@@ -195,6 +196,7 @@
                     </plugin>
                 </plugins>
             </build>
+            -->
 
             <distributionManagement>
                 <snapshotRepository>
