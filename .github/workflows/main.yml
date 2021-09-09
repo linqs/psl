@@ -78,4 +78,4 @@ jobs:
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           TWINE_USERNAME: '__token__'
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PSLPYTHON }}
-        run: mvn verify deploy -P test-release -D maven.test.skip=true
+        run: mvn -X verify deploy -P test-release -D maven.test.skip=true
