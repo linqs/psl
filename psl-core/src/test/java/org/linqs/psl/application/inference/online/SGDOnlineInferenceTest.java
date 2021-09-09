@@ -50,6 +50,7 @@ public class SGDOnlineInferenceTest {
     public SGDOnlineInferenceTest() {
         modelInfo = null;
         inferDB = null;
+        onlineInferenceThread = null;
     }
 
     @Before
@@ -68,8 +69,14 @@ public class SGDOnlineInferenceTest {
 
     @After
     public void cleanup() {
+        stop();
+
         if (onlineInferenceThread != null) {
-            onlineInferenceThread.close();
+            try {
+                onlineInferenceThread.join();
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
             onlineInferenceThread = null;
         }
 
@@ -84,11 +91,11 @@ public class SGDOnlineInferenceTest {
         }
     }
 
-    /**
-     * A test that to see if the inference method is running, accepting client connections, and stopping.
-     */
-    @Test
-    public void baseTest() {
+    protected void stop() {
+        if (onlineInferenceThread == null) {
+            return;
+        }
+
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
 
         Stop stop = new Stop();
@@ -98,6 +105,22 @@ public class SGDOnlineInferenceTest {
         expectedResponses[0] = new ActionStatus(stop, true, "OnlinePSL inference stopped.");
 
         OnlineTest.assertServerResponse(commands, expectedResponses);
+
+        try {
+            onlineInferenceThread.join();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        onlineInferenceThread = null;
+    }
+
+    /**
+     * A test that to see if the inference method is running, accepting client connections, and stopping.
+     */
+    @Test
+    public void baseTest() {
+        stop();
     }
 
     /**

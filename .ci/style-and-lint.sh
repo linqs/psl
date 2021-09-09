@@ -14,7 +14,7 @@ misc_linqs_checks() {
     # Every file needs a copyright.
     echo "Checking that every source file has a copyright."
 
-    offendingFiles=$(grep -RL 'Copyright 2013-' "${ROOT_DIR}/"*"/src" "${ROOT_DIR}/psl-python/pslpython" | grep -v '/resources/' | grep  -v '.jar')
+    offendingFiles=$(grep -RL 'Copyright 2013-' "${ROOT_DIR}/"*"/src" "${ROOT_DIR}/psl-python/pslpython" | grep -v '__pycache__' | grep -v '/resources/' | grep  -v '.jar')
     if [[ ! -z ${offendingFiles} ]]; then
         status=$(($status | 32))
 
@@ -27,7 +27,7 @@ misc_linqs_checks() {
     echo "Checking that every source file has a copyright that is up-to-date."
     local year=$(date "+%Y")
 
-    offendingFiles=$(grep -R 'Copyright 2013-' "${ROOT_DIR}/"*"/src" "${ROOT_DIR}/psl-python/pslpython" | sed 's/:.*Copyright 2013-\([0-9]\+\).*/\t\1/' | grep -Pv "\t${year}$")
+    offendingFiles=$(grep -R 'Copyright 2013-' "${ROOT_DIR}/"*"/src" "${ROOT_DIR}/psl-python/pslpython" | grep -v '__pycache__' | sed 's/:.*Copyright 2013-\([0-9]\+\).*/\t\1/' | grep -Pv "\t${year}$")
     if [[ ! -z ${offendingFiles} ]]; then
         status=$(($status | 64))
 
@@ -50,7 +50,7 @@ main() {
     local status=0
 
     # Run lint.
-    mvn clean compile && mvn spotbugs:check
+    mvn compile spotbugs:check
     status=$(($status | $?))
 
     # Run misc checks.

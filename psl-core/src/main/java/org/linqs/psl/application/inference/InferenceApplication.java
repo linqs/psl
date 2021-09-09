@@ -179,7 +179,7 @@ public abstract class InferenceApplication implements ModelApplication {
      *
      * All RandomVariableAtoms which the model might access must be persisted in the Database.
      *
-     * If available, the evlauators and database (converted into a TrainingMap)
+     * If available, the evaluators and database (converted into a TrainingMap)
      * will be presented to reasoners to use during optimization.
      *
      * @return the final objective of the reasoner.
