@@ -60,18 +60,12 @@ jobs:
       - name: Build with Maven
         run: mvn integration-test -B
 
-      - name: Build Python Package
-        run: python3 setup.py bdist_wheel
-        working-directory: psl-python
-
       - name: Style and Lint
         run: ./.ci/style-and-lint.sh
 
-      - name: Publish to test.pypi
+      - name: Deploy Test Artifacts
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_PSLPYTHON }}
-          repository_url: https://test.pypi.org/legacy/
-          packages_dir: psl-python/dist
+        env:
+          TWINE_USERNAME: '__token__'
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PSLPYTHON }}
+        run: mvn deploy -Dmaven.test.skip=true
