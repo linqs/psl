@@ -74,4 +74,4 @@ jobs:
           user: __token__
           password: ${{ secrets.TEST_PYPI_PSLPYTHON }}
           repository_url: https://test.pypi.org/legacy/
-          packages_dir: psl-pyton/dist
+          packages_dir: psl-python/dist
