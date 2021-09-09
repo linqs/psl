@@ -65,8 +65,16 @@ public class OnlineAtomManager extends PersistedAtomManager {
     }
 
     public ObservedAtom addObservedAtom(StandardPredicate predicate, float value, Constant... arguments) {
+        return addObservedAtom(predicate, value, true, arguments);
+    }
+
+    public ObservedAtom addObservedAtom(StandardPredicate predicate, float value, boolean newAtom, Constant... arguments) {
         ObservedAtom atom = db.getCache().instantiateObservedAtom(predicate, arguments, value);
-        newObservedAtoms.add(atom);
+
+        if (newAtom) {
+            newObservedAtoms.add(atom);
+        }
+
         return atom;
     }
 

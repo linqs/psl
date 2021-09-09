@@ -39,6 +39,7 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.StringUtils;
 
@@ -48,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Set;
 
-// TODO: The TrainingMap can get outdated and should be updated.
 public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
@@ -143,7 +143,7 @@ public abstract class OnlineInference extends InferenceApplication {
         GroundAtom atom = null;
 
         if (atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
-            atom = ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
+            deleteAtom(action.getPredicate(), action.getArguments());
             ((OnlineTermStore)termStore).deleteLocalVariable(atom);
         }
 
@@ -151,6 +151,10 @@ public abstract class OnlineInference extends InferenceApplication {
             atom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), action.getArguments());
         } else {
             atom = ((OnlineAtomManager)atomManager).addRandomVariableAtom(action.getPredicate(), action.getValue(), action.getArguments());
+
+            if (trainingMap != null) {
+                trainingMap.addRandomVariableTargetAtom((RandomVariableAtom)atom);
+            }
         }
 
         ((OnlineTermStore)termStore).createLocalVariable(atom);
@@ -165,7 +169,7 @@ public abstract class OnlineInference extends InferenceApplication {
                     action.getPredicate(), StringUtils.join(", ", action.getArguments()));
         }
 
-        GroundAtom atom = ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
+        GroundAtom atom = deleteAtom(action.getPredicate(), action.getArguments());
         ((OnlineTermStore)termStore).deleteLocalVariable(atom);
 
         modelUpdates = true;
@@ -185,8 +189,9 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         // Delete then create atom with same predicates and arguments as the random variable atom.
-        ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
-        ObservedAtom observedAtom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), action.getArguments());
+        deleteAtom(action.getPredicate(), action.getArguments());
+
+        ObservedAtom observedAtom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), false, action.getArguments());
         ((OnlineTermStore)termStore).updateLocalVariable(observedAtom, action.getValue());
 
         modelUpdates = true;
@@ -255,6 +260,23 @@ public abstract class OnlineInference extends InferenceApplication {
     protected String doStop() {
         stopped = true;
         return "OnlinePSL inference stopped.";
+    }
+
+    /**
+     * Delete atom from the database and training map but do not delete from the term store.
+     */
+    private GroundAtom deleteAtom(StandardPredicate predicate, Constant[] arguments) {
+        GroundAtom atom = ((OnlineAtomManager)atomManager).deleteAtom(predicate, arguments);
+
+        if (atom == null) {
+            return null;
+        }
+
+        if (trainingMap != null) {
+            trainingMap.deleteAtom(atom);
+        }
+
+        return atom;
     }
 
     /**
