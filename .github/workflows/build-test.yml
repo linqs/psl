@@ -37,6 +37,11 @@ jobs:
           java-version: 8
           distribution: adopt
 
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
       - name: Cache Maven
         uses: actions/cache@v2
         with:
@@ -57,3 +62,17 @@ jobs:
 
       - name: Style and Lint
         run: ./.ci/style-and-lint.sh
+
+  deploy-dev:
+
+    needs: build-test
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+
+    runs-on: ubuntu-20.04
+
+    - name: Publish to test.pypi
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_PSLPYTHON }}
+        repository_url: https://test.pypi.org/legacy/
