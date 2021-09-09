@@ -75,6 +75,9 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: TEST
+        run: ls -la . psl-python psl-pyton/dist
+
       - name: Publish to test.pypi
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
