@@ -60,6 +60,10 @@ jobs:
       - name: Build with Maven
         run: mvn integration-test -B
 
+      - name: Build Python Package
+        run: python3 setup.py bdist_wheel
+        working-directory: psl-python
+
       - name: Style and Lint
         run: ./.ci/style-and-lint.sh
 
@@ -77,3 +81,4 @@ jobs:
           user: __token__
           password: ${{ secrets.TEST_PYPI_PSLPYTHON }}
           repository_url: https://test.pypi.org/legacy/
+          packages_dir: psl-pyton/dist
