@@ -67,18 +67,8 @@ jobs:
       - name: Style and Lint
         run: ./.ci/style-and-lint.sh
 
-  deploy-dev:
-
-    needs: build-test
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
-
-    runs-on: ubuntu-20.04
-
-    steps:
-      - name: TEST
-        run: ls -la . psl-python psl-pyton/dist
-
       - name: Publish to test.pypi
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
