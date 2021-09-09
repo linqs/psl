@@ -63,9 +63,19 @@ jobs:
       - name: Style and Lint
         run: ./.ci/style-and-lint.sh
 
+      - name: Import GPG Key
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_DEPLOY_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_DEPLOY_PASSWORD }}
+
       - name: Deploy Test Artifacts
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
         env:
+          OSSRH_JIRA_USERNAME: ${{ secrets.OSSRH_JIRA_USERNAME }}
+          OSSRH_JIRA_PASSWORD: ${{ secrets.OSSRH_JIRA_PASSWORD }}
+          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           TWINE_USERNAME: '__token__'
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PSLPYTHON }}
         run: mvn deploy -Dmaven.test.skip=true
