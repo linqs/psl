@@ -23,7 +23,7 @@ function buildDocs() {
 }
 
 function deployDocs() {
-    local tag=$(echo "${GIT_REF}" | sed 's#refs/tags/##')
+    local tag=$(echo "${GITHUB_REF}" | sed 's#refs/tags/##')
 
     echo "Deploying docs (${tag})."
 
@@ -49,7 +49,7 @@ function deployDocs() {
 function main() {
     if [[ $# -ne 0 ]]; then
         echo "USAGE: $0"
-        echo "   LINQS_DEPLOY_TOKEN and GIT_REF must be supplied as env variables."
+        echo "   LINQS_DEPLOY_TOKEN and GITHUB_REF must be supplied as env variables."
         exit 1
     fi
 
@@ -63,14 +63,14 @@ function main() {
     fi
 
     # Bail if no ref.
-    if [[ -z "${GIT_REF}" ]]; then
+    if [[ -z "${GITHUB_REF}" ]]; then
         echo "Skipping docs deploy, cannot find git ref."
         return
     fi
 
     # Only match refs that look like version tags.
-    if [[ ! "${GIT_REF}" =~ $REF_VERSION_TAG_REGEX ]]; then
-        echo "Skipping docs deploy, only deploy on version tags. Current ref: '${GIT_REF}'."
+    if [[ ! "${GITHUB_REF}" =~ $REF_VERSION_TAG_REGEX ]]; then
+        echo "Skipping docs deploy, only deploy on version tags. Current ref: '${GITHUB_REF}'."
         return
     fi
 
