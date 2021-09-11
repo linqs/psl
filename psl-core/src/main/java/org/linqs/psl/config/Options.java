@@ -348,7 +348,7 @@ public class Options {
     public static final Option WLA_HB_SURVIVAL = new Option(
         "hyperband.survival",
         4,
-        "The proportion of configs that survive each round in a brancket.",
+        "The proportion of configs that survive each round in a bracket.",
         Option.FLAG_POSITIVE
     );
 
@@ -367,14 +367,14 @@ public class Options {
     public static final Option HYPERPLANE_TG_DETER_CONSTANT = new Option(
         "hyperplanetermgenerator.deter.constant",
         0.0f,
-        "When used with idependent deter terms, this is the point to deter away from."
+        "When used with independent deter terms, this is the point to deter away from."
         + " When zero, this value will be (1.0 / |values|)."
     );
 
     public static final Option HYPERPLANE_TG_DETER_EPSILON = new Option(
         "hyperplanetermgenerator.deter.epsilon",
         0.05f,
-        "If the average distance of deter variables are less than this, then the deter rule will activate."
+        "If the average distance of deter variables is less than this, then the deter rule will activate."
     );
 
     public static final Option HYPERPLANE_TG_DETER_WEIGHT = new Option(

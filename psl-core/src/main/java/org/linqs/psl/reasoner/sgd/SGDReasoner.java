@@ -359,7 +359,6 @@ public class SGDReasoner extends Reasoner {
     private float updateDeter(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         float[] variableValues = termStore.getVariableValues();
         int[] variableIndexes = term.getVariableIndexes();
-        float weight = term.getRule().getWeight();
         int size = term.size();
 
         // TODO(eriq): This minimization is naive.
