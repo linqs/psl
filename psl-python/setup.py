@@ -114,6 +114,10 @@ def main():
             'pandas', 'pyyaml'
         ],
 
+        extras_require = {
+            'neural': ['tensorflow>=2.4.0'],
+        },
+
         python_requires = '>=3.5',
 
         classifiers = [

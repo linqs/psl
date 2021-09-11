@@ -25,8 +25,8 @@ Instead of `compile` and `test`, `package` and `integration-test` are used.
 This is because building the package relies on the jar from the `package` phase of psl-cli,
 and the tests require the package to be built.
 
-Also note that the star in the `install` phase means that the developer should clean before and install if versions have changed.
-
-Because of the dependence on the parent's pom and psl-cli's jar, this package is only distributed as a wheel and not a source distribution.
-
-Developers who are not using maven should make sure that the `psl-cli` package is built before building this package.
+Notes:
+- The star in the `install` phase means that the developer should clean before and install if versions have changed.
+- Because of the dependence on the parent's pom and psl-cli's jar, this package is only distributed as a wheel and not a source distribution.
+- Developers who are not using maven should make sure that the `psl-cli` package is built before building this package.
+- There is an optional dependency on tensorflow>=2.4.0 to use neural functionality.
