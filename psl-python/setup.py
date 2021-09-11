@@ -115,7 +115,7 @@ def main():
         ],
 
         extras_require = {
-            'neural': ['tensorflow>=2.4.0'],
+            'neural': ['tensorflow>=2.5.1'],
         },
 
         python_requires = '>=3.5',
