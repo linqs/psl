@@ -1,0 +1,83 @@
+# The primary workflow that handles building, testing, and deploying.
+
+name: Main
+
+on: [push, pull_request]
+
+jobs:
+  build-test:
+
+    runs-on: ubuntu-20.04
+
+    services:
+      postgres:
+        image: postgres:13.4-buster
+        env:
+          POSTGRES_USER: runner  # Github runner default.
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: psltest
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Needs to be deep enough to hit the last tagged version.
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: adopt
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - name: Cache Maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
+      - name: Cache Pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Python Dependencies
+        run: pip3 install -r psl-python/requirements.txt
+
+      - name: Build with Maven
+        run: mvn integration-test -B
+
+      - name: Style and Lint
+        run: ./.ci/style-and-lint.sh
+
+      - name: Import GPG Key
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_DEPLOY_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_DEPLOY_PASSWORD }}
+
+      - name: Deploy Test Artifacts
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+        env:
+          OSSRH_JIRA_USERNAME: ${{ secrets.OSSRH_JIRA_USERNAME }}
+          OSSRH_JIRA_PASSWORD: ${{ secrets.OSSRH_JIRA_PASSWORD }}
+          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+          TWINE_USERNAME: '__token__'
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PSLPYTHON }}
+        run: |
+          cp settings.xml ${HOME}/.m2/
+          mvn verify deploy -P test-release -D maven.test.skip=true
