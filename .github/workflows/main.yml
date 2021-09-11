@@ -58,7 +58,7 @@ jobs:
         run: pip3 install -r psl-python/requirements.txt
 
       - name: Build with Maven
-        run: mvn integration-test -B
+        run: mvn integration-test -B -P all-modules
 
       - name: Style and Lint
         run: ./.ci/style-and-lint.sh
@@ -80,4 +80,4 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PSLPYTHON }}
         run: |
           cp settings.xml ${HOME}/.m2/
-          mvn verify deploy -P test-release -D maven.test.skip=true
+          mvn verify deploy -P all-modules -P test-release -D maven.test.skip=true

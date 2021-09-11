@@ -30,8 +30,8 @@
     </parent>
 
     <properties>
-        <!-- <tf-java.version>0.3.1</tf-java.version> -->
-        <tf-java.version>0.4.0-SNAPSHOT</tf-java.version>
+        <rootdir>${project.basedir}/..</rootdir>
+        <tf-java.version>0.3.1</tf-java.version>
     </properties>
 
     <dependencies>
@@ -56,16 +56,6 @@
         </dependency>
 
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>tensorflow-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <build>
         <plugins>

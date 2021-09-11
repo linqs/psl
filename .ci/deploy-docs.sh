@@ -18,7 +18,7 @@ function buildDocs() {
 
     pushd . > /dev/null
     cd "${REPO_ROOT_DIR}"
-        mvn javadoc:aggregate
+        mvn javadoc:aggregate -P all-modules
     popd > /dev/null
 }
 
