@@ -39,6 +39,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
     private Set<GroundAtom> newObservedAtoms;
     private Set<GroundAtom> newRandomVariableAtoms;
 
+    // Atoms that have been seen and involved in grounding, but changed from the write to read partition.
+    private Set<GroundAtom> observedAtoms;
+
     private InitialValue initialValue;
 
     /**
@@ -54,6 +57,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
         }
 
         newObservedAtoms = new HashSet<GroundAtom>();
+        observedAtoms = new HashSet<GroundAtom>();
         newRandomVariableAtoms = new HashSet<GroundAtom>();
 
         onlineReadPartition = Options.ONLINE_READ_PARTITION.getInt();
@@ -73,6 +77,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
 
         if (newAtom) {
             newObservedAtoms.add(atom);
+        } else {
+            observedAtoms.add(atom);
         }
 
         return atom;
@@ -135,6 +141,15 @@ public class OnlineAtomManager extends PersistedAtomManager {
 
     public synchronized Boolean hasNewAtoms() {
         return (newRandomVariableAtoms.size() > 0) || (newObservedAtoms.size() > 0);
+    }
+
+    /**
+     * Return the existing observed atoms.
+     */
+    public Set<GroundAtom> flushObservedAtoms() {
+        Set<GroundAtom> atoms = new HashSet<GroundAtom>(observedAtoms);
+        observedAtoms.clear();
+        return atoms;
     }
 
     /**
