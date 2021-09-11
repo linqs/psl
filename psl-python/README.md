@@ -6,15 +6,19 @@ Instead of trying to fit a Python project into Maven conventions,
 this package is generally formatted as a standard Python package.
 However, special executions have been added to the following phases:
  - clean
-    - `rm -r build dist pslpython.egg-info`
+    - `./build/clean.sh`
+    - Removes artifacts created by the build and package steps.
  - package
-    - `python3 setup.py bdist_wheel`
+    - `./build/build.sh`
+    - Creates a wheel in `dist`.
  - install
-    - `pip install --user --upgrade dist/pslpython-*.whl`
+    - `./build/install.sh`
+    - Installs this package into the user's local pip directory.
  - integration-test
     - `./run_tests.py`
  - deploy
-    - `twine upload --repository-url https://test.pypi.org/legacy/ dist/pslpython-*.whl`
+    - `./build/deploy.sh`
+    - Uses twine to upload the build artifacts (from the package step) to PyPi (test or release server).
     - The `TWINE_USERNAME` and `TWINE_PASSWORD` environment variables MUST be set.
 
 Instead of `compile` and `test`, `package` and `integration-test` are used.

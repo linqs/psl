@@ -2,8 +2,8 @@ PSL
 ===
 
 ### Build Status
-[![Master](https://travis-ci.org/linqs/psl.svg?branch=master)](https://travis-ci.org/linqs/psl)
-[![Develop](https://travis-ci.org/linqs/psl.svg?branch=develop)](https://travis-ci.org/linqs/psl)
+[![Master](https://github.com/linqs/psl/actions/workflows/build-test.yml/badge.svg?branch=master)](https://github.com/linqs/psl/actions/workflows/build-test.yml)
+[![Develop](https://github.com/linqs/psl/actions/workflows/build-test.yml/badge.svg?branch=develop)](https://github.com/linqs/psl/actions/workflows/build-test.yml)
 
 Probabilistic soft logic (PSL) is a machine learning framework for developing probabilistic models.
 PSL models are easy to use and fast.

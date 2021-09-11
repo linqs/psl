@@ -2,3 +2,4 @@ pandas>=0.24.1
 pyyaml>=3.13
 twine>=1.13.0
 wheel>=0.33.1
+GitPython>=3.1
