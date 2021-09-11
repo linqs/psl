@@ -179,7 +179,7 @@ public class ArithmeticRuleExpression implements Serializable {
      * The following properties will be checked:
      *  - Expression uses equals.
      *  - Expression has only a single summation atom with 1.0 coefficient.
-     *  - Expression's RHS (final coefficient) is 1.0.
+     *  - Expression's RHS (final constant) is 1.0.
      */
     public boolean looksLikeFunctionalConstraint() {
         return FunctionComparator.EQ.equals(comparator)
