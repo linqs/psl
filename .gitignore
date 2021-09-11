@@ -18,3 +18,4 @@ classpath.out
 *.swp
 
 .secrets
+dependency-reduced-pom.xml
