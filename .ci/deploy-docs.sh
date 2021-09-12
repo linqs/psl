@@ -16,6 +16,34 @@ readonly API_DIR='api'
 readonly GIT_USER_EMAIL='linqs.deploy@gmail.com'
 readonly GIT_USER_NAME='LINQS Deploy'
 
+# Check if we are in the correct CI state for this script.
+function verifyCIState() {
+    local gitref=$1
+
+    local returnValue=0
+    local shift=0
+
+    # Bail if no ref.
+    if [[ -z "${gitref}" ]]; then
+        echo "Cannot find git ref."
+        returnValue=$((returnValue | (1 << shift++)))
+    fi
+
+    # Doc deployment should only happen on a version tag push.
+    if [[ ! "${gitref}" =~ $REF_VERSION_TAG_REGEX ]]; then
+        echo "Found git ref that does not look like a version tag: '${gitref}'."
+        returnValue=$((returnValue | (1 << shift++)))
+    fi
+
+    # Bail if no deploy keys exist.
+    if [[ -z "${LINQS_DEPLOY_TOKEN}" ]]; then
+        echo "Cannot find deploy token."
+        returnValue=$((returnValue | (1 << shift++)))
+    fi
+
+    return ${returnValue}
+}
+
 function buildDocs() {
     echo "Building docs."
 
@@ -26,7 +54,9 @@ function buildDocs() {
 }
 
 function deployDocs() {
-    local tag=$(echo "${GITHUB_REF}" | sed 's#refs/tags/##')
+    local gitref=$1
+
+    local tag=$(echo "${gitref}" | sed 's#refs/tags/##')
 
     echo "Deploying docs (${tag})."
 
@@ -59,26 +89,13 @@ function main() {
     trap exit SIGINT
     set -e
 
-    # Bail if no deploy keys exist.
-    if [[ -z "${LINQS_DEPLOY_TOKEN}" ]]; then
-        echo "Skipping docs deploy, cannot find token."
-        return
-    fi
-
-    # Bail if no ref.
-    if [[ -z "${GITHUB_REF}" ]]; then
-        echo "Skipping docs deploy, cannot find git ref."
-        return
-    fi
-
-    # Only match refs that look like version tags.
-    if [[ ! "${GITHUB_REF}" =~ $REF_VERSION_TAG_REGEX ]]; then
-        echo "Skipping docs deploy, only deploy on version tags. Current ref: '${GITHUB_REF}'."
-        return
+    if ! verifyCIState "${GITHUB_REF}" ; then
+        echo "Skipping docs deploy."
+        return 0
     fi
 
     buildDocs
-    deployDocs
+    deployDocs "${GITHUB_REF}"
 }
 
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"

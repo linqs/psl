@@ -87,9 +87,7 @@ jobs:
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           TWINE_USERNAME: '__token__'
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PSLPYTHON }}
-        run: |
-          cp settings.xml ${HOME}/.m2/
-          mvn verify deploy -P all-modules -P test-release -D maven.test.skip=true
+        run: ./.ci/deploy-test-artifacts.sh
 
       - name: Deploy Production Artifacts
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
@@ -99,9 +97,7 @@ jobs:
           GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
           TWINE_USERNAME: '__token__'
           TWINE_PASSWORD: ${{ secrets.PYPI_PSLPYTHON }}
-        run: |
-          cp settings.xml ${HOME}/.m2/
-          mvn verify deploy -P all-modules -P central-release -D maven.test.skip=true
+        run: ./.ci/deploy-prod-artifacts.sh
 
       - name: Deploy API Docs
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
