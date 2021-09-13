@@ -64,7 +64,9 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
 
       - name: Python Dependencies
-        run: pip3 install -r psl-python/requirements.txt
+        run: |
+          pip3 install -r psl-python/requirements.txt
+          pip3 install -r psl-python/optional_requirements.txt
 
       - name: Build with Maven
         run: mvn integration-test -B -P all-modules

@@ -30,3 +30,8 @@ class PSLTest(unittest.TestCase):
 
     SIMPLE_ACQUAINTANCES_PSL_DIR = os.path.join(TEST_DATA_DIR, 'simple-acquaintances')
     SIMPLE_ACQUAINTANCES_DATA_DIR = os.path.join(SIMPLE_ACQUAINTANCES_PSL_DIR, 'data')
+
+    EPSILON = 1e-4
+
+    def assertClose(self, a, b):
+        self.assertTrue(abs(a - b) <= self.EPSILON)
