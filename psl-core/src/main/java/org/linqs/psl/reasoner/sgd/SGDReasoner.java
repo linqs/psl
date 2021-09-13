@@ -31,6 +31,7 @@ import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.ArrayUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,6 +136,11 @@ public class SGDReasoner extends Reasoner {
             meanMovement = 0.0f;
             objective = 0.0;
             learningRate = calculateAnnealedLearningRate(iteration);
+
+            boolean useNonConvex = false;
+            if ((iteration >= nonconvexPeriod) && (iteration % nonconvexPeriod < nonconvexRounds)) {
+                useNonConvex = true;
+            }
 
             for (SGDObjectiveTerm term : termStore) {
                 if (iteration > 1) {
@@ -267,6 +273,10 @@ public class SGDReasoner extends Reasoner {
      */
     private float variableUpdate(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
                                 int iteration, float learningRate) {
+        if (!MathUtils.isZero(term.getDeterEpsilon())) {
+            return updateDeter(term, termStore);
+        }
+
         float movement = 0.0f;
         float variableStep = 0.0f;
         float newValue = 0.0f;
@@ -341,6 +351,46 @@ public class SGDReasoner extends Reasoner {
         }
 
         return step;
+    }
+
+    /**
+     * Update deter terms.
+     */
+    private float updateDeter(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+        float[] variableValues = termStore.getVariableValues();
+        int[] variableIndexes = term.getVariableIndexes();
+        int size = term.size();
+
+        // TODO(eriq): This minimization is naive.
+        float deterValue = 1.0f / size;
+
+        // TODO(eriq): Better heuristic for checking the clustering.
+
+        // Check the average distance to the deter point.
+        float distance = 0.0f;
+        for (int i = 0; i < size; i++) {
+            distance += Math.abs(deterValue - variableValues[variableIndexes[i]]);
+        }
+        distance /= size;
+
+        // Do nothing if the points are not clustered around the deter point.
+        if (distance > term.getDeterEpsilon()) {
+            return 0.0f;
+        }
+
+        // Randomly choose a point to go towards 1.0, the rest go towards 0.0.
+        // TODO(eriq): There is a lot that can be done to choose points more intelligently.
+        //  Maybe weight by truth value, for example.
+        int upPoint = RandUtils.nextInt(size);
+
+        float movement = 0.0f;
+        for (int i = 0; i < size; i++) {
+            float newValue = ((i == upPoint) ? 1.0f : 0.0f);
+            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
+            variableValues[variableIndexes[i]] = newValue;
+        }
+
+        return movement;
     }
 
     @Override

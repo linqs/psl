@@ -32,7 +32,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     protected boolean squared;
 
     public FakeRule(float weight, boolean squared) {
-        super("fake");
+        super("fake", false);
 
         this.weight = weight;
         this.squared = squared;

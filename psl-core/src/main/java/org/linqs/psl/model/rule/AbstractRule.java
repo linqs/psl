@@ -39,8 +39,15 @@ public abstract class AbstractRule implements Rule {
     }
 
     public AbstractRule(String name) {
+        this(name, true);
+    }
+
+    protected AbstractRule(String name, boolean storeRule) {
         this.name = name;
-        rules.put(System.identityHashCode(this), this);
+
+        if (storeRule) {
+            rules.put(System.identityHashCode(this), this);
+        }
     }
 
     public String getName() {

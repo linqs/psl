@@ -348,8 +348,39 @@ public class Options {
     public static final Option WLA_HB_SURVIVAL = new Option(
         "hyperband.survival",
         4,
-        "The proportion of configs that survive each round in a brancket.",
+        "The proportion of configs that survive each round in a bracket.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option HYPERPLANE_TG_ADD_DETER = new Option(
+        "hyperplanetermgenerator.deter",
+        false,
+        "If true, then add a deter term to functional constraints."
+    );
+
+    public static final Option HYPERPLANE_TG_DETER_COLLECTIVE = new Option(
+        "hyperplanetermgenerator.deter.collective",
+        true,
+        "If true, then use collective deter terms. Else, use independent deter terms."
+    );
+
+    public static final Option HYPERPLANE_TG_DETER_CONSTANT = new Option(
+        "hyperplanetermgenerator.deter.constant",
+        0.0f,
+        "When used with independent deter terms, this is the point to deter away from."
+        + " When zero, this value will be (1.0 / |values|)."
+    );
+
+    public static final Option HYPERPLANE_TG_DETER_EPSILON = new Option(
+        "hyperplanetermgenerator.deter.epsilon",
+        0.05f,
+        "If the average distance of deter variables is less than this, then the deter rule will activate."
+    );
+
+    public static final Option HYPERPLANE_TG_DETER_WEIGHT = new Option(
+        "hyperplanetermgenerator.deter.weight",
+        1.0f,
+        "The weight for deter rules."
     );
 
     public static final Option HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS = new Option(
@@ -470,7 +501,7 @@ public class Options {
     public static final Option MODEL_PREDICATE_BATCH_SIZE = new Option(
         "modelpredicate.batchsize",
         32,
-        "The size of batches for model updates.",
+        "The maximum size of batches for model updates.",
         Option.FLAG_POSITIVE
     );
 
@@ -491,6 +522,20 @@ public class Options {
         "modelpredicate.labelargs",
         "1",
         "A comma separated list of indexes to the predicate arguments that identity the target label (as opposed to the identity of the data point)."
+    );
+
+    public static final Option MODEL_PREDICATE_INITIAL_BATCH_SIZE = new Option(
+        "modelpredicate.initialbatchsize",
+        32,
+        "The maximum size of batches for the initial fitting of model predicates.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option MODEL_PREDICATE_INITIAL_ITERATIONS = new Option(
+        "modelpredicate.initialiterations",
+        100,
+        "The number of iterations for the internal model to go through for initial fitting.",
+        Option.FLAG_POSITIVE
     );
 
     public static final Option ONLINE_HOST = new Option(
@@ -644,6 +689,24 @@ public class Options {
         500,
         "The number of records to fetch from the database at a time.",
         Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option REASONER_NONCONVEX = new Option(
+        "reasoner.nonconvex",
+        false,
+        "Allow non-convex optimization."
+    );
+
+    public static final Option REASONER_NONCONVEX_PERIOD = new Option(
+        "reasoner.nonconvex.period",
+        10,
+        "Do non-convex optimization once for each period."
+    );
+
+    public static final Option REASONER_NONCONVEX_ROUNDS = new Option(
+        "reasoner.nonconvex.rounds",
+        1,
+        "When initiated, do this many rounds of non-convex optimization."
     );
 
     public static final Option REASONER_EVALUATE = new Option(

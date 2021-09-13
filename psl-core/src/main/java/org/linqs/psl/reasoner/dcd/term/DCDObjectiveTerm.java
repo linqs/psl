@@ -105,6 +105,10 @@ public class DCDObjectiveTerm implements StreamingTerm {
         constant = constant - oldValue + newValue;
     }
 
+    public boolean isConvex() {
+        return true;
+    }
+
     public float computeGradient(float[] variableValues) {
         float val = 0.0f;
 

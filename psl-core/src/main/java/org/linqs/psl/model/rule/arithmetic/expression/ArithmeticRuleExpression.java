@@ -172,6 +172,29 @@ public class ArithmeticRuleExpression implements Serializable {
         return summationMapping;
     }
 
+    /**
+     * Returns true if this expression looks like a functional constraint.
+     * A functional constraint takes a form like: Foo(A, +B) = 1.0
+     *
+     * The following properties will be checked:
+     *  - Expression uses equals.
+     *  - Expression has only a single summation atom with 1.0 coefficient.
+     *  - Expression's RHS (final constant) is 1.0.
+     */
+    public boolean looksLikeFunctionalConstraint() {
+        return FunctionComparator.EQ.equals(comparator)
+                && atoms.size() == 1
+                && atoms.get(0) instanceof SummationAtom
+                && coefficients.size() == 1
+                && coefficients.get(0) instanceof ConstantNumber
+                && MathUtils.equals(1.0f, coefficients.get(0).getValue(null))
+                && constant instanceof ConstantNumber
+                && MathUtils.equals(1.0f, constant.getValue(null));
+    }
+
+    /**
+     * Return true if this expression has all the traits of a negative prior.
+     */
     public boolean looksLikeNegativePrior() {
         return summationMapping.size() == 0
                 && atoms.size() == 1

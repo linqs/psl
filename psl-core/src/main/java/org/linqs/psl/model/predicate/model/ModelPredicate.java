@@ -131,6 +131,14 @@ public class ModelPredicate extends StandardPredicate {
         log.trace("Done fitting {} ({}).", this, model);
     }
 
+    public void initialFit() {
+        checkModel();
+
+        log.trace("Initial fitting {} ({}).", this, model);
+        model.initialFit();
+        log.trace("Done initial fitting {} ({}).", this, model);
+    }
+
     private void checkModel() {
         if (!modelLoaded) {
             throw new IllegalStateException("ModelPredicate (" + this + ") has not been initialized via loadModel().");

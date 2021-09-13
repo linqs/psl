@@ -18,6 +18,9 @@
 package org.linqs.psl.reasoner.term;
 
 public interface ReasonerTerm {
+    /**
+     * The number of variables this term uses.
+     */
     public int size();
 
     /**
@@ -25,4 +28,10 @@ public interface ReasonerTerm {
      * This is typically because an observed variable's value has changed.
      */
     public void adjustConstant(float oldValue, float newValue);
+
+    /*
+     * Whether this term is convex.
+     * Reasoners may treat non-convex terms differently.
+     */
+    public boolean isConvex();
 }

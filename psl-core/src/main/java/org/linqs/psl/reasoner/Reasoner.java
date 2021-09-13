@@ -44,6 +44,10 @@ public abstract class Reasoner {
 
     protected float tolerance;
 
+    protected boolean nonconvex;
+    protected int nonconvexPeriod;
+    protected int nonconvexRounds;
+
     public Reasoner() {
         budget = 1.0;
 
@@ -52,6 +56,10 @@ public abstract class Reasoner {
         runFullIterations = Options.REASONER_RUN_FULL_ITERATIONS.getBoolean();
 
         tolerance = Options.REASONER_TOLERANCE.getFloat();
+
+        nonconvex = Options.REASONER_NONCONVEX.getBoolean();
+        nonconvexPeriod = Options.REASONER_NONCONVEX_PERIOD.getInt();
+        nonconvexRounds = Options.REASONER_NONCONVEX_ROUNDS.getInt();
     }
 
     /**

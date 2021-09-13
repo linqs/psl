@@ -19,11 +19,13 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
+import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 
@@ -33,6 +35,8 @@ import java.nio.ByteBuffer;
 public class SGDObjectiveTerm implements StreamingTerm {
     private boolean squared;
     private boolean hinge;
+
+    private float deterEpsilon;
 
     private WeightedRule rule;
     private float constant;
@@ -45,8 +49,17 @@ public class SGDObjectiveTerm implements StreamingTerm {
             WeightedRule rule,
             boolean squared, boolean hinge,
             Hyperplane<GroundAtom> hyperplane) {
+        this(termStore, rule, squared, hinge, 0.0f, hyperplane);
+    }
+
+    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+            WeightedRule rule,
+            boolean squared, boolean hinge,
+            float deterEpsilon,
+            Hyperplane<GroundAtom> hyperplane) {
         this.squared = squared;
         this.hinge = hinge;
+        this.deterEpsilon = deterEpsilon;
 
         this.rule = rule;
 
@@ -61,8 +74,19 @@ public class SGDObjectiveTerm implements StreamingTerm {
         }
     }
 
+    public static SGDObjectiveTerm createDeterTerm(
+            VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+            Hyperplane<GroundAtom> hyperplane,
+            float deterWeight, float deterEpsilon) {
+        return new SGDObjectiveTerm(termStore, new FakeRule(deterWeight, false), false, false, deterEpsilon, hyperplane);
+    }
+
     public int getVariableIndex(int i) {
         return variableIndexes[i];
+    }
+
+    public float getDeterEpsilon() {
+        return deterEpsilon;
     }
 
     @Override
@@ -75,11 +99,17 @@ public class SGDObjectiveTerm implements StreamingTerm {
         constant = constant - oldValue + newValue;
     }
 
+    public boolean isConvex() {
+        return MathUtils.isZero(deterEpsilon);
+    }
+
     public float evaluate(float[] variableValues) {
         float dot = dot(variableValues);
-        float weight = rule.getWeight();
+        float weight = getWeight();
 
-        if (squared && hinge) {
+        if (!MathUtils.isZero(deterEpsilon)) {
+            return evaluateDeter(weight, variableValues);
+        } else if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
             return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
         } else if (squared && !hinge) {
@@ -116,6 +146,32 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return value - constant;
     }
 
+    /**
+     * weight * 1/n * (sum_{i = 0}^{n} f(variable[i]))
+     * f(x) =
+     *   1.0 - x if x > 1/n
+     *   x       else
+     */
+    private float evaluateDeter(float weight, float[] variableValues) {
+        float deterValue = 1.0f / size;
+
+        float value = 0.0f;
+        for (int i = 0; i < size; i++) {
+            float variableValue = variableValues[variableIndexes[i]];
+            if (variableValue > deterValue) {
+                value += 1.0f - variableValue;
+            } else {
+                value += variableValue;
+            }
+        }
+
+        return weight * (1.0f / size) * value;
+    }
+
+    /**
+     * The number of bytes that writeFixedValues() will need to represent this term.
+     * This is just all the member datum.
+     */
     public WeightedRule getRule() {
         return rule;
     }
@@ -132,6 +188,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
             + Integer.SIZE  // rule hash
             + Float.SIZE  // constant
             + Short.SIZE  // size
+            + Float.SIZE // deter epsilon
             + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
 
         return bitSize / 8;
@@ -144,6 +201,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
         fixedBuffer.putInt(System.identityHashCode(rule));
         fixedBuffer.putFloat(constant);
         fixedBuffer.putShort(size);
+        fixedBuffer.putFloat(deterEpsilon);
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
@@ -158,6 +216,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
         rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
         constant = fixedBuffer.getFloat();
         size = fixedBuffer.getShort();
+        deterEpsilon = fixedBuffer.getFloat();
 
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
@@ -181,7 +240,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(rule.getWeight());
+        builder.append(getWeight());
         builder.append(" * ");
 
         if (hinge) {
@@ -219,5 +278,13 @@ public class SGDObjectiveTerm implements StreamingTerm {
         }
 
         return builder.toString();
+    }
+
+    private float getWeight() {
+        if (rule != null && rule.isWeighted()) {
+            return ((WeightedRule)rule).getWeight();
+        }
+
+        return Float.POSITIVE_INFINITY;
     }
 }
