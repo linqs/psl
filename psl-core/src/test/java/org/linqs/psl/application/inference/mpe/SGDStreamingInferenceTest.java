@@ -46,9 +46,13 @@ public class SGDStreamingInferenceTest extends InferenceTest {
         // ground rules and terms to be kept in memory.
     }
 
-    /* TODO(charles): This test is flaky.
     @Override
     public void initialValueTest() {
+        // TODO(CAD): This test is flaky.
+        if (1 == 1) {
+            return;
+        }
+
         // SGD Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(10.0);
         Options.SGD_COORDINATE_STEP.set(false);
@@ -83,9 +87,5 @@ public class SGDStreamingInferenceTest extends InferenceTest {
         // Coordinate step.
         Options.SGD_COORDINATE_STEP.set(true);
         super.initialValueTest();
-    }
-    */
-    @Override
-    public void initialValueTest() {
     }
 }
