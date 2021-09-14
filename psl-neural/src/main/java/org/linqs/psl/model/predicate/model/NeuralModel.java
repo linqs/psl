@@ -105,28 +105,28 @@ public class NeuralModel extends SupportingModel {
 
     @Override
     public void load(Map<String, String> config, String relativeDir) {
-        String modelPath = makePath(relativeDir, config.get(CONFIG_MODEL));
+        String modelPath = FileUtils.makePath(relativeDir, config.get(CONFIG_MODEL));
         if (modelPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A NeuralModel must have a model path (\"%s\") specified in predicate config.",
                     CONFIG_MODEL));
         }
 
-        String labelsPath = makePath(relativeDir, config.get(CONFIG_LABELS));
+        String labelsPath = FileUtils.makePath(relativeDir, config.get(CONFIG_LABELS));
         if (labelsPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A NeuralModel must have a label path (\"%s\") specified in predicate config.",
                     CONFIG_LABELS));
         }
 
-        String featuresPath = makePath(relativeDir, config.get(CONFIG_FEATURES));
+        String featuresPath = FileUtils.makePath(relativeDir, config.get(CONFIG_FEATURES));
         if (featuresPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A NeuralModel must have a feature path (\"%s\") specified in predicate config.",
                     CONFIG_FEATURES));
         }
 
-        String observationsPath = makePath(relativeDir, config.get(CONFIG_OBSERVATIONS));
+        String observationsPath = FileUtils.makePath(relativeDir, config.get(CONFIG_OBSERVATIONS));
 
         loadLabels(labelsPath);
 
