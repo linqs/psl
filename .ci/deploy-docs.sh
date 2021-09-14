@@ -18,7 +18,8 @@ readonly GIT_USER_NAME='LINQS Deploy'
 
 # Check if we are in the correct CI state for this script.
 function verifyCIState() {
-    local gitref=$1
+    local repoId=$1
+    local gitref=$2
 
     local returnValue=0
     local shift=0
@@ -32,6 +33,11 @@ function verifyCIState() {
     # Doc deployment should only happen on a version tag push.
     if [[ ! "${gitref}" =~ $REF_VERSION_TAG_REGEX ]]; then
         echo "Found git ref that does not look like a version tag: '${gitref}'."
+        returnValue=$((returnValue | (1 << shift++)))
+    fi
+
+    if [[ "${repoId}" != 'linqs/psl' ]]; then
+        echo "Deployment will only happen on the 'linqs/psl' respository. Found '${repoId}'."
         returnValue=$((returnValue | (1 << shift++)))
     fi
 
@@ -95,7 +101,7 @@ function main() {
     fi
 
     buildDocs
-    deployDocs "${GITHUB_REF}"
+    deployDocs "${GITHUB_REPOSITORY}" "${GITHUB_REF}"
 }
 
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"
