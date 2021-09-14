@@ -17,14 +17,16 @@ limitations under the License.
 '''
 
 import os
-import random
 import sys
 import tempfile
 
-from tests.base_test import PSLTest
+import tests.base_test
+import tests.data.neupsl.sign
 
-class TestNeuPSL(PSLTest):
+class TestNeuPSL(tests.base_test.PSLTest):
     def setUp(self):
+        global tensorflow
+
         # Skip these tests if tensorflow is not installed.
         try:
             # Tensoflow has a bug when sys.argv is empty on import: https://github.com/tensorflow/tensorflow/issues/45994
@@ -36,34 +38,14 @@ class TestNeuPSL(PSLTest):
 
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+        tensorflow.random.set_seed(4)
+
     def tearDown(self):
         del os.environ['TF_CPP_MIN_LOG_LEVEL']
 
     def test_wrapper_base(self):
-        import tensorflow
-        import pslpython.neupsl
-
-        (train_features, train_labels), (test_features, test_labels) = _dataset_pos_neg()
-
-        width = len(train_features[0])
-        num_features = len(train_labels[0])
+        wrapper, train_features, train_labels, test_features, test_labels = tests.data.neupsl.sign.fetch()
         epochs = 20
-
-        layers = [
-            tensorflow.keras.layers.Input(shape = width),
-            tensorflow.keras.layers.Dense(32, activation = 'relu'),
-            tensorflow.keras.layers.Dense(num_features, activation = 'softmax'),
-        ]
-
-        model = tensorflow.keras.Sequential(layers)
-
-        model.compile(
-            optimizer = tensorflow.keras.optimizers.Adam(learning_rate = 0.01),
-            loss = tensorflow.keras.losses.CategoricalCrossentropy(from_logits = False),
-            metrics = ['categorical_accuracy']
-        )
-
-        wrapper = pslpython.neupsl.NeuPSLWrapper(model, width, num_features)
 
         pre_train_results = wrapper.evaluate(test_features, test_labels)
 
@@ -88,26 +70,3 @@ class TestNeuPSL(PSLTest):
         # Assert that the model produces the same results after being reloaded.
         self.assertClose(post_train_results[0], post_load_results[0])
         self.assertClose(post_train_results[1], post_load_results[1])
-
-# A dataset for classifying positive and negative entities.
-# A label of [1, 0] means all values will be positive, [0, 1] is all negative.
-def _dataset_pos_neg(width = 2, train_size = 100, test_size = 100):
-    train_features = []
-    train_labels = []
-
-    test_features = []
-    test_labels = []
-
-    for features, labels, size in ((train_features, train_labels, train_size), (test_features, test_labels, test_size)):
-        for i in range(size):
-            point = [random.randint(0, 2 ** 10) for i in range(width)]
-            label = [1, 0]
-
-            if (random.random() < 0.5):
-                point = list(map(lambda x: -x, point))
-                label = [0, 1]
-
-            features.append(point)
-            labels.append(label)
-
-    return (train_features, train_labels), (test_features, test_labels)
