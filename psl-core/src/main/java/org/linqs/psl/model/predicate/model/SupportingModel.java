@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,12 +38,12 @@ import java.util.Map;
 public abstract class SupportingModel {
     private static final Logger log = LoggerFactory.getLogger(SupportingModel.class);
 
-    protected static final String DELIM = "\t";
+    public static final String DELIM = "\t";
 
-    protected static final String CONFIG_FEATURES = "features";
-    protected static final String CONFIG_LABELS = "labels";
-    protected static final String CONFIG_MODEL = "model";
-    protected static final String CONFIG_OBSERVATIONS = "observations";
+    public static final String CONFIG_FEATURES = "features";
+    public static final String CONFIG_LABELS = "labels";
+    public static final String CONFIG_MODEL = "model";
+    public static final String CONFIG_OBSERVATIONS = "observations";
 
     /**
      * The indexes of this predicate that compose the entity ID.
@@ -434,21 +433,5 @@ public abstract class SupportingModel {
             this.entityIndex = entityIndex;
             this.labelIndex = labelIndex;
         }
-    }
-
-    /**
-     * Construct a path to the given file relative to the data file.
-     * If the given path is absolute, then don't change it.
-     */
-    protected static String makePath(String relativeDir, String basePath) {
-        if (basePath == null) {
-            return null;
-        }
-
-        if (Paths.get(basePath).isAbsolute()) {
-            return basePath;
-        }
-
-        return Paths.get(relativeDir, basePath).toString();
     }
 }
