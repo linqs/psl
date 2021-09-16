@@ -147,8 +147,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
      * Return the existing observed atoms.
      */
     public Set<GroundAtom> flushObservedAtoms() {
-        Set<GroundAtom> atoms = new HashSet<GroundAtom>(observedAtoms);
-        observedAtoms.clear();
+        Set<GroundAtom> atoms = observedAtoms;
+        observedAtoms = new HashSet<GroundAtom>();
         return atoms;
     }
 
@@ -156,8 +156,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
      * Return the existing new observed atoms and no longer consider them new.
      */
     public Set<GroundAtom> flushNewObservedAtoms() {
-        Set<GroundAtom> atoms = new HashSet<GroundAtom>(newObservedAtoms);
-        newObservedAtoms.clear();
+        Set<GroundAtom> atoms = newObservedAtoms;
+        newObservedAtoms = new HashSet<GroundAtom>();
         return atoms;
     }
 
@@ -165,8 +165,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
      * Return the existing new random variable atoms and no longer consider them new.
      */
     public Set<GroundAtom> flushNewRandomVariableAtoms() {
-        Set<GroundAtom> atoms = new HashSet<GroundAtom>(newRandomVariableAtoms);
-        newRandomVariableAtoms.clear();
+        Set<GroundAtom> atoms = newRandomVariableAtoms;
+        newRandomVariableAtoms = new HashSet<GroundAtom>();
         return atoms;
     }
 }

@@ -185,7 +185,7 @@ public class SGDOnlineInferenceTest {
     }
 
     /**
-     * Make sure that updates issued by client commands are made as expected.
+     * Test that an update to an existing observed atom will change its value to the provided number.
      */
     @Test
     public void testUpdateObservation() {

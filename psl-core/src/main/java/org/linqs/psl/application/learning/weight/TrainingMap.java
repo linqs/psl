@@ -222,8 +222,7 @@ public class TrainingMap {
     public void addRandomVariableTargetAtom(RandomVariableAtom atom) {
         int missingTargetIndex = missingTargets.indexOf(atom);
         if (missingTargetIndex != -1) {
-            ObservedAtom observedAtom = missingTargets.get(missingTargetIndex);
-            missingTargets.remove(missingTargetIndex);
+            ObservedAtom observedAtom = missingTargets.remove(missingTargetIndex);
             labelMap.put(atom, observedAtom);
         } else {
             int latentVariableIndex = latentVariables.indexOf(atom);
@@ -243,7 +242,7 @@ public class TrainingMap {
             labelMap.remove((RandomVariableAtom)atom);
             latentVariables.remove((RandomVariableAtom)atom);
         } else {
-            observedMap.remove((ObservedAtom) atom);
+            observedMap.remove((ObservedAtom)atom);
             missingLabels.remove((ObservedAtom)atom);
             missingTargets.remove((ObservedAtom)atom);
         }
