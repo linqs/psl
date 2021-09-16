@@ -60,6 +60,8 @@ public abstract class OnlineGroundingIterator<T extends StreamingTerm> extends S
         }
 
         // Ready the new atoms in the atom manager for partial grounding.
+        atomManager.getDatabase().commit(((OnlineAtomManager)atomManager).flushObservedAtoms(),
+                ((OnlineAtomManager)atomManager).getOnlineReadPartition());
         Set<GroundAtom> obsAtomCache = ((OnlineAtomManager)atomManager).flushNewObservedAtoms();
         Set<GroundAtom> rvAtomCache = ((OnlineAtomManager)atomManager).flushNewRandomVariableAtoms();
 
@@ -108,7 +110,7 @@ public abstract class OnlineGroundingIterator<T extends StreamingTerm> extends S
             // Move all the new atoms out of the special partition and into the read/write partitions.
             for (StandardPredicate onlinePredicate : onlinePredicates) {
                 atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_READ_ID,
-                        ((OnlineAtomManager) atomManager).getOnlineReadPartition());
+                        ((OnlineAtomManager)atomManager).getOnlineReadPartition());
                 atomManager.getDatabase().moveToPartition(onlinePredicate, Partition.SPECIAL_WRITE_ID,
                         atomManager.getDatabase().getWritePartition().getID());
             }

@@ -24,6 +24,7 @@ import org.linqs.psl.util.StringUtils;
 /**
  * Observe an existing random variable atom,
  * i.e., fix an existing random variable to a specified value.
+ * This action will remove the random variable atom from the existing trainingMap.
  * String format: Observe <predicate> <arg>... <value>
  */
 public class ObserveAtom extends AtomAction {

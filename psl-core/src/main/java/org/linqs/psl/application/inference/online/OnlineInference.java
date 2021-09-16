@@ -20,8 +20,13 @@ package org.linqs.psl.application.inference.online;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
+import org.linqs.psl.application.inference.online.messages.actions.controls.Sync;
+import org.linqs.psl.application.inference.online.messages.actions.controls.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.messages.actions.model.AddAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.ObserveAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.UpdateObservation;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
 import org.linqs.psl.application.learning.weight.TrainingMap;
@@ -30,8 +35,11 @@ import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.StringUtils;
 
@@ -41,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Set;
 
-// TODO: The TrainingMap can get outdated and should be updated.
 public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
 
@@ -111,8 +118,18 @@ public abstract class OnlineInference extends InferenceApplication {
         // All supported actions except for Exit should have a corresponding method that is called here.
         if (action.getClass() == AddAtom.class) {
             response = doAddAtom((AddAtom)action);
+        } else if (action.getClass() == DeleteAtom.class) {
+            response = doDeleteAtom((DeleteAtom)action);
+        } else if (action.getClass() == ObserveAtom.class) {
+            response = doObserveAtom((ObserveAtom)action);
+        } else if (action.getClass() == UpdateObservation.class) {
+            response = doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == QueryAtom.class) {
             response = doQueryAtom((QueryAtom)action);
+        } else if (action.getClass() == WriteInferredPredicates.class) {
+            response = doWriteInferredPredicates((WriteInferredPredicates)action);
+        } else if (action.getClass() == Sync.class) {
+            response = doSync();
         } else if (action.getClass() == Stop.class) {
             response = doStop();
         } else {
@@ -126,7 +143,7 @@ public abstract class OnlineInference extends InferenceApplication {
         GroundAtom atom = null;
 
         if (atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
-            atom = ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
+            deleteAtom(action.getPredicate(), action.getArguments());
             ((OnlineTermStore)termStore).deleteLocalVariable(atom);
         }
 
@@ -134,12 +151,70 @@ public abstract class OnlineInference extends InferenceApplication {
             atom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), action.getArguments());
         } else {
             atom = ((OnlineAtomManager)atomManager).addRandomVariableAtom(action.getPredicate(), action.getValue(), action.getArguments());
+
+            if (trainingMap != null) {
+                trainingMap.addRandomVariableTargetAtom((RandomVariableAtom)atom);
+            }
         }
 
         ((OnlineTermStore)termStore).createLocalVariable(atom);
 
         modelUpdates = true;
         return String.format("Added atom: %s", atom.toStringWithValue());
+    }
+
+    protected String doDeleteAtom(DeleteAtom action) {
+        if (!atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
+            return String.format("Atom: %s(%s) does not exist in atom manager.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
+
+        GroundAtom atom = deleteAtom(action.getPredicate(), action.getArguments());
+        ((OnlineTermStore)termStore).deleteLocalVariable(atom);
+
+        modelUpdates = true;
+        return String.format("Deleted atom: %s", atom);
+    }
+
+    protected String doObserveAtom(ObserveAtom action) {
+        if (!atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
+            return String.format("Atom: %s(%s) does not exist in atom manager.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
+
+        GroundAtom atom = atomManager.getAtom(action.getPredicate(), action.getArguments());
+        if (!(atom instanceof RandomVariableAtom)) {
+            return String.format("Atom: %s(%s) already observed.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
+
+        // Delete then create atom with same predicates and arguments as the random variable atom.
+        deleteAtom(action.getPredicate(), action.getArguments());
+
+        ObservedAtom observedAtom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), false, action.getArguments());
+        ((OnlineTermStore)termStore).updateLocalVariable(observedAtom, action.getValue());
+
+        modelUpdates = true;
+        return String.format("Observed atom: %s => %s", atom.toStringWithValue(), observedAtom.toStringWithValue());
+    }
+
+    protected String doUpdateObservation(UpdateObservation action) {
+        if (!atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
+            return String.format("Atom: %s(%s) does not exist in atom manager.",
+                    action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+        }
+
+        GroundAtom atom = atomManager.getAtom(action.getPredicate(), action.getArguments());
+        if (!(atom instanceof ObservedAtom)) {
+            return String.format("Atom: %s is not an observation.", atom);
+        }
+
+        float oldAtomValue = atom.getValue();
+        ((OnlineTermStore)termStore).updateLocalVariable((ObservedAtom)atom, action.getValue());
+        ((ObservedAtom)atom)._assumeValue(action.getValue());
+
+        modelUpdates = true;
+        return String.format("Updated atom: %s: %f => %f", atom, oldAtomValue, atom.getValue());
     }
 
     protected String doQueryAtom(QueryAtom action) {
@@ -159,9 +234,49 @@ public abstract class OnlineInference extends InferenceApplication {
                 action.getPredicate(), StringUtils.join(", ", action.getArguments()));
     }
 
+    protected String doWriteInferredPredicates(WriteInferredPredicates action) {
+        String response = null;
+
+        optimize();
+
+        if (action.getOutputDirectoryPath() != null) {
+            log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
+            database.outputRandomVariableAtoms(action.getOutputDirectoryPath());
+            response = "Wrote inferred predicates to file: " + action.getOutputDirectoryPath();
+        } else {
+            log.info("Writing inferred predicates to output stream.");
+            database.outputRandomVariableAtoms();
+            response = "Wrote inferred predicates to output stream.";
+        }
+
+        return response;
+    }
+
+    protected String doSync() {
+        optimize();
+        return "OnlinePSL inference synced.";
+    }
+
     protected String doStop() {
         stopped = true;
         return "OnlinePSL inference stopped.";
+    }
+
+    /**
+     * Delete atom from the database and training map but do not delete from the term store.
+     */
+    private GroundAtom deleteAtom(StandardPredicate predicate, Constant[] arguments) {
+        GroundAtom atom = ((OnlineAtomManager)atomManager).deleteAtom(predicate, arguments);
+
+        if (atom == null) {
+            return null;
+        }
+
+        if (trainingMap != null) {
+            trainingMap.deleteAtom(atom);
+        }
+
+        return atom;
     }
 
     /**
