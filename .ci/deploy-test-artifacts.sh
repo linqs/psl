@@ -27,7 +27,7 @@ function verifyCIState() {
     # Test deployment should only happen on a push to develop.
     if [[ ! "${gitref}" == 'refs/heads/develop' ]]; then
         echo "Git ref does not point to develop: '${gitref}'."
-        returnValue=$((returnValue | (1 << 1)))
+        returnValue=$((returnValue | (1 << shift++)))
     fi
 
     # Check that this is a snapshot build.
