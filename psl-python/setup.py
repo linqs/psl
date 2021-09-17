@@ -111,7 +111,7 @@ def main():
         },
 
         install_requires = [
-            'pandas', 'pyyaml'
+            'pandas>=0.24.1', 'pyyaml>=3.13'
         ],
 
         extras_require = {

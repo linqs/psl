@@ -38,6 +38,7 @@ class NeuPSLWrapper(tensorflow.Module):
         self.__call__ = tensorflow.function(self.__call__, input_signature = [self.dataTensorSpec])
         self.predict = tensorflow.function(self.predict, input_signature = [self.dataTensorSpec])
         self.fit = tensorflow.function(self.fit, input_signature = [self.dataTensorSpec, self.labelsTensorSpec])
+        self.evaluate = tensorflow.function(self.evaluate, input_signature = [self.dataTensorSpec, self.labelsTensorSpec])
 
     def __call__(self, data):
         return self.model(data)
@@ -69,15 +70,38 @@ class NeuPSLWrapper(tensorflow.Module):
 
         return tensorflow.stack(results)
 
-    def save(self, h5Path, tfPath):
-        self.model.save(h5Path,
-                save_format = 'h5',
-                include_optimizer = True)
+    # Returns: [loss, metrics, ...]
+    def evaluate(self, data, labels):
+        output = self.model(data, training = False)
+        mainLoss = tensorflow.reduce_mean(self.model.compiled_loss(labels, output))
+        # self.model.losses contains the reularization loss.
+        totalLoss = tensorflow.add_n([mainLoss] + self.model.losses)
 
-        signatures = {
-            'call': self.__call__.get_concrete_function(self.dataTensorSpec),
-            'predict': self.predict.get_concrete_function(self.dataTensorSpec),
-            'fit': self.fit.get_concrete_function(self.dataTensorSpec, self.labelsTensorSpec),
-        }
+        # Compute the metrics scores.
 
-        tensorflow.saved_model.save(self, tfPath, signatures = signatures)
+        newOutput = self.model(data)
+
+        self.model.compiled_metrics.reset_state()
+        self.model.compiled_metrics.update_state(labels, newOutput)
+
+        results = [totalLoss]
+        for metric in self.model.compiled_metrics.metrics:
+            results.append(metric.result())
+
+        return tensorflow.stack(results)
+
+    def save(self, h5Path = None, tfPath = None):
+        if (h5Path is not None):
+            self.model.save(h5Path,
+                    save_format = 'h5',
+                    include_optimizer = True)
+
+        if (tfPath is not None):
+            signatures = {
+                'call': self.__call__.get_concrete_function(self.dataTensorSpec),
+                'predict': self.predict.get_concrete_function(self.dataTensorSpec),
+                'fit': self.fit.get_concrete_function(self.dataTensorSpec, self.labelsTensorSpec),
+                'evaluate': self.evaluate.get_concrete_function(self.dataTensorSpec, self.labelsTensorSpec),
+            }
+
+            tensorflow.saved_model.save(self, tfPath, signatures = signatures)

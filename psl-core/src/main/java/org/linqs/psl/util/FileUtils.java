@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 
 /**
  * Utilities for interfacing with files and directories.
@@ -161,4 +162,19 @@ public class FileUtils {
         delete(target);
     }
 
+    /**
+     * Construct a path to the given file relative to the data file.
+     * If the given path is absolute, then don't change it.
+     */
+    public static String makePath(String relativeDir, String basePath) {
+        if (basePath == null) {
+            return null;
+        }
+
+        if (Paths.get(basePath).isAbsolute()) {
+            return basePath;
+        }
+
+        return Paths.get(relativeDir, basePath).toString();
+    }
 }

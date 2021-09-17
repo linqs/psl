@@ -57,14 +57,16 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
 
-      - name: Cache Pip
+      - name: Cache Python Dependencies
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
 
       - name: Python Dependencies
-        run: pip3 install -r psl-python/requirements.txt
+        run: |
+          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/optional_requirements.txt
 
       - name: Build with Maven
         run: mvn integration-test -B -P all-modules

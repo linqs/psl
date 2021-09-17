@@ -11,14 +11,24 @@ readonly SETTINGS_XML_DEST="${HOME}/.m2/"
 
 # Check if we are in the correct CI state for this script.
 function verifyCIState() {
-    local gitref=$1
+    local repoId=$1
+    local gitref=$2
 
     local returnValue=0
     local shift=0
 
-    # Bail if no ref.
     if [[ -z "${gitref}" ]]; then
         echo "Cannot find git ref."
+        returnValue=$((returnValue | (1 << shift++)))
+    fi
+
+    if [[ -z "${repoId}" ]]; then
+        echo "Cannot find git repository id."
+        returnValue=$((returnValue | (1 << shift++)))
+    fi
+
+    if [[ "${repoId}" != 'linqs/psl' ]]; then
+        echo "Deployment will only happen on the 'linqs/psl' respository. Found '${repoId}'."
         returnValue=$((returnValue | (1 << shift++)))
     fi
 
@@ -67,7 +77,7 @@ function main() {
     trap exit SIGINT
     set -e
 
-    if ! verifyCIState "${GITHUB_REF}" ; then
+    if ! verifyCIState "${GITHUB_REPOSITORY}" "${GITHUB_REF}" ; then
         echo "Skipping artifact deploy."
         return 0
     fi
