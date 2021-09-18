@@ -25,6 +25,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.IteratorUtils;
@@ -33,9 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * A term store that supports online operations.
@@ -47,6 +46,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     protected List<Integer> activeVolatilePages;
     protected Integer nextTermPageIndex;
     protected Integer nextVolatilePageIndex;
+    protected Map<Rule, List<Integer>> rulePageMapping;
 
     public OnlineTermStore(List<Rule> rules, AtomManager atomManager,
                            HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
@@ -54,6 +54,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         activeTermPages = new ArrayList<Integer>();
         activeVolatilePages = new ArrayList<Integer>();
+        rulePageMapping = new HashMap<Rule, List<Integer>>();
         nextTermPageIndex = 0;
         nextVolatilePageIndex = 0;
     }
@@ -99,6 +100,40 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         variableValues[getVariableIndex(atom)] = newValue;
     }
 
+    public synchronized void addRule(Rule rule) {
+        List<Integer> rulePages = rulePageMapping.get(rule);
+        if (rulePages != null) {
+            // Rule already exists in model.
+            return;
+        }
+
+        // Add new rule to rule set.
+        rules.add(rule);
+
+        // Ground new rule.
+        this.initialRound = true;
+        StreamingIterator<T> groundingIterator = getGroundingIterator(Arrays.asList(rule));
+        while (groundingIterator.hasNext()) {
+            groundingIterator.next();
+        }
+    }
+
+    public synchronized void deleteRule(Rule rule) {
+        List<Integer> rulePages = rulePageMapping.get(rule);
+        if (rulePages == null) {
+            // Rule already does not exist in model.
+            return;
+        }
+
+        for (Integer i : rulePages) {
+            activeTermPages.remove(activeTermPages.indexOf(i));
+            // This represents the number of active pages.
+            numPages--;
+        }
+        rulePageMapping.remove(rule);
+        rules.remove(rule);
+    }
+
     public abstract StreamingIterator<T> getGroundingIterator(List<Rule> rules);
 
     /**
@@ -127,14 +162,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
     @Override
     public String getTermPagePath(int index) {
-        // Make sure the path is built.
-        // This implementation gets the index of the next active term page.
-        for (int i = activeTermPages.size(); i <= index; i++) {
-            termPagePaths.add(Paths.get(pageDir, String.format("%08d_term.page", nextTermPageIndex)).toString());
-            activeTermPages.add(nextTermPageIndex);
-            nextTermPageIndex++;
-        }
-
+        buildActivePagePath(index);
         return termPagePaths.get(activeTermPages.get(index));
     }
 
@@ -149,6 +177,25 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         }
 
         return volatilePagePaths.get(activeVolatilePages.get(index));
+    }
+
+    public void addRuleMapping(Rule rule, int pageIndex) {
+        if (!rulePageMapping.containsKey(rule)) {
+            rulePageMapping.put(rule, new ArrayList<Integer>());
+        }
+
+        buildActivePagePath(pageIndex);
+        rulePageMapping.get(rule).add(activeTermPages.get(pageIndex));
+    }
+
+    private void buildActivePagePath(int index) {
+        // Make sure the path is built.
+        // This implementation gets the index of the next active term page.
+        for (int i = activeTermPages.size(); i <= index; i++) {
+            termPagePaths.add(Paths.get(pageDir, String.format("%08d_term.page", nextTermPageIndex)).toString());
+            activeTermPages.add(nextTermPageIndex);
+            nextTermPageIndex++;
+        }
     }
 
     @Override
