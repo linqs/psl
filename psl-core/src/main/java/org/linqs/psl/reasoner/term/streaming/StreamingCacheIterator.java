@@ -43,6 +43,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
 
+    protected long termCount;
+
     protected int currentPage;
     protected int nextCachedTermIndex;
 
@@ -77,6 +79,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
+
+        termCount = 0L;
 
         nextCachedTermIndex = 0;
 
@@ -131,6 +135,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
             throw new IllegalStateException("Called next() when hasNext() == false (or before the first hasNext() call).");
         }
 
+        termCount++;
         T term = nextTerm;
         nextTerm = null;
 
@@ -244,7 +249,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         // the term cache is now invalid.
         termCache.clear();
 
-        parentStore.cacheIterationComplete();
+        parentStore.cacheIterationComplete(termCount);
     }
 
     /**

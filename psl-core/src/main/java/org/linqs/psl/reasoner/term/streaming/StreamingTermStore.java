@@ -33,7 +33,6 @@ import org.linqs.psl.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -76,7 +75,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     protected boolean initialRound;
     protected StreamingIterator<T> activeIterator;
-    protected long seenTermCount;
+    protected long termCount;
     protected int numPages;
 
     protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
@@ -153,7 +152,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         initialRound = true;
         activeIterator = null;
-        seenTermCount = 0l;
+        termCount = 0l;
         numPages = 0;
 
         termBuffer = null;
@@ -313,7 +312,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
     @Override
     public long size() {
-        return seenTermCount;
+        return termCount;
     }
 
     @Override
@@ -356,7 +355,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      * The ByterBuffers are here because of possible reallocation.
      */
     public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
-        seenTermCount += termCount;
+        this.termCount += termCount;
 
         this.numPages = numPages;
         this.termBuffer = termBuffer;
@@ -369,7 +368,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     /**
      * A callback for the non-initial round iterator.
      */
-    public void cacheIterationComplete() {
+    public void cacheIterationComplete(long termCount) {
+        this.termCount = termCount;
         activeIterator = null;
     }
 
@@ -418,7 +418,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     @Override
     public void clear() {
         initialRound = true;
-        seenTermCount = 0l;
+        termCount = 0l;
         numPages = 0;
 
         numRandomVariableAtoms = 0;
