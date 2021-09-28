@@ -72,7 +72,7 @@ jobs:
         run: mvn integration-test -B -P all-modules
 
       - name: Archive Build
-        run: tar cf psl.tar */target/*.jar
+        run: tar cf psl.tar */target
 
       - name: Upload Archived Build
         uses: actions/upload-artifact@v2
