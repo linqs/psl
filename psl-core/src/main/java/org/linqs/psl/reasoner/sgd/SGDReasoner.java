@@ -203,7 +203,7 @@ public class SGDReasoner extends Reasoner {
 
         // Compute variable change and log optimization information.
         change = termStore.syncAtoms();
-        log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", objective, objective / termCount, totalTime, iteration);
+        log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", lowestObjective, lowestObjective / termCount, totalTime, iteration);
         log.debug("Movement of variables from initial state: {}", change);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
 
