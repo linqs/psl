@@ -30,14 +30,31 @@ import org.linqs.psl.application.inference.online.messages.actions.model.DeleteA
 import org.linqs.psl.application.inference.online.messages.actions.model.ObserveAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.UpdateObservation;
+import org.linqs.psl.application.inference.online.messages.actions.template.ActivateRule;
+import org.linqs.psl.application.inference.online.messages.actions.template.AddRule;
+import org.linqs.psl.application.inference.online.messages.actions.template.DeactivateRule;
+import org.linqs.psl.application.inference.online.messages.actions.template.DeleteRule;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.formula.Conjunction;
+import org.linqs.psl.model.formula.Implication;
+import org.linqs.psl.model.formula.Negation;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
+import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.function.FunctionComparator;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -56,6 +73,7 @@ public class SGDOnlineInferenceTest {
     @Before
     public void setup() {
         Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_INVERSE_TIME_EXP.set(0.5);
 
         modelInfo = TestModel.getModel(true);
 
@@ -80,6 +98,9 @@ public class SGDOnlineInferenceTest {
             modelInfo.dataStore.close();
             modelInfo = null;
         }
+
+        Options.SGD_LEARNING_RATE.clear();
+        Options.SGD_INVERSE_TIME_EXP.clear();
     }
 
     protected void stop() {
@@ -240,6 +261,142 @@ public class SGDOnlineInferenceTest {
         commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, values);
+    }
+
+    /**
+     * Test expected response received from AddRule action and the added rule has a expected effect on inference.
+     */
+    @Test
+    public void testRuleAddition() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+        Rule newRule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(
+                        Arrays.asList((Coefficient) (new ConstantNumber(1))),
+                        Arrays.asList(new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))),
+                        FunctionComparator.EQ, new ConstantNumber(1)
+                ),
+                10000.0f, false);
+
+        AddRule addRule = new AddRule(newRule);
+        Exit exit = new Exit();
+        commands.add(addRule);
+        commands.add(exit);
+
+        // Test expected response.
+        OnlineResponse[] expectedResponses = new OnlineResponse[2];
+        expectedResponses[0] = new ActionStatus(addRule, true,
+                String.format("Added rule: %s", addRule.getRule().toString()));
+        expectedResponses[1] = new ActionStatus(exit, true, "Session Closed.");
+
+        OnlineTest.assertServerResponse(commands, expectedResponses);
+
+        // Test expected effect on MAP state.
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {1.0});
+    }
+
+
+    @Test
+    public void testDuplicateRuleAddition() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+        Rule newRule = new WeightedLogicalRule(
+                new Negation(new org.linqs.psl.model.atom.QueryAtom(
+                        StandardPredicate.get("Friends"),
+                        new Variable("A"), new Variable("B"))),
+                1.0f,true);
+
+        AddRule addRule = new AddRule(newRule);
+        Exit exit = new Exit();
+        commands.add(addRule);
+        commands.add(exit);
+
+        OnlineResponse[] expectedResponses = new OnlineResponse[2];
+        expectedResponses[0] = new ActionStatus(addRule, true,
+                String.format("Rule: %s already exists in model.", addRule.getRule()));
+        expectedResponses[1] = new ActionStatus(exit, true,"Session Closed.");
+
+        OnlineTest.assertServerResponse(commands, expectedResponses);
+    }
+
+    @Test
+    public void testRuleDeletion() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+        Rule rule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                5.0f, true);
+
+        DeleteRule deleteRule = new DeleteRule(rule);
+        Exit exit = new Exit();
+        commands.add(deleteRule);
+        commands.add(exit);
+
+        OnlineResponse[] expectedResponses = new OnlineResponse[2];
+        expectedResponses[0] = new ActionStatus(deleteRule, true,
+                String.format("Deleted rule: %s", deleteRule.getRule()));
+        expectedResponses[1] = new ActionStatus(exit, true,"Session Closed.");
+
+        OnlineTest.assertServerResponse(commands, expectedResponses);
+    }
+
+    /**
+     * Test consecutive ActivateRule and DeactivateRule actions activate and deactivate term pages
+     * resulting in the expected MAP states.
+     */
+    @Test
+    public void testRuleActivation() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+
+        Rule niceRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                0.5f, true);
+
+        Rule friendsRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                ),
+                10.0f, true);
+
+        Rule negativePriorRule = new WeightedLogicalRule(
+                new Negation(
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                1.0f, true);
+
+        commands.add(new DeactivateRule(niceRule));
+        commands.add(new DeactivateRule(friendsRule));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {0.0});
+
+        commands.add(new DeactivateRule(negativePriorRule));
+        commands.add(new ActivateRule(niceRule));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {1.0});
     }
 
     private class OnlineInferenceThread extends Thread {

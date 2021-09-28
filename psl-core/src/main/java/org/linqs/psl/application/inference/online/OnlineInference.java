@@ -27,6 +27,7 @@ import org.linqs.psl.application.inference.online.messages.actions.model.DeleteA
 import org.linqs.psl.application.inference.online.messages.actions.model.ObserveAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.UpdateObservation;
+import org.linqs.psl.application.inference.online.messages.actions.template.ActivateRule;
 import org.linqs.psl.application.inference.online.messages.actions.template.AddRule;
 import org.linqs.psl.application.inference.online.messages.actions.template.DeactivateRule;
 import org.linqs.psl.application.inference.online.messages.actions.template.DeleteRule;
@@ -41,6 +42,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
@@ -129,8 +131,12 @@ public abstract class OnlineInference extends InferenceApplication {
             response = doUpdateObservation((UpdateObservation)action);
         } else if (action.getClass() == QueryAtom.class) {
             response = doQueryAtom((QueryAtom)action);
+        } else if (action.getClass() == ActivateRule.class) {
+            response = doActivateRule((ActivateRule)action);
         } else if (action.getClass() == AddRule.class) {
             response = doAddRule((AddRule)action);
+        } else if (action.getClass() == DeactivateRule.class) {
+            response = doDeactivateRule((DeactivateRule)action);
         } else if (action.getClass() == DeleteRule.class) {
             response = doDeleteRule((DeleteRule)action);
         } else if (action.getClass() == WriteInferredPredicates.class) {
@@ -241,35 +247,54 @@ public abstract class OnlineInference extends InferenceApplication {
                 action.getPredicate(), StringUtils.join(", ", action.getArguments()));
     }
 
+    protected String doActivateRule(ActivateRule action) {
+        boolean activatedRule = ((OnlineTermStore)termStore).activateRule(action.getRule());
+
+        if (!activatedRule) {
+            return String.format("Rule: %s does not exist in model.", action.getRule());
+        }
+
+        modelUpdates = true;
+        return String.format("Activated rule: %s", action.getRule());
+    }
+
     protected String doAddRule(AddRule action) {
         boolean addedNewRule = ((OnlineTermStore)termStore).addRule(action.getRule());
-        modelUpdates = modelUpdates || addedNewRule;
 
-        if (addedNewRule) {
-            return String.format("Added rule: %s", action.getRule());
+        if (!addedNewRule) {
+            return String.format("Rule: %s already exists in model.", action.getRule());
         }
-        return String.format("Rule already existed in model: %s", action.getRule());
+
+        // Register new rule.
+        AbstractRule.registerRule(action.getRule());
+
+        modelUpdates = true;
+        return String.format("Added rule: %s", action.getRule());
     }
 
     protected String doDeactivateRule(DeactivateRule action) {
-        Rule rule = ((OnlineTermStore)termStore).deactivateRule(action.getRule());
+        boolean deactivatedRule = ((OnlineTermStore)termStore).deactivateRule(action.getRule());
 
-        if (rule != null ) {
-            modelUpdates = true;
-            return String.format("Deactivated rule: %s", action.getRule());
+        if (!deactivatedRule) {
+            return String.format("Rule: %s does not exist in model.", action.getRule());
         }
 
-        return String.format("Rule: %s did not have any associated term pages.", action.getRule());
+        modelUpdates = true;
+        return String.format("Deactivated rule: %s", action.getRule());
     }
 
     protected String doDeleteRule(DeleteRule action) {
         boolean deletedRule = ((OnlineTermStore)termStore).deleteRule(action.getRule());
-        modelUpdates = modelUpdates || deletedRule;
 
-        if (deletedRule) {
-            return String.format("Deleted rule: %s", action.getRule());
+        if (!deletedRule) {
+            return String.format("Rule: %s does not exist in model.", action.getRule());
         }
-        return String.format("Rule does not exist in model or does not have any associated terms: %s", action.getRule());
+
+        // Register new rule.
+        AbstractRule.deleteRule(action.getRule());
+
+        modelUpdates = true;
+        return String.format("Deleted rule: %s", action.getRule());
     }
 
     protected String doWriteInferredPredicates(WriteInferredPredicates action) {

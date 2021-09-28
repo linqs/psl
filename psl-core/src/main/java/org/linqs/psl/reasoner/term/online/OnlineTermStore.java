@@ -32,6 +32,7 @@ import org.linqs.psl.util.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +43,8 @@ import java.util.Map;
 
 /**
  * A term store that supports online operations.
+ *
+ * The numPages class variable represents the number of active pages in OnlineTermStores.
  */
 public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingTermStore<T> {
     private static final Logger log = LoggerFactory.getLogger(OnlineTermStore.class);
@@ -57,14 +60,16 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
                            HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
         super(rules, atomManager, termGenerator);
 
-        for (Rule rule : rules) {
-            activatedRules.put(rule, true);
-        }
-
         activeTermPages = new ArrayList<Integer>();
         activeVolatilePages = new ArrayList<Integer>();
         rulePageMapping = new HashMap<Rule, List<Integer>>();
         activatedRules = new HashMap<Rule, Boolean>();
+
+        for (Rule rule : rules) {
+            activatedRules.put(rule, true);
+            rulePageMapping.put(rule, new ArrayList<Integer>());
+        }
+
         nextTermPageIndex = 0;
         nextVolatilePageIndex = 0;
     }
@@ -113,29 +118,23 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     public synchronized boolean activateRule(Rule rule) {
         List<Integer> rulePages = rulePageMapping.get(rule);
         if (rulePages == null) {
-            // No pages with rule.
+            // Rule not in model.
             return false;
         }
 
-        boolean activatedRule = false;
+        activatedRules.put(rule, true);
+
         int activePageIndex = 0;
-        for (Integer i : rulePages) {
-            activePageIndex = activeTermPages.indexOf(i);
+        for (Integer pageIndex : rulePages) {
+            activePageIndex = activeTermPages.indexOf(pageIndex);
             if (activePageIndex == -1) {
-                activeTermPages.add(i);
-                // This represents the number of active pages.
+                activeTermPages.add(pageIndex);
                 numPages++;
-            } else {
-                log.warn("Page: {} already activated for rule: {}", i, rule.toString());
             }
         }
-
         return true;
     }
 
-    /**
-     * Add rule to rules list and perform initial grounding.
-     */
     public synchronized boolean addRule(Rule rule) {
         List<Integer> rulePages = rulePageMapping.get(rule);
         if (rulePages != null) {
@@ -145,6 +144,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         // Add new rule to rule set.
         rules.add(rule);
+        rulePageMapping.put(rule, new ArrayList<Integer>());
         activatedRules.put(rule, true);
 
         // Ground new rule.
@@ -159,45 +159,45 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
     public synchronized boolean deactivateRule(Rule rule) {
         List<Integer> rulePages = rulePageMapping.get(rule);
-        activatedRules.put(rule, false);
         if (rulePages == null) {
-            // No pages with rule.
+            // Rule does not exist in model.
             return false;
         }
 
-        boolean activatedRule = false;
+        activatedRules.put(rule, false);
+
         int activePageIndex = 0;
         for (Integer i : rulePages) {
             activePageIndex = activeTermPages.indexOf(i);
             if (activePageIndex != -1) {
-                activatedRule = true;
                 activeTermPages.remove(activePageIndex);
-                // The numPages variable represents the number of active pages in OnlineTermStores.
                 numPages--;
-            } else if (activatedRule){
-                throw new IllegalStateException(String.format("Partially activated rule discovered: %s", rule));
             }
         }
-
         return true;
     }
 
     public synchronized boolean deleteRule(Rule rule) {
-        rules.remove(rule);
-        activatedRules.remove(rule);
         List<Integer> rulePages = rulePageMapping.get(rule);
         if (rulePages == null) {
-            // Rule already does not exist in model.
+            // Rule does not exist in model.
             return false;
         }
 
-        for (Integer i : rulePages) {
-            activeTermPages.remove(activeTermPages.indexOf(i));
-            // The numPages variable represents the number of active pages in OnlineTermStores.
-            numPages--;
-        }
+        // Delete rule from rule set.
+        rules.remove(rule);
+        activatedRules.remove(rule);
         rulePageMapping.remove(rule);
 
+        int activePageIndex = 0;
+        for (Integer i : rulePages) {
+            activePageIndex = activeTermPages.indexOf(i);
+            if (activePageIndex != -1) {
+                activeTermPages.remove(activePageIndex);
+                // The numPages variable represents the number of active pages in OnlineTermStores.
+                numPages--;
+            }
+        }
         return true;
     }
 
@@ -247,16 +247,8 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     public void addRuleMapping(Rule rule, int pageIndex) {
-        if (!rulePageMapping.containsKey(rule)) {
-            rulePageMapping.put(rule, new ArrayList<Integer>());
-        }
-
         buildActivePagePath(pageIndex);
         rulePageMapping.get(rule).add(activeTermPages.get(pageIndex));
-
-        if () {
-
-        }
     }
 
     private void buildActivePagePath(int index) {
@@ -266,6 +258,25 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
             termPagePaths.add(Paths.get(pageDir, String.format("%08d_term.page", nextTermPageIndex)).toString());
             activeTermPages.add(nextTermPageIndex);
             nextTermPageIndex++;
+        }
+    }
+
+    @Override
+    public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
+        super.groundingIterationComplete(termCount, numPages, termBuffer, volatileBuffer);
+
+        // Deactivate any new pages corresponding to deactivated rules.
+        for (Rule rule : rules) {
+            if (!activatedRules.get(rule)) {
+                List<Integer> rulePages = rulePageMapping.get(rule);
+                for (Integer pageIndex : rulePages) {
+                    int activePageIndex = activeTermPages.indexOf(pageIndex);
+                    if (activePageIndex != -1) {
+                        activeTermPages.remove(activePageIndex);
+                        this.numPages--;
+                    }
+                }
+            }
         }
     }
 

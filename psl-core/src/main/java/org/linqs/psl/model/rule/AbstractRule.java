@@ -30,11 +30,11 @@ import java.util.Map;
  * This means that it may be possible to have rules that are equal(), but that do not have matching hashes.
  */
 public abstract class AbstractRule implements Rule {
-    private static Map<Integer, AbstractRule> rules = new HashMap<Integer, AbstractRule>();
+    private static final Map<Integer, Rule> rules = new HashMap<Integer, Rule>();
 
     protected final String name;
 
-    public static AbstractRule getRule(int hashcode) {
+    public static Rule getRule(int hashcode) {
         return rules.get(hashcode);
     }
 
@@ -52,6 +52,14 @@ public abstract class AbstractRule implements Rule {
 
     public String getName() {
         return this.name;
+    }
+
+    public static void registerRule(Rule rule) {
+        rules.put(System.identityHashCode(rule), rule);
+    }
+
+    public static void deleteRule(Rule rule) {
+        rules.remove(System.identityHashCode(rule));
     }
 
     /**
