@@ -152,6 +152,17 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
 
+      - name: Cache Python Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+
+      - name: Python Dependencies
+        run: |
+          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/optional_requirements.txt
+
       - name: Download Archived Build
         uses: actions/download-artifact@v2
         with:
