@@ -323,7 +323,8 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testRuleDeletion() {
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
-        Rule rule = new WeightedLogicalRule(
+
+        Rule niceRule = new WeightedLogicalRule(
                 new Implication(
                         new Conjunction(
                                 new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("A")),
@@ -334,17 +335,41 @@ public class SGDOnlineInferenceTest {
                 ),
                 0.5f, true);
 
-        DeleteRule deleteRule = new DeleteRule(rule);
-        Exit exit = new Exit();
-        commands.add(deleteRule);
-        commands.add(exit);
+        Rule friendsRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                ),
+                10.0f, true);
 
-        OnlineResponse[] expectedResponses = new OnlineResponse[2];
-        expectedResponses[0] = new ActionStatus(deleteRule, true,
-                String.format("Deleted rule: %s", deleteRule.getRule()));
-        expectedResponses[1] = new ActionStatus(exit, true,"Session Closed.");
+        Rule negativePriorRule = new WeightedLogicalRule(
+                new Negation(
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                1.0f, true);
 
-        OnlineTest.assertServerResponse(commands, expectedResponses);
+        commands.add(new DeleteRule(negativePriorRule));
+        commands.add(new DeleteRule(friendsRule));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {1.0});
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        commands.add(new DeleteRule(niceRule));
+        commands.add(new DeleteRule(friendsRule));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {0.0});
     }
 
     /**
