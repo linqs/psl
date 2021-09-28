@@ -135,6 +135,12 @@ jobs:
         with:
           fetch-depth: 0  # Needs to be deep enough to hit the last tagged version.
 
+      - name: Cache Maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
       - name: Download Archived Build
         uses: actions/download-artifact@v2
         with:
