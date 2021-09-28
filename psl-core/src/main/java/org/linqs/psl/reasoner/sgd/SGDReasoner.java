@@ -123,7 +123,10 @@ public class SGDReasoner extends Reasoner {
         // optimization pass because they are being updated in the variableUpdate() method.
         // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
-        float[] oldVariableValues = null;
+        float[] prevVariableValues = null;
+        // Save and use the variable values with the lowest computed objective
+        double lowestObjective = Double.POSITIVE_INFINITY;
+        float[] lowestVariableValues = null;
 
         long totalTime = 0;
         boolean breakSGD = false;
@@ -144,7 +147,7 @@ public class SGDReasoner extends Reasoner {
 
             for (SGDObjectiveTerm term : termStore) {
                 if (iteration > 1) {
-                    objective += term.evaluate(oldVariableValues);
+                    objective += term.evaluate(prevVariableValues);
                 }
 
                 termCount++;
@@ -163,10 +166,16 @@ public class SGDReasoner extends Reasoner {
 
             if (iteration == 1) {
                 // Initialize old variables values.
-                oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+                prevVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+                lowestVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
             } else {
+                // Update lowest objective and variable values.
+                if (objective < lowestObjective) {
+                    lowestObjective = objective;
+                    System.arraycopy(prevVariableValues, 0, lowestVariableValues, 0, lowestVariableValues.length);
+                }
                 // Update old variables values and objective.
-                System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+                System.arraycopy(termStore.getVariableValues(), 0, prevVariableValues, 0, prevVariableValues.length);
                 oldObjective = objective;
             }
 
@@ -182,14 +191,23 @@ public class SGDReasoner extends Reasoner {
         }
         optimizationComplete();
 
+        // Compute final objective and update lowest variable values, then set termStore values with lowest values.
         objective = computeObjective(termStore);
-        change = termStore.syncAtoms();
+        if (objective < lowestObjective) {
+            lowestObjective = objective;
+            System.arraycopy(prevVariableValues, 0, lowestVariableValues, 0, lowestVariableValues.length);
+        }
 
+        float[] variableValues = termStore.getVariableValues();
+        System.arraycopy(lowestVariableValues, 0, variableValues, 0, variableValues.length);
+
+        // Compute variable change and log optimization information.
+        change = termStore.syncAtoms();
         log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", objective, objective / termCount, totalTime, iteration);
         log.debug("Movement of variables from initial state: {}", change);
         log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
 
-        return objective;
+        return lowestObjective;
     }
 
     private void initForOptimization(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
