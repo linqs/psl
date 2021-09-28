@@ -32,7 +32,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     protected boolean squared;
 
     public FakeRule(float weight, boolean squared) {
-        super("fake", false);
+        super("fake", 0);
 
         this.weight = weight;
         this.squared = squared;
@@ -94,11 +94,6 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public int hashCode() {
-        throw new UnsupportedOperationException("FakeRules should not be stored in hashing structures.");
-    }
-
-    @Override
     public boolean equals(Object other) {
         if (this == other) {
             return true;
@@ -113,6 +108,6 @@ public class FakeRule extends AbstractRule implements WeightedRule {
             return false;
         }
 
-        return super.equals(other);
+        return true;
     }
 }

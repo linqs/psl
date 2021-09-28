@@ -332,7 +332,7 @@ public class SGDOnlineInferenceTest {
                         ),
                         new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                5.0f, true);
+                0.5f, true);
 
         DeleteRule deleteRule = new DeleteRule(rule);
         Exit exit = new Exit();

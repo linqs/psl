@@ -23,31 +23,28 @@ import java.util.Map;
 
 /**
  * Base class for all (first order, i.e., not ground) rules.
- *
- * Care should always be taken when creating multiple instance of the same rule (e.g. through deserialization) or checking rules for equality.
- * In general, there should only be one instance of each rule, but this is not tightly enforced.
- * Rule hashes are by default their identity hash code (object id).
- * This means that it may be possible to have rules that are equal(), but that do not have matching hashes.
  */
 public abstract class AbstractRule implements Rule {
     private static final Map<Integer, Rule> rules = new HashMap<Integer, Rule>();
 
     protected final String name;
+    private int hashcode;
 
     public static Rule getRule(int hashcode) {
         return rules.get(hashcode);
     }
 
-    public AbstractRule(String name) {
-        this(name, true);
+    protected AbstractRule(String name, int hashcode) {
+        this.name = name;
+        this.hashcode = hashcode;
+
+        rules.put(hashcode, this);
     }
 
-    protected AbstractRule(String name, boolean storeRule) {
-        this.name = name;
-
-        if (storeRule) {
-            rules.put(System.identityHashCode(this), this);
-        }
+    protected void setHashcode(int hashcode) {
+        rules.remove(this.hashcode);
+        this.hashcode = hashcode;
+        rules.put(hashcode, this);
     }
 
     public String getName() {
@@ -55,20 +52,19 @@ public abstract class AbstractRule implements Rule {
     }
 
     public static void registerRule(Rule rule) {
-        rules.put(System.identityHashCode(rule), rule);
+        rules.put(rule.hashCode(), rule);
     }
 
     public static void deleteRule(Rule rule) {
-        rules.remove(System.identityHashCode(rule));
+        rules.remove(rule.hashCode());
     }
 
-    /**
-     * Explicitly define the hash for rules to be the identity hash code (object id).
-     */
     @Override
     public int hashCode() {
-        return System.identityHashCode(this);
+        return hashcode;
     }
+
+    public abstract boolean equals(Object other);
 
     @Override
     public boolean requiresSplit() {

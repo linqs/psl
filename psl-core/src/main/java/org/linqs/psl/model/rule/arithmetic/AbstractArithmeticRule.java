@@ -81,7 +81,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     private volatile boolean validatedByAtomManager;
 
     public AbstractArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
-        super(name);
+        super(name, expression.hashCode());
         this.expression = expression;
         this.filters = filterClauses;
 
@@ -192,11 +192,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         }
 
         return predicates;
-    }
-
-    @Override
-    public int hashCode() {
-        return expression.hashCode();
     }
 
     @Override

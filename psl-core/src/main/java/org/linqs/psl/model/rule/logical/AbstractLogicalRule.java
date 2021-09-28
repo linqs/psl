@@ -63,10 +63,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     protected Formula formula;
     protected final DNFClause negatedDNF;
-    private int hash;
 
     public AbstractLogicalRule(Formula formula, String name) {
-        super(name);
+        super(name, formula.hashCode());
 
         this.formula = formula;
         groundingResourcesKey = AbstractLogicalRule.class.getName() + ";" + formula + ";GroundingResources";
@@ -102,7 +101,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         }
 
         // Build up the hash code from positive and negative literals.
-        hash = HashCode.DEFAULT_INITIAL_NUMBER;
+        int hash = HashCode.DEFAULT_INITIAL_NUMBER;
 
         for (Atom atom : negatedDNF.getPosLiterals()) {
             hash = HashCode.build(hash, atom);
@@ -111,6 +110,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         for (Atom atom : negatedDNF.getNegLiterals()) {
             hash = HashCode.build(hash, atom);
         }
+
+        setHashcode(hash);
     }
 
     public Formula getFormula() {
@@ -190,11 +191,6 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
-    public int hashCode() {
-        return hash;
-    }
-
-    @Override
     public boolean equals(Object other) {
         if (this == other) {
             return true;
@@ -206,7 +202,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         AbstractLogicalRule otherRule = (AbstractLogicalRule)other;
 
-        if (this.hash != otherRule.hash) {
+        if (this.hashCode() != otherRule.hashCode()) {
             return false;
         }
 
