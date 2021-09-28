@@ -72,7 +72,7 @@ jobs:
         run: mvn integration-test -B -P all-modules
 
       - name: Archive Build
-        run: tar cf psl.tar */target
+        run: tar cvf psl.tar */target
 
       - name: Upload Archived Build
         uses: actions/upload-artifact@v2
@@ -148,7 +148,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Unpack Archived Build
-        run: tar xf psl.tar
+        run: tar xvf psl.tar
 
       - name: Import GPG Key
         uses: crazy-max/ghaction-import-gpg@v4
