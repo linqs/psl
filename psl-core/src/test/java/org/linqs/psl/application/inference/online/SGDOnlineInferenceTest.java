@@ -264,7 +264,7 @@ public class SGDOnlineInferenceTest {
     }
 
     /**
-     * Test expected response received from AddRule action and the added rule has a expected effect on inference.
+     * Test expected response received from AddRule action and the added rule has the expected effect on MAP state.
      */
     @Test
     public void testRuleAddition() {
@@ -275,7 +275,7 @@ public class SGDOnlineInferenceTest {
                         Arrays.asList(new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))),
                         FunctionComparator.EQ, new ConstantNumber(1)
                 ),
-                10000.0f, false);
+                1000.0f, false);
 
         AddRule addRule = new AddRule(newRule);
         Exit exit = new Exit();
@@ -373,8 +373,8 @@ public class SGDOnlineInferenceTest {
     }
 
     /**
-     * Test consecutive ActivateRule and DeactivateRule actions activate and deactivate term pages
-     * resulting in the expected MAP states.
+     * Test ActivateRule and DeactivateRule actions activate and deactivate term pages
+     * and result in the expected MAP state.
      */
     @Test
     public void testRuleActivation() {
@@ -389,7 +389,7 @@ public class SGDOnlineInferenceTest {
                         ),
                         new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                0.5f, true);
+                5.0f, true);
 
         Rule friendsRule = new WeightedLogicalRule(
                 new Implication(

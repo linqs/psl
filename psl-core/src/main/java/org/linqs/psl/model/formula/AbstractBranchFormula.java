@@ -85,7 +85,7 @@ public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> 
             return true;
         }
 
-        if (oth == null || !(getClass().isInstance(oth))) {
+        if (oth == null || !(getClass().isInstance(oth)) || (this.hashCode() != oth.hashCode())) {
             return false;
         }
 

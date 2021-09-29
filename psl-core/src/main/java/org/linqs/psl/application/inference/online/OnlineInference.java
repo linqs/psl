@@ -265,7 +265,6 @@ public abstract class OnlineInference extends InferenceApplication {
             return String.format("Rule: %s already exists in model.", action.getRule());
         }
 
-        // Register new rule.
         AbstractRule.registerRule(action.getRule());
 
         modelUpdates = true;
@@ -290,7 +289,6 @@ public abstract class OnlineInference extends InferenceApplication {
             return String.format("Rule: %s does not exist in model.", action.getRule());
         }
 
-        // Register new rule.
         AbstractRule.deleteRule(action.getRule());
 
         modelUpdates = true;

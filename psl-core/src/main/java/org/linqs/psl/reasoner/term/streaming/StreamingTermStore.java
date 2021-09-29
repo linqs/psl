@@ -152,7 +152,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
 
         initialRound = true;
         activeIterator = null;
-        termCount = 0l;
+        termCount = 0L;
         numPages = 0;
 
         termBuffer = null;

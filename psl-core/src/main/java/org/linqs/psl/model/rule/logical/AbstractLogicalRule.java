@@ -65,7 +65,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     protected final DNFClause negatedDNF;
 
     public AbstractLogicalRule(Formula formula, String name) {
-        super(name, formula.hashCode());
+        // Hashcode is set to zero here and then set using the negatedDNF in this constructor.
+        super(name, 0);
 
         this.formula = formula;
         groundingResourcesKey = AbstractLogicalRule.class.getName() + ";" + formula + ";GroundingResources";

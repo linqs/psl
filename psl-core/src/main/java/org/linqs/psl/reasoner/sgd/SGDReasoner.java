@@ -174,6 +174,7 @@ public class SGDReasoner extends Reasoner {
                     lowestObjective = objective;
                     System.arraycopy(prevVariableValues, 0, lowestVariableValues, 0, lowestVariableValues.length);
                 }
+
                 // Update old variables values and objective.
                 System.arraycopy(termStore.getVariableValues(), 0, prevVariableValues, 0, prevVariableValues.length);
                 oldObjective = objective;
