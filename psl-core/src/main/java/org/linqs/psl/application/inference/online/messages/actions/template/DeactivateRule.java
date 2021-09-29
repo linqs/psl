@@ -21,6 +21,7 @@ import org.linqs.psl.model.rule.Rule;
 
 /**
  * Deactivate an existing rule in the model.
+ * Deactivated rules are still partially grounded if atoms are added.
  * String format: DeactivateRule <rule>
  */
 public class DeactivateRule extends TemplateAction {
