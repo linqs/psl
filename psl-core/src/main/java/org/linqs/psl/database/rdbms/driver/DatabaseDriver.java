@@ -21,21 +21,53 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- * An interface to a specific RDBMS backend.
+ * An abstract class  for a specific RDBMS backend.
  * All connections from drivers should be from thread-safe connection pools.
  */
-public interface DatabaseDriver {
+public abstract class DatabaseDriver {
+    private static final Logger log = LoggerFactory.getLogger(DatabaseDriver.class);
+
+    protected final HikariDataSource dataSource;
+
+    public DatabaseDriver(String driverClass, String connectionString, boolean clearDatabase) {
+        // Load the driver class.
+        try {
+            Class.forName(driverClass);
+        } catch (ClassNotFoundException ex) {
+            throw new RuntimeException("Could not find database driver (" + driverClass + "). Please check classpath.", ex);
+        }
+
+        log.debug("Connecting to database using driver: " + driverClass);
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(connectionString);
+        config.setMaximumPoolSize(Math.max(8, Parallel.getNumThreads() * 2));
+        config.setMaxLifetime(0);
+        dataSource = new HikariDataSource(config);
+
+        if (clearDatabase) {
+            clearDatabase();
+        }
+    }
+
     /**
      * Close out any outstanding connections and cleanup.
      */
-    public void close();
+    public void close() {
+        dataSource.close();
+    }
 
     /**
      * Returns a connection to the database.
@@ -45,35 +77,58 @@ public interface DatabaseDriver {
      *
      * @return the connection to the database, as specified in the DatabaseDriver constructor
      */
-    public Connection getConnection();
+    public Connection getConnection() {
+        try {
+            return dataSource.getConnection();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to get connection from pool.", ex);
+        }
+    }
 
     /**
      * Returns whether the underline database supports bulk copying operations.
      */
-    public boolean supportsBulkCopy();
+    public boolean supportsBulkCopy() {
+        return false;
+    }
 
     /**
      * Perform a bulk copy operation to load the file directly into the database.
      * May not be supported by all backends.
      */
     public void bulkCopy(String path, String delimiter, boolean hasTruth,
-            PredicateInfo predicateInfo, Partition partition);
+            PredicateInfo predicateInfo, Partition partition) {
+        throw new UnsupportedOperationException(this.getClass() + " does not support bulk copy.");
+    }
+
+    /**
+     * Clear the context database of any existing tables/data.
+     */
+    protected abstract void clearDatabase();
 
     /**
      * Get the type name for each argument type.
      */
-    public String getTypeName(ConstantType type);
+    public abstract String getTypeName(ConstantType type);
 
     /**
      * Get the SQL definition for a primary, surrogate (auto-increment) key
      * for use in a CREATE TABLE statement.
      */
-    public String getSurrogateKeyColumnDefinition(String columnName);
+    public abstract String getSurrogateKeyColumnDefinition(String columnName);
 
     /**
      * Get the type name for a double type.
      */
-    public String getDoubleTypeName();
+    public abstract String getDoubleTypeName();
+
+    /**
+     * Gives the driver a chance to perform any final
+     * manipulations to the CREATE TABLE statement.
+     */
+    public String finalizeCreateTable(CreateTableQuery createTable) {
+        return createTable.validate().toString();
+    }
 
     /**
      * Get the SQL for an upsert (merge) on the specified table and columns.
@@ -82,35 +137,53 @@ public interface DatabaseDriver {
      * The parameters for the statement should the the specified columns in order.
      * Some databases (like H2) require knowing the key columns we need to use.
      */
-    public String getUpsert(String tableName, String[] columns, String[] keyColumns);
-
-    /**
-     * Gives the driver a chance to perform any final
-     * manipulations to the CREATE TABLE statement.
-     */
-    public String finalizeCreateTable(CreateTableQuery createTable);
+    public abstract String getUpsert(String tableName, String[] columns, String[] keyColumns);
 
     /**
      * Get a string aggregating expression (one that
      * would appear in the SELECT clause of a grouping query.
      * Postgres uses STRING_AGG and H2 use GROUP_CONCAT.
      */
-    public String getStringAggregate(String columnName, String delimiter, boolean distinct);
+    public abstract String getStringAggregate(String columnName, String delimiter, boolean distinct);
 
     /**
      * Get some statistics for a table.
      */
-    public TableStats getTableStats(PredicateInfo predicate);
+    public abstract TableStats getTableStats(PredicateInfo predicate);
 
     /**
      * Make sure that all the database-level stats are up-to-date.
      * Is generally called after insertion and indexing.
      */
-    public void updateDBStats();
+    public abstract void updateDBStats();
 
     /**
      * Make sure that all the table statistics are up-to-date.
      * Is generally called after insertion and indexing.
      */
-    public void updateTableStats(PredicateInfo predicate);
+    public abstract void updateTableStats(PredicateInfo predicate);
+
+    /**
+     * Get query planing statistics for the given select statement.
+     */
+    public ExplainResult explain(String queryString) {
+        throw new UnsupportedOperationException(this.getClass() + " does not support EXPLAIN.");
+    }
+
+    public static class ExplainResult {
+        public final double totalCost;
+        public final double startupCost;
+        public final long rows;
+
+        public ExplainResult(double totalCost, double startupCost, long rows) {
+            this.startupCost = startupCost;
+            this.totalCost = totalCost;
+            this.rows = rows;
+        }
+
+        public String toString() {
+            return String.format("Rows: %d, Total Cost: %f, Startup Cost: %f",
+                    rows, totalCost, startupCost);
+        }
+    }
 }

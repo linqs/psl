@@ -32,6 +32,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.VariableTypeMap;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
 import com.healthmarketscience.sqlbuilder.CustomSql;
@@ -41,6 +42,7 @@ import com.healthmarketscience.sqlbuilder.SelectQuery;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -116,6 +118,10 @@ public class Formula2SQL {
 
         query = new SelectQuery();
         query.setIsDistinct(isDistinct);
+
+        if (projection == null) {
+            projection = new HashSet<Variable>(0);
+        }
 
         if (projection.isEmpty()) {
             query.addAllColumns();
@@ -300,5 +306,17 @@ public class Formula2SQL {
 
     private String escapeSingleQuotes(String s) {
         return s.replaceAll("'", "''");
+    }
+
+    /**
+     * A static shortcut for when only the SQL string is required.
+     */
+    public static String getQuery(Formula formula, RDBMSDatabase database, boolean isDistinct) {
+        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+        Set<Variable> projection = new HashSet<Variable>(varTypes.getVariables());
+
+        Formula2SQL sqler = new Formula2SQL(projection, database, isDistinct, null);
+
+        return sqler.getSQL(formula);
     }
 }

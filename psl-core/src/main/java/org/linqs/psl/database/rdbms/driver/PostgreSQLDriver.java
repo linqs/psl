@@ -23,14 +23,12 @@ import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.SelectivityHistogram;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.postgresql.PGConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +38,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -54,13 +51,12 @@ import java.util.Map;
 /**
  * PostgreSQL Connection Wrapper.
  */
-public class PostgreSQLDriver implements DatabaseDriver {
+public class PostgreSQLDriver extends DatabaseDriver {
     private static final int MAX_STATS = 10000;
     private static final String ENCODING = "UTF-8";
 
     private static final Logger log = LoggerFactory.getLogger(PostgreSQLDriver.class);
 
-    private final HikariDataSource dataSource;
     private final double statsPercentage;
 
     public PostgreSQLDriver(String databaseName, boolean clearDatabase) {
@@ -78,41 +74,18 @@ public class PostgreSQLDriver implements DatabaseDriver {
     }
 
     public PostgreSQLDriver(String connectionString, String databaseName, boolean clearDatabase) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException ex) {
-            throw new RuntimeException("Could not find postgres driver. Please check classpath.", ex);
-        }
+        super("org.postgresql.Driver", connectionString, clearDatabase);
 
-        log.debug("Connecting to PostgreSQL database: " + databaseName);
+        log.debug("Connected to PostgreSQL database: " + databaseName);
 
         statsPercentage = Options.POSTGRES_STATS_PERCENTAGE.getDouble();
-
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(connectionString);
-        config.setMaximumPoolSize(Math.max(8, Parallel.getNumThreads() * 2));
-        config.setMaxLifetime(0);
-        dataSource = new HikariDataSource(config);
-
-        if (clearDatabase) {
-            executeUpdate("DROP SCHEMA public CASCADE");
-            executeUpdate("CREATE SCHEMA public");
-            executeUpdate("GRANT ALL ON SCHEMA public TO public");
-        }
     }
 
     @Override
-    public void close() {
-        dataSource.close();
-    }
-
-    @Override
-    public Connection getConnection() {
-        try {
-            return dataSource.getConnection();
-        } catch (SQLException ex) {
-            throw new RuntimeException("Failed to get connection from pool.", ex);
-        }
+    protected void clearDatabase() {
+        executeUpdate("DROP SCHEMA public CASCADE");
+        executeUpdate("CREATE SCHEMA public");
+        executeUpdate("GRANT ALL ON SCHEMA public TO public");
     }
 
     @Override
@@ -474,5 +447,45 @@ public class PostgreSQLDriver implements DatabaseDriver {
         for (String col : predicate.argumentColumns()) {
             executeUpdate(String.format("ALTER TABLE %s ALTER COLUMN %s SET STATISTICS %d", predicate.tableName(), col, statsCount));
         }
+    }
+
+    @Override
+    public ExplainResult explain(String queryString) {
+        log.trace("Begin EXPLAIN");
+
+        queryString = "EXPLAIN (FORMAT JSON) " + queryString;
+
+        StringBuilder result = new StringBuilder();
+        try (
+            Connection connection = getConnection();
+            Statement statement = connection.createStatement();
+            ResultSet results = statement.executeQuery(queryString);
+        ) {
+            boolean hasResults = false;
+            while (results.next()) {
+                hasResults = true;
+                result.append(results.getString(1));
+            }
+
+            if (!hasResults) {
+                log.error(queryString);
+                throw new RuntimeException("No results from an EXPLAIN.");
+            }
+        } catch (SQLException ex) {
+            log.error(queryString);
+            throw new RuntimeException("Error EXPLAINing.", ex);
+        }
+
+        JSONArray resultJSON = new JSONArray(result.toString());
+
+        JSONObject plan = resultJSON.getJSONObject(0).getJSONObject("Plan");
+        double totalCost = plan.getDouble("Total Cost");
+        double startupCost = plan.getDouble("Startup Cost");
+        long rows = plan.getLong("Plan Rows");
+
+        log.debug("Estimated Cost: {}, Startup Cost: {}, Estimated Rows: {}", totalCost, startupCost, rows);
+        log.trace("End EXPLAIN");
+
+        return new ExplainResult(totalCost, startupCost, rows);
     }
 }
