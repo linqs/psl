@@ -401,16 +401,16 @@ public class Options {
         "The starting value for atoms and any local variables during inference."
     );
 
-    public static final Option INFERENCE_REASONER = new Option(
-        "inference.reasoner",
-        ADMMReasoner.class.getName(),
-        "The reasoner to use for inference."
-    );
-
     public static final Option INFERENCE_NORMALIZE_WEIGHTS = new Option(
         "inference.normalize",
         true,
         "Normalize weights to be in [0, 1]. Normalization will be done by dividing all weights by the largest weight."
+    );
+
+    public static final Option INFERENCE_REASONER = new Option(
+        "inference.reasoner",
+        ADMMReasoner.class.getName(),
+        "The reasoner to use for inference."
     );
 
     public static final Option INFERENCE_RELAX = new Option(
@@ -430,6 +430,13 @@ public class Options {
         "inference.relax.squared",
         true,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
+    );
+
+    public static final Option INFERENCE_SKIP_INFERENCE = new Option(
+        "inference.skip",
+        false,
+        "Skip the reasoning portion of inference."
+        + " Variables will be set to their specified initial values, but no reasoning will take place."
     );
 
     public static final Option INFERENCE_TG = new Option(
