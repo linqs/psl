@@ -18,16 +18,13 @@
 package org.linqs.psl.grounding;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.rdbms.Formula2SQL;
-import org.linqs.psl.database.rdbms.QueryRewriter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.model.Model;
+import org.linqs.psl.grounding.collective.CandidateGeneration;
+import org.linqs.psl.grounding.collective.CandidateQuery;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -39,8 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -89,9 +84,12 @@ public class Grounding {
         List<Rule> collectiveRules = new ArrayList<Rule>(rules.size());
         List<CandidateQuery> candidates = new ArrayList<CandidateQuery>(rules.size() * candiatesPerRule);
 
+        CandidateGeneration candidateGeneration = null;
         if (!(atomManager.getDatabase() instanceof RDBMSDatabase)
                 || !(((RDBMSDataStore)atomManager.getDatabase().getDataStore()).getDriver() instanceof PostgreSQLDriver)) {
             log.warn("Cannot generate query candidates without a PostgreSQL database, grounding will be suboptimal.");
+        } else {
+            candidateGeneration = new CandidateGeneration();
         }
 
         for (Rule rule : rules) {
@@ -101,7 +99,11 @@ public class Grounding {
             }
             collectiveRules.add(rule);
 
-            generateCandidates(candidates, rule, atomManager);
+            if (candidateGeneration != null) {
+                candidateGeneration.generateCandidates(rule, (RDBMSDatabase)atomManager.getDatabase(), candiatesPerRule, candidates);
+            } else {
+                candidates.add(new CandidateQuery(rule, rule.getRewritableGroundingFormula(), 0.0));
+            }
         }
 
         long initialSize = groundRuleStore.size();
@@ -125,28 +127,6 @@ public class Grounding {
         }
 
         return groundRuleStore.size() - initialSize;
-    }
-
-    private static void generateCandidates(List<CandidateQuery> candidates, Rule rule, AtomManager atomManager) {
-        Formula baseFormula = rule.getRewritableGroundingFormula();
-
-        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)
-                || !(((RDBMSDataStore)atomManager.getDatabase().getDataStore()).getDriver() instanceof PostgreSQLDriver)) {
-            // A warning has already been issued for this.
-            candidates.add(new CandidateQuery(rule, baseFormula, 0.0));
-            return;
-        }
-
-        RDBMSDatabase database = (RDBMSDatabase)atomManager.getDatabase();
-        DatabaseDriver driver = ((RDBMSDataStore)database.getDataStore()).getDriver();
-
-        // TODO(eriq): A real implementation.
-
-        String query = Formula2SQL.getQuery(baseFormula, database, false);
-        DatabaseDriver.ExplainResult explainResult = driver.explain(query);
-
-        candidates.add(new CandidateQuery(rule, baseFormula, explainResult.totalCost));
-        return;
     }
 
     private static List<CandidateQuery> computeCoverage(List<Rule> collectiveRules, List<CandidateQuery> candidates) {
@@ -180,27 +160,6 @@ public class Grounding {
         log.debug("Generated {} ground rules from {} query results.", groundCount, timings.iterations);
 
         return groundCount;
-    }
-
-    private static class CandidateQuery {
-        public final Formula formula;
-        public final double score;
-
-        // Verified rules that this candidate can ground for.
-        public final Set<Rule> coveredRules;
-
-        // Verified rules that this candidate cannot ground for.
-        public final Set<Rule> uncoveredRules;
-
-        public CandidateQuery(Rule rule, Formula formula, double score) {
-            this.formula = formula;
-            this.score = score;
-
-            coveredRules = new HashSet<Rule>();
-            coveredRules.add(rule);
-
-            uncoveredRules = new HashSet<Rule>();
-        }
     }
 
     private static class GroundWorker extends Parallel.Worker<Constant[]> {
