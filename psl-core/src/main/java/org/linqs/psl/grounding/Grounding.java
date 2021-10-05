@@ -21,8 +21,12 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.QueryRewriter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
+import org.linqs.psl.database.rdbms.RDBMSDatabase;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
+import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
@@ -35,12 +39,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Static utilities for common {@link Model}-grounding tasks.
+ * Static utilities for common grounding tasks.
  */
 public class Grounding {
     private static final Logger log = LoggerFactory.getLogger(Grounding.class);
@@ -48,20 +55,19 @@ public class Grounding {
     // Static only.
     private Grounding() {}
 
-    /**
-     * Ground all the given rules.
-     * @return the number of ground rules generated.
-     */
-    public static long groundAll(Model model, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        return groundAll(model.getRules(), atomManager, groundRuleStore);
+    public static long groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        boolean collective = Options.GROUNDING_COLLECTIVE.getBoolean();
+        if (collective) {
+            return groundCollective(rules, atomManager, groundRuleStore);
+        }
+
+        return groundIndependent(rules, atomManager, groundRuleStore);
     }
 
     /**
-     * Ground all the given rules one at a time.
-     * Callers should prefer groundAll() to this since it will perform a more efficient grounding.
-     * @return the number of ground rules generated.
+     * Ground each of the passed in rules independently.
      */
-    public static long groundAllSerial(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    private static long groundIndependent(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         long groundCount = 0;
         for (Rule rule : rules) {
             groundCount += rule.groundAll(atomManager, groundRuleStore);
@@ -71,25 +77,21 @@ public class Grounding {
     }
 
     /**
-     * Ground all the given rules.
-     * @return the number of ground rules generated.
+     * Ground all the given rules collectively.
      */
-    public static long groundAll(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        boolean rewrite = Options.GROUNDING_REWRITE_QUERY.getBoolean();
-        boolean serial = Options.GROUNDING_SERIAL.getBoolean();
+    private static long groundCollective(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        // TODO(eriq): Get from config.
+        int candiatesPerRule = 3;
 
-        Map<Formula, List<Rule>> queries = new HashMap<Formula, List<Rule>>();
+        // Rules that cannot take part in the collective process.
         List<Rule> bypassRules = new ArrayList<Rule>();
 
-        DataStore dataStore = atomManager.getDatabase().getDataStore();
-        if (rewrite && !(dataStore instanceof RDBMSDataStore)) {
-            log.warn("Cannot rewrite queries with a non-RDBMS DataStore. Queries will not be rewritten.");
-            rewrite = false;
-        }
+        List<Rule> collectiveRules = new ArrayList<Rule>(rules.size());
+        List<CandidateQuery> candidates = new ArrayList<CandidateQuery>(rules.size() * candiatesPerRule);
 
-        QueryRewriter rewriter = null;
-        if (rewrite) {
-            rewriter = new QueryRewriter();
+        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)
+                || !(((RDBMSDataStore)atomManager.getDatabase().getDataStore()).getDriver() instanceof PostgreSQLDriver)) {
+            log.warn("Cannot generate query candidates without a PostgreSQL database, grounding will be suboptimal.");
         }
 
         for (Rule rule : rules) {
@@ -97,47 +99,71 @@ public class Grounding {
                 bypassRules.add(rule);
                 continue;
             }
+            collectiveRules.add(rule);
 
-            Formula query = rule.getRewritableGroundingFormula();
-            if (rewrite) {
-                query = rewriter.rewrite(query, (RDBMSDataStore)dataStore);
-            }
-
-            if (!queries.containsKey(query)) {
-                queries.put(query, new ArrayList<Rule>());
-            }
-
-            queries.get(query).add(rule);
+            generateCandidates(candidates, rule, atomManager);
         }
 
         long initialSize = groundRuleStore.size();
 
-        // First perform all the rewritten querties.
-        for (Map.Entry<Formula, List<Rule>> entry : queries.entrySet()) {
-            if (!serial) {
-                // If parallel, ground all the rules that match this formula at once.
-                groundParallel(entry.getKey(), entry.getValue(), atomManager, groundRuleStore);
-            } else {
-                // If serial, ground the rules with this formula one at a time.
-                for (Rule rule : entry.getValue()) {
-                    List<Rule> tempRules = new ArrayList<Rule>();
-                    tempRules.add(rule);
+        List<CandidateQuery> coverage = computeCoverage(collectiveRules, candidates);
 
-                    groundParallel(entry.getKey(), tempRules, atomManager, groundRuleStore);
-                }
-            }
+        // Ground the bypassed rules.
+        groundIndependent(bypassRules, atomManager, groundRuleStore);
+
+        // Ground the collective rules.
+        for (CandidateQuery candidate : coverage) {
+            // Multiple candidates may cover the same rule.
+            // So, we need to track which rules still need to ground.
+
+            Set<Rule> toGround = new HashSet<Rule>(collectiveRules);
+            toGround.retainAll(candidate.coveredRules);
+
+            sharedGrounding(candidate.formula, toGround, atomManager, groundRuleStore);
+
+            collectiveRules.removeAll(candidate.coveredRules);
         }
-
-        // Now ground the bypassed rules.
-        groundAllSerial(bypassRules, atomManager, groundRuleStore);
 
         return groundRuleStore.size() - initialSize;
     }
 
-    private static long groundParallel(Formula query, List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    private static void generateCandidates(List<CandidateQuery> candidates, Rule rule, AtomManager atomManager) {
+        Formula baseFormula = rule.getRewritableGroundingFormula();
+
+        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)
+                || !(((RDBMSDataStore)atomManager.getDatabase().getDataStore()).getDriver() instanceof PostgreSQLDriver)) {
+            // A warning has already been issued for this.
+            candidates.add(new CandidateQuery(rule, baseFormula, 0.0));
+            return;
+        }
+
+        RDBMSDatabase database = (RDBMSDatabase)atomManager.getDatabase();
+        DatabaseDriver driver = ((RDBMSDataStore)database.getDataStore()).getDriver();
+
+        // TODO(eriq): A real implementation.
+
+        String query = Formula2SQL.getQuery(baseFormula, database, false);
+        DatabaseDriver.ExplainResult explainResult = driver.explain(query);
+
+        candidates.add(new CandidateQuery(rule, baseFormula, explainResult.totalCost));
+        return;
+    }
+
+    private static List<CandidateQuery> computeCoverage(List<Rule> collectiveRules, List<CandidateQuery> candidates) {
+        // TODO(eriq): Part of computing the coverage is computing containment (and containment mappings).
+        //  These mappings are necessary for ground rule instantiation.
+
+        // TODO(eriq): A real implementation.
+        return candidates;
+    }
+
+    /**
+     * Use the provided formula to ground all of the provided rules.
+     */
+    private static long sharedGrounding(Formula query, Set<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), query);
         for (Rule rule : rules) {
-            log.debug("    " + rule);
+            log.trace("    " + rule);
         }
 
         // We will manually handle these in the grounding process.
@@ -156,15 +182,36 @@ public class Grounding {
         return groundCount;
     }
 
+    private static class CandidateQuery {
+        public final Formula formula;
+        public final double score;
+
+        // Verified rules that this candidate can ground for.
+        public final Set<Rule> coveredRules;
+
+        // Verified rules that this candidate cannot ground for.
+        public final Set<Rule> uncoveredRules;
+
+        public CandidateQuery(Rule rule, Formula formula, double score) {
+            this.formula = formula;
+            this.score = score;
+
+            coveredRules = new HashSet<Rule>();
+            coveredRules.add(rule);
+
+            uncoveredRules = new HashSet<Rule>();
+        }
+    }
+
     private static class GroundWorker extends Parallel.Worker<Constant[]> {
         private AtomManager atomManager;
         private GroundRuleStore groundRuleStore;
         private Map<Variable, Integer> variableMap;
-        private List<Rule> rules;
+        private Set<Rule> rules;
         private List<GroundRule> groundRules;
 
         public GroundWorker(AtomManager atomManager, GroundRuleStore groundRuleStore,
-                Map<Variable, Integer> variableMap, List<Rule> rules) {
+                Map<Variable, Integer> variableMap, Set<Rule> rules) {
             this.atomManager = atomManager;
             this.groundRuleStore = groundRuleStore;
             this.variableMap = variableMap;

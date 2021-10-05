@@ -19,6 +19,7 @@ package org.linqs.psl.application.inference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.assumeNotNull;
 
 import org.linqs.psl.TestModel;
 import org.linqs.psl.config.Options;
@@ -45,6 +46,7 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -56,11 +58,33 @@ import java.util.Set;
 public abstract class InferenceTest {
     public static final int NUM_INFERENCE_RUNS = 10;
 
+    protected TestModel.ModelInformation info;
+
     protected abstract InferenceApplication getInference(List<Rule> rules, Database db);
+
+    public InferenceTest() {
+        info = null;
+    }
+
+    @Before
+    public void init() {
+        DatabaseDriver driver = getDatabaseDriver();
+        assumeNotNull(driver);
+
+        info = TestModel.getModel(false, driver);
+    }
 
     @After
     public void cleanup() {
         Options.INFERENCE_INITIAL_VARIABLE_VALUE.clear();
+
+        if (info != null) {
+            info.close();
+        }
+    }
+
+    protected DatabaseDriver getDatabaseDriver() {
+        return DatabaseTestUtil.getH2Driver();
     }
 
     /**
@@ -69,8 +93,6 @@ public abstract class InferenceTest {
      */
     @Test
     public void baseTest() {
-        TestModel.ModelInformation info = TestModel.getModel();
-
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);
@@ -81,16 +103,16 @@ public abstract class InferenceTest {
     }
 
     /**
-     * Same as baseTest(), but using postgres.
+     * Same as baseTest(), but explicitly using postgres.
      */
     @Test
     public void baseTestPostgres() {
-        DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
-        if (driver == null) {
-            return;
-        }
+        info.close();
 
-        TestModel.ModelInformation info = TestModel.getModel(false, driver);
+        DatabaseDriver driver = DatabaseTestUtil.getPostgresDriver();
+        assumeNotNull(driver);
+
+        info = TestModel.getModel(false, driver);
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
@@ -106,8 +128,6 @@ public abstract class InferenceTest {
      */
     @Test
     public void testLogicalNoOpenPredicates() {
-        TestModel.ModelInformation info = TestModel.getModel();
-
         // Reset the model with only a single rule.
         info.model = new Model();
 
@@ -142,8 +162,6 @@ public abstract class InferenceTest {
      */
     @Test
     public void testArithmeticNoOpenPredicates() {
-        TestModel.ModelInformation info = TestModel.getModel();
-
         List<Coefficient> coefficients;
         List<SummationAtomOrAtom> atoms;
 
@@ -181,8 +199,6 @@ public abstract class InferenceTest {
      */
     @Test
     public void testLogicalTautologyTrivial() {
-        TestModel.ModelInformation info = TestModel.getModel();
-
         // Clear out the model.
         info.model.clear();
 
@@ -215,7 +231,6 @@ public abstract class InferenceTest {
     */
     @Test
     public void testCommitAtom() {
-        TestModel.ModelInformation info = TestModel.getModel();
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);
@@ -241,6 +256,8 @@ public abstract class InferenceTest {
         }
 
         assertNotEquals(preInferenceTotalValue, postInferenceTotalValue, 0.001f);
+
+        inferDB.close();
     }
 
     /**
@@ -248,7 +265,6 @@ public abstract class InferenceTest {
     */
     @Test
     public void testNoCommitAtom() {
-        TestModel.ModelInformation info = TestModel.getModel();
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 
@@ -273,6 +289,8 @@ public abstract class InferenceTest {
         }
 
         assertEquals(preInferenceTotalValue, postInferenceTotalValue, 0.001f);
+
+        inferDB.close();
     }
 
     /**
@@ -281,8 +299,6 @@ public abstract class InferenceTest {
      */
     @Test
     public void initialValueTest() {
-        TestModel.ModelInformation info = TestModel.getModel();
-
         double oldAvgObjective = 0.0f;
         InitialValue oldInitialValue = null;
 
@@ -319,8 +335,6 @@ public abstract class InferenceTest {
      */
     @Test
     public void reasonerEvaluateTest() {
-        TestModel.ModelInformation info = TestModel.getModel();
-
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);

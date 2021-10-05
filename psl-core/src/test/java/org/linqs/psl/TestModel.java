@@ -311,6 +311,13 @@ public class TestModel {
             this.targetPartition = targetPartition;
             this.truthPartition = truthPartition;
         }
+
+        public void close() {
+            if (dataStore != null) {
+                dataStore.close();
+                dataStore = null;
+            }
+        }
     }
 
     /**

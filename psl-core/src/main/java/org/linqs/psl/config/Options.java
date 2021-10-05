@@ -299,16 +299,10 @@ public class Options {
         "A comma-separated list of possible weights. These weights should be in some sorted order."
     );
 
-    public static final Option GROUNDING_REWRITE_QUERY = new Option(
-        "grounding.rewritequeries",
+    public static final Option GROUNDING_COLLECTIVE = new Option(
+        "grounding.collective",
         false,
-        "Potentially rewrite the grounding queries."
-    );
-
-    public static final Option GROUNDING_SERIAL = new Option(
-        "grounding.serial",
-        false,
-        "Whether or not queries are being rewritten, perform the grounding queries one at a time."
+        "Ground rules collectively instead of independently."
     );
 
     public static final Option WLA_GRGS_EXPLORE_LOCATIONS = new Option(
