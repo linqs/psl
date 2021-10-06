@@ -19,10 +19,15 @@ package org.linqs.psl.model.predicate;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.model.term.Variable;
+
+import java.util.Map;
 
 /**
  * Commonly used FunctionalPredicates that get special treatment in PSL.
@@ -42,6 +47,43 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
     }
 
     /**
+     * Compute the value, possibly using a lookup map for a variable's constant.
+     * This style of check will often be used in grounding processes to validate constants before ground rule instantiation.
+     */
+    public double computeValue(Atom atom, Map<Variable, Integer> variableMap, Constant[] constants) {
+        assert(this == atom.getPredicate());
+
+        Term[] arguments = atom.getArguments();
+        assert(arguments.length == 2);
+
+        Constant lhs = null;
+        Constant rhs = null;
+
+        if (arguments[0] instanceof Constant) {
+            lhs = (Constant)arguments[0];
+        } else if (arguments[0] instanceof Variable) {
+            lhs = constants[variableMap.get((Variable)arguments[0]).intValue()];
+        } else {
+            throw new RuntimeException("Expecting Constant or Variable, but found: " + arguments[0].getClass());
+        }
+
+        if (arguments[1] instanceof Constant) {
+            rhs = (Constant)arguments[1];
+        } else if (arguments[1] instanceof Variable) {
+            rhs = constants[variableMap.get((Variable)arguments[1]).intValue()];
+        } else {
+            throw new RuntimeException("Expecting Constant or Variable, but found: " + arguments[1].getClass());
+        }
+
+        return computeValue(lhs, rhs);
+    }
+
+    /**
+     * A method of computing the value that is more direct (and less robust) than the FunctionalPredicate way.
+     */
+    public abstract double computeValue(Constant a, Constant b);
+
+    /**
      * True if arguments are equal.
      */
     public static final GroundingOnlyPredicate Equal
@@ -51,7 +93,12 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
         @Override
         public double computeValue(ReadableDatabase db, Constant... args) {
             checkArguments(getName(), args);
-            return (args[0].equals(args[1])) ? 1.0 : 0.0;
+            return computeValue(args[0], args[1]);
+        }
+
+        @Override
+        public double computeValue(Constant a, Constant b) {
+            return a.equals(b) ? 1.0 : 0.0;
         }
     };
 
@@ -65,7 +112,12 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
         @Override
         public double computeValue(ReadableDatabase db, Constant... args) {
             checkArguments(getName(), args);
-            return (!args[0].equals(args[1])) ? 1.0 : 0.0;
+            return computeValue(args[0], args[1]);
+        }
+
+        @Override
+        public double computeValue(Constant a, Constant b) {
+            return !a.equals(b) ? 1.0 : 0.0;
         }
     };
 
@@ -80,7 +132,12 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
         @Override
         public double computeValue(ReadableDatabase db, Constant... args) {
             checkArguments(getName(), args);
-            return (args[0].compareTo(args[1]) < 0) ? 1.0 : 0.0;
+            return computeValue(args[0], args[1]);
+        }
+
+        @Override
+        public double computeValue(Constant a, Constant b) {
+            return (a.compareTo(b) < 0) ? 1.0 : 0.0;
         }
     };
 

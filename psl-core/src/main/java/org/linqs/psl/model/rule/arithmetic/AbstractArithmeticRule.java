@@ -32,6 +32,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Negation;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
@@ -48,6 +49,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.SelectQuery;
@@ -338,17 +340,27 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     private void groundSingleNonSummationRule(
             Constant[] queryRow, Map<Variable, Integer> variableMap,
             AtomManager atomManager, GroundingResources resources) {
-
         for (int atomIndex = 0; atomIndex < resources.groundAtoms.length; atomIndex++) {
-            GroundAtom atom = resources.queryAtoms.get(atomIndex).ground(
+            QueryAtom atom = resources.queryAtoms.get(atomIndex);
+
+            // First, check if this atom is a grounding only atom (and it is valid).
+            // The semantics are not well defined, but any false result will invalidate this grounding.
+            if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
+                double result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, queryRow);
+                if (MathUtils.equals(result, 0.0)) {
+                    return;
+                }
+            }
+
+            GroundAtom groundAtom = resources.queryAtoms.get(atomIndex).ground(
                     atomManager, queryRow, variableMap, resources.argumentBuffer[atomIndex]);
-            if (atom == null) {
+            if (groundAtom == null) {
                 return;
             }
 
-            resources.groundAtoms[atomIndex] = atom;
+            resources.groundAtoms[atomIndex] = groundAtom;
 
-            if ((atom instanceof RandomVariableAtom) && ((RandomVariableAtom)atom).getAccessException()) {
+            if ((groundAtom instanceof RandomVariableAtom) && ((RandomVariableAtom)groundAtom).getAccessException()) {
                 resources.accessExceptionAtoms.add(resources.groundAtoms[atomIndex]);
             }
         }

@@ -34,6 +34,7 @@ import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
@@ -240,7 +241,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         // Note that there is a class of trivial groundings that we choose not to remove at this point for
         // computational reasons.
-        // It is possible for both a ground atoms and it's negation to appear in the DNF.
+        // It is possible for both a ground atom and its negation to appear in the DNF.
         // This obviously causes a tautology.
         // Removing it here would require checking the positive atoms against the negative ones.
         // Even if we already had a mapping of possiblities (perhaps created in FormulaAnalysis),
@@ -250,6 +251,32 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         // Note that the "positive" and "negative" qualifiers here are with respect to the negated DNF (a conjunction).
         // This is why a 0.0 for a positive atom is trivial and a 1.0 for a negative atom is trivial.
+
+        // Validate any grounding only atoms.
+
+        for (Atom atom : negatedDNF.getPosLiterals()) {
+            if (!(atom.getPredicate() instanceof GroundingOnlyPredicate)) {
+                continue;
+            }
+
+            double result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, row);
+            if (MathUtils.equals(result, 0.0)) {
+                return null;
+            }
+        }
+
+        for (Atom atom : negatedDNF.getNegLiterals()) {
+            if (!(atom.getPredicate() instanceof GroundingOnlyPredicate)) {
+                continue;
+            }
+
+            double result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, row);
+            if (MathUtils.equals(result, 1.0)) {
+                return null;
+            }
+        }
+
+        // Ground the atoms in this ground rule.
 
         short positiveRVACount = createAtoms(atomManager, variableMap, resources, negatedDNF.getPosLiterals(), row,
                 resources.positiveAtomArgs, resources.positiveAtoms, 0.0);
