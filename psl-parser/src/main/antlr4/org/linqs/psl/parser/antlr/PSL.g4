@@ -167,8 +167,14 @@ linearArithmeticOperand
     ;
 
 arithmeticCoefficientOperand
-    :   (coefficientExpression MULT?)? (summationAtom | atom) (DIV coefficientExpression)?
+    :   (coefficientExpression MULT?)? arithmeticCoefficientOperandAtom (DIV coefficientExpression)?
     |   coefficientExpression
+    ;
+
+arithmeticCoefficientOperandAtom
+    : atom
+    | summationAtom
+    | LPAREN arithmeticCoefficientOperandAtom RPAREN
     ;
 
 summationAtom

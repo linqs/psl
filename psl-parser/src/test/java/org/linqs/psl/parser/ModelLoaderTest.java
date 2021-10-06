@@ -997,4 +997,26 @@ public class ModelLoaderTest {
 
         PSLTest.assertModel(input, expected);
     }
+
+    @Test
+    public void testArithmeticGroundingOnlyPredicates() {
+        String input =
+            "Single(A) + Single(B) + (A == B) = 0.0 .\n" +
+            "Single(A) + Single(B) + (A != B) = 0.0 .\n" +
+            "Single(A) + Single(B) + (A ~= B) = 0.0 .\n" +
+            "Single(A) + Single(B) + (A - B) = 0.0 .\n" +
+            "Single(A) + Single(B) + (A % B) = 0.0 .\n" +
+            "Single(A) + Single(B) + (A ^ B) = 0.0 .\n" +
+            "";
+        String[] expected = new String[]{
+            "1.0 * SINGLE(A) + 1.0 * SINGLE(B) + 1.0 * (A == B) = 0.0 .",
+            "1.0 * SINGLE(A) + 1.0 * SINGLE(B) + 1.0 * (A != B) = 0.0 .",
+            // "1.0 * SINGLE(A) + 1.0 * SINGLE(B) + 1.0 * (A != B) = 0.0 .",  // Duplicate rule ignored.
+            // "1.0 * SINGLE(A) + 1.0 * SINGLE(B) + 1.0 * (A != B) = 0.0 .",  // Duplicate rule ignored.
+            "1.0 * SINGLE(A) + 1.0 * SINGLE(B) + 1.0 * (A % B) = 0.0 .",
+            // "1.0 * SINGLE(A) + 1.0 * SINGLE(B) + 1.0 * (A % B) = 0.0 .",  // Duplicate rule ignored.
+        };
+
+        PSLTest.assertModel(input, expected);
+    }
 }
