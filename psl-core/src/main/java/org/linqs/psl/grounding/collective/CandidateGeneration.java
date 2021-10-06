@@ -160,7 +160,7 @@ public class CandidateGeneration {
         CandidateSearchNode rootNode = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, database);
 
         fringe.push(rootNode);
-        seenNodes.add(new Long(BitUtils.toBitSet(atomBits)));
+        seenNodes.add(Long.valueOf(BitUtils.toBitSet(atomBits)));
 
         // Keep track of how many times we ask for an EXPLAIN from the database.
         // After the budget is expended, we will still finish out search on the remaining nodes, but not create any more.
@@ -241,7 +241,6 @@ public class CandidateGeneration {
      * Bypass validation and directly create a candidate node.
      */
     private CandidateSearchNode createNode(long atomBitSet, Formula formula, int numAtoms, RDBMSDatabase database) {
-        RDBMSDataStore dataStore = (RDBMSDataStore)database.getDataStore();
         String sql = Formula2SQL.getQuery(formula, database, false);
         DatabaseDriver.ExplainResult result = ((RDBMSDataStore)database.getDataStore()).getDriver().explain(sql);
 

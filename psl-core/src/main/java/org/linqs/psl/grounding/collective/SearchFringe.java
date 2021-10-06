@@ -27,13 +27,13 @@ import java.util.PriorityQueue;
 /**
  * Defines the strategy for exploring the qurey candidate generation space.
  */
-public abstract class SearchFringe {
+public abstract class SearchFringe<T extends Collection<CandidateSearchNode>> {
     private static final Logger log = LoggerFactory.getLogger(SearchFringe.class);
 
     protected PriorityQueue<CandidateSearchNode> savedOrderedNodes;
-    protected Collection<CandidateSearchNode> fringe;
+    protected T fringe;
 
-    protected SearchFringe(Collection<CandidateSearchNode> fringe) {
+    protected SearchFringe(T fringe) {
         savedOrderedNodes = new PriorityQueue<CandidateSearchNode>();
         this.fringe = fringe;
     }
@@ -86,42 +86,42 @@ public abstract class SearchFringe {
      */
     public abstract CandidateSearchNode pop();
 
-    public static class BFSSearchFringe extends SearchFringe {
+    public static class BFSSearchFringe extends SearchFringe<LinkedList<CandidateSearchNode>> {
         public BFSSearchFringe() {
             super(new LinkedList<CandidateSearchNode>());
         }
 
         @Override
         protected boolean pushInternal(CandidateSearchNode node) {
-            ((LinkedList<CandidateSearchNode>)fringe).addLast(node);
+            fringe.addLast(node);
             return true;
         }
 
         @Override
         public CandidateSearchNode pop() {
-            return ((LinkedList<CandidateSearchNode>)fringe).removeFirst();
+            return fringe.removeFirst();
         }
     }
 
 
-    public static class DFSSearchFringe extends SearchFringe {
+    public static class DFSSearchFringe extends SearchFringe<LinkedList<CandidateSearchNode>> {
         public DFSSearchFringe() {
             super(new LinkedList<CandidateSearchNode>());
         }
 
         @Override
         protected boolean pushInternal(CandidateSearchNode node) {
-            ((LinkedList<CandidateSearchNode>)fringe).addFirst(node);
+            fringe.addFirst(node);
             return true;
         }
 
         @Override
         public CandidateSearchNode pop() {
-            return ((LinkedList<CandidateSearchNode>)fringe).removeFirst();
+            return fringe.removeFirst();
         }
     }
 
-    public static class UCSSearchFringe extends SearchFringe {
+    public static class UCSSearchFringe extends SearchFringe<PriorityQueue<CandidateSearchNode>> {
         public UCSSearchFringe() {
             // Use a priority queue (with PriorityQueue's default size of 11.
             super(new PriorityQueue<CandidateSearchNode>(11));
@@ -129,13 +129,13 @@ public abstract class SearchFringe {
 
         @Override
         protected boolean pushInternal(CandidateSearchNode node) {
-            ((PriorityQueue<CandidateSearchNode>)fringe).add(node);
+            fringe.add(node);
             return true;
         }
 
         @Override
         public CandidateSearchNode pop() {
-            return ((PriorityQueue<CandidateSearchNode>)fringe).poll();
+            return fringe.poll();
         }
     }
 
