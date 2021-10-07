@@ -32,7 +32,9 @@ import java.util.Set;
  * Note that candidates are unique and identified by their identity hash codes.
  */
 public class CandidateQuery {
+    private final Rule baseRule;
     private final Formula formula;
+
     private final double score;
 
     // The variable mapping for verified rules that this candidate can ground for.
@@ -44,7 +46,8 @@ public class CandidateQuery {
     /**
      * Initialize this candidate with a formula for the given rule.
      */
-    public CandidateQuery(Rule rule, Formula formula, double score) {
+    public CandidateQuery(Rule baseRule, Formula formula, double score) {
+        this.baseRule = baseRule;
         this.formula = formula;
         this.score = score;
 
@@ -56,7 +59,7 @@ public class CandidateQuery {
         for (Variable variable : variables) {
             selfMapping.put(variable, variable);
         }
-        coveredVariableMappings.put(rule, selfMapping);
+        coveredVariableMappings.put(baseRule, selfMapping);
 
         uncoveredRules = new HashSet<Rule>();
     }
@@ -69,12 +72,20 @@ public class CandidateQuery {
         return score;
     }
 
+    public Rule getBaseRule() {
+        return baseRule;
+    }
+
     public Set<Rule> getCoveredRules() {
         return coveredVariableMappings.keySet();
     }
 
     public Map<Variable, Variable> getVariableMapping(Rule rule) {
         return coveredVariableMappings.get(rule);
+    }
+
+    public Map<Variable, Variable> getSelfVariableMapping() {
+        return coveredVariableMappings.get(baseRule);
     }
 
     public Map<Rule, Map<Variable, Variable>> getCoveredVariableMappings() {

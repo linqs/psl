@@ -32,12 +32,16 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -123,7 +127,7 @@ public class Grounding {
             Set<Rule> toGround = new HashSet<Rule>(collectiveRules);
             toGround.retainAll(candidate.getCoveredRules());
 
-            sharedGrounding(candidate.getFormula(), toGround, atomManager, groundRuleStore);
+            sharedGrounding(candidate, toGround, atomManager, groundRuleStore);
 
             collectiveRules.removeAll(candidate.getCoveredRules());
         }
@@ -133,18 +137,43 @@ public class Grounding {
 
     private static List<CandidateQuery> computeCoverage(List<Rule> collectiveRules, List<CandidateQuery> candidates) {
         Containment.computeContainement(collectiveRules, candidates);
-        // TODO(eriq): Part of computing the coverage is computing containment (and containment mappings).
-        //  These mappings are necessary for ground rule instantiation.
 
-        // TODO(eriq): A real implementation.
-        return candidates;
+        // TODO(eriq): A smarter solution.
+        // Greedily compute a coverage.
+        Collections.sort(candidates, new Comparator<CandidateQuery>() {
+            @Override
+            public int compare(CandidateQuery a, CandidateQuery b) {
+                return MathUtils.compare(a.getScore(), b.getScore());
+            }
+        });
+
+        List<CandidateQuery> coverage = new ArrayList<CandidateQuery>();
+        Set<Rule> usedRules = new HashSet<Rule>();
+
+        for (CandidateQuery candidate : candidates) {
+            if (usedRules.containsAll(candidate.getCoveredRules())) {
+                continue;
+            }
+
+            coverage.add(candidate);
+            usedRules.addAll(candidate.getCoveredRules());
+
+            if (usedRules.size() == collectiveRules.size()) {
+                return coverage;
+            }
+        }
+
+        // This should never happen.
+        throw new IllegalStateException(String.format(
+                "Could not compute coverage. Collective Rules: %s, Candidates: %s, Working Coverage: %s.",
+                collectiveRules, candidates, coverage));
     }
 
     /**
      * Use the provided formula to ground all of the provided rules.
      */
-    private static long sharedGrounding(Formula query, Set<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), query);
+    private static long sharedGrounding(CandidateQuery candidate, Set<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+        log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), candidate.getFormula());
         for (Rule rule : rules) {
             log.trace("    " + rule);
         }
@@ -153,9 +182,30 @@ public class Grounding {
         // We do not want to throw too early because the ground rule may turn out to be trivial in the end.
         boolean oldAccessExceptionState = atomManager.enableAccessExceptions(false);
 
+        // Run the query.
+        QueryResultIterable queryResults = atomManager.executeGroundingQuery(candidate.getFormula());
+
+        // Build a per-rule variable mapping.
+        Map<Rule, Map<Variable, Integer>> variableMaps = new HashMap<Rule, Map<Variable, Integer>>();
+        Map<Variable, Integer> baseVariableMap = queryResults.getVariableMap();
+
+        for (Rule rule : rules) {
+            if (rule == candidate.getBaseRule()) {
+                variableMaps.put(rule, baseVariableMap);
+            } else {
+                Map<Variable, Integer> variableMap = new HashMap<Variable, Integer>();
+                Map<Variable, Variable> containmentMapping = candidate.getVariableMapping(rule);
+
+                for (Map.Entry<Variable, Integer> baseVariabelMapEntry : baseVariableMap.entrySet()) {
+                    variableMap.put(containmentMapping.get(baseVariabelMapEntry.getKey()), baseVariabelMapEntry.getValue());
+                }
+
+                variableMaps.put(rule, variableMap);
+            }
+        }
+
         long initialCount = groundRuleStore.size();
-        QueryResultIterable queryResults = atomManager.executeGroundingQuery(query);
-        Parallel.RunTimings timings = Parallel.foreach(queryResults, new GroundWorker(atomManager, groundRuleStore, queryResults.getVariableMap(), rules));
+        Parallel.RunTimings timings = Parallel.foreach(queryResults, new GroundWorker(atomManager, groundRuleStore, variableMaps, rules));
         long groundCount = groundRuleStore.size() - initialCount;
 
         atomManager.enableAccessExceptions(oldAccessExceptionState);
@@ -168,28 +218,28 @@ public class Grounding {
     private static class GroundWorker extends Parallel.Worker<Constant[]> {
         private AtomManager atomManager;
         private GroundRuleStore groundRuleStore;
-        private Map<Variable, Integer> variableMap;
+        private Map<Rule, Map<Variable, Integer>> variableMaps;
         private Set<Rule> rules;
         private List<GroundRule> groundRules;
 
         public GroundWorker(AtomManager atomManager, GroundRuleStore groundRuleStore,
-                Map<Variable, Integer> variableMap, Set<Rule> rules) {
+                Map<Rule, Map<Variable, Integer>> variableMaps, Set<Rule> rules) {
             this.atomManager = atomManager;
             this.groundRuleStore = groundRuleStore;
-            this.variableMap = variableMap;
+            this.variableMaps = variableMaps;
             this.rules = rules;
             this.groundRules = new ArrayList<GroundRule>();
         }
 
         @Override
         public Object clone() {
-            return new GroundWorker(atomManager, groundRuleStore, variableMap, rules);
+            return new GroundWorker(atomManager, groundRuleStore, variableMaps, rules);
         }
 
         @Override
         public void work(long index, Constant[] row) {
             for (Rule rule : rules) {
-                rule.ground(row, variableMap, atomManager, groundRules);
+                rule.ground(row, variableMaps.get(rule), atomManager, groundRules);
 
                 for (GroundRule groundRule : groundRules) {
                     if (groundRule != null) {
