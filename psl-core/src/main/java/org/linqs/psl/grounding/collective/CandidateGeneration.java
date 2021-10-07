@@ -283,6 +283,11 @@ public class CandidateGeneration {
         Map<Variable, Set<Atom>> variables = new HashMap<Variable, Set<Atom>>();
 
         for (Atom atom : atoms) {
+            // Only atoms backed by real data (i.e. StandardPredicate) count for providing variables.
+            if (!(atom.getPredicate() instanceof StandardPredicate)) {
+                continue;
+            }
+
             for (Variable variable : atom.getVariables()) {
                 if (!variables.containsKey(variable)) {
                     variables.put(variable, new HashSet<Atom>());
@@ -308,9 +313,8 @@ public class CandidateGeneration {
                 // Skip. These are handled at instantiation time.
                 removeAtoms.add(atom);
             } else if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
-                // Passthrough.
-                removeAtoms.add(atom);
-                passthrough.add(atom);
+                // Treat these like normal predicates.
+                // They will either be handled in the query, or at instantiation time.
             } else if (!(atom.getPredicate() instanceof StandardPredicate)) {
                 throw new IllegalStateException("Unknown predicate type: " + atom.getPredicate().getClass().getName());
             }

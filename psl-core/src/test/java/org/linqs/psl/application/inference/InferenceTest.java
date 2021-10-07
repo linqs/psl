@@ -33,6 +33,7 @@ import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
+import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
@@ -42,6 +43,7 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
@@ -348,5 +350,31 @@ public abstract class InferenceTest {
         inference.close();
         inferDB.close();
         truthDatabase.close();
+    }
+
+    @Test
+    public void testAtomWithConstant() {
+        // Nice(A) & Nice(B) -> Friends(A, B)
+        info.model.addRule(new WeightedLogicalRule(
+            new Implication(
+                new Conjunction(
+                    new QueryAtom(info.predicates.get("Nice"), new Variable("A")),
+                    new QueryAtom(info.predicates.get("Nice"), new Variable("B")),
+                    new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B")),
+                    new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                ),
+                new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
+            ),
+            1.0f,
+            true
+        ));
+
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+        inference.inference();
+        inference.close();
+        inferDB.close();
     }
 }
