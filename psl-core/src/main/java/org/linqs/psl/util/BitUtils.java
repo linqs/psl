@@ -86,4 +86,23 @@ public final class BitUtils {
         long mask = 1 << index;
         return (bitSet & mask) != 0;
     }
+
+    /**
+     * Set the value for a single bit in a bitset.
+     */
+    public static long setBit(long bitSet, int index, boolean value) {
+        if (index >= 64) {
+            throw new IndexOutOfBoundsException(String.format(
+                    "Max bitset index is 63, got %d.",
+                    index));
+        }
+
+        long mask = 1 << index;
+
+        if (value) {
+            return bitSet | mask;
+        } else {
+            return bitSet & ~mask;
+        }
+    }
 }
