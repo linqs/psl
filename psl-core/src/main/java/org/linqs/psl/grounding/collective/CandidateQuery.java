@@ -19,27 +19,75 @@ package org.linqs.psl.grounding.collective;
 
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.model.term.VariableTypeMap;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+/**
+ * A candidate for collective grounding.
+ * Note that candidates are unique and identified by their identity hash codes.
+ */
 public class CandidateQuery {
-    public final Formula formula;
-    public final double score;
+    private final Formula formula;
+    private final double score;
 
-    // Verified rules that this candidate can ground for.
-    public final Set<Rule> coveredRules;
+    // The variable mapping for verified rules that this candidate can ground for.
+    private final Map<Rule, Map<Variable, Variable>> coveredVariableMappings;
 
     // Verified rules that this candidate cannot ground for.
-    public final Set<Rule> uncoveredRules;
+    private final Set<Rule> uncoveredRules;
 
+    /**
+     * Initialize this candidate with a formula for the given rule.
+     */
     public CandidateQuery(Rule rule, Formula formula, double score) {
         this.formula = formula;
         this.score = score;
 
-        coveredRules = new HashSet<Rule>();
-        coveredRules.add(rule);
+        coveredVariableMappings = new HashMap<Rule, Map<Variable, Variable>>();
+
+        // Since the formula is known to be for the rule, create an identity mapping.
+        Set<Variable> variables = formula.collectVariables(new VariableTypeMap()).getVariables();
+        Map<Variable, Variable> selfMapping = new HashMap<Variable, Variable>();
+        for (Variable variable : variables) {
+            selfMapping.put(variable, variable);
+        }
+        coveredVariableMappings.put(rule, selfMapping);
 
         uncoveredRules = new HashSet<Rule>();
+    }
+
+    public Formula getFormula() {
+        return formula;
+    }
+
+    public double getScore() {
+        return score;
+    }
+
+    public Set<Rule> getCoveredRules() {
+        return coveredVariableMappings.keySet();
+    }
+
+    public Map<Variable, Variable> getVariableMapping(Rule rule) {
+        return coveredVariableMappings.get(rule);
+    }
+
+    public Map<Rule, Map<Variable, Variable>> getCoveredVariableMappings() {
+        return coveredVariableMappings;
+    }
+
+    @Override
+    public int hashCode() {
+        return System.identityHashCode(this);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return this == other;
     }
 }

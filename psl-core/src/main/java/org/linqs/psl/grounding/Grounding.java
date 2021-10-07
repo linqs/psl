@@ -25,7 +25,9 @@ import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.grounding.collective.CandidateQuery;
+import org.linqs.psl.grounding.collective.Containment;
 import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
@@ -119,17 +121,18 @@ public class Grounding {
             // So, we need to track which rules still need to ground.
 
             Set<Rule> toGround = new HashSet<Rule>(collectiveRules);
-            toGround.retainAll(candidate.coveredRules);
+            toGround.retainAll(candidate.getCoveredRules());
 
-            sharedGrounding(candidate.formula, toGround, atomManager, groundRuleStore);
+            sharedGrounding(candidate.getFormula(), toGround, atomManager, groundRuleStore);
 
-            collectiveRules.removeAll(candidate.coveredRules);
+            collectiveRules.removeAll(candidate.getCoveredRules());
         }
 
         return groundRuleStore.size() - initialSize;
     }
 
     private static List<CandidateQuery> computeCoverage(List<Rule> collectiveRules, List<CandidateQuery> candidates) {
+        Containment.computeContainement(collectiveRules, candidates);
         // TODO(eriq): Part of computing the coverage is computing containment (and containment mappings).
         //  These mappings are necessary for ground rule instantiation.
 
