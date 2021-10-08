@@ -302,7 +302,6 @@ public class SGDOnlineInferenceTest {
         OnlineTest.assertAtomValues(commands, new double[] {1.0});
     }
 
-
     @Test
     public void testDuplicateRuleAddition() {
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
@@ -371,6 +370,72 @@ public class SGDOnlineInferenceTest {
         commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, new double[] {0.0});
+    }
+
+    /**
+     * Check that rules with no initial groundings are still deleted.
+     */
+    @Test
+    public void testZeroGroundingRuleDeletion() {
+        // Add rule that will have no groundings.
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+        Rule newRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
+                                new Negation(new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("A"))),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                100.0f, true);
+
+        // Delete rule to simulate adding an unregistered rule on the server.
+        newRule.unregister();
+
+        AddRule addRule = new AddRule(newRule);
+        Exit exit = new Exit();
+        commands.add(addRule);
+        commands.add(exit);
+
+        // Test expected response.
+        OnlineResponse[] expectedResponses = new OnlineResponse[2];
+        expectedResponses[0] = new ActionStatus(addRule, true,
+                String.format("Added rule: %s", addRule.getRule().toString()));
+        expectedResponses[1] = new ActionStatus(exit, true, "Session Closed.");
+
+        OnlineTest.assertServerResponse(commands, expectedResponses);
+
+        // Delete zero grounding rule.
+        DeleteRule deleteRule = new DeleteRule(newRule);
+        commands.add(deleteRule);
+        commands.add(exit);
+
+        // Test expected response.
+        expectedResponses = new OnlineResponse[2];
+        expectedResponses[0] = new ActionStatus(deleteRule, true,
+                String.format("Deleted rule: %s", deleteRule.getRule().toString()));
+        expectedResponses[1] = new ActionStatus(exit, true, "Session Closed.");
+
+        OnlineTest.assertServerResponse(commands, expectedResponses);
+
+        // Check that atoms added to the model are not influenced by new rule.
+        commands.add(new AddAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+        commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}, 0.0f));
+        commands.add(new AddAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}, 0.0f));
+        commands.add(new QueryAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Alice")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Bob"), new UniqueStringID("Connor")}));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Connor"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {1.0, 0.0, 0.0, 0.0, 0.0, 0.0});
     }
 
     /**
