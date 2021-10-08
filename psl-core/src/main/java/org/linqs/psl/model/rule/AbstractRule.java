@@ -42,9 +42,9 @@ public abstract class AbstractRule implements Rule {
     }
 
     protected void setHashcode(int hashcode) {
-        rules.remove(this.hashcode);
+        unregisterRule(this);
         this.hashcode = hashcode;
-        rules.put(hashcode, this);
+        registerRule(this);
     }
 
     public String getName() {
