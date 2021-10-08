@@ -90,8 +90,7 @@ public interface Rule extends Serializable {
 
     /**
      * Split this rule into multiple rules.
-     * The net effect of all the rules should be the same
-     * as the pre-split rule.
+     * The net effect of all the rules should be the same as the pre-split rule.
      */
     public List<Rule> split();
 
