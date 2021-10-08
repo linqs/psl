@@ -55,6 +55,15 @@ public abstract class AbstractRule implements Rule {
         rules.put(rule.hashCode(), rule);
     }
 
+    private static void unregisterRule(Rule rule) {
+        rules.remove(rule.hashCode());
+    }
+
+    @Override
+    public boolean isRegistered() {
+        return rules.containsKey(this.hashcode);
+    }
+
     @Override
     public void ensureRegistration() {
         if (!isRegistered()) {
@@ -63,12 +72,10 @@ public abstract class AbstractRule implements Rule {
     }
 
     @Override
-    public boolean isRegistered() {
-        return rules.containsKey(this.hashcode);
-    }
-
-    public static void deleteRule(Rule rule) {
-        rules.remove(rule.hashCode());
+    public void unregister() {
+        if (isRegistered()) {
+            unregisterRule(this);
+        }
     }
 
     @Override

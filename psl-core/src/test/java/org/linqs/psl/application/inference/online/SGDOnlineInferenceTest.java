@@ -280,7 +280,7 @@ public class SGDOnlineInferenceTest {
                 1000.0f, false);
 
         // Delete rule to simulate adding an unregistered rule on the server.
-        AbstractRule.deleteRule(newRule);
+        newRule.unregister();
 
         AddRule addRule = new AddRule(newRule);
         Exit exit = new Exit();

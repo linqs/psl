@@ -287,7 +287,7 @@ public abstract class OnlineInference extends InferenceApplication {
 
         ((OnlineTermStore)termStore).deleteRule(action.getRule());
 
-        AbstractRule.deleteRule(action.getRule());
+        action.getRule().unregister();
 
         modelUpdates = true;
         return String.format("Deleted rule: %s", action.getRule());

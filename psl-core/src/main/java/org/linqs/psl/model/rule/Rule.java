@@ -98,10 +98,15 @@ public interface Rule extends Serializable {
     /**
      * Ensure that the rule instance is registered.
      */
-    public void  ensureRegistration();
+    public boolean isRegistered();
 
     /**
      * Ensure that the rule instance is registered.
      */
-    public boolean isRegistered();
+    public void ensureRegistration();
+
+    /**
+     * Ensure that the rule instance is registered.
+     */
+    public void unregister();
 }
