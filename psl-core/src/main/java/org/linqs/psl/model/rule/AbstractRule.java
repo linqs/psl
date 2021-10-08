@@ -27,24 +27,20 @@ import java.util.Map;
 public abstract class AbstractRule implements Rule {
     private static final Map<Integer, Rule> rules = new HashMap<Integer, Rule>();
 
-    protected final String name;
-    private int hashcode;
+    protected String name;
+    protected int hashcode;
 
     public static Rule getRule(int hashcode) {
         return rules.get(hashcode);
     }
+
+    protected AbstractRule() {}
 
     protected AbstractRule(String name, int hashcode) {
         this.name = name;
         this.hashcode = hashcode;
 
         rules.put(hashcode, this);
-    }
-
-    protected void setHashcode(int hashcode) {
-        unregisterRule(this);
-        this.hashcode = hashcode;
-        registerRule(this);
     }
 
     public String getName() {
