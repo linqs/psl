@@ -115,11 +115,11 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         variableValues[getVariableIndex(atom)] = newValue;
     }
 
-    public synchronized boolean activateRule(Rule rule) {
+    public synchronized void activateRule(Rule rule) {
         List<Integer> rulePages = rulePageMapping.get(rule);
         if (rulePages == null) {
             // Rule not in model.
-            return false;
+            return;
         }
 
         activatedRules.put(rule, true);
@@ -132,14 +132,13 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
                 numPages++;
             }
         }
-        return true;
     }
 
-    public synchronized boolean addRule(Rule rule) {
+    public synchronized void addRule(Rule rule) {
         List<Integer> rulePages = rulePageMapping.get(rule);
         if (rulePages != null) {
             // Rule already exists in model.
-            return false;
+            return;
         }
 
         // Add new rule to rule set.
@@ -153,15 +152,13 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         while (groundingIterator.hasNext()) {
             groundingIterator.next();
         }
-
-        return true;
     }
 
-    public synchronized boolean deactivateRule(Rule rule) {
+    public synchronized void deactivateRule(Rule rule) {
         List<Integer> rulePages = rulePageMapping.get(rule);
         if (rulePages == null) {
             // Rule does not exist in model.
-            return false;
+            return;
         }
 
         activatedRules.put(rule, false);
@@ -174,7 +171,6 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
                 numPages--;
             }
         }
-        return true;
     }
 
     public synchronized boolean deleteRule(Rule rule) {

@@ -44,6 +44,7 @@ import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -278,6 +279,9 @@ public class SGDOnlineInferenceTest {
                 ),
                 1000.0f, false);
 
+        // Delete rule to simulate adding an unregistered rule on the server.
+        AbstractRule.deleteRule(newRule);
+
         AddRule addRule = new AddRule(newRule);
         Exit exit = new Exit();
         commands.add(addRule);
@@ -302,11 +306,7 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testDuplicateRuleAddition() {
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
-        Rule newRule = new WeightedLogicalRule(
-                new Negation(new org.linqs.psl.model.atom.QueryAtom(
-                        StandardPredicate.get("Friends"),
-                        new Variable("A"), new Variable("B"))),
-                1.0f,true);
+        Rule newRule = modelInfo.model.getRules().get(0);
 
         AddRule addRule = new AddRule(newRule);
         Exit exit = new Exit();

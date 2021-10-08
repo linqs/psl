@@ -248,46 +248,44 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     protected String doActivateRule(ActivateRule action) {
-        boolean activatedRule = ((OnlineTermStore)termStore).activateRule(action.getRule());
-
-        if (!activatedRule) {
+        if (action.isNewRule()) {
             return String.format("Rule: %s does not exist in model.", action.getRule());
         }
+
+        ((OnlineTermStore)termStore).activateRule(action.getRule());
 
         modelUpdates = true;
         return String.format("Activated rule: %s", action.getRule());
     }
 
     protected String doAddRule(AddRule action) {
-        boolean addedNewRule = ((OnlineTermStore)termStore).addRule(action.getRule());
-
-        if (!addedNewRule) {
+        if (!action.isNewRule()) {
             return String.format("Rule: %s already exists in model.", action.getRule());
         }
 
-        AbstractRule.registerRule(action.getRule());
+        ((OnlineTermStore)termStore).addRule(action.getRule());
 
         modelUpdates = true;
         return String.format("Added rule: %s", action.getRule());
     }
 
     protected String doDeactivateRule(DeactivateRule action) {
-        boolean deactivatedRule = ((OnlineTermStore)termStore).deactivateRule(action.getRule());
-
-        if (!deactivatedRule) {
+        if (action.isNewRule()) {
             return String.format("Rule: %s does not exist in model.", action.getRule());
         }
+
+        ((OnlineTermStore)termStore).deactivateRule(action.getRule());
 
         modelUpdates = true;
         return String.format("Deactivated rule: %s", action.getRule());
     }
 
     protected String doDeleteRule(DeleteRule action) {
-        boolean deletedRule = ((OnlineTermStore)termStore).deleteRule(action.getRule());
-
-        if (!deletedRule) {
+        if (action.isNewRule()) {
             return String.format("Rule: %s does not exist in model.", action.getRule());
         }
+
+        ((OnlineTermStore)termStore).deleteRule(action.getRule());
 
         AbstractRule.deleteRule(action.getRule());
 

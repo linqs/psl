@@ -19,6 +19,8 @@ package org.linqs.psl.application.inference.online.messages.actions.template;
 
 import org.linqs.psl.model.rule.Rule;
 
+import java.io.IOException;
+
 /**
  * Add a new rule to the model.
  * String format: AddRule <rule>
@@ -33,5 +35,12 @@ public class AddRule extends TemplateAction {
         return String.format(
                 "ADDRULE\t%s",
                 rule.toString());
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        newRule = !rule.isRegistered();
+        rule.ensureRegistration();
     }
 }

@@ -51,8 +51,20 @@ public abstract class AbstractRule implements Rule {
         return this.name;
     }
 
-    public static void registerRule(Rule rule) {
+    private static void registerRule(Rule rule) {
         rules.put(rule.hashCode(), rule);
+    }
+
+    @Override
+    public void ensureRegistration() {
+        if (!isRegistered()) {
+            registerRule(this);
+        }
+    }
+
+    @Override
+    public boolean isRegistered() {
+        return rules.containsKey(this.hashcode);
     }
 
     public static void deleteRule(Rule rule) {
