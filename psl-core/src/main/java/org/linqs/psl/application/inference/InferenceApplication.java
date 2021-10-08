@@ -63,6 +63,7 @@ public abstract class InferenceApplication implements ModelApplication {
     protected Reasoner reasoner;
     protected InitialValue initialValue;
 
+    protected boolean skipInference;
     protected boolean normalizeWeights;
     protected boolean relaxHardConstraints;
     protected float relaxationMultiplier;
@@ -85,6 +86,7 @@ public abstract class InferenceApplication implements ModelApplication {
         this.atomsCommitted = false;
 
         this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
+        this.skipInference = Options.INFERENCE_SKIP_INFERENCE.getBoolean();
         this.normalizeWeights = Options.INFERENCE_NORMALIZE_WEIGHTS.getBoolean();
         this.relaxHardConstraints = relaxHardConstraints;
         this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getFloat();
@@ -191,6 +193,11 @@ public abstract class InferenceApplication implements ModelApplication {
             if (termStore != null) {
                 termStore.reset();
             }
+        }
+
+        if (skipInference) {
+            log.info("Skipping inference.");
+            return -1.0;
         }
 
         TrainingMap trainingMap = null;

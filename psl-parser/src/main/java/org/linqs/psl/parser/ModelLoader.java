@@ -54,6 +54,7 @@ import org.linqs.psl.parser.antlr.PSLBaseVisitor;
 import org.linqs.psl.parser.antlr.PSLLexer;
 import org.linqs.psl.parser.antlr.PSLParser;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleExpressionContext;
+import org.linqs.psl.parser.antlr.PSLParser.ArithmeticCoefficientOperandAtomContext;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticCoefficientOperandContext;
 import org.linqs.psl.parser.antlr.PSLParser.ArithmeticRuleRelationContext;
 import org.linqs.psl.parser.antlr.PSLParser.AtomContext;
@@ -566,6 +567,16 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     }
 
     @Override
+    public SummationAtomOrAtom visitArithmeticCoefficientOperandAtom(ArithmeticCoefficientOperandAtomContext ctx) {
+        // Must be a parenthesis expression.
+        if (ctx.getChildCount() == 3) {
+            return visitArithmeticCoefficientOperandAtom((ArithmeticCoefficientOperandAtomContext)ctx.getChild(1));
+        }
+
+        return (SummationAtomOrAtom)visit(ctx.getChild(0));
+    }
+
+    @Override
     public SummationAtomOrAtom visitSummationAtom(SummationAtomContext ctx) {
         Predicate predicate = visitPredicate(ctx.predicate());
 
@@ -779,24 +790,19 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
                 args[i] = (Term) visit(ctx.term(i));
             }
             return new QueryAtom(predicate, args);
-        }
-        else if (ctx.termOperator() != null) {
+        } else if (ctx.termOperator() != null) {
             GroundingOnlyPredicate predicate;
             if (ctx.termOperator().notEqual() != null) {
                 predicate = GroundingOnlyPredicate.NotEqual;
-            }
-            else if (ctx.termOperator().termEqual() != null) {
+            } else if (ctx.termOperator().termEqual() != null) {
                 predicate = GroundingOnlyPredicate.Equal;
-            }
-            else if (ctx.termOperator().nonSymmetric() != null) {
+            } else if (ctx.termOperator().nonSymmetric() != null) {
                 predicate = GroundingOnlyPredicate.NonSymmetric;
-            }
-            else {
+            } else {
                 throw new IllegalStateException();
             }
-            return new QueryAtom(predicate, (Term) visit(ctx.term(0)), (Term) visit(ctx.term(1)));
-        }
-        else {
+            return new QueryAtom(predicate, (Term)visit(ctx.term(0)), (Term)visit(ctx.term(1)));
+        } else {
             throw new IllegalStateException();
         }
     }

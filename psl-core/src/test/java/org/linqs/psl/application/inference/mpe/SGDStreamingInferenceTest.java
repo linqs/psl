@@ -48,13 +48,9 @@ public class SGDStreamingInferenceTest extends InferenceTest {
 
     @Override
     public void initialValueTest() {
-        // TODO(CAD): This test is flaky.
-        if (1 == 1) {
-            return;
-        }
-
         // SGD Non-coordinate step.
-        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_LEARNING_RATE.set(1.0);
+        Options.SGD_INVERSE_TIME_EXP.set(0.5);
         Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();
 
@@ -67,7 +63,8 @@ public class SGDStreamingInferenceTest extends InferenceTest {
         // Adam.
         Options.SGD_EXTENSION.set("ADAM");
         // Non-coordinate step.
-        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_LEARNING_RATE.set(1.0);
+        Options.SGD_INVERSE_TIME_EXP.set(0.5);
         Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();
 
@@ -80,7 +77,8 @@ public class SGDStreamingInferenceTest extends InferenceTest {
         // AdaGrad.
         Options.SGD_EXTENSION.set("ADAGRAD");
         // Non-coordinate step.
-        Options.SGD_LEARNING_RATE.set(10.0);
+        Options.SGD_LEARNING_RATE.set(1.0);
+        Options.SGD_INVERSE_TIME_EXP.set(0.5);
         Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();
 
