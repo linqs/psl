@@ -95,7 +95,7 @@ public interface Rule extends Serializable {
     public List<Rule> split();
 
     /**
-     * Ensure that the rule instance is registered.
+     * Check if this rule instance is registered.
      */
     public boolean isRegistered();
 
@@ -105,7 +105,7 @@ public interface Rule extends Serializable {
     public void ensureRegistration();
 
     /**
-     * Ensure that the rule instance is registered.
+     * Ensure that the rule instance is not registered.
      */
     public void unregister();
 }
