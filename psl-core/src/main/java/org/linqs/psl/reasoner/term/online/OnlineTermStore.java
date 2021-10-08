@@ -116,14 +116,12 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     public synchronized void activateRule(Rule rule) {
-        List<Integer> rulePages = rulePageMapping.get(rule);
-        if (rulePages == null) {
+        if (!rules.contains(rule)) {
             // Rule not in model.
             return;
         }
 
-        activatedRules.put(rule, true);
-
+        List<Integer> rulePages = rulePageMapping.get(rule);
         int activePageIndex = 0;
         for (Integer pageIndex : rulePages) {
             activePageIndex = activeTermPages.indexOf(pageIndex);
@@ -132,11 +130,12 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
                 numPages++;
             }
         }
+
+        activatedRules.put(rule, true);
     }
 
     public synchronized void addRule(Rule rule) {
-        List<Integer> rulePages = rulePageMapping.get(rule);
-        if (rulePages != null) {
+        if (rules.contains(rule)) {
             // Rule already exists in model.
             return;
         }
@@ -155,46 +154,37 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     public synchronized void deactivateRule(Rule rule) {
-        List<Integer> rulePages = rulePageMapping.get(rule);
-        if (rulePages == null) {
+        if (!rules.contains(rule)) {
             // Rule does not exist in model.
             return;
         }
 
+        removeActiveTermPages(rule);
         activatedRules.put(rule, false);
-
-        int activePageIndex = 0;
-        for (Integer i : rulePages) {
-            activePageIndex = activeTermPages.indexOf(i);
-            if (activePageIndex != -1) {
-                activeTermPages.remove(activePageIndex);
-                numPages--;
-            }
-        }
     }
 
-    public synchronized boolean deleteRule(Rule rule) {
-        List<Integer> rulePages = rulePageMapping.get(rule);
-        if (rulePages == null) {
+    public synchronized void deleteRule(Rule rule) {
+        if (!rules.contains(rule)) {
             // Rule does not exist in model.
-            return false;
+            return;
         }
 
-        // Delete rule from rule set.
+        removeActiveTermPages(rule);
         rules.remove(rule);
         activatedRules.remove(rule);
         rulePageMapping.remove(rule);
+    }
 
+    private void removeActiveTermPages(Rule rule) {
+        List<Integer> rulePages = rulePageMapping.get(rule);
         int activePageIndex = 0;
-        for (Integer i : rulePages) {
-            activePageIndex = activeTermPages.indexOf(i);
+        for (Integer pageIndex : rulePages) {
+            activePageIndex = activeTermPages.indexOf(pageIndex);
             if (activePageIndex != -1) {
                 activeTermPages.remove(activePageIndex);
-                // The numPages variable represents the number of active pages in OnlineTermStores.
                 numPages--;
             }
         }
-        return true;
     }
 
     public abstract StreamingIterator<T> getGroundingIterator(List<Rule> rules);
