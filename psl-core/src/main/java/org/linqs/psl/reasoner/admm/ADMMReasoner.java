@@ -17,7 +17,10 @@
  */
 package org.linqs.psl.reasoner.admm;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
@@ -31,6 +34,9 @@ import org.linqs.psl.util.Parallel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
@@ -100,7 +106,8 @@ public class ADMMReasoner extends Reasoner {
     }
 
     @Override
-    public double optimize(TermStore baseTermStore) {
+    public double optimize(TermStore baseTermStore,
+            List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
         if (!(baseTermStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -143,11 +150,16 @@ public class ADMMReasoner extends Reasoner {
             lagrangePenalty = 0.0f;
             augmentedLagrangePenalty = 0.0f;
 
+            boolean useNonConvex = false;
+            if ((iteration >= nonconvexPeriod) && (iteration % nonconvexPeriod < nonconvexRounds)) {
+                useNonConvex = true;
+            }
+
             // Minimize all the terms.
-            Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
+            Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize, useNonConvex));
 
             // Compute new consensus values and residuals.
-            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize));
+            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize, useNonConvex));
 
             primalRes = Math.sqrt(primalRes);
             dualRes = stepSize * Math.sqrt(dualRes);
@@ -169,6 +181,8 @@ public class ADMMReasoner extends Reasoner {
                             iteration, objective.objective, (objective.violatedConstraints == 0),
                             primalRes, dualRes, epsilonPrimal, epsilonDual);
                 }
+
+                evaluate(termStore, iteration, evaluators, trainingMap, evaluationPredicates);
 
                 termStore.iterationComplete();
             }
@@ -268,18 +282,21 @@ public class ADMMReasoner extends Reasoner {
         private final ADMMTermStore termStore;
         private final long blockSize;
         private final float[] consensusValues;
+        private final boolean useNonConvex;
 
-        public TermWorker(ADMMTermStore termStore, long blockSize) {
+        public TermWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
             super();
 
             this.termStore = termStore;
             this.blockSize = blockSize;
+            this.useNonConvex = useNonConvex;
+
             this.consensusValues = termStore.getConsensusValues();
         }
 
         @Override
         public Object clone() {
-            return new TermWorker(termStore, blockSize);
+            return new TermWorker(termStore, blockSize, useNonConvex);
         }
 
         @Override
@@ -294,6 +311,10 @@ public class ADMMReasoner extends Reasoner {
                     break;
                 }
 
+                if (!useNonConvex && !termStore.get(termIndex).isConvex()) {
+                    continue;
+                }
+
                 termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
                 termStore.get(termIndex).minimize(stepSize, consensusValues);
             }
@@ -304,17 +325,20 @@ public class ADMMReasoner extends Reasoner {
         private final ADMMTermStore termStore;
         private final long blockSize;
         private final float[] consensusValues;
+        private final boolean useNonConvex;
 
-        public VariableWorker(ADMMTermStore termStore, long blockSize) {
+        public VariableWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
             super();
 
             this.termStore = termStore;
             this.blockSize = blockSize;
+            this.useNonConvex = useNonConvex;
+
             this.consensusValues = termStore.getConsensusValues();
         }
 
         public Object clone() {
-            return new VariableWorker(termStore, blockSize);
+            return new VariableWorker(termStore, blockSize, useNonConvex);
         }
 
         @Override

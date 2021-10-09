@@ -39,6 +39,9 @@ public class OnlineAtomManager extends PersistedAtomManager {
     private Set<GroundAtom> newObservedAtoms;
     private Set<GroundAtom> newRandomVariableAtoms;
 
+    // Atoms that have been seen and involved in grounding, but changed from the write to read partition.
+    private Set<GroundAtom> observedAtoms;
+
     private InitialValue initialValue;
 
     /**
@@ -54,6 +57,7 @@ public class OnlineAtomManager extends PersistedAtomManager {
         }
 
         newObservedAtoms = new HashSet<GroundAtom>();
+        observedAtoms = new HashSet<GroundAtom>();
         newRandomVariableAtoms = new HashSet<GroundAtom>();
 
         onlineReadPartition = Options.ONLINE_READ_PARTITION.getInt();
@@ -65,8 +69,18 @@ public class OnlineAtomManager extends PersistedAtomManager {
     }
 
     public ObservedAtom addObservedAtom(StandardPredicate predicate, float value, Constant... arguments) {
+        return addObservedAtom(predicate, value, true, arguments);
+    }
+
+    public ObservedAtom addObservedAtom(StandardPredicate predicate, float value, boolean newAtom, Constant... arguments) {
         ObservedAtom atom = db.getCache().instantiateObservedAtom(predicate, arguments, value);
-        newObservedAtoms.add(atom);
+
+        if (newAtom) {
+            newObservedAtoms.add(atom);
+        } else {
+            observedAtoms.add(atom);
+        }
+
         return atom;
     }
 
@@ -130,11 +144,20 @@ public class OnlineAtomManager extends PersistedAtomManager {
     }
 
     /**
+     * Return the existing observed atoms.
+     */
+    public Set<GroundAtom> flushObservedAtoms() {
+        Set<GroundAtom> atoms = observedAtoms;
+        observedAtoms = new HashSet<GroundAtom>();
+        return atoms;
+    }
+
+    /**
      * Return the existing new observed atoms and no longer consider them new.
      */
     public Set<GroundAtom> flushNewObservedAtoms() {
-        Set<GroundAtom> atoms = new HashSet<GroundAtom>(newObservedAtoms);
-        newObservedAtoms.clear();
+        Set<GroundAtom> atoms = newObservedAtoms;
+        newObservedAtoms = new HashSet<GroundAtom>();
         return atoms;
     }
 
@@ -142,8 +165,8 @@ public class OnlineAtomManager extends PersistedAtomManager {
      * Return the existing new random variable atoms and no longer consider them new.
      */
     public Set<GroundAtom> flushNewRandomVariableAtoms() {
-        Set<GroundAtom> atoms = new HashSet<GroundAtom>(newRandomVariableAtoms);
-        newRandomVariableAtoms.clear();
+        Set<GroundAtom> atoms = newRandomVariableAtoms;
+        newRandomVariableAtoms = new HashSet<GroundAtom>();
         return atoms;
     }
 }

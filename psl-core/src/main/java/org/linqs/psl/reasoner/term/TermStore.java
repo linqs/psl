@@ -94,4 +94,11 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
      * Get an iterator over the terms in the store that does not write to disk.
      */
     public Iterator<T> noWriteIterator();
+
+    /**
+     * Ensure that atoms tracked by this term store match the internal representation of those atoms.
+     * Note that atoms not tracked by this term store may not be updated.
+     * @return The RMSE between the tracked atoms and their internal representation.
+     */
+    public abstract double syncAtoms();
 }

@@ -17,13 +17,16 @@
  */
 package org.linqs.psl.application.inference.mpe;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.LazyAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.GroundRules;
 import org.linqs.psl.grounding.Grounding;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
@@ -33,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Performs MPE inference (see MPEInference), but does not require all ground atoms to be
@@ -65,7 +69,7 @@ public class LazyMPEInference extends MPEInference {
     }
 
     @Override
-    protected double internalInference() {
+    protected double internalInference(List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
         LazyAtomManager lazyAtomManager = (LazyAtomManager)atomManager;
         // Performs rounds of inference until the ground model stops growing.
         int rounds = 0;
@@ -86,7 +90,7 @@ public class LazyMPEInference extends MPEInference {
             log.debug("Generated {} objective terms from {} ground rules.", termCount, groundRuleStore.size());
 
             log.info("Beginning inference round {}.", rounds);
-            objective = reasoner.optimize(termStore);
+            objective = reasoner.optimize(termStore, evaluators, trainingMap, evaluationPredicates);
             log.info("Inference round {} complete.", rounds);
 
             numActivated = lazyAtomManager.activateAtoms(rules, groundRuleStore);

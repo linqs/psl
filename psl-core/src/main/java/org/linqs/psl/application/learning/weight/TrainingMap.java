@@ -61,27 +61,27 @@ public class TrainingMap {
     /**
      * The mapping between an RVA and its observed truth atom.
      */
-    private final Map<RandomVariableAtom, ObservedAtom> labelMap;
+    private Map<RandomVariableAtom, ObservedAtom> labelMap;
 
     /**
      * A mapping like the label mapping, but only contains target atoms that are observed.
      */
-    private final Map<ObservedAtom, ObservedAtom> observedMap;
+    private Map<ObservedAtom, ObservedAtom> observedMap;
 
     /**
      * The set of atoms that have no associated observed truth atom.
      */
-    private final List<RandomVariableAtom> latentVariables;
+    private List<RandomVariableAtom> latentVariables;
 
     /**
      * Observed targets that do not have an associated observed truth atom.
      */
-    private final List<ObservedAtom> missingLabels;
+    private List<ObservedAtom> missingLabels;
 
     /**
      * Observed truth atoms that do not have an associated target atom.
      */
-    private final List<ObservedAtom> missingTargets;
+    private List<ObservedAtom> missingTargets;
 
     /**
      * Initializes the training map of RandomVariableAtoms ObservedAtoms.
@@ -214,6 +214,38 @@ public class TrainingMap {
      */
     public Iterable<GroundAtom> getAllTruths() {
         return IteratorUtils.join(labelMap.values(), observedMap.values(), missingTargets);
+    }
+
+    /**
+     * Add a random variable target atom to the trainingMap.
+     */
+    public void addRandomVariableTargetAtom(RandomVariableAtom atom) {
+        int missingTargetIndex = missingTargets.indexOf(atom);
+        if (missingTargetIndex != -1) {
+            ObservedAtom observedAtom = missingTargets.remove(missingTargetIndex);
+            labelMap.put(atom, observedAtom);
+        } else {
+            int latentVariableIndex = latentVariables.indexOf(atom);
+            if (latentVariableIndex == -1) {
+                latentVariables.add(atom);
+            } else {
+                latentVariables.set(latentVariableIndex, atom);
+            }
+        }
+    }
+
+    /**
+     * Delete a random variable atom from trainingMap.
+     */
+    public void deleteAtom(GroundAtom atom) {
+        if (atom instanceof RandomVariableAtom) {
+            labelMap.remove((RandomVariableAtom)atom);
+            latentVariables.remove((RandomVariableAtom)atom);
+        } else {
+            observedMap.remove((ObservedAtom)atom);
+            missingLabels.remove((ObservedAtom)atom);
+            missingTargets.remove((ObservedAtom)atom);
+        }
     }
 
     /**

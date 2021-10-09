@@ -50,12 +50,11 @@ public class SGDOnlineInferenceTest {
     public SGDOnlineInferenceTest() {
         modelInfo = null;
         inferDB = null;
+        onlineInferenceThread = null;
     }
 
     @Before
     public void setup() {
-        cleanup();
-
         Options.SGD_LEARNING_RATE.set(10.0);
 
         modelInfo = TestModel.getModel(true);
@@ -70,10 +69,7 @@ public class SGDOnlineInferenceTest {
 
     @After
     public void cleanup() {
-        if (onlineInferenceThread != null) {
-            onlineInferenceThread.close();
-            onlineInferenceThread = null;
-        }
+        stop();
 
         if (inferDB != null) {
             inferDB.close();
@@ -86,11 +82,11 @@ public class SGDOnlineInferenceTest {
         }
     }
 
-    /**
-     * A test that to see if the inference method is running, accepting client connections, and stopping.
-     */
-    @Test
-    public void baseTest() {
+    protected void stop() {
+        if (onlineInferenceThread == null) {
+            return;
+        }
+
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
 
         Stop stop = new Stop();
@@ -100,6 +96,22 @@ public class SGDOnlineInferenceTest {
         expectedResponses[0] = new ActionStatus(stop, true, "OnlinePSL inference stopped.");
 
         OnlineTest.assertServerResponse(commands, expectedResponses);
+
+        try {
+            onlineInferenceThread.join();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        onlineInferenceThread = null;
+    }
+
+    /**
+     * A test that to see if the inference method is running, accepting client connections, and stopping.
+     */
+    @Test
+    public void baseTest() {
+        stop();
     }
 
     /**
@@ -151,7 +163,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new AddAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 1.0f));
         commands.add(new DeleteAtom("Read", StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
         commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
-        commands.add(new Stop());
+        commands.add(new Exit());
 
         double[] values = {-1.0};
 
@@ -165,7 +177,7 @@ public class SGDOnlineInferenceTest {
         commands.add(new DeleteAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
         commands.add(new QueryAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Alice")}));
         commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
-        commands.add(new Stop());
+        commands.add(new Exit());
 
         values = new double[]{-1.0, -1.0};
 
@@ -173,7 +185,7 @@ public class SGDOnlineInferenceTest {
     }
 
     /**
-     * Make sure that updates issued by client commands are made as expected.
+     * Test that an update to an existing observed atom will change its value to the provided number.
      */
     @Test
     public void testUpdateObservation() {
@@ -181,7 +193,7 @@ public class SGDOnlineInferenceTest {
 
         commands.add(new UpdateObservation(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}, 0.0f));
         commands.add(new QueryAtom(StandardPredicate.get("Nice"), new Constant[]{new UniqueStringID("Alice")}));
-        commands.add(new Stop());
+        commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, new double[]{0.0});
     }
@@ -195,6 +207,7 @@ public class SGDOnlineInferenceTest {
     @Test
     public void testChangeAtomPartition() {
         BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+        double[] values = {0.5};
 
         // Add existing atom with different partition.
         commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
@@ -202,7 +215,29 @@ public class SGDOnlineInferenceTest {
         commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
         commands.add(new Stop());
 
-        double[] values = {0.5};
+        OnlineTest.assertAtomValues(commands, values);
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        // Delete and then Add an atom.
+        commands.add(new DeleteAtom("Write", StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new AddAtom("Read", StandardPredicate.get("Friends"),
+                new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, values);
+
+        // Reset model.
+        cleanup();
+        setup();
+
+        // Observe atom.
+        commands.add(new ObserveAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}, 0.5f));
+        commands.add(new QueryAtom(StandardPredicate.get("Friends"), new Constant[]{new UniqueStringID("Alice"), new UniqueStringID("Bob")}));
+        commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, values);
 
@@ -240,7 +275,7 @@ public class SGDOnlineInferenceTest {
 
         @Override
         public void run() {
-            onlineInference.inference();
+            onlineInference.inference(false, false);
         }
 
         public void close() {

@@ -54,6 +54,16 @@ public class ModelPredicate extends StandardPredicate {
         return true;
     }
 
+    @Override
+    public void close() {
+        super.close();
+
+        if (model != null) {
+            model.close();
+            model = null;
+        }
+    }
+
     /**
      * Load a supporting model.
      * If any relative paths are supplied in the config, |relativeDir| can be used to resilve them.
@@ -119,6 +129,14 @@ public class ModelPredicate extends StandardPredicate {
         log.trace("Fitting {} ({}).", this, model);
         model.fit();
         log.trace("Done fitting {} ({}).", this, model);
+    }
+
+    public void initialFit() {
+        checkModel();
+
+        log.trace("Initial fitting {} ({}).", this, model);
+        model.initialFit();
+        log.trace("Done initial fitting {} ({}).", this, model);
     }
 
     private void checkModel() {

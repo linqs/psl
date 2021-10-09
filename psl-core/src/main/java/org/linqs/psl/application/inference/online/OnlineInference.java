@@ -29,13 +29,17 @@ import org.linqs.psl.application.inference.online.messages.actions.model.QueryAt
 import org.linqs.psl.application.inference.online.messages.actions.model.UpdateObservation;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.StringUtils;
 
@@ -43,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 public abstract class OnlineInference extends InferenceApplication {
     private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
@@ -51,6 +56,11 @@ public abstract class OnlineInference extends InferenceApplication {
     private boolean modelUpdates;
     private boolean stopped;
     private double objective;
+
+    // Optional evaluation resources.
+    private List<Evaluator> evaluators;
+    private TrainingMap trainingMap;
+    private Set<StandardPredicate> evaluationPredicates;
 
     protected OnlineInference(List<Rule> rules, Database database) {
         super(rules, database);
@@ -65,6 +75,10 @@ public abstract class OnlineInference extends InferenceApplication {
         stopped = false;
         modelUpdates = true;
         objective = 0.0;
+
+        evaluators = null;
+        trainingMap = null;
+        evaluationPredicates = null;
 
         startServer();
 
@@ -129,7 +143,7 @@ public abstract class OnlineInference extends InferenceApplication {
         GroundAtom atom = null;
 
         if (atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
-            atom = ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
+            deleteAtom(action.getPredicate(), action.getArguments());
             ((OnlineTermStore)termStore).deleteLocalVariable(atom);
         }
 
@@ -137,6 +151,10 @@ public abstract class OnlineInference extends InferenceApplication {
             atom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), action.getArguments());
         } else {
             atom = ((OnlineAtomManager)atomManager).addRandomVariableAtom(action.getPredicate(), action.getValue(), action.getArguments());
+
+            if (trainingMap != null) {
+                trainingMap.addRandomVariableTargetAtom((RandomVariableAtom)atom);
+            }
         }
 
         ((OnlineTermStore)termStore).createLocalVariable(atom);
@@ -151,7 +169,7 @@ public abstract class OnlineInference extends InferenceApplication {
                     action.getPredicate(), StringUtils.join(", ", action.getArguments()));
         }
 
-        GroundAtom atom = ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
+        GroundAtom atom = deleteAtom(action.getPredicate(), action.getArguments());
         ((OnlineTermStore)termStore).deleteLocalVariable(atom);
 
         modelUpdates = true;
@@ -171,8 +189,9 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         // Delete then create atom with same predicates and arguments as the random variable atom.
-        ((OnlineAtomManager)atomManager).deleteAtom(action.getPredicate(), action.getArguments());
-        ObservedAtom observedAtom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), action.getArguments());
+        deleteAtom(action.getPredicate(), action.getArguments());
+
+        ObservedAtom observedAtom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), false, action.getArguments());
         ((OnlineTermStore)termStore).updateLocalVariable(observedAtom, action.getValue());
 
         modelUpdates = true;
@@ -222,11 +241,11 @@ public abstract class OnlineInference extends InferenceApplication {
 
         if (action.getOutputDirectoryPath() != null) {
             log.info("Writing inferred predicates to file: " + action.getOutputDirectoryPath());
-            db.outputRandomVariableAtoms(action.getOutputDirectoryPath());
+            database.outputRandomVariableAtoms(action.getOutputDirectoryPath());
             response = "Wrote inferred predicates to file: " + action.getOutputDirectoryPath();
         } else {
             log.info("Writing inferred predicates to output stream.");
-            db.outputRandomVariableAtoms();
+            database.outputRandomVariableAtoms();
             response = "Wrote inferred predicates to output stream.";
         }
 
@@ -244,6 +263,23 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     /**
+     * Delete atom from the database and training map but do not delete from the term store.
+     */
+    private GroundAtom deleteAtom(StandardPredicate predicate, Constant[] arguments) {
+        GroundAtom atom = ((OnlineAtomManager)atomManager).deleteAtom(predicate, arguments);
+
+        if (atom == null) {
+            return null;
+        }
+
+        if (trainingMap != null) {
+            trainingMap.deleteAtom(atom);
+        }
+
+        return atom;
+    }
+
+    /**
      * Optimize if there were any modelUpdates since the last optimization.
      */
     private void optimize() {
@@ -252,14 +288,18 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         log.trace("Optimization Start");
-        objective = reasoner.optimize(termStore);
+        objective = reasoner.optimize(termStore, evaluators, trainingMap, evaluationPredicates);
         log.trace("Optimization End");
 
         modelUpdates = false;
     }
 
     @Override
-    public double internalInference() {
+    public double internalInference(List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
+        this.evaluators = evaluators;
+        this.trainingMap = trainingMap;
+        this.evaluationPredicates = evaluationPredicates;
+
         // Initial round of inference.
         optimize();
 

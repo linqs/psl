@@ -19,6 +19,7 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -53,6 +54,7 @@ import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -171,13 +173,17 @@ public class Launcher {
      * Run inference.
      * The caller is responsible for closing the database.
      */
-    private Database runInference(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String inferenceName) {
+    private Database runInference(Model model, DataStore dataStore,
+            Set<StandardPredicate> closedPredicates, String inferenceName,
+            List<Evaluator> evaluators) {
         log.info("Starting inference with class: {}", inferenceName);
 
         // Create database.
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+        Database truthDatabase = null;
 
         InferenceApplication inferenceApplication =
                 InferenceApplication.getInferenceApplication(inferenceName, model.getRules(), database);
@@ -189,7 +195,16 @@ public class Launcher {
 
         boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
 
-        inferenceApplication.inference(commitAtoms, false);
+        // If we are going to evaluate during inference, we need to construct the truth database.
+        if (Options.REASONER_EVALUATE.getBoolean()) {
+            truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+        }
+
+        inferenceApplication.inference(commitAtoms, false, evaluators, truthDatabase);
+
+        if (truthDatabase != null) {
+            truthDatabase.close();
+        }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
@@ -267,10 +282,10 @@ public class Launcher {
 
     /**
      * Run eval.
-     * @param predictionDatabase can be passed in to speed up evaluation. If null, one will be created and closed internally.
      */
-    private void evaluation(DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates, String evalClassName) {
-        log.info("Starting evaluation with class: {}.", evalClassName);
+    private void evaluation(DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates,
+            List<Evaluator> evaluators) {
+        log.info("Starting evaluation.");
 
         // Set of open predicates
         Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
@@ -289,23 +304,27 @@ public class Launcher {
 
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        Evaluator evaluator = (Evaluator)Reflection.newObject(evalClassName);
+        for (Evaluator evaluator : evaluators) {
+            log.debug("Starting evaluation with class: {}.", evaluator.getClass());
 
-        for (StandardPredicate targetPredicate : openPredicates) {
-            // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
-            if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
-                log.info("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
-                continue;
+            for (StandardPredicate targetPredicate : openPredicates) {
+                // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
+                if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
+                    log.debug("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
+                    continue;
+                }
+
+                evaluator.compute(predictionDatabase, truthDatabase, targetPredicate, !closePredictionDB);
+                log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
             }
-
-            evaluator.compute(predictionDatabase, truthDatabase, targetPredicate, !closePredictionDB);
-            log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
         }
 
         if (closePredictionDB) {
             predictionDatabase.close();
         }
         truthDatabase.close();
+
+        log.info("Evaluation complete.");
     }
 
     private Model loadModel() {
@@ -339,10 +358,21 @@ public class Launcher {
         // Load model
         Model model = loadModel();
 
+        // Initialize evaluators.
+        List<Evaluator> evaluators = null;
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
+            evaluators = new ArrayList<Evaluator>();
+            for (String evalClassName : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
+                evaluators.add((Evaluator)Reflection.newObject(evalClassName));
+            }
+        }
+
         // Inference
         Database evalDB = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
-            evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
+            evalDB = runInference(model, dataStore, closedPredicates,
+                    parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA),
+                    evaluators);
         } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
             learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
         } else {
@@ -350,12 +380,8 @@ public class Launcher {
         }
 
         // Evaluation
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-            for (String evaluator : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-                evaluation(dataStore, evalDB, closedPredicates, evaluator);
-            }
-
-            log.info("Evaluation complete.");
+        if (evaluators != null) {
+            evaluation(dataStore, evalDB, closedPredicates, evaluators);
         }
 
         if (evalDB != null) {

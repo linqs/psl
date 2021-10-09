@@ -1,0 +1,205 @@
+# The primary workflow that handles building, testing, and deploying.
+
+name: Main
+
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'CANARY-[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build-test:
+
+    runs-on: ubuntu-20.04
+
+    services:
+      postgres:
+        image: postgres:13.4-buster
+        env:
+          POSTGRES_USER: runner  # Github runner default.
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: psltest
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Needs to be deep enough to hit the last tagged version.
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: adopt
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - name: Cache Maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
+      - name: Cache Python Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+
+      - name: Python Dependencies
+        run: |
+          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/optional_requirements.txt
+
+      - name: Build with Maven
+        run: mvn integration-test -B -P all-modules
+
+      - name: Archive Build
+        run: tar cvf psl.tar */target
+
+      - name: Upload Archived Build
+        uses: actions/upload-artifact@v2
+        with:
+            name: psl
+            path: psl.tar
+
+  style-lint:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Needs to be deep enough to hit the last tagged version.
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: adopt
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - name: Cache Maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
+      - name: Cache Python Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+
+      - name: Python Dependencies
+        run: |
+          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/optional_requirements.txt
+
+      - name: Style and Lint
+        run: ./.ci/style-and-lint.sh
+
+  deploy:
+
+    needs: [build-test, style-lint]
+
+    runs-on: ubuntu-20.04
+
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/')) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Needs to be deep enough to hit the last tagged version.
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: adopt
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - name: Cache Maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
+      - name: Cache Python Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+
+      - name: Python Dependencies
+        run: |
+          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/optional_requirements.txt
+
+      - name: Download Archived Build
+        uses: actions/download-artifact@v2
+        with:
+          name: psl
+          path: ${{ github.workspace }}
+
+      - name: Unpack Archived Build
+        run: tar xvf psl.tar
+
+      - name: Import GPG Key
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_DEPLOY_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_DEPLOY_PASSWORD }}
+
+      - name: Deploy Test Artifacts
+        if: ${{ github.ref == 'refs/heads/develop' }}
+        env:
+          OSSRH_JIRA_USERNAME: ${{ secrets.OSSRH_JIRA_USERNAME }}
+          OSSRH_JIRA_PASSWORD: ${{ secrets.OSSRH_JIRA_PASSWORD }}
+          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+          TWINE_USERNAME: '__token__'
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PSLPYTHON }}
+        run: ./.ci/deploy-test-artifacts.sh
+
+      - name: Deploy Production Artifacts
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        env:
+          OSSRH_JIRA_USERNAME: ${{ secrets.OSSRH_JIRA_USERNAME }}
+          OSSRH_JIRA_PASSWORD: ${{ secrets.OSSRH_JIRA_PASSWORD }}
+          GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+          TWINE_USERNAME: '__token__'
+          TWINE_PASSWORD: ${{ secrets.PYPI_PSLPYTHON }}
+        run: ./.ci/deploy-prod-artifacts.sh
+
+      - name: Deploy API Docs
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        env:
+          LINQS_DEPLOY_TOKEN: ${{ secrets.LINQS_DEPLOY_PASSOWRD }}
+        run: ./.ci/deploy-docs.sh

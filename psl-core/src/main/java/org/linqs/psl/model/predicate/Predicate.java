@@ -92,6 +92,14 @@ public abstract class Predicate implements Serializable {
         return types[position];
     }
 
+    /**
+     * Close the predicate and free related resrouces.
+     * It will be very rare to call this method.
+     * Most predicates stay alive for the duration of PSL's run.
+     */
+    public void close() {
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

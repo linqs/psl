@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 
 /**
  * Utilities for interfacing with files and directories.
@@ -78,6 +79,27 @@ public class FileUtils {
 
     public static InputStreamReader getInputStreamReader(InputStream stream) {
         return new InputStreamReader(stream, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Check if a dirent exists.
+     */
+    public static boolean exists(String path) {
+        return ((new File(path)).exists());
+    }
+
+    /**
+     * Check if a dirent exists and is a file.
+     */
+    public static boolean isFile(String path) {
+        return ((new File(path)).isFile());
+    }
+
+    /**
+     * Check if a dirent exists and is a directory.
+     */
+    public static boolean isDir(String path) {
+        return ((new File(path)).isDirectory());
     }
 
     /**
@@ -140,4 +162,19 @@ public class FileUtils {
         delete(target);
     }
 
+    /**
+     * Construct a path to the given file relative to the data file.
+     * If the given path is absolute, then don't change it.
+     */
+    public static String makePath(String relativeDir, String basePath) {
+        if (basePath == null) {
+            return null;
+        }
+
+        if (Paths.get(basePath).isAbsolute()) {
+            return basePath;
+        }
+
+        return Paths.get(relativeDir, basePath).toString();
+    }
 }
