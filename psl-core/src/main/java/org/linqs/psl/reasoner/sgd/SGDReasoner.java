@@ -124,7 +124,7 @@ public class SGDReasoner extends Reasoner {
         // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
         float[] prevVariableValues = null;
-        // Save and use the variable values with the lowest computed objective
+        // Save and use the variable values with the lowest computed objective.
         double lowestObjective = Double.POSITIVE_INFINITY;
         float[] lowestVariableValues = null;
 
