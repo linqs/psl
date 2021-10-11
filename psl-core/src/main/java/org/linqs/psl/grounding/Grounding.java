@@ -18,6 +18,7 @@
 package org.linqs.psl.grounding;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
@@ -26,6 +27,7 @@ import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.grounding.collective.CandidateQuery;
 import org.linqs.psl.grounding.collective.Containment;
+import org.linqs.psl.grounding.collective.Coverage;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -81,40 +83,23 @@ public class Grounding {
      * Ground all the given rules collectively.
      */
     private static long groundCollective(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        // TODO(eriq): Get from config.
-        int candiatesPerRule = 3;
-
         // Rules that cannot take part in the collective process.
         List<Rule> bypassRules = new ArrayList<Rule>();
-
         List<Rule> collectiveRules = new ArrayList<Rule>(rules.size());
-        List<CandidateQuery> candidates = new ArrayList<CandidateQuery>(rules.size() * candiatesPerRule);
-
-        CandidateGeneration candidateGeneration = null;
-        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)
-                || !(((RDBMSDataStore)atomManager.getDatabase().getDataStore()).getDriver() instanceof PostgreSQLDriver)) {
-            log.warn("Cannot generate query candidates without a PostgreSQL database, grounding will be suboptimal.");
-        } else {
-            candidateGeneration = new CandidateGeneration();
-        }
 
         for (Rule rule : rules) {
-            if (!rule.supportsGroundingQueryRewriting()) {
-                bypassRules.add(rule);
-                continue;
-            }
-            collectiveRules.add(rule);
-
-            if (candidateGeneration != null) {
-                candidateGeneration.generateCandidates(rule, (RDBMSDatabase)atomManager.getDatabase(), candiatesPerRule, candidates);
+            if (rule.supportsGroundingQueryRewriting()) {
+                collectiveRules.add(rule);
             } else {
-                candidates.add(new CandidateQuery(rule, rule.getRewritableGroundingFormula(), 0.0));
+                bypassRules.add(rule);
             }
         }
 
-        long initialSize = groundRuleStore.size();
+        Set<CandidateQuery> candidates = genCandidates(collectiveRules, atomManager.getDatabase());
 
-        List<CandidateQuery> coverage = computeCoverage(collectiveRules, candidates);
+        Set<CandidateQuery> coverage = Coverage.compute(collectiveRules, candidates);
+
+        long initialSize = groundRuleStore.size();
 
         // Ground the bypassed rules.
         groundIndependent(bypassRules, atomManager, groundRuleStore);
@@ -135,38 +120,40 @@ public class Grounding {
         return groundRuleStore.size() - initialSize;
     }
 
-    private static List<CandidateQuery> computeCoverage(List<Rule> collectiveRules, List<CandidateQuery> candidates) {
-        Containment.computeContainement(collectiveRules, candidates);
+    private static Set<CandidateQuery> genCandidates(List<Rule> collectiveRules, Database database) {
+        // TODO(eriq): Get from config.
+        final int candiatesPerRule = 3;
 
-        // TODO(eriq): A smarter solution.
-        // Greedily compute a coverage.
-        Collections.sort(candidates, new Comparator<CandidateQuery>() {
+        Set<CandidateQuery> candidates = Collections.synchronizedSet(new HashSet<CandidateQuery>());
+
+        final CandidateGeneration candidateGeneration;
+        if (!(database instanceof RDBMSDatabase)
+                || !(((RDBMSDataStore)database.getDataStore()).getDriver() instanceof PostgreSQLDriver)) {
+            log.warn("Cannot generate query candidates without a PostgreSQL database, grounding will be suboptimal.");
+            candidateGeneration = null;
+        } else {
+            candidateGeneration = new CandidateGeneration();
+        }
+
+        if (candidateGeneration != null) {
+            for (Rule rule : collectiveRules) {
+                candidates.add(new CandidateQuery(rule, rule.getRewritableGroundingFormula(), 0.0));
+            }
+
+            return candidates;
+        }
+
+        final RDBMSDatabase finalDatabase = (RDBMSDatabase)database;
+        final Set<CandidateQuery> finalCandidates = candidates;
+
+        Parallel.foreach(collectiveRules, new Parallel.Worker<Rule>() {
             @Override
-            public int compare(CandidateQuery a, CandidateQuery b) {
-                return MathUtils.compare(a.getScore(), b.getScore());
+            public void work(long index, Rule rule) {
+                candidateGeneration.generateCandidates(rule, finalDatabase, candiatesPerRule, finalCandidates);
             }
         });
 
-        List<CandidateQuery> coverage = new ArrayList<CandidateQuery>();
-        Set<Rule> usedRules = new HashSet<Rule>();
-
-        for (CandidateQuery candidate : candidates) {
-            if (usedRules.containsAll(candidate.getCoveredRules())) {
-                continue;
-            }
-
-            coverage.add(candidate);
-            usedRules.addAll(candidate.getCoveredRules());
-
-            if (usedRules.size() == collectiveRules.size()) {
-                return coverage;
-            }
-        }
-
-        // This should never happen.
-        throw new IllegalStateException(String.format(
-                "Could not compute coverage. Collective Rules: %s, Candidates: %s, Working Coverage: %s.",
-                collectiveRules, candidates, coverage));
+        return candidates;
     }
 
     /**

@@ -451,7 +451,7 @@ public class PostgreSQLDriver extends DatabaseDriver {
 
     @Override
     public ExplainResult explain(String queryString) {
-        log.trace("Begin EXPLAIN");
+        log.trace("EXPLAIN " + queryString);
 
         queryString = "EXPLAIN (FORMAT JSON) " + queryString;
 
@@ -483,8 +483,7 @@ public class PostgreSQLDriver extends DatabaseDriver {
         double startupCost = plan.getDouble("Startup Cost");
         long rows = plan.getLong("Plan Rows");
 
-        log.debug("Estimated Cost: {}, Startup Cost: {}, Estimated Rows: {}", totalCost, startupCost, rows);
-        log.trace("End EXPLAIN");
+        log.trace("Estimated Cost: {}, Startup Cost: {}, Estimated Rows: {}", totalCost, startupCost, rows);
 
         return new ExplainResult(totalCost, startupCost, rows);
     }

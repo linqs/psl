@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +50,7 @@ public class Containment {
      * Check which rules each candidate contains (can ground for).
      * A large part of checking containment is building a mapping of variables between the two different queries.
      */
-    public static void computeContainement(List<Rule> collectiveRules, List<CandidateQuery> candidates) {
+    public static void computeContainement(List<Rule> collectiveRules, Collection<CandidateQuery> candidates) {
         Map<CandidateQuery, Map<Variable, Set<VariableInstance>>> candidateVariableUsages = new HashMap<CandidateQuery, Map<Variable, Set<VariableInstance>>>();
         Map<CandidateQuery, List<Variable>> candidateVariables = new HashMap<CandidateQuery, List<Variable>>();
 
