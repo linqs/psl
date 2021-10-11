@@ -199,7 +199,7 @@ public class SGDReasoner extends Reasoner {
         if (objective < lowestObjective) {
             lowestIteration = iteration - 1;
             lowestObjective = objective;
-            System.arraycopy(prevVariableValues, 0, lowestVariableValues, 0, lowestVariableValues.length);
+            lowestVariableValues = prevVariableValues;
         }
 
         float[] variableValues = termStore.getVariableValues();
