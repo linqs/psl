@@ -152,7 +152,13 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void completeInitialize() {
         log.info("Grounding out model.");
+
+        // In this configuration, we know that the PAM pre-caches all the atoms (even ones from closed predicates).
+        // So, we can avoid hitting the database when we do not see them in the cache.
+        boolean oldValue = atomManager.queryDBForClosedAtoms(false);
         long groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
+        atomManager.queryDBForClosedAtoms(oldValue);
+
         log.info("Grounding complete.");
 
         log.debug("Initializing objective terms for {} ground rules.", groundCount);

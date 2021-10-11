@@ -321,8 +321,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         short rvaCount = 0;
 
         for (int i = 0; i < literals.size(); i++) {
-            // A GroundingOnlyPredicate is only evaluated during the grounding query,
-            // skip evaluating (and caching) those here.
+            // A GroundingOnlyPredicate have already been evaluated.
             if (literals.get(i).getPredicate() instanceof GroundingOnlyPredicate) {
                 continue;
             }

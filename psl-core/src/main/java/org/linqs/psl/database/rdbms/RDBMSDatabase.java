@@ -469,14 +469,11 @@ public class RDBMSDatabase extends Database {
     }
 
     private GroundAtom getAtom(StandardPredicate predicate, Constant... arguments) {
-        return getAtom(predicate, true, arguments);
+        return getAtom(predicate, true, true, arguments);
     }
 
-    /**
-     * @param create Create an atom if one does not exist.
-     */
     @Override
-    public GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
+    public GroundAtom getAtom(StandardPredicate predicate, boolean create, boolean queryDBForClosedAtoms, Constant... arguments) {
         // Only allocate one QueryAtom per thread.
         QueryAtom queryAtom = null;
         if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
@@ -490,6 +487,10 @@ public class RDBMSDatabase extends Database {
         GroundAtom result = cache.getCachedAtom(queryAtom);
         if (result != null) {
             return result;
+        }
+
+        if (create && !queryDBForClosedAtoms && isClosed(predicate)) {
+            return cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
         }
 
         return fetchAtom(predicate, create, arguments);
@@ -508,7 +509,7 @@ public class RDBMSDatabase extends Database {
             return result;
         }
 
-        if (isClosed((StandardPredicate)predicate)) {
+        if (isClosed(predicate)) {
             result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
         } else {
             result = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);

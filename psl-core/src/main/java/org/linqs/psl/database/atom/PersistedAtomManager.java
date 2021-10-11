@@ -65,6 +65,12 @@ public class PersistedAtomManager extends AtomManager {
 
     protected int persistedAtomCount;
 
+    /**
+     * Whether or not to query the database for atoms from closed predicates.
+     * This being false assumes that all atoms from closed predicates have already been loaded into the cache.
+     */
+    private boolean queryDBForClosedAtoms;
+
     public PersistedAtomManager(Database db) {
         this(db, false);
     }
@@ -85,6 +91,7 @@ public class PersistedAtomManager extends AtomManager {
         warnOnIllegalAccess = !throwOnIllegalAccess;
 
         this.initialValueOnIllegalAccess = initialValueOnIllegalAccess;
+        queryDBForClosedAtoms = true;
 
         if (prebuiltCache) {
             persistedAtomCount = db.getCachedRVACount();
@@ -122,7 +129,7 @@ public class PersistedAtomManager extends AtomManager {
 
                 // If this predicate has a mirror, ensure that the other half of the mirror pair is created.
                 if (predicate.getMirror() != null) {
-                    RandomVariableAtom mirrorAtom = (RandomVariableAtom)db.getAtom(predicate.getMirror(), true, atom.getArguments());
+                    RandomVariableAtom mirrorAtom = (RandomVariableAtom)db.getAtom(predicate.getMirror(), true, true, atom.getArguments());
                     mirrorAtoms.add(mirrorAtom);
 
                     atom.setMirror(mirrorAtom);
@@ -148,7 +155,13 @@ public class PersistedAtomManager extends AtomManager {
     // then they will be responsible for synchronization.
     @Override
     public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
-        GroundAtom atom = db.getAtom(predicate, arguments);
+        GroundAtom atom = null;
+        if (predicate instanceof StandardPredicate) {
+            atom = db.getAtom((StandardPredicate)predicate, true, queryDBForClosedAtoms, arguments);
+        } else {
+            atom = db.getAtom(predicate, arguments);
+        }
+
         if (!(atom instanceof RandomVariableAtom)) {
             return atom;
         }
@@ -179,6 +192,12 @@ public class PersistedAtomManager extends AtomManager {
 
     public int getPersistedCount() {
         return persistedAtomCount;
+    }
+
+    public boolean queryDBForClosedAtoms(boolean queryDBForClosedAtoms) {
+        boolean oldValue = this.queryDBForClosedAtoms;
+        this.queryDBForClosedAtoms = queryDBForClosedAtoms;
+        return oldValue;
     }
 
     public Iterable<RandomVariableAtom> getPersistedRVAtoms() {

@@ -136,10 +136,14 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
         this.cache = new AtomCache(this);
     }
 
-    public abstract GroundAtom getAtom(StandardPredicate predicate, boolean create, Constant... arguments);
+    /**
+     * @param create Create an atom if one does not exist.
+     * @param queryDBForClosed Query the database for atoms from closed predicates not in the cache,
+     */
+    public abstract GroundAtom getAtom(StandardPredicate predicate, boolean create, boolean queryDBForClosed, Constant... arguments);
 
     public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
-        return getAtom(predicate, false, arguments) != null;
+        return getAtom(predicate, false, true, arguments) != null;
     }
 
     public boolean hasCachedAtom(StandardPredicate predicate, Constant... arguments) {
