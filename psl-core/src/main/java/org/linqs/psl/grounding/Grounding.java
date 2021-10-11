@@ -135,7 +135,7 @@ public class Grounding {
             candidateGeneration = new CandidateGeneration();
         }
 
-        if (candidateGeneration != null) {
+        if (candidateGeneration == null) {
             for (Rule rule : collectiveRules) {
                 candidates.add(new CandidateQuery(rule, rule.getRewritableGroundingFormula(), 0.0));
             }
