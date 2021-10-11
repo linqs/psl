@@ -33,6 +33,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.BitUtils;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Reflection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,15 +56,22 @@ import java.util.Set;
 public class CandidateGeneration {
     private static final Logger log = LoggerFactory.getLogger(CandidateGeneration.class);
 
+    public static enum SearchType {
+        BFS,
+        DFS,
+        UCS,
+        Bounded
+    }
+
     // TODO(eriq): Send these to the config.
-    private static final String SEARCH_TYPE = "SearchFringe.BoundedSearchFringe";
-    private static final int SEARCH_BUDGET = 100;
+    private static final String SEARCH_TYPE = SearchType.Bounded.toString();
+    private static final int SEARCH_BUDGET = 7;
     private static final double OPTIMISTIC_QUERY_COST_MULTIPLIER = 0.018;
     private static final double OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0015;
     private static final double PESSIMISTIC_QUERY_COST_MULTIPLIER = 0.020;
     private static final double PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0020;
 
-    private final SearchFringe fringe;
+    private final SearchType searchType;
     private final int budget;
 
     private final double optimisticQueryCostMultiplier;
@@ -71,26 +79,14 @@ public class CandidateGeneration {
     private final double optimisticInstantiationCostMultiplier;
     private final double pessimisticInstantiationCostMultiplier;
 
-    /**
-     * A volitile set of atoms used as a working set.
-     * This is just a buffer and it's use case constantly changes.
-     * Once a process is done with this buffer, they must clear the buffer to indicate it is no longer in-use.
-     */
-    private final Set<Atom> atomBuffer;
-
     public CandidateGeneration() {
-        fringe = new SearchFringe.BoundedSearchFringe();
+        searchType = SearchType.valueOf(SEARCH_TYPE);
         budget = SEARCH_BUDGET;
 
         optimisticQueryCostMultiplier = OPTIMISTIC_QUERY_COST_MULTIPLIER;
         optimisticInstantiationCostMultiplier = OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER;
         pessimisticQueryCostMultiplier = PESSIMISTIC_QUERY_COST_MULTIPLIER;
         pessimisticInstantiationCostMultiplier = PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER;
-
-        // A volitile set of atoms used as a working set.
-        // This is just a buffer and it's use case constantly changes.
-        // Once a procedure is done with this buffer, they should clear it to indicate it is no longer in-use.
-        atomBuffer = new HashSet<Atom>();
     }
 
     /**
@@ -99,7 +95,8 @@ public class CandidateGeneration {
      */
     public void generateCandidates(Rule rule, RDBMSDatabase database,
             int maxResults, Collection<CandidateQuery> results) {
-        search(rule.getRewritableGroundingFormula(), database);
+        SearchFringe fringe = createFringe();
+        search(fringe, rule.getRewritableGroundingFormula(), database);
 
         int count = 0;
         while (fringe.savedSize() > 0 && (maxResults <= 0 || count < maxResults)) {
@@ -114,7 +111,12 @@ public class CandidateGeneration {
     /**
      * Search through the candidates (limited by the budget).
      */
-    private void search(Formula baseFormula, RDBMSDatabase database) {
+    private void search(SearchFringe fringe, Formula baseFormula, RDBMSDatabase database) {
+        // A volitile set of atoms used as a working set.
+        // This is just a buffer and it's use case constantly changes.
+        // Once a procedure is done with this buffer, they should clear it to indicate it is no longer in-use.
+        Set<Atom> atomBuffer = new HashSet<Atom>();
+
         fringe.clear();
 
         // Once validated, we know that the formula is a conjunction or single atom.
@@ -125,8 +127,6 @@ public class CandidateGeneration {
             fringe.push(createNode(1l, baseFormula, 1, database));
             return;
         }
-
-        assert(atomBuffer.isEmpty());
 
         // Get all the atoms used in the base formula.
         baseFormula.getAtoms(atomBuffer);
@@ -157,7 +157,7 @@ public class CandidateGeneration {
         }
 
         // Start with all atoms.
-        CandidateSearchNode rootNode = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, database);
+        CandidateSearchNode rootNode = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, database, atomBuffer);
 
         fringe.push(rootNode);
         seenNodes.add(Long.valueOf(BitUtils.toBitSet(atomBits)));
@@ -187,7 +187,7 @@ public class CandidateGeneration {
                 if ((budget <= 0 || explains <= budget) && !seenNodes.contains(bitId) && bitId.longValue() != 0) {
                     seenNodes.add(bitId);
 
-                    CandidateSearchNode child = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, database);
+                    CandidateSearchNode child = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, database, atomBuffer);
                     if (child != null) {
                         fringe.push(child);
                         explains++;
@@ -212,8 +212,9 @@ public class CandidateGeneration {
      */
     private CandidateSearchNode validateAndCreateNode(boolean[] atomBits, List<Atom> atoms,
             Set<Atom> passthrough, Map<Variable, Set<Atom>> variableUsageMapping,
-            RDBMSDatabase database) {
-        Formula formula = constructFormula(atomBits, atoms, passthrough);
+            RDBMSDatabase database,
+            Set<Atom> atomBuffer) {
+        Formula formula = constructFormula(atomBits, atoms, passthrough, atomBuffer);
 
         // Make sure that all variables are covered.
         for (Map.Entry<Variable, Set<Atom>> entry : variableUsageMapping.entrySet()) {
@@ -258,7 +259,7 @@ public class CandidateGeneration {
      * Construct a formula from the active atoms, and fill atomBuffer with all active (including passthrough) atoms.
      * The caller is responsible for clearing atomBuffer when it is finished with it.
      */
-    private Formula constructFormula(boolean[] atomBits, List<Atom> atoms, Set<Atom> passthrough) {
+    private Formula constructFormula(boolean[] atomBits, List<Atom> atoms, Set<Atom> passthrough, Set<Atom> atomBuffer) {
         assert(atomBuffer.isEmpty());
 
         atomBuffer.addAll(passthrough);
@@ -322,5 +323,20 @@ public class CandidateGeneration {
 
         atoms.removeAll(removeAtoms);
         return passthrough;
+    }
+
+    private SearchFringe createFringe() {
+        switch (searchType) {
+            case BFS:
+                return new SearchFringe.BFSSearchFringe();
+            case DFS:
+                return new SearchFringe.DFSSearchFringe();
+            case UCS:
+                return new SearchFringe.UCSSearchFringe();
+            case Bounded:
+                return new SearchFringe.BoundedSearchFringe();
+            default:
+                throw new IllegalStateException("Unknown search type: " + searchType);
+        }
     }
 }
