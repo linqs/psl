@@ -33,7 +33,7 @@ public class SimpleAtomManager extends AtomManager {
     }
 
     @Override
-    public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+    public GroundAtom getAtom(double trivialValue, Predicate predicate, Constant... arguments) {
         return db.getAtom(predicate, arguments);
     }
 

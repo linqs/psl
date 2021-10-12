@@ -64,9 +64,14 @@ public abstract class AtomManager {
      *
      * @param predicate the Predicate of the Atom
      * @param arguments the GroundTerms of the Atom
+     * @param trivialValue the database may use this value to skipinstantiating an observed atom.
      * @return the Atom
      */
-    public abstract GroundAtom getAtom(Predicate predicate, Constant... arguments);
+    public abstract GroundAtom getAtom(double trivialValue, Predicate predicate, Constant... arguments);
+
+    public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+        return getAtom(-1.0, predicate, arguments);
+    }
 
     /**
      * Calls {@link Database#executeQuery(DatabaseQuery)} on the

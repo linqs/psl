@@ -137,13 +137,19 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
     }
 
     /**
+     * The full version of getAtom().
+     * This version includes more detailed options on what how/when to create an atom.
+     *
      * @param create Create an atom if one does not exist.
      * @param queryDBForClosed Query the database for atoms from closed predicates not in the cache,
+     * @param trivialValue Do not create observed atoms that would have this value (just return null).
      */
-    public abstract GroundAtom getAtom(StandardPredicate predicate, boolean create, boolean queryDBForClosed, Constant... arguments);
+    public abstract GroundAtom getAtom(StandardPredicate predicate,
+            boolean create, boolean queryDBForClosed, double trivialValue,
+            Constant... arguments);
 
     public boolean hasAtom(StandardPredicate predicate, Constant... arguments) {
-        return getAtom(predicate, false, true, arguments) != null;
+        return getAtom(predicate, false, true, -1.0, arguments) != null;
     }
 
     public boolean hasCachedAtom(StandardPredicate predicate, Constant... arguments) {

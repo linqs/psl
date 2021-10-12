@@ -129,7 +129,7 @@ public class PersistedAtomManager extends AtomManager {
 
                 // If this predicate has a mirror, ensure that the other half of the mirror pair is created.
                 if (predicate.getMirror() != null) {
-                    RandomVariableAtom mirrorAtom = (RandomVariableAtom)db.getAtom(predicate.getMirror(), true, true, atom.getArguments());
+                    RandomVariableAtom mirrorAtom = (RandomVariableAtom)db.getAtom(predicate.getMirror(), true, true, -1.0, atom.getArguments());
                     mirrorAtoms.add(mirrorAtom);
 
                     atom.setMirror(mirrorAtom);
@@ -154,12 +154,16 @@ public class PersistedAtomManager extends AtomManager {
     // This method is currently threadsafe, but if child classes edit the persisted cache,
     // then they will be responsible for synchronization.
     @Override
-    public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+    public GroundAtom getAtom(double trivialValue, Predicate predicate, Constant... arguments) {
         GroundAtom atom = null;
         if (predicate instanceof StandardPredicate) {
-            atom = db.getAtom((StandardPredicate)predicate, true, queryDBForClosedAtoms, arguments);
+            atom = db.getAtom((StandardPredicate)predicate, true, queryDBForClosedAtoms, trivialValue, arguments);
         } else {
             atom = db.getAtom(predicate, arguments);
+        }
+
+        if (atom == null) {
+            return null;
         }
 
         if (!(atom instanceof RandomVariableAtom)) {

@@ -326,7 +326,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                 continue;
             }
 
-            atom = ((QueryAtom)literals.get(i)).ground(atomManager, row, variableMap, argumentBuffer[i]);
+            atom = ((QueryAtom)literals.get(i)).ground(atomManager, row, variableMap, argumentBuffer[i], trivialValue);
             if (atom == null) {
                 return -1;
             }

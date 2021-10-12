@@ -62,7 +62,7 @@ public class LazyAtomManager extends PersistedAtomManager {
     }
 
     @Override
-    public synchronized GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+    public synchronized GroundAtom getAtom(double trivialValue, Predicate predicate, Constant... arguments) {
         GroundAtom atom = db.getAtom(predicate, arguments);
         if (!(atom instanceof RandomVariableAtom)) {
             return atom;

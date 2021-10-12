@@ -51,7 +51,7 @@ public class QueryAtom extends Atom {
     }
 
     public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex) {
-        return ground(atomManager, res, resultIndex, new Constant[arguments.length]);
+        return ground(atomManager, res, resultIndex, new Constant[arguments.length], -1.0);
     }
 
     /**
@@ -59,11 +59,11 @@ public class QueryAtom extends Atom {
      * The buffer cannot be held as member datum or statically for thread-safety.
      * It is up to the caller to make sure the buffer is only used on this thread.
      */
-    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs) {
-        return ground(atomManager, res, resultIndex, newArgs, false);
+    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs, double trivialValue) {
+        return ground(atomManager, res, resultIndex, newArgs, trivialValue, false);
     }
 
-    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs, boolean checkDBCache) {
+    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs, double trivialValue, boolean checkDBCache) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
@@ -80,18 +80,18 @@ public class QueryAtom extends Atom {
             }
         }
 
-        return atomManager.getAtom(predicate, newArgs);
+        return atomManager.getAtom(trivialValue, predicate, newArgs);
     }
 
     public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap) {
-        return ground(atomManager, queryResults, projectionMap, new Constant[arguments.length]);
+        return ground(atomManager, queryResults, projectionMap, new Constant[arguments.length], -1.0);
     }
 
-    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs) {
-        return ground(atomManager, queryResults, projectionMap, newArgs, false);
+    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, double trivialValue) {
+        return ground(atomManager, queryResults, projectionMap, newArgs, trivialValue, false);
     }
 
-    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, boolean checkDBCache) {
+    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, double trivialValue, boolean checkDBCache) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = queryResults[projectionMap.get((Variable)arguments[i]).intValue()];
@@ -108,7 +108,7 @@ public class QueryAtom extends Atom {
             }
         }
 
-        return atomManager.getAtom(predicate, newArgs);
+        return atomManager.getAtom(trivialValue, predicate, newArgs);
     }
 
     public VariableTypeMap collectVariables(VariableTypeMap varMap) {

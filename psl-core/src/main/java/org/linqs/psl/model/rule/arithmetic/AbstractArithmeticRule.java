@@ -353,7 +353,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             }
 
             GroundAtom groundAtom = resources.queryAtoms.get(atomIndex).ground(
-                    atomManager, queryRow, variableMap, resources.argumentBuffer[atomIndex]);
+                    atomManager, queryRow, variableMap, resources.argumentBuffer[atomIndex], -1.0);
             if (groundAtom == null) {
                 return;
             }
@@ -446,7 +446,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
             // Check the DB cache for summation atoms.
             GroundAtom groundAtom = resources.queryAtoms.get(atomIndex).ground(
-                    atomManager, queryRow, variableMap, resources.argumentBuffer[atomIndex], checkDatabase);
+                    atomManager, queryRow, variableMap, resources.argumentBuffer[atomIndex], -1.0, checkDatabase);
 
             // This atom does not exist in the DB cache, skip it.
             // Non-summation atoms will throw an access exception in this case.

@@ -104,7 +104,7 @@ public class TrainingMap {
             // Note that we do not want to query the database or create a non-existent atom.
             GroundAtom truthAtom = null;
             if (truthDatabase.hasCachedAtom((StandardPredicate)targetAtom.getPredicate(), targetAtom.getArguments())) {
-                truthAtom = truthDatabase.getAtom((StandardPredicate)targetAtom.getPredicate(), false, false, targetAtom.getArguments());
+                truthAtom = truthDatabase.getAtom((StandardPredicate)targetAtom.getPredicate(), false, false, -1.0, targetAtom.getArguments());
             }
 
             // Skip any truth atom that is not observed.

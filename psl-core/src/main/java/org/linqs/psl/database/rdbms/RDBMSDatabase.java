@@ -41,6 +41,7 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import org.slf4j.Logger;
@@ -469,11 +470,13 @@ public class RDBMSDatabase extends Database {
     }
 
     private GroundAtom getAtom(StandardPredicate predicate, Constant... arguments) {
-        return getAtom(predicate, true, true, arguments);
+        return getAtom(predicate, true, true, -1.0, arguments);
     }
 
     @Override
-    public GroundAtom getAtom(StandardPredicate predicate, boolean create, boolean queryDBForClosedAtoms, Constant... arguments) {
+    public GroundAtom getAtom(StandardPredicate predicate,
+            boolean create, boolean queryDBForClosedAtoms, double trivialValue,
+            Constant... arguments) {
         // Only allocate one QueryAtom per thread.
         QueryAtom queryAtom = null;
         if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
@@ -490,6 +493,10 @@ public class RDBMSDatabase extends Database {
         }
 
         if (create && !queryDBForClosedAtoms && isClosed(predicate)) {
+            if (MathUtils.equals(trivialValue, DEFAULT_UNOBSERVED_VALUE)) {
+                return null;
+            }
+
             return cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
         }
 
