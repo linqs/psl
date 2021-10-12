@@ -49,7 +49,7 @@ public final class Parallel {
     // Defer assignment until a request is actually made to let the config get initialized.
     private static int numThreads = -1;
 
-    // Block putting work intot he pool until there are workers ready.
+    // Block putting work in to the pool until there are workers ready.
     private static BlockingQueue<Worker<?>> workerQueue;
 
     // Keep all the workers somewhere we can reference them.
@@ -101,6 +101,7 @@ public final class Parallel {
      * Count and call a worker with each number in [start, end).
      * Inclusive with start, exclusive with end.
      * The caller is trusted to provide appropriate numbers.
+     * The long value provided to the worker will be the number also passed as a Long.
      */
     public synchronized static RunTimings count(long start, long end, long increment, Worker<Long> baseWorker) {
         initWorkers(baseWorker);
@@ -174,6 +175,7 @@ public final class Parallel {
 
     /**
      * Invoke a worker once for each item.
+     * The long value provided to the worker will be the index of the piece of work.
      */
     public synchronized static <T> RunTimings foreach(Iterable<T> work, Worker<T> baseWorker) {
         initWorkers(baseWorker);
@@ -213,6 +215,96 @@ public final class Parallel {
             @SuppressWarnings("unchecked")
             Worker<T> typedWorker = (Worker<T>)worker;
             typedWorker.setWork(count, job);
+            pool.execute(typedWorker);
+
+            count++;
+        }
+
+        // As workers finish, they will be added to the queue.
+        // We can wait for all the workers by emptying out the queue.
+        for (int i = 0; i < numThreads; i++) {
+            try {
+                long time = System.currentTimeMillis();
+                Worker<?> worker = workerQueue.take();
+                parentWaitTimeMS += (System.currentTimeMillis() - time);
+
+                workerWaitTimeMS += worker.getWaitTime();
+                workerWorkTimeMS += worker.getWorkTime();
+
+                if (worker.getException() != null) {
+                    throw new RuntimeException("Exception on worker.", worker.getException());
+                }
+            } catch (InterruptedException ex) {
+                throw new RuntimeException("Interrupted waiting for worker (" + i + ").");
+            }
+        }
+
+        return new RunTimings(iterations, parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
+    }
+
+    /**
+     * Invoke a worker once for each batch of items.
+     * This is like foreach() but instead of passing a single item,
+     * the parent thread will collect several items and pass those items together to the worker.
+     * This works well when there are many small computations that need to be done.
+     * The long value passed to the worker will be the number of items in the batch.
+     */
+    public static <T> RunTimings foreachBatch(Iterator<T> work, int batchSize, Worker<List<T>> baseWorker) {
+        initWorkers(baseWorker);
+        RunTimings timings = foreachBatchInternal(work, batchSize);
+        cleanupWorkers();
+
+        return timings;
+    }
+
+    public synchronized static <T> RunTimings foreachBatch(Iterable<T> work, int batchSize, Worker<List<T>> baseWorker) {
+        return foreachBatch(work.iterator(), batchSize, baseWorker);
+    }
+
+    private static <T> RunTimings foreachBatchInternal(Iterator<T> work, int batchSize) {
+        long iterations = 0;
+        long parentWaitTimeMS = 0;
+        long workerWaitTimeMS = 0;
+        long workerWorkTimeMS = 0;
+
+        List<List<T>> batches = new ArrayList<List<T>>(numThreads);
+        for (int i = 0; i < numThreads; i++) {
+            batches.add(new ArrayList<T>(batchSize));
+        }
+
+        long count = 0;
+        while (work.hasNext()) {
+            Worker<?> worker = null;
+            try {
+                // Will block if no workers are ready.
+                long time = System.currentTimeMillis();
+                worker = workerQueue.take();
+                parentWaitTimeMS += (System.currentTimeMillis() - time);
+                iterations++;
+            } catch (InterruptedException ex) {
+                throw new RuntimeException("Interrupted waiting for worker (" + count + ").");
+            }
+
+            if (worker.getException() != null) {
+                throw new RuntimeException("Exception on worker.", worker.getException());
+            }
+
+            List<T> batch = batches.get(worker.getID());
+            batch.clear();
+            long currentBatchSize = 0;
+
+            for (int i = 0; i < batchSize; i++) {
+                if (!work.hasNext()) {
+                    break;
+                }
+
+                batch.add(work.next());
+                currentBatchSize++;
+            }
+
+            @SuppressWarnings("unchecked")
+            Worker<List<T>> typedWorker = (Worker<List<T>>)worker;
+            typedWorker.setWork(currentBatchSize, batch);
             pool.execute(typedWorker);
 
             count++;
@@ -333,7 +425,7 @@ public final class Parallel {
     public static abstract class Worker<T> implements Runnable, Cloneable {
         protected int id;
 
-        private long index;
+        private long value;
         private long waitTimeMS;
         private long workTimeMS;
         private T item;
@@ -341,7 +433,7 @@ public final class Parallel {
 
         public Worker() {
             this.id = -1;
-            this.index = -1;
+            this.value = -1;
             this.waitTimeMS = 0;
             this.workTimeMS = 0;
             this.item = null;
@@ -370,9 +462,14 @@ public final class Parallel {
         /**
          * Called before any work is given.
          * The id will be unique to this worker for this batch of work.
+         * The id is guarenteed to be in [0, numThreads).
          */
         public void init(int id) {
             this.id = id;
+        }
+
+        public int getID() {
+            return id;
         }
 
         public void clearException() {
@@ -394,19 +491,19 @@ public final class Parallel {
         @Override
         public final void run() {
             try {
-                if (index == -1) {
+                if (value == -1) {
                     log.warn("Called run() without first calling setWork().");
                     return;
                 }
 
                 long time = System.currentTimeMillis();
-                work(index, item);
+                work(value, item);
                 workTimeMS += (System.currentTimeMillis() - time);
             } catch (Exception ex) {
                 log.warn("Caught exception on worker: {}", id);
                 exception = ex;
             } finally {
-                index = -1;
+                value = -1;
                 item = null;
 
                 long time = System.currentTimeMillis();
@@ -415,16 +512,18 @@ public final class Parallel {
             }
         }
 
-        public final void setWork(long index, T item) {
-            this.index = index;
+        public final void setWork(long value, T item) {
+            this.value = value;
             this.item = item;
         }
 
         /**
          * Do the actual work.
-         * The index is the item's index in the collection.
+         * The semantics of value is set by the parallel process calling controllering the workers.
+         * For example, foreach() uses value as an index.
+         * The only requirement is that it be non-negative.
          */
-        public abstract void work(long index, T item);
+        public abstract void work(long value, T item);
     }
 
     private static class DaemonThreadFactory implements ThreadFactory {
