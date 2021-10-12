@@ -104,6 +104,8 @@ public class Grounding {
         // Ground the bypassed rules.
         groundIndependent(bypassRules, atomManager, groundRuleStore);
 
+        int batchSize = Options.GROUNDING_COLLECTIVE_BATCH_SIZE.getInt();
+
         // Ground the collective rules.
         for (CandidateQuery candidate : coverage) {
             // Multiple candidates may cover the same rule.
@@ -112,7 +114,7 @@ public class Grounding {
             Set<Rule> toGround = new HashSet<Rule>(collectiveRules);
             toGround.retainAll(candidate.getCoveredRules());
 
-            sharedGrounding(candidate, toGround, atomManager, groundRuleStore);
+            sharedGrounding(candidate, toGround, atomManager, groundRuleStore, batchSize);
 
             collectiveRules.removeAll(candidate.getCoveredRules());
         }
@@ -121,9 +123,6 @@ public class Grounding {
     }
 
     private static Set<CandidateQuery> genCandidates(List<Rule> collectiveRules, Database database) {
-        // TODO(eriq): Get from config.
-        final int candiatesPerRule = 3;
-
         Set<CandidateQuery> candidates = Collections.synchronizedSet(new HashSet<CandidateQuery>());
 
         final CandidateGeneration candidateGeneration;
@@ -143,15 +142,22 @@ public class Grounding {
             return candidates;
         }
 
+        final int candiatesPerRule = Options.GROUNDING_COLLECTIVE_CANDIDATE_COUNT.getInt();
+
         final RDBMSDatabase finalDatabase = (RDBMSDatabase)database;
         final Set<CandidateQuery> finalCandidates = candidates;
 
-        Parallel.foreach(collectiveRules, new Parallel.Worker<Rule>() {
+        log.debug("Generating candidates.");
+
+        Parallel.RunTimings timings = Parallel.foreach(collectiveRules, new Parallel.Worker<Rule>() {
             @Override
             public void work(long index, Rule rule) {
                 candidateGeneration.generateCandidates(rule, finalDatabase, candiatesPerRule, finalCandidates);
             }
         });
+
+        log.debug("Generated {} candidates", candidates.size());
+        log.trace("    " + timings);
 
         return candidates;
     }
@@ -159,7 +165,7 @@ public class Grounding {
     /**
      * Use the provided formula to ground all of the provided rules.
      */
-    private static long sharedGrounding(CandidateQuery candidate, Set<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    private static long sharedGrounding(CandidateQuery candidate, Set<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore, int batchSize) {
         log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), candidate.getFormula());
         for (Rule rule : rules) {
             log.trace("    " + rule);
@@ -192,17 +198,18 @@ public class Grounding {
         }
 
         long initialCount = groundRuleStore.size();
-        Parallel.RunTimings timings = Parallel.foreach(queryResults, new GroundWorker(atomManager, groundRuleStore, variableMaps, rules));
+        Parallel.RunTimings timings = Parallel.foreachBatch(queryResults, batchSize, new GroundWorker(atomManager, groundRuleStore, variableMaps, rules));
         long groundCount = groundRuleStore.size() - initialCount;
 
         atomManager.enableAccessExceptions(oldAccessExceptionState);
 
         log.debug("Generated {} ground rules from {} query results.", groundCount, timings.iterations);
+        log.trace("   " + timings);
 
         return groundCount;
     }
 
-    private static class GroundWorker extends Parallel.Worker<Constant[]> {
+    private static class GroundWorker extends Parallel.Worker<List<Constant[]>> {
         private AtomManager atomManager;
         private GroundRuleStore groundRuleStore;
         private Map<Rule, Map<Variable, Integer>> variableMaps;
@@ -224,17 +231,19 @@ public class Grounding {
         }
 
         @Override
-        public void work(long index, Constant[] row) {
-            for (Rule rule : rules) {
-                rule.ground(row, variableMaps.get(rule), atomManager, groundRules);
+        public void work(long size, List<Constant[]> batch) {
+            for (Constant[] row : batch) {
+                for (Rule rule : rules) {
+                    rule.ground(row, variableMaps.get(rule), atomManager, groundRules);
 
-                for (GroundRule groundRule : groundRules) {
-                    if (groundRule != null) {
-                        groundRuleStore.addGroundRule(groundRule);
+                    for (GroundRule groundRule : groundRules) {
+                        if (groundRule != null) {
+                            groundRuleStore.addGroundRule(groundRule);
+                        }
                     }
-                }
 
-                groundRules.clear();
+                    groundRules.clear();
+                }
             }
         }
     }

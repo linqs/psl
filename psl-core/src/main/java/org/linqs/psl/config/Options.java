@@ -305,6 +305,18 @@ public class Options {
         "Ground rules collectively instead of independently."
     );
 
+    public static final Option GROUNDING_COLLECTIVE_BATCH_SIZE = new Option(
+        "grounding.collective.batchsize",
+        100,
+        "The batch size for grounding instantiation workers."
+    );
+
+    public static final Option GROUNDING_COLLECTIVE_CANDIDATE_COUNT = new Option(
+        "grounding.collective.candidate.count",
+        3,
+        "The maximum number of candidates to generate per rule."
+    );
+
     public static final Option WLA_GRGS_EXPLORE_LOCATIONS = new Option(
         "guidedrandomgridsearch.explorelocations",
         10,

@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.grounding.collective;
 
-import org.linqs.psl.config.Config;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
@@ -65,7 +64,7 @@ public class CandidateGeneration {
 
     // TODO(eriq): Send these to the config.
     private static final String SEARCH_TYPE = SearchType.Bounded.toString();
-    private static final int SEARCH_BUDGET = 7;
+    private static final int SEARCH_BUDGET = 5;
     private static final double OPTIMISTIC_QUERY_COST_MULTIPLIER = 0.018;
     private static final double OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0015;
     private static final double PESSIMISTIC_QUERY_COST_MULTIPLIER = 0.020;
