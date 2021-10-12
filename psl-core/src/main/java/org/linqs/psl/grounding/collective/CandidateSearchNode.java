@@ -26,20 +26,26 @@ import org.linqs.psl.util.MathUtils;
 public class CandidateSearchNode implements Comparable<CandidateSearchNode> {
     public final long atomsBitSet;
     public final Formula formula;
-    public final double optimisticCost;
-    public final double pessimisticCost;
+    public final int numAtoms;
 
-    public CandidateSearchNode(long atomsBitSet, Formula formula, double optimisticCost, double pessimisticCost) {
+    public boolean approximateCost;
+    public double optimisticCost;
+    public double pessimisticCost;
+
+    public CandidateSearchNode(long atomsBitSet, Formula formula, int numAtoms, double optimisticCost, double pessimisticCost) {
         this.atomsBitSet = atomsBitSet;
         this.formula = formula;
+        this.numAtoms = numAtoms;
+
+        approximateCost = true;
         this.optimisticCost = optimisticCost;
         this.pessimisticCost = pessimisticCost;
     }
 
     @Override
     public String toString() {
-        return String.format("{Atom Bits: %d, Optimistic: %f, Pessimistic: %f, Formula: %s}",
-                atomsBitSet, optimisticCost, pessimisticCost, formula);
+        return String.format("{Atom Bits: %d, Optimistic: %f, Pessimistic: %f, Approximate: %s, Formula: %s}",
+                atomsBitSet, optimisticCost, pessimisticCost, approximateCost, formula);
     }
 
     @Override

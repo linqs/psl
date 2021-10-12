@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.grounding.collective;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
@@ -59,29 +60,30 @@ public class CandidateGeneration {
         BFS,
         DFS,
         UCS,
-        Bounded
+        BoundedUCS,
+        BoundedDFS
     }
 
-    // TODO(eriq): Send these to the config.
-    private static final String SEARCH_TYPE = SearchType.Bounded.toString();
-    private static final int SEARCH_BUDGET = 5;
-    private static final double OPTIMISTIC_QUERY_COST_MULTIPLIER = 0.018;
-    private static final double OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0015;
-    private static final double PESSIMISTIC_QUERY_COST_MULTIPLIER = 0.020;
-    private static final double PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0020;
+    public static final double CANDIDATE_SIZE_ADJUSTMENT = 1.0;
+    public static final double OPTIMISTIC_QUERY_COST_MULTIPLIER = 0.018;
+    public static final double OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0010;
+    public static final double PESSIMISTIC_QUERY_COST_MULTIPLIER = 0.020;
+    public static final double PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0020;
 
     private final SearchType searchType;
     private final int budget;
 
+    private final double candidateSizeAdjustment;
     private final double optimisticQueryCostMultiplier;
     private final double pessimisticQueryCostMultiplier;
     private final double optimisticInstantiationCostMultiplier;
     private final double pessimisticInstantiationCostMultiplier;
 
     public CandidateGeneration() {
-        searchType = SearchType.valueOf(SEARCH_TYPE);
-        budget = SEARCH_BUDGET;
+        searchType = SearchType.valueOf(Options.GROUNDING_COLLECTIVE_CANDIDATE_SEARCH_TYPE.getString());
+        budget = Options.GROUNDING_COLLECTIVE_CANDIDATE_SEARCH_BUDGET.getInt();
 
+        candidateSizeAdjustment = CANDIDATE_SIZE_ADJUSTMENT;
         optimisticQueryCostMultiplier = OPTIMISTIC_QUERY_COST_MULTIPLIER;
         optimisticInstantiationCostMultiplier = OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER;
         pessimisticQueryCostMultiplier = PESSIMISTIC_QUERY_COST_MULTIPLIER;
@@ -95,22 +97,21 @@ public class CandidateGeneration {
     public void generateCandidates(Rule rule, RDBMSDatabase database,
             int maxResults, Collection<CandidateQuery> results) {
         SearchFringe fringe = createFringe();
-        search(fringe, rule.getRewritableGroundingFormula(), database);
+        List<CandidateQuery> candidates = search(fringe, rule, database);
 
-        int count = 0;
-        while (fringe.savedSize() > 0 && (maxResults <= 0 || count < maxResults)) {
-            CandidateSearchNode node = fringe.popBestNode();
-            if (node != null) {
-                results.add(new CandidateQuery(rule, node.formula, node.optimisticCost));
-                count++;
-            }
+        Collections.sort(candidates);
+
+        for (int i = 0; i < Math.min(candidates.size(), maxResults); i++) {
+            results.add(candidates.get(i));
         }
     }
 
     /**
      * Search through the candidates (limited by the budget).
      */
-    private void search(SearchFringe fringe, Formula baseFormula, RDBMSDatabase database) {
+    private List<CandidateQuery> search(SearchFringe fringe, Rule rule, RDBMSDatabase database) {
+        List<CandidateQuery> candidates = new ArrayList<CandidateQuery>();
+
         // A volitile set of atoms used as a working set.
         // This is just a buffer and it's use case constantly changes.
         // Once a procedure is done with this buffer, they should clear it to indicate it is no longer in-use.
@@ -119,12 +120,13 @@ public class CandidateGeneration {
         fringe.clear();
 
         // Once validated, we know that the formula is a conjunction or single atom.
+        Formula baseFormula = rule.getRewritableGroundingFormula();
         DatabaseQuery.validate(baseFormula);
 
         // Shortcut for priors (single atoms).
         if (baseFormula instanceof Atom) {
-            fringe.push(createNode(1l, baseFormula, 1, database));
-            return;
+            candidates.add(new CandidateQuery(rule, baseFormula, 1.0));
+            return candidates;
         }
 
         // Get all the atoms used in the base formula.
@@ -156,7 +158,8 @@ public class CandidateGeneration {
         }
 
         // Start with all atoms.
-        CandidateSearchNode rootNode = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, database, atomBuffer);
+        CandidateSearchNode rootNode = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, atomBuffer,
+                0.0, 0.0);
 
         fringe.push(rootNode);
         seenNodes.add(Long.valueOf(BitUtils.toBitSet(atomBits)));
@@ -165,11 +168,16 @@ public class CandidateGeneration {
         // After the budget is expended, we will still finish out search on the remaining nodes, but not create any more.
         int explains = 0;
 
-        while (fringe.size() > 0) {
+        while (fringe.size() > 0 && (budget <= 0 || explains < budget)) {
             CandidateSearchNode node = fringe.pop();
 
-            // Expand the node by trying to remove each atom (in-turn).
+            // Expand the node by computing an actual score and trying to remove each atom (in-turn).
             BitUtils.toBits(node.atomsBitSet, atomBits);
+            explainNode(node, database);
+            explains++;
+            candidates.add(new CandidateQuery(rule, node.formula, node.optimisticCost));
+
+            fringe.newPessimisticCost(node.pessimisticCost);
 
             for (int i = 0; i < atoms.size(); i++) {
                 // Skip if this atom was dropped somewhere else.
@@ -181,15 +189,14 @@ public class CandidateGeneration {
                 atomBits[i] = false;
 
                 // Skip nodes we have seen before and totally empty candidates (no atoms on).
-                // Also skip nodes if we have already exceeded our budget.
                 Long bitId = Long.valueOf(BitUtils.toBitSet(atomBits));
-                if ((budget <= 0 || explains <= budget) && !seenNodes.contains(bitId) && bitId.longValue() != 0) {
+                if (!seenNodes.contains(bitId) && bitId.longValue() != 0) {
                     seenNodes.add(bitId);
 
-                    CandidateSearchNode child = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, database, atomBuffer);
+                    CandidateSearchNode child = validateAndCreateNode(atomBits, atoms, passthrough, variableUsageMapping, atomBuffer,
+                            node.optimisticCost, node.pessimisticCost);
                     if (child != null) {
                         fringe.push(child);
-                        explains++;
                     }
                 }
 
@@ -198,10 +205,7 @@ public class CandidateGeneration {
             }
         }
 
-        CandidateSearchNode bestNode = fringe.getBestNode();
-        log.debug("Searched candidates for [{}]({}). Best candidate: [{}]({}).",
-                rootNode.formula, rootNode.optimisticCost,
-                bestNode.formula, bestNode.optimisticCost);
+        return candidates;
     }
 
     /**
@@ -210,9 +214,8 @@ public class CandidateGeneration {
      * @return The candidate search node, or null if the candidate is invalid.
      */
     private CandidateSearchNode validateAndCreateNode(boolean[] atomBits, List<Atom> atoms,
-            Set<Atom> passthrough, Map<Variable, Set<Atom>> variableUsageMapping,
-            RDBMSDatabase database,
-            Set<Atom> atomBuffer) {
+            Set<Atom> passthrough, Map<Variable, Set<Atom>> variableUsageMapping, Set<Atom> atomBuffer,
+            double parentOptimisticCost, double parentPessimisticCost) {
         Formula formula = constructFormula(atomBits, atoms, passthrough, atomBuffer);
 
         // Make sure that all variables are covered.
@@ -234,24 +237,31 @@ public class CandidateGeneration {
         int numAtoms = atomBuffer.size();
         atomBuffer.clear();
 
-        return createNode(BitUtils.toBitSet(atomBits), formula, numAtoms, database);
+        assert(numAtoms > 0);
+
+        // Compute the approximate cost knowing that this candidate will have one less atom than its parent.
+        // (Unless this is the root node, where the cost will already be zero.)
+
+        double optimisticCost = parentOptimisticCost * numAtoms / (numAtoms + 1);
+        double pessimisticCost = parentPessimisticCost * numAtoms / (numAtoms + 1);
+
+        return new CandidateSearchNode(BitUtils.toBitSet(atomBits), formula,
+                numAtoms, optimisticCost, pessimisticCost);
     }
 
-    /**
-     * Bypass validation and directly create a candidate node.
-     */
-    private CandidateSearchNode createNode(long atomBitSet, Formula formula, int numAtoms, RDBMSDatabase database) {
-        String sql = Formula2SQL.getQuery(formula, database, false);
+    private void explainNode(CandidateSearchNode node, RDBMSDatabase database) {
+        String sql = Formula2SQL.getQuery(node.formula, database, false);
         DatabaseDriver.ExplainResult result = ((RDBMSDataStore)database.getDataStore()).getDriver().explain(sql);
 
-        double optimisticCost =
-                result.totalCost * optimisticQueryCostMultiplier
-                + result.rows * optimisticInstantiationCostMultiplier * numAtoms;
-        double pessimisticCost =
-                result.totalCost * pessimisticQueryCostMultiplier
-                + result.rows * pessimisticInstantiationCostMultiplier * numAtoms;
-
-        return new CandidateSearchNode(atomBitSet, formula, optimisticCost, pessimisticCost);
+        node.approximateCost = false;
+        node.optimisticCost =
+                (result.totalCost * optimisticQueryCostMultiplier
+                + result.rows * optimisticInstantiationCostMultiplier)
+                * (node.numAtoms * candidateSizeAdjustment);
+        node.pessimisticCost =
+                (result.totalCost * pessimisticQueryCostMultiplier
+                + result.rows * pessimisticInstantiationCostMultiplier)
+                * (node.numAtoms * candidateSizeAdjustment);
     }
 
     /**
@@ -332,8 +342,10 @@ public class CandidateGeneration {
                 return new SearchFringe.DFSSearchFringe();
             case UCS:
                 return new SearchFringe.UCSSearchFringe();
-            case Bounded:
-                return new SearchFringe.BoundedSearchFringe();
+            case BoundedUCS:
+                return new SearchFringe.BoundedUCSSearchFringe();
+            case BoundedDFS:
+                return new SearchFringe.BoundedDFSSearchFringe();
             default:
                 throw new IllegalStateException("Unknown search type: " + searchType);
         }

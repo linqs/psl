@@ -22,6 +22,7 @@ import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
 import org.linqs.psl.database.rdbms.QueryRewriter;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
+import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
@@ -315,6 +316,18 @@ public class Options {
         "grounding.collective.candidate.count",
         3,
         "The maximum number of candidates to generate per rule."
+    );
+
+    public static final Option GROUNDING_COLLECTIVE_CANDIDATE_SEARCH_BUDGET = new Option(
+        "grounding.collective.candidate.search.budget",
+        7,
+        "How many explains the candidate search will use before choosing the final candidates."
+    );
+
+    public static final Option GROUNDING_COLLECTIVE_CANDIDATE_SEARCH_TYPE = new Option(
+        "grounding.collective.candidate.search.type",
+        CandidateGeneration.SearchType.BoundedDFS.toString(),
+        "The type of search to use when generating candidates."
     );
 
     public static final Option WLA_GRGS_EXPLORE_LOCATIONS = new Option(

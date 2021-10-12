@@ -21,6 +21,7 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +32,7 @@ import java.util.Set;
  * A candidate for collective grounding.
  * Note that candidates are unique and identified by their identity hash codes.
  */
-public class CandidateQuery {
+public class CandidateQuery implements Comparable<CandidateQuery> {
     private final Rule baseRule;
     private final Formula formula;
 
@@ -100,5 +101,33 @@ public class CandidateQuery {
     @Override
     public boolean equals(Object other) {
         return this == other;
+    }
+
+    @Override
+    public int compareTo(CandidateQuery other) {
+        if (other == null) {
+            return -1;
+        }
+
+        if (this == other) {
+            return 0;
+        }
+
+        int value = MathUtils.compare(this.score, other.score);
+        if (value != 0) {
+            return value;
+        }
+
+        value = this.formula.toString().compareTo(other.formula.toString());
+        if (value != 0) {
+            return value;
+        }
+
+        value = this.baseRule.toString().compareTo(other.baseRule.toString());
+        if (value != 0) {
+            return value;
+        }
+
+        return MathUtils.compare(hashCode(), other.hashCode());
     }
 }

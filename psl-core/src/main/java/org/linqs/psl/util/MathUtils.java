@@ -46,6 +46,21 @@ public final class MathUtils {
         return (a > 0 && b > 0) || (a < 0 && b < 0) || (isZero(a) && isZero(b));
     }
 
+    /**
+     * A comparison method with the Comparator integer return semantics.
+     */
+    public static int compare(int a, int b) {
+        if (a == b) {
+            return 0;
+        }
+
+        if (a < b) {
+            return -1;
+        }
+
+        return 1;
+    }
+
     public static boolean equals(double a, double b) {
         return equals(a, b, EPSILON);
     }

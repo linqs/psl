@@ -282,7 +282,7 @@ public final class Parallel {
                 parentWaitTimeMS += (System.currentTimeMillis() - time);
                 iterations++;
             } catch (InterruptedException ex) {
-                throw new RuntimeException("Interrupted waiting for worker (" + count + ").");
+                throw new RuntimeException("Interrupted waiting for worker (" + iterations + ").");
             }
 
             if (worker.getException() != null) {
@@ -300,14 +300,13 @@ public final class Parallel {
 
                 batch.add(work.next());
                 currentBatchSize++;
+                count++;
             }
 
             @SuppressWarnings("unchecked")
             Worker<List<T>> typedWorker = (Worker<List<T>>)worker;
             typedWorker.setWork(currentBatchSize, batch);
             pool.execute(typedWorker);
-
-            count++;
         }
 
         // As workers finish, they will be added to the queue.
@@ -329,7 +328,7 @@ public final class Parallel {
             }
         }
 
-        return new RunTimings(iterations, parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
+        return new RunTimings(count, parentWaitTimeMS, workerWaitTimeMS, workerWorkTimeMS);
     }
 
     /**

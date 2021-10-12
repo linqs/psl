@@ -30,49 +30,41 @@ import java.util.PriorityQueue;
 public abstract class SearchFringe<T extends Collection<CandidateSearchNode>> {
     private static final Logger log = LoggerFactory.getLogger(SearchFringe.class);
 
-    protected PriorityQueue<CandidateSearchNode> savedOrderedNodes;
+    protected double bestPessimisticCost;
     protected T fringe;
 
     protected SearchFringe(T fringe) {
-        savedOrderedNodes = new PriorityQueue<CandidateSearchNode>();
         this.fringe = fringe;
+        bestPessimisticCost = Double.MAX_VALUE;
     }
 
     public int size() {
         return fringe.size();
     }
 
-    public int savedSize() {
-        return savedOrderedNodes.size();
+    public void clear() {
+        fringe.clear();
+        bestPessimisticCost = Double.MAX_VALUE;
     }
 
-    public void clear() {
-        savedOrderedNodes.clear();
-        fringe.clear();
+    /**
+     * Observe the a new pessimistic cost and remember if it is the best.
+     */
+    public void newPessimisticCost(double pessimisticCost) {
+        if (pessimisticCost < bestPessimisticCost) {
+            bestPessimisticCost = pessimisticCost;
+        }
     }
 
     /**
      * Add a node to the fringe.
-     * The node will be checked if it is the best one right away because the search through
-     * the candidate space may be time/cost bounded,
-     * and we want to check for the best node as soon as we pay the estimation cost (SQL EXPLAIN).
      */
     public void push(CandidateSearchNode node) {
         if (node == null) {
             return;
         }
 
-        if (pushInternal(node)) {
-            savedOrderedNodes.add(node);
-        }
-    }
-
-    public CandidateSearchNode getBestNode() {
-        return savedOrderedNodes.peek();
-    }
-
-    public CandidateSearchNode popBestNode() {
-        return savedOrderedNodes.poll();
+        pushInternal(node);
     }
 
     /**
@@ -139,10 +131,21 @@ public abstract class SearchFringe<T extends Collection<CandidateSearchNode>> {
         }
     }
 
-    public static class BoundedSearchFringe extends UCSSearchFringe {
+    public static class BoundedUCSSearchFringe extends UCSSearchFringe {
         @Override
         protected boolean pushInternal(CandidateSearchNode node) {
-            if (savedOrderedNodes.size() > 0 && node.optimisticCost > getBestNode().pessimisticCost) {
+            if (node.optimisticCost > bestPessimisticCost) {
+                return false;
+            }
+
+            return super.pushInternal(node);
+        }
+    }
+
+    public static class BoundedDFSSearchFringe extends DFSSearchFringe {
+        @Override
+        protected boolean pushInternal(CandidateSearchNode node) {
+            if (node.optimisticCost > bestPessimisticCost) {
                 return false;
             }
 
