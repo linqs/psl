@@ -20,12 +20,14 @@ package org.linqs.psl.model.rule;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class FakeRule extends AbstractRule implements WeightedRule {
     protected float weight;
@@ -66,6 +68,10 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     @Override
     public boolean isWeighted() {
         return true;
+    }
+
+    @Override
+    public void getCoreAtoms(Set<Atom> result) {
     }
 
     @Override

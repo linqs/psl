@@ -18,6 +18,7 @@
 package org.linqs.psl.grounding.collective;
 
 import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
@@ -61,9 +62,10 @@ public class Containment {
         }
 
         for (Rule rule : collectiveRules) {
+            // Use the query formula for variable mapping, but the full rule for variable usage.
             Formula ruleFormula = rule.getRewritableGroundingFormula();
 
-            Map<Variable, Set<VariableInstance>> ruleVariableUsage = getVariableUsage(ruleFormula);
+            Map<Variable, Set<VariableInstance>> ruleVariableUsage = getVariableUsage(rule);
             List<Variable> ruleVariables = new ArrayList<Variable>(ruleVariableUsage.keySet());
 
             for (CandidateQuery candidate : candidates) {
@@ -144,6 +146,18 @@ public class Containment {
         }
 
         return null;
+    }
+
+    /**
+     * Get all instances of variables being used in a rule.
+     * Rules have some special cases that formula's don't.
+     * Most significantly, we will not be using the query formula to check variable usage, we will be using the full formula.
+     */
+    private static Map<Variable, Set<VariableInstance>> getVariableUsage(Rule rule) {
+        Set<Atom> atoms = new HashSet<Atom>();
+        rule.getCoreAtoms(atoms);
+        Formula formula = new Conjunction(atoms.toArray(new Formula[0]));
+        return getVariableUsage(formula);
     }
 
     /**

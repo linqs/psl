@@ -20,6 +20,7 @@ package org.linqs.psl.model.rule;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
@@ -27,6 +28,7 @@ import org.linqs.psl.model.term.Variable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A template for functions that either constrain or measure the compatibility
@@ -48,6 +50,13 @@ public interface Rule extends Serializable {
     public boolean isWeighted();
 
     public String getName();
+
+    /**
+     * Get the "core" atoms for a query.
+     * What defines the core set is up to the individual rule type,
+     * but it should not include filters or summations.
+     */
+    public void getCoreAtoms(Set<Atom> result);
 
     /**
      * Does this rule support rewriting the grounding formual.

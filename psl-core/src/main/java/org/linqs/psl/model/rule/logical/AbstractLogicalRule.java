@@ -129,6 +129,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
+    public void getCoreAtoms(Set<Atom> result) {
+        formula.getAtoms(result);
+    }
+
+    @Override
     public boolean supportsGroundingQueryRewriting() {
         return true;
     }

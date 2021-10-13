@@ -105,6 +105,17 @@ public class CandidateGeneration {
      * Search through the candidates (limited by the budget).
      */
     private List<CandidateQuery> search(SearchFringe fringe, Rule rule, RDBMSDatabase database) {
+        fringe.clear();
+
+        // Once validated, we know that the formula is a conjunction or single atom.
+        Formula baseFormula = rule.getRewritableGroundingFormula();
+        DatabaseQuery.validate(baseFormula);
+
+        // Shortcut for single atoms (often priors).
+        if (baseFormula instanceof Atom) {
+            return singleAtomSearch(rule, baseFormula, database);
+        }
+
         List<CandidateQuery> candidates = new ArrayList<CandidateQuery>();
 
         // A volitile set of atoms used as a working set.
@@ -112,17 +123,6 @@ public class CandidateGeneration {
         // Once a procedure is done with this buffer, they should clear it to indicate it is no longer in-use.
         Set<Atom> atomBuffer = new HashSet<Atom>();
 
-        fringe.clear();
-
-        // Once validated, we know that the formula is a conjunction or single atom.
-        Formula baseFormula = rule.getRewritableGroundingFormula();
-        DatabaseQuery.validate(baseFormula);
-
-        // Shortcut for priors (single atoms).
-        if (baseFormula instanceof Atom) {
-            candidates.add(new CandidateQuery(rule, baseFormula, 1.0));
-            return candidates;
-        }
 
         // Get all the atoms used in the base formula.
         baseFormula.getAtoms(atomBuffer);
@@ -201,6 +201,59 @@ public class CandidateGeneration {
                 atomBits[i] = true;
             }
         }
+
+        return candidates;
+    }
+
+    /**
+     * Search specifically knowing that the formula is only a single atom.
+     * This can indicate a prior or other type of simple rule that can be augmented with special handling.
+     */
+    private List<CandidateQuery> singleAtomSearch(Rule rule, Formula baseFormula, RDBMSDatabase database) {
+        assert(baseFormula instanceof Atom);
+
+        List<CandidateQuery> candidates = new ArrayList<CandidateQuery>(2);
+
+        CandidateSearchNode node = new CandidateSearchNode(0l, baseFormula, 1, 1.0, 1.0);
+        explainNode(node, database);
+
+        // Add the base formula as a candidate.
+        candidates.add(new CandidateQuery(rule, node.formula, node.optimisticCost));
+
+        // Collect the full set of atoms used in the rule (not just the ones in the query formula).
+        Set<Atom> atoms = new HashSet<Atom>();
+        rule.getCoreAtoms(atoms);
+
+        // If this is a prior (single atom) or has more than two atoms, then just return the single candidate.
+        if (atoms.size() != 2) {
+            return candidates;
+        }
+
+        // If the rule takes a form similar to: `Closd(A, B) -> Open(A, B)`, then we can take an additional optimization.
+        // We assume there will be no PAM exceptions, so a subset of Open(A, B) will get grounded.
+        // Therefore, we can use Open(A, B) as a candidate.
+        // This should work as long as at least one of the atoms is open.
+
+        int openAtoms = 0;
+        for (Atom atom : atoms) {
+            if ((atom.getPredicate() instanceof StandardPredicate) && !database.isClosed((StandardPredicate)atom.getPredicate())) {
+                openAtoms++;
+            }
+        }
+
+        if (openAtoms == 0) {
+            return candidates;
+        }
+
+        atoms.remove(baseFormula);
+        if (atoms.size() != 1) {
+            // This should never happen.
+            return candidates;
+        }
+
+        node = new CandidateSearchNode(0l, atoms.iterator().next(), 1, 1.0, 1.0);
+        explainNode(node, database);
+        candidates.add(new CandidateQuery(rule, node.formula, node.optimisticCost));
 
         return candidates;
     }

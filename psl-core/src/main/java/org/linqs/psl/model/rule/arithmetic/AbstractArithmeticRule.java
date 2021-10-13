@@ -222,6 +222,15 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             List<GroundAtom> atoms, FunctionComparator comparator, float constant);
 
     @Override
+    public void getCoreAtoms(Set<Atom> result) {
+        for (SummationAtomOrAtom atom : expression.getAtoms()) {
+            if (atom instanceof Atom) {
+                result.add((Atom)atom);
+            }
+        }
+    }
+
+    @Override
     public boolean supportsGroundingQueryRewriting() {
         // Only non-summation rules can be rewritten.
         return !hasSummation();

@@ -95,12 +95,16 @@ public class CandidateQuery implements Comparable<CandidateQuery> {
 
     @Override
     public int hashCode() {
-        return System.identityHashCode(this);
+        return formula.hashCode();
     }
 
     @Override
     public boolean equals(Object other) {
-        return this == other;
+        if (other == null || !(other instanceof CandidateQuery)) {
+            return false;
+        }
+
+        return this.formula.equals(((CandidateQuery)other).formula);
     }
 
     @Override
@@ -118,16 +122,6 @@ public class CandidateQuery implements Comparable<CandidateQuery> {
             return value;
         }
 
-        value = this.formula.toString().compareTo(other.formula.toString());
-        if (value != 0) {
-            return value;
-        }
-
-        value = this.baseRule.toString().compareTo(other.baseRule.toString());
-        if (value != 0) {
-            return value;
-        }
-
-        return MathUtils.compare(hashCode(), other.hashCode());
+        return this.formula.toString().compareTo(other.formula.toString());
     }
 }

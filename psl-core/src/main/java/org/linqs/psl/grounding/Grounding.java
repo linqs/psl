@@ -81,6 +81,8 @@ public class Grounding {
 
     /**
      * Ground all the given rules collectively.
+     * Note that collective grounding assumes that no PAM exceptions will happen,
+     * so it may make optimizations based on this assumption.
      */
     private static long groundCollective(List<Rule> rules, AtomManager atomManager, GroundRuleStore groundRuleStore) {
         // Rules that cannot take part in the collective process.
