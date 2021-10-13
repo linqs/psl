@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Generate groudning candidates for a rule.
@@ -70,24 +71,18 @@ public class CandidateGeneration {
     public static final double PESSIMISTIC_QUERY_COST_MULTIPLIER = 0.020;
     public static final double PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER = 0.0020;
 
-    private final SearchType searchType;
-    private final int budget;
+    private SearchType searchType;
+    private int budget;
 
-    private final double candidateSizeAdjustment;
-    private final double optimisticQueryCostMultiplier;
-    private final double pessimisticQueryCostMultiplier;
-    private final double optimisticInstantiationCostMultiplier;
-    private final double pessimisticInstantiationCostMultiplier;
+    // Share explains across all uses of this object.
+    // Note that we do not try to rewrite variable names or order atoms to match explains beyond the raw formula.
+    private Map<String, DatabaseDriver.ExplainResult> explains;
 
     public CandidateGeneration() {
         searchType = SearchType.valueOf(Options.GROUNDING_COLLECTIVE_CANDIDATE_SEARCH_TYPE.getString());
         budget = Options.GROUNDING_COLLECTIVE_CANDIDATE_SEARCH_BUDGET.getInt();
 
-        candidateSizeAdjustment = CANDIDATE_SIZE_ADJUSTMENT;
-        optimisticQueryCostMultiplier = OPTIMISTIC_QUERY_COST_MULTIPLIER;
-        optimisticInstantiationCostMultiplier = OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER;
-        pessimisticQueryCostMultiplier = PESSIMISTIC_QUERY_COST_MULTIPLIER;
-        pessimisticInstantiationCostMultiplier = PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER;
+        explains = new ConcurrentHashMap<String, DatabaseDriver.ExplainResult>();
     }
 
     /**
@@ -173,10 +168,12 @@ public class CandidateGeneration {
 
             // Expand the node by computing an actual score and trying to remove each atom (in-turn).
             BitUtils.toBits(node.atomsBitSet, atomBits);
-            explainNode(node, database);
-            explains++;
-            candidates.add(new CandidateQuery(rule, node.formula, node.optimisticCost));
 
+            if (explainNode(node, database)) {
+                explains++;
+            }
+
+            candidates.add(new CandidateQuery(rule, node.formula, node.optimisticCost));
             fringe.newPessimisticCost(node.pessimisticCost);
 
             for (int i = 0; i < atoms.size(); i++) {
@@ -249,19 +246,31 @@ public class CandidateGeneration {
                 numAtoms, optimisticCost, pessimisticCost);
     }
 
-    private void explainNode(CandidateSearchNode node, RDBMSDatabase database) {
-        String sql = Formula2SQL.getQuery(node.formula, database, false);
-        DatabaseDriver.ExplainResult result = ((RDBMSDataStore)database.getDataStore()).getDriver().explain(sql);
+    private boolean explainNode(CandidateSearchNode node, RDBMSDatabase database) {
+        DatabaseDriver.ExplainResult result = null;
+        boolean usedExpain = false;
+
+        String formulaString = node.formula.toString();
+        if (explains.containsKey(formulaString)) {
+            result = explains.get(formulaString);
+        } else {
+            String sql = Formula2SQL.getQuery(node.formula, database, false);
+            result = ((RDBMSDataStore)database.getDataStore()).getDriver().explain(sql);
+            explains.put(formulaString, result);
+            usedExpain = true;
+        }
 
         node.approximateCost = false;
         node.optimisticCost =
-                (result.totalCost * optimisticQueryCostMultiplier
-                + result.rows * optimisticInstantiationCostMultiplier)
-                * (node.numAtoms * candidateSizeAdjustment);
+                (result.totalCost * OPTIMISTIC_QUERY_COST_MULTIPLIER
+                + result.rows * OPTIMISTIC_INSTANTIATION_COST_MULTIPLIER)
+                * (node.numAtoms * CANDIDATE_SIZE_ADJUSTMENT);
         node.pessimisticCost =
-                (result.totalCost * pessimisticQueryCostMultiplier
-                + result.rows * pessimisticInstantiationCostMultiplier)
-                * (node.numAtoms * candidateSizeAdjustment);
+                (result.totalCost * PESSIMISTIC_QUERY_COST_MULTIPLIER
+                + result.rows * PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER)
+                * (node.numAtoms * CANDIDATE_SIZE_ADJUSTMENT);
+
+        return usedExpain;
     }
 
     /**
