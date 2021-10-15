@@ -259,7 +259,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         // Validate any grounding only atoms.
 
-        for (Atom atom : negatedDNF.getPosLiterals()) {
+        List<Atom> atoms = negatedDNF.getPosLiterals();
+        for (int i = 0; i < atoms.size(); i++) {
+            Atom atom = atoms.get(i);
             if (!(atom.getPredicate() instanceof GroundingOnlyPredicate)) {
                 continue;
             }
@@ -270,7 +272,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             }
         }
 
-        for (Atom atom : negatedDNF.getNegLiterals()) {
+        atoms = negatedDNF.getNegLiterals();
+        for (int i = 0; i < atoms.size(); i++) {
+            Atom atom = atoms.get(i);
             if (!(atom.getPredicate() instanceof GroundingOnlyPredicate)) {
                 continue;
             }

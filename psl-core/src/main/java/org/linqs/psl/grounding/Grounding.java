@@ -234,11 +234,14 @@ public class Grounding {
 
         @Override
         public void work(long size, List<Constant[]> batch) {
-            for (Constant[] row : batch) {
-                for (Rule rule : rules) {
-                    rule.ground(row, variableMaps.get(rule), atomManager, groundRules);
+            GroundRule groundRule = null;
 
-                    for (GroundRule groundRule : groundRules) {
+            for (Rule rule : rules) {
+                for (int rowIndex = 0; rowIndex < size; rowIndex++) {
+                    rule.ground(batch.get(rowIndex), variableMaps.get(rule), atomManager, groundRules);
+
+                    for (int groundRuleIndex = 0; groundRuleIndex < groundRules.size(); groundRuleIndex++) {
+                        groundRule = groundRules.get(groundRuleIndex);
                         if (groundRule != null) {
                             groundRuleStore.addGroundRule(groundRule);
                         }

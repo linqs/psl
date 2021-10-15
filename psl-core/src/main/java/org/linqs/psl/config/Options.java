@@ -308,7 +308,7 @@ public class Options {
 
     public static final Option GROUNDING_COLLECTIVE_BATCH_SIZE = new Option(
         "grounding.collective.batchsize",
-        100,
+        2500,
         "The batch size for grounding instantiation workers."
     );
 
