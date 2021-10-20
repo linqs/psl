@@ -253,15 +253,19 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         // Deactivate any new pages corresponding to deactivated rules.
         for (Rule rule : rules) {
-            if (!activatedRules.get(rule)) {
-                List<Integer> rulePages = rulePageMapping.get(rule);
-                for (Integer pageIndex : rulePages) {
-                    int activePageIndex = activeTermPages.indexOf(pageIndex);
-                    if (activePageIndex != -1) {
-                        activeTermPages.remove(activePageIndex);
-                        this.numPages--;
-                    }
+            if (activatedRules.get(rule)) {
+                continue;
+            }
+
+            List<Integer> rulePages = rulePageMapping.get(rule);
+            for (Integer pageIndex : rulePages) {
+                int activePageIndex = activeTermPages.indexOf(pageIndex);
+                if (activePageIndex == -1) {
+                    continue;
                 }
+
+                activeTermPages.remove(activePageIndex);
+                this.numPages--;
             }
         }
     }

@@ -20,6 +20,7 @@ package org.linqs.psl.application.inference.online.messages.actions.template;
 import org.linqs.psl.model.rule.Rule;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 
 /**
  * Add a new rule to the model.
@@ -37,7 +38,7 @@ public class AddRule extends TemplateAction {
                 rule.toString());
     }
 
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
 
         newRule = !rule.isRegistered();

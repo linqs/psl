@@ -80,7 +80,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
 
-        termCount = 0L;
+        termCount = 0l;
 
         nextCachedTermIndex = 0;
 
