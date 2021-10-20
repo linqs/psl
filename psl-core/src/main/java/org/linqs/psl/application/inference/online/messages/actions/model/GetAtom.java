@@ -23,17 +23,17 @@ import org.linqs.psl.util.StringUtils;
 
 /**
  * Query the value of an existing atom.
- * String format: QueryAtom <predicate> <arg>...
+ * String format: GetAtom <predicate> <arg>...
  */
-public class QueryAtom extends AtomAction {
-    public QueryAtom(StandardPredicate predicate, Constant[] arguments) {
+public class GetAtom extends AtomAction {
+    public GetAtom(StandardPredicate predicate, Constant[] arguments) {
         super(predicate, arguments);
     }
 
     @Override
     public String toString() {
         return String.format(
-                "QUERYATOM\t%s\t%s",
+                "GETATOM\t%s\t%s",
                 predicate.getName(),
                 StringUtils.join("\t", arguments));
     }

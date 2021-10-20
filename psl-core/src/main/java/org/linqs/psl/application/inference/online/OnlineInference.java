@@ -24,15 +24,15 @@ import org.linqs.psl.application.inference.online.messages.actions.controls.Sync
 import org.linqs.psl.application.inference.online.messages.actions.controls.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.messages.actions.model.AddAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.GetAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.ObserveAtom;
-import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.UpdateObservation;
 import org.linqs.psl.application.inference.online.messages.actions.template.ActivateRule;
 import org.linqs.psl.application.inference.online.messages.actions.template.AddRule;
 import org.linqs.psl.application.inference.online.messages.actions.template.DeactivateRule;
 import org.linqs.psl.application.inference.online.messages.actions.template.DeleteRule;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
-import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
+import org.linqs.psl.application.inference.online.messages.responses.GetAtomResponse;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
@@ -42,7 +42,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
@@ -129,8 +128,8 @@ public abstract class OnlineInference extends InferenceApplication {
             response = doObserveAtom((ObserveAtom)action);
         } else if (action.getClass() == UpdateObservation.class) {
             response = doUpdateObservation((UpdateObservation)action);
-        } else if (action.getClass() == QueryAtom.class) {
-            response = doQueryAtom((QueryAtom)action);
+        } else if (action.getClass() == GetAtom.class) {
+            response = doGetAtom((GetAtom)action);
         } else if (action.getClass() == ActivateRule.class) {
             response = doActivateRule((ActivateRule)action);
         } else if (action.getClass() == AddRule.class) {
@@ -230,9 +229,9 @@ public abstract class OnlineInference extends InferenceApplication {
         return String.format("Updated atom: %s: %f => %f", atom, oldAtomValue, atom.getValue());
     }
 
-    protected String doQueryAtom(QueryAtom action) {
+    protected String doGetAtom(GetAtom action) {
         if (!((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
-            server.onActionExecution(action, new QueryAtomResponse(action, -1.0));
+            server.onActionExecution(action, new GetAtomResponse(action, -1.0));
 
             return String.format("Atom: %s(%s) not found.",
                     action.getPredicate(), StringUtils.join(", ", action.getArguments()));
@@ -241,7 +240,7 @@ public abstract class OnlineInference extends InferenceApplication {
         optimize();
 
         double atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
-        server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
+        server.onActionExecution(action, new GetAtomResponse(action, atomValue));
 
         return String.format("Atom: %s(%s) found. Returned to client.",
                 action.getPredicate(), StringUtils.join(", ", action.getArguments()));

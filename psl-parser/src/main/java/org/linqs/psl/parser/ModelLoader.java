@@ -592,7 +592,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             }
         }
 
-        // If we have any summation variables, then we have a SummationAtom, otherwise we have a QueryAtom.
+        // If we have any summation variables, then we have a SummationAtom, otherwise we have a GetAtom.
         boolean isSummation = false;
         for (SummationVariableOrTerm arg : args) {
             if (arg instanceof SummationVariable) {
