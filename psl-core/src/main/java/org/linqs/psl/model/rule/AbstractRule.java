@@ -34,13 +34,21 @@ public abstract class AbstractRule implements Rule {
         return rules.get(hashcode);
     }
 
-    protected AbstractRule() {}
+    /**
+     * This default constructor only initializes name and hashcode to their empty values.
+     * The caller of this constructor is responsible for initializing the name and hashcode of the object
+     * and ensuring that the rule is registered.
+     */
+    protected AbstractRule() {
+        this.name = null;
+        this.hashcode = 0;
+    }
 
     protected AbstractRule(String name, int hashcode) {
         this.name = name;
         this.hashcode = hashcode;
 
-        rules.put(hashcode, this);
+        ensureRegistration();
     }
 
     public String getName() {
