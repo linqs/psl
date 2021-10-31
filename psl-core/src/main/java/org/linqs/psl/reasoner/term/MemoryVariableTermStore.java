@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,22 +39,13 @@ import java.util.Set;
  * A general TermStore that handles terms and variables all in memory.
  * Variables are stored in an array along with their values.
  */
-public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermStore<T, V> {
+public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends TermStore<T, V> {
     private static final Logger log = LoggerFactory.getLogger(MemoryVariableTermStore.class);
 
     // Keep an internal store to hold the terms while this class focuses on variables.
     private ArrayList<T> store;
 
-    // Keep track of variable indexes.
-    private Map<V, Integer> variables;
-
-    // Matching arrays for variables values and atoms.
-    // A -1 will be stored if we need to go to the atom for the value.
-    private float[] variableValues;
-    private RandomVariableAtom[] variableAtoms;
-
     private boolean shuffle;
-    private int defaultSize;
 
     private Set<ModelPredicate> modelPredicates;
 
@@ -67,64 +57,16 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     private boolean variablesExternallyUpdatedFlag;
 
     public MemoryVariableTermStore() {
-        shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();
-        defaultSize = Options.MEMORY_VTS_DEFAULT_SIZE.getInt();
+        super();
 
+        shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();
 
         store =  new ArrayList<T>((int)Options.MEMORY_TS_INITIAL_SIZE.getLong());
-        ensureVariableCapacity(defaultSize);
 
         modelPredicates = new HashSet<ModelPredicate>();
         mirrorVariables = new HashMap<RandomVariableAtom, List<MirrorTermCoefficient>>();
 
         variablesExternallyUpdatedFlag = false;
-    }
-
-    @Override
-    public int getAtomIndex(GroundAtom atom) {
-        return variables.get(atom).intValue();
-    }
-
-    @Override
-    public float getAtomValue(int index) {
-        return variableValues[index];
-    }
-
-    @Override
-    public float[] getAtomValues() {
-        return variableValues;
-    }
-
-    @Override
-    public double syncAtoms() {
-        double movement = 0.0;
-
-        for (int i = 0; i < variables.size(); i++) {
-            movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
-            variableAtoms[i].setValue(variableValues[i]);
-        }
-
-        return Math.sqrt(movement);
-    }
-
-    @Override
-    public GroundAtom[] getAtoms() {
-        return variableAtoms;
-    }
-
-    @Override
-    public int getNumAtoms() {
-        return variables.size();
-    }
-
-    @Override
-    public int getNumRandomVariables() {
-        return getNumAtoms();
-    }
-
-    @Override
-    public int getNumObservedVariables() {
-        return 0;
     }
 
     @Override
@@ -139,9 +81,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
-        V variable = convertAtomToVariable(atom);
-        if (variables.containsKey(variable)) {
-            return variable;
+        if (variables.containsKey(atom)) {
+            return  createVariableFromAtom(atom);
         }
 
         // Got a new variable.
@@ -152,11 +93,13 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
         int index = variables.size();
 
-        variables.put(variable, index);
+        variables.put(atom, index);
         variableValues[index] = atom.getValue();
         variableAtoms[index] = atom;
+        totalVariableCount++;
+        numRandomVariableAtoms++;
 
-        return variable;
+        return createVariableFromAtom(atom);
     }
 
     private synchronized void createMirrorVariable(RandomVariableAtom atom, float coefficient, T term) {
@@ -190,42 +133,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         variablesExternallyUpdatedFlag = false;
     }
 
-    /**
-     * Make sure we allocate the right amount of memory for global variables.
-     */
-    @Override
-    public void ensureVariableCapacity(int capacity) {
-        if (capacity < 0) {
-            throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
-        }
-
-        if (capacity == 0) {
-            return;
-        }
-
-        if (variables == null || variables.size() == 0) {
-            // If there are no variables, then (re-)allocate the variable storage.
-            // The default load factor for Java HashSets is 0.75.
-            variables = new HashMap<V, Integer>((int)Math.ceil(capacity / 0.75));
-
-            variableValues = new float[capacity];
-            variableAtoms = new RandomVariableAtom[capacity];
-        } else if (variables.size() < capacity) {
-            // Don't bother with small reallocations, if we are reallocating make a lot of room.
-            if (capacity < variables.size() * 2) {
-                capacity = variables.size() * 2;
-            }
-
-            // Reallocate and copy over variables.
-            Map<V, Integer> newVariables = new HashMap<V, Integer>((int)Math.ceil(capacity / 0.75));
-            newVariables.putAll(variables);
-            variables = newVariables;
-
-            variableValues = Arrays.copyOf(variableValues, capacity);
-            variableAtoms = Arrays.copyOf(variableAtoms, capacity);
-        }
-    }
-
     @Override
     public synchronized void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane) {
         store.add(term);
@@ -239,12 +146,10 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     @Override
     public void clear() {
+        super.clear();
+
         if (store != null) {
             store.clear();
-        }
-
-        if (variables != null) {
-            variables.clear();
         }
 
         if (modelPredicates != null) {
@@ -254,27 +159,15 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         if (mirrorVariables != null) {
             mirrorVariables.clear();
         }
-
-        variableValues = null;
-        variableAtoms = null;
-    }
-
-    @Override
-    public void reset() {
-        for (int i = 0; i < variables.size(); i++) {
-            variableValues[i] = variableAtoms[i].getValue();
-        }
     }
 
     @Override
     public void close() {
-        clear();
+        super.close();
 
         if (store != null) {
             store = null;
         }
-
-        variables = null;
     }
 
     @Override
@@ -287,10 +180,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     public void iterationComplete() {
         fitModelAtoms();
         updateModelAtoms();
-    }
-
-    public RandomVariableAtom getAtom(int index) {
-        return variableAtoms[index];
     }
 
     private void updateModelAtoms() {
@@ -354,8 +243,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             }
 
             // Get the value from the mirrored pair.
-            // The conversion path looks like: RVA -> Mirror RVA -> Mirror V -> Mirror Index -> Mirror Value
-            float labelValue = variableValues[variables.get(convertAtomToVariable(mirrorAtom.getMirror())).intValue()];
+            // The conversion path looks like: RVA -> Mirror RVA -> Mirror Index -> Mirror Value
+            float labelValue = variableValues[variables.get(mirrorAtom.getMirror()).intValue()];
 
             ((ModelPredicate)mirrorAtom.getPredicate()).setLabel(mirrorAtom, labelValue);
             count++;
@@ -407,7 +296,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
      * Get the variable (V) representation of the atom.
      * This should be lightweight and may be called multiple times per atom.
      */
-    protected abstract V convertAtomToVariable(RandomVariableAtom atom);
+    protected abstract V createVariableFromAtom(RandomVariableAtom atom );
 
     /**
      * A term and coefficient (for that term) associated with a mirror variable.

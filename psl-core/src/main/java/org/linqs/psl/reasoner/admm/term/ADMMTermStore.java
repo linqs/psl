@@ -30,7 +30,7 @@ public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm> {
 
     protected void resetLocalVariables() {
         for (int i = 0; i < getNumConsensusVariables(); i++) {
-            float value = store.getAtomValue(i);
+            float value = getAtomValue(i);
             for (LocalVariable local : localVariables.get(i)) {
                 local.setValue(value);
                 local.setLagrange(0.0f);

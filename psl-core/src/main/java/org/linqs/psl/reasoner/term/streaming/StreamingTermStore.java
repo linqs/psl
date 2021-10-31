@@ -37,39 +37,20 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
  * Variables are kept in memory, but terms are kept on disk.
  */
-public abstract class StreamingTermStore<T extends ReasonerTerm> implements TermStore<T, GroundAtom> {
+public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
     protected List<Rule> rules;
     protected AtomManager atomManager;
-
-    // Keep track of variable indexes.
-    protected Map<GroundAtom, Integer> variables;
-
-    // The count of all seen variables (dead and alive).
-    // Since children we may delete variables, we need a variable specifically for the next index.
-    // (Otherwise, we could just use the size of the map as the next index.)
-    protected int totalVariableCount;
-
-    // Matching arrays for variables values and atoms.
-    // If the atom is null, then it has been deleted by a child.
-    protected float[] variableValues;
-    protected GroundAtom[] variableAtoms;
-
-    protected int numRandomVariableAtoms;
-    protected int numObservedAtoms;
 
     protected List<String> termPagePaths;
     protected List<String> volatilePagePaths;
@@ -145,8 +126,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Term
         this.termGenerator = termGenerator;
 
         ensureVariableCapacity(estimateVariableCapacity());
-        numRandomVariableAtoms = 0;
-        numObservedAtoms = 0;
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
@@ -193,50 +172,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Term
         return atomManager.getCachedRVACount();
     }
 
-    public void ensureVariableCapacity(int capacity) {
-        if (capacity < 0) {
-            throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
-        }
-
-        if (variables == null || totalVariableCount == 0) {
-            // If there are no variables, then (re-)allocate the variable storage.
-            // The default load factor for Java HashSets is 0.75.
-            variables = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
-            totalVariableCount = 0;
-
-            variableValues = new float[capacity];
-            variableAtoms = new GroundAtom[capacity];
-        } else if (totalVariableCount < capacity) {
-            // Don't bother with small reallocations, if we are reallocating make a lot of room.
-            if (capacity < totalVariableCount * 2) {
-                capacity = totalVariableCount * 2;
-            }
-
-            // Reallocate and copy over variables.
-            Map<GroundAtom, Integer> newVariables = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
-            newVariables.putAll(variables);
-            variables = newVariables;
-
-            variableValues = Arrays.copyOf(variableValues, capacity);
-            variableAtoms = Arrays.copyOf(variableAtoms, capacity);
-        }
-    }
-
-    @Override
-    public int getNumAtoms() {
-        return totalVariableCount;
-    }
-
-    @Override
-    public int getNumRandomVariables() {
-        return numRandomVariableAtoms;
-    }
-
-    @Override
-    public int getNumObservedVariables() {
-        return numObservedAtoms;
-    }
-
     @Override
     public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
         if (variables.containsKey(atom)) {
@@ -264,55 +199,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Term
     }
 
     @Override
-    public GroundAtom[] getAtoms() {
-        return variableAtoms;
-    }
-
-    @Override
-    public GroundAtom getAtom(int index) {
-        return variableAtoms[index];
-    }
-
-    @Override
-    public int getAtomIndex(GroundAtom atom) {
-        Integer index = variables.get(atom);
-        if (index == null) {
-            return -1;
-        }
-
-        return index.intValue();
-    }
-
-    @Override
-    public float[] getAtomValues() {
-        return variableValues;
-    }
-
-    @Override
-    public float getAtomValue(int index) {
-        return variableValues[index];
-    }
-
-    @Override
     public void variablesExternallyUpdated() {
-    }
-
-    @Override
-    public double syncAtoms() {
-        double movement = 0.0;
-
-        for (int i = 0; i < totalVariableCount; i++) {
-            if (variableAtoms[i] == null) {
-                continue;
-            }
-
-            if (variableAtoms[i] instanceof RandomVariableAtom) {
-                movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
-                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
-            }
-        }
-
-        return Math.sqrt(movement);
     }
 
     /**
@@ -447,21 +334,15 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Term
 
     @Override
     public void clear() {
+        super.clear();
+
         initialRound = true;
         seenTermCount = 0l;
         numPages = 0;
 
-        numRandomVariableAtoms = 0;
-        numObservedAtoms = 0;
-
         if (activeIterator != null) {
             activeIterator.close();
             activeIterator = null;
-        }
-
-        if (variables != null) {
-            variables.clear();
-            totalVariableCount = 0;
         }
 
         if (termCache != null) {
@@ -476,23 +357,10 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Term
     }
 
     @Override
-    public void reset() {
-        for (int i = 0; i < totalVariableCount; i++) {
-            if (variableAtoms[i] == null) {
-                continue;
-            }
-
-            variableValues[i] = variableAtoms[i].getValue();
-        }
-    }
-
-    @Override
     public void close() {
-        clear();
+        super.close();
 
-        if (variables != null) {
-            variables = null;
-        }
+        clear();
 
         if (termBuffer != null) {
             termBuffer.clear();

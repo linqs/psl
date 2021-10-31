@@ -17,32 +17,57 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends Iterable<T> {
+public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements Iterable<T> {
+    // Matching arrays for variables values and atoms.
+    // If the atom is null, then it has been deleted by a child.
+    // A -1 will be stored if we need to go to the atom for the value.
+    protected float[] variableValues;
+    protected GroundAtom[] variableAtoms;
+
+    // Keep track of variable indexes.
+    protected Map<GroundAtom, Integer> variables;
+
+    // The count of all seen variables (dead and alive).
+    // Since children may delete variables, we need a variable specifically for the next index.
+    // (Otherwise, we could just use the size of the map as the next index.)
+    protected int totalVariableCount;
+    protected int numRandomVariableAtoms;
+    protected int numObservedAtoms;
+
+    public TermStore() {
+        ensureVariableCapacity(Options.MEMORY_VTS_DEFAULT_SIZE.getInt());
+    }
+
     /**
      * Ensure that the underlying structures can have the required term capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      */
-    public void ensureTermCapacity(long capacity);
+    public abstract void ensureTermCapacity(long capacity);
 
     /**
      * Add a term to the store that was generated from the given ground rule.
      * The hyperplane used to create the term is provided for reference.
      */
-    public void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane);
+    public abstract void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane);
 
     /**
      * Get the term at the specified index.
      */
-    public T getTerm(long index);
+    public abstract T getTerm(long index);
 
     /**
      * Ensure that the underlying structures can have the required variable capacity.
@@ -50,106 +75,196 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
      * This is best called on an empty store so it can prepare.
      * Not all term stores will even manage variables.
      */
-    public void ensureVariableCapacity(int capacity);
+    public void ensureVariableCapacity(int capacity) {
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
+        }
+
+        if (variables == null || totalVariableCount == 0) {
+            // If there are no variables, then (re-)allocate the variable storage.
+            // The default load factor for Java HashSets is 0.75.
+            variables = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
+            totalVariableCount = 0;
+            numRandomVariableAtoms = 0;
+            numObservedAtoms = 0;
+
+            variableValues = new float[capacity];
+            variableAtoms = new GroundAtom[capacity];
+        } else if (totalVariableCount < capacity) {
+            // Don't bother with small reallocations, if we are reallocating make a lot of room.
+            if (capacity < totalVariableCount * 2) {
+                capacity = totalVariableCount * 2;
+            }
+
+            // Reallocate and copy over variables.
+            Map<GroundAtom, Integer> newVariables = new HashMap<GroundAtom, Integer>((int)Math.ceil(capacity / 0.75));
+            newVariables.putAll(variables);
+            variables = newVariables;
+
+            variableValues = Arrays.copyOf(variableValues, capacity);
+            variableAtoms = Arrays.copyOf(variableAtoms, capacity);
+        }
+    }
 
     /**
      * Get the total number of atoms (dead or alive) tracked by this term store.
      * The number here must coincide with the size (not length) of the array returned by getAtomValues().
      */
-    public int getNumAtoms();
+    public int getNumAtoms() {
+        return totalVariableCount;
+    }
 
     /**
      * Get the total number of random variables tracked by this term store.
      */
-    public int getNumRandomVariables();
+    public int getNumRandomVariables() {
+        return numRandomVariableAtoms;
+    }
 
     /**
      * Get the total number of observed variables tracked by this term store.
      */
-    public int getNumObservedVariables();
+    public int getNumObservedVariables() {
+        return numObservedAtoms;
+    }
 
     /**
      * Create a variable local to a specific reasoner term.
      */
-    public V createLocalVariable(GroundAtom atom);
+    public abstract V createLocalVariable(GroundAtom atom);
 
     /**
      * Get all the atoms tracked by this term store.
      * Note that atoms are allowed to be null if they have been deleted.
      */
-    public GroundAtom[] getAtoms();
+    public GroundAtom[] getAtoms() {
+        return variableAtoms;
+    }
 
     /**
      * Get the atom at the specified index.
      */
-    public GroundAtom getAtom(int index);
+    public GroundAtom getAtom(int index) {
+        return variableAtoms[index];
+    }
 
     /**
      * Get the index that matches up to getAtomValues().
      */
-    public int getAtomIndex(GroundAtom atom);
+    public int getAtomIndex(GroundAtom atom) {
+        Integer index = variables.get(atom);
+        if (index == null) {
+            return -1;
+        }
+
+        return index.intValue();
+    }
 
     /**
      * Get the values for the variable atoms.
      * Changing a value in this array and calling syncAtoms() will change the actual atom's value.
      */
-    public float[] getAtomValues();
+    public float[] getAtomValues() {
+        return variableValues;
+    }
 
     /**
      * Get the atom value for the given index.
      */
-    public float getAtomValue(int index);
+    public float getAtomValue(int index) {
+        return variableValues[index];
+    }
 
     /**
      * Notify the term store that the variables have been updated through a process external to standard optimization.
      */
-    public void variablesExternallyUpdated();
+    public abstract void variablesExternallyUpdated();
 
     /**
      * Ensure that atoms tracked by this term store match the internal representation of those atoms.
-     * Note that atoms not tracked by this term store may not be updated.
+     * Note observed atom and atoms not tracked by this term store are not updated.
      * @return The RMSE between the tracked atoms and their internal representation.
      */
-    public abstract double syncAtoms();
+    public double syncAtoms() {
+        double movement = 0.0;
+
+        for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
+            if (variableAtoms[i] instanceof RandomVariableAtom) {
+                movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
+                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            }
+        }
+
+        return Math.sqrt(movement);
+    }
 
     /**
      * Get an iterator over the terms in the store that does not write to disk.
      */
-    public Iterator<T> noWriteIterator();
+    public abstract Iterator<T> noWriteIterator();
 
     /**
      * A notification by the Reasoner that a single iteration is complete.
      * TermStores may use this as a chance to update and data structures.
      */
-    public void iterationComplete();
+    public abstract void iterationComplete();
 
     /**
      * Is the term store loaded, and can it give an accurate term and variable count.
      */
-    public boolean isLoaded();
+    public abstract boolean isLoaded();
 
     /**
      * A notification by the Reasoner that optimization is about to begin.
      * TermStores may use this as a chance to finalize data structures.
      */
-    public void initForOptimization();
+    public abstract void initForOptimization();
 
-    public long size();
+    public abstract long size();
 
     /**
      * Remove any existing terms and prepare for a new set.
      */
-    public void clear();
+    public void clear() {
+        totalVariableCount = 0;
+        numRandomVariableAtoms = 0;
+        numObservedAtoms = 0;
+
+        if (variables != null) {
+            variables.clear();
+        }
+
+        variableValues = null;
+        variableAtoms = null;
+    }
 
     /**
      * Reset the existing terms for another round of inference.
      * Atom values are used to reset variables.
      * Does NOT clear().
      */
-    public void reset();
+    public void reset() {
+        for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
+            variableValues[i] = variableAtoms[i].getValue();
+        }
+    }
 
     /**
      * Close down the term store, it will not be used any more.
      */
-    public void close();
+    public void close() {
+        clear();
+
+        if (variables != null) {
+            variables = null;
+        }
+    }
 }

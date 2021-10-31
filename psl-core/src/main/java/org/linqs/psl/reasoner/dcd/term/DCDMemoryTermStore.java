@@ -25,7 +25,7 @@ import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
  */
 public class DCDMemoryTermStore extends MemoryVariableTermStore<DCDObjectiveTerm, RandomVariableAtom> {
     @Override
-    protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
+    protected RandomVariableAtom createVariableFromAtom(RandomVariableAtom atom) {
         return atom;
     }
 }
