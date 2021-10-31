@@ -18,32 +18,19 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.InitialValue;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.term.MemoryConsensusTermStore;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
-import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.util.IteratorUtils;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * A TermStore specifically for ADMM terms.
  */
-public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm, LocalVariable> {
+public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm> {
     protected LocalVariable createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value) {
         return new LocalVariable(consensusIndex, value);
     }
 
     protected void resetLocalVariables() {
         for (int i = 0; i < getNumConsensusVariables(); i++) {
-            float value = store.getVariableValue(i);
+            float value = store.getAtomValue(i);
             for (LocalVariable local : localVariables.get(i)) {
                 local.setValue(value);
                 local.setLagrange(0.0f);

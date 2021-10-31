@@ -71,7 +71,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
     @Override
     public long generateTerms(GroundRuleStore ruleStore, final TermStore<T, V> termStore) {
         long initialSize = termStore.size();
-        termStore.ensureCapacity(initialSize + ruleStore.size());
+        termStore.ensureTermCapacity(initialSize + ruleStore.size());
 
         Set<WeightedRule> rules = new HashSet<WeightedRule>();
         for (GroundRule rule : ruleStore.getGroundRules()) {
@@ -129,7 +129,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                     createTerm(negatedRule, termStore, newTerms, newHyperplane);
 
                     for (T term : newTerms) {
-                        termStore.add(rule, term, newHyperplane.get(0));
+                        termStore.addTerm(rule, term, newHyperplane.get(0));
                     }
 
                     newTerms.clear();
@@ -139,7 +139,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                 createTerm(rule, termStore, newTerms, newHyperplane);
 
                 for (T term : newTerms) {
-                    termStore.add(rule, term, newHyperplane.get(0));
+                    termStore.addTerm(rule, term, newHyperplane.get(0));
                 }
 
                 newTerms.clear();

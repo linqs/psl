@@ -23,6 +23,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 
+import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,11 +40,11 @@ import java.util.Set;
  * A general TermStore that handles terms and variables all in memory.
  * Variables are stored in an array along with their values.
  */
-public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements VariableTermStore<T, V> {
+public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermStore<T, V> {
     private static final Logger log = LoggerFactory.getLogger(MemoryVariableTermStore.class);
 
     // Keep an internal store to hold the terms while this class focuses on variables.
-    private MemoryTermStore<T> store;
+    private ArrayList<T> store;
 
     // Keep track of variable indexes.
     private Map<V, Integer> variables;
@@ -69,7 +70,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();
         defaultSize = Options.MEMORY_VTS_DEFAULT_SIZE.getInt();
 
-        store = new MemoryTermStore<T>();
+
+        store =  new ArrayList<T>((int)Options.MEMORY_TS_INITIAL_SIZE.getLong());
         ensureVariableCapacity(defaultSize);
 
         modelPredicates = new HashSet<ModelPredicate>();
@@ -79,17 +81,17 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public int getVariableIndex(V variable) {
-        return variables.get(variable).intValue();
+    public int getAtomIndex(GroundAtom atom) {
+        return variables.get(atom).intValue();
     }
 
     @Override
-    public float getVariableValue(int index) {
+    public float getAtomValue(int index) {
         return variableValues[index];
     }
 
     @Override
-    public float[] getVariableValues() {
+    public float[] getAtomValues() {
         return variableValues;
     }
 
@@ -106,18 +108,18 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public GroundAtom[] getVariableAtoms() {
+    public GroundAtom[] getAtoms() {
         return variableAtoms;
     }
 
     @Override
-    public int getNumVariables() {
+    public int getNumAtoms() {
         return variables.size();
     }
 
     @Override
     public int getNumRandomVariables() {
-        return getNumVariables();
+        return getNumAtoms();
     }
 
     @Override
@@ -172,7 +174,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     @Override
     public void variablesExternallyUpdated() {
         variablesExternallyUpdatedFlag = true;
-        store.variablesExternallyUpdated();
     }
 
     /**
@@ -226,20 +227,11 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public Iterable<V> getVariables() {
-        return variables.keySet();
-    }
-
-    @Override
-    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
-        store.add(rule, term, hyperplane);
+    public synchronized void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane) {
+        store.add(term);
 
         if (hyperplane.getIntegratedRVAs() != null) {
-            for (Object object : hyperplane.getIntegratedRVAs()) {
-                // HACK(eriq): There is some strange typing issue here that I do not understand.
-                //  Java thinks that the elements in hyperplane.getIntegratedRVAs() are Objects,
-                //  and therefore will not implicitly cast to Hyperplane.IntegratedRVA.
-                Hyperplane.IntegratedRVA integratedRVA = (Hyperplane.IntegratedRVA)object;
+            for (Hyperplane.IntegratedRVA integratedRVA : hyperplane.getIntegratedRVAs()) {
                 createMirrorVariable(integratedRVA.atom, integratedRVA.coefficient, term);
             }
         }
@@ -279,7 +271,6 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         clear();
 
         if (store != null) {
-            store.close();
             store = null;
         }
 
@@ -378,8 +369,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public T get(long index) {
-        return store.get(index);
+    public T getTerm(long index) {
+        return store.get((int)index);
     }
 
     @Override
@@ -388,14 +379,20 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        store.ensureCapacity(capacity);
+    public void ensureTermCapacity(long capacity) {
+        assert((int)capacity >= 0);
+
+        if (capacity == 0) {
+            return;
+        }
+
+        store.ensureCapacity((int)capacity);
     }
 
     @Override
     public Iterator<T> iterator() {
         if (shuffle) {
-            store.shuffle();
+            RandUtils.shuffle(store);
         }
 
         return store.iterator();

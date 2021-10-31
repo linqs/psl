@@ -21,13 +21,10 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
@@ -311,12 +308,12 @@ public class ADMMReasoner extends Reasoner {
                     break;
                 }
 
-                if (!useNonConvex && !termStore.get(termIndex).isConvex()) {
+                if (!useNonConvex && !termStore.getTerm(termIndex).isConvex()) {
                     continue;
                 }
 
-                termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
-                termStore.get(termIndex).minimize(stepSize, consensusValues);
+                termStore.getTerm(termIndex).updateLagrange(stepSize, consensusValues);
+                termStore.getTerm(termIndex).minimize(stepSize, consensusValues);
             }
         }
     }

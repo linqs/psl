@@ -22,8 +22,7 @@ import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 import org.linqs.psl.util.MathUtils;
 
@@ -45,14 +44,14 @@ public class SGDObjectiveTerm implements StreamingTerm {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+    public SGDObjectiveTerm(TermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared, boolean hinge,
             Hyperplane<GroundAtom> hyperplane) {
         this(termStore, rule, squared, hinge, 0.0f, hyperplane);
     }
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+    public SGDObjectiveTerm(TermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared, boolean hinge,
             float deterEpsilon,
@@ -70,19 +69,15 @@ public class SGDObjectiveTerm implements StreamingTerm {
         variableIndexes = new int[size];
         GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getVariableIndex(variables[i]);
+            variableIndexes[i] = termStore.getAtomIndex(variables[i]);
         }
     }
 
     public static SGDObjectiveTerm createDeterTerm(
-            VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+            TermStore<SGDObjectiveTerm, GroundAtom> termStore,
             Hyperplane<GroundAtom> hyperplane,
             float deterWeight, float deterEpsilon) {
         return new SGDObjectiveTerm(termStore, new FakeRule(deterWeight, false), false, false, deterEpsilon, hyperplane);
-    }
-
-    public int getVariableIndex(int i) {
-        return variableIndexes[i];
     }
 
     public float getDeterEpsilon() {
@@ -235,7 +230,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return toString(null);
     }
 
-    public String toString(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+    public String toString(TermStore<SGDObjectiveTerm, GroundAtom> termStore) {
         // weight * [max(coeffs^T * x - constant, 0.0)]^2
 
         StringBuilder builder = new StringBuilder();
@@ -259,7 +254,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
                 builder.append(">)");
             } else {
                 builder.append(" * ");
-                builder.append(termStore.getVariableValue(variableIndexes[i]));
+                builder.append(termStore.getAtomValue(variableIndexes[i]));
                 builder.append(")");
             }
 

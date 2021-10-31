@@ -27,7 +27,6 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
@@ -59,12 +58,9 @@ public class DCDReasoner extends Reasoner {
     @Override
     public double optimize(TermStore baseTermStore,
             List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
-        if (!(baseTermStore instanceof VariableTermStore)) {
-            throw new IllegalArgumentException("DCDReasoner requires an VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
-        }
 
         @SuppressWarnings("unchecked")
-        VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
+        TermStore<DCDObjectiveTerm, GroundAtom> termStore = (TermStore<DCDObjectiveTerm, GroundAtom>)baseTermStore;
 
         termStore.initForOptimization();
 
@@ -99,8 +95,8 @@ public class DCDReasoner extends Reasoner {
 
             // If we are truncating every step, then the variables are already in valid state.
             if (!truncateEveryStep) {
-                float[] variableValues = termStore.getVariableValues();
-                for (int i = 0; i < termStore.getNumVariables(); i++) {
+                float[] variableValues = termStore.getAtomValues();
+                for (int i = 0; i < termStore.getNumAtoms(); i++) {
                     variableValues[i] = Math.max(0.0f, Math.min(1.0f, variableValues[i]));
                 }
             }
@@ -113,10 +109,10 @@ public class DCDReasoner extends Reasoner {
 
             if (iteration == 1) {
                 // Initialize old variables values.
-                oldVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
+                oldVariableValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
             } else {
                 // Update old variables values and objective.
-                System.arraycopy(termStore.getVariableValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+                System.arraycopy(termStore.getAtomValues(), 0, oldVariableValues, 0, oldVariableValues.length);
                 oldObjective = objective;
             }
 
@@ -160,7 +156,7 @@ public class DCDReasoner extends Reasoner {
         return false;
     }
 
-    private double computeObjective(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore) {
+    private double computeObjective(TermStore<DCDObjectiveTerm, GroundAtom> termStore) {
         double objective = 0.0;
 
         // If possible, use a readonly iterator.
@@ -172,15 +168,15 @@ public class DCDReasoner extends Reasoner {
         }
 
         for (DCDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate(termStore.getVariableValues()) / c;
+            objective += term.evaluate(termStore.getAtomValues()) / c;
         }
 
         return objective;
     }
 
-    private void variableUpdate(DCDObjectiveTerm term, VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore) {
-        GroundAtom[] variableAtoms = termStore.getVariableAtoms();
-        float[] variableValues = termStore.getVariableValues();
+    private void variableUpdate(DCDObjectiveTerm term, TermStore<DCDObjectiveTerm, GroundAtom> termStore) {
+        GroundAtom[] variableAtoms = termStore.getAtoms();
+        float[] variableValues = termStore.getAtomValues();
 
         WeightedRule rule = term.getRule();
 

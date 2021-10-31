@@ -26,14 +26,14 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FileUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ import java.util.Map;
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
  * Variables are kept in memory, but terms are kept on disk.
  */
-public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, GroundAtom> {
+public abstract class StreamingTermStore<T extends ReasonerTerm> implements TermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
@@ -171,108 +171,19 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         FileUtils.mkdir(pageDir);
     }
 
-    /**
-     * Whether this is the first round of iteration.
-     * During the initial round, not all terms will be loaded into the cache
-     * (they will need to be grounded).
-     * If false, users can specifically call noWriteIterator() for faster iteration.
-     */
-    public boolean isInitialRound() {
-        return initialRound;
+    @Override
+    public void ensureTermCapacity(long capacity) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean isLoaded() {
-        return !initialRound;
+    public void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getNumVariables() {
-        return totalVariableCount;
-    }
-
-    @Override
-    public int getNumRandomVariables() {
-        return numRandomVariableAtoms;
-    }
-
-    @Override
-    public int getNumObservedVariables() {
-        return numObservedAtoms;
-    }
-
-    @Override
-    public Iterable<GroundAtom> getVariables() {
-        return variables.keySet();
-    }
-
-    @Override
-    public float[] getVariableValues() {
-        return variableValues;
-    }
-
-    @Override
-    public float getVariableValue(int index) {
-        return variableValues[index];
-    }
-
-    @Override
-    public int getVariableIndex(GroundAtom variable) {
-        Integer index = variables.get(variable);
-        if (index == null) {
-            return -1;
-        }
-
-        return index.intValue();
-    }
-
-    @Override
-    public GroundAtom[] getVariableAtoms() {
-        return variableAtoms;
-    }
-
-    @Override
-    public double syncAtoms() {
-        double movement = 0.0;
-
-        for (int i = 0; i < totalVariableCount; i++) {
-            if (variableAtoms[i] == null) {
-                continue;
-            }
-
-            if (variableAtoms[i] instanceof RandomVariableAtom) {
-                movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
-                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
-            }
-        }
-
-        return Math.sqrt(movement);
-    }
-
-    @Override
-    public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
-        if (variables.containsKey(atom)) {
-            return atom;
-        }
-
-        // Got a new variable.
-
-        if (totalVariableCount >= variableAtoms.length) {
-            ensureVariableCapacity(totalVariableCount * 2);
-        }
-
-        variables.put(atom, totalVariableCount);
-        variableValues[totalVariableCount] = atom.getValue();
-        variableAtoms[totalVariableCount] = atom;
-        totalVariableCount++;
-
-        if (atom instanceof RandomVariableAtom) {
-            numRandomVariableAtoms++;
-        } else {
-            numObservedAtoms++;
-        }
-
-        return atom;
+    public T getTerm(long index) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -312,72 +223,121 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     }
 
     @Override
-    public long size() {
-        return seenTermCount;
+    public int getNumAtoms() {
+        return totalVariableCount;
     }
 
     @Override
-    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
-        throw new UnsupportedOperationException();
+    public int getNumRandomVariables() {
+        return numRandomVariableAtoms;
     }
 
     @Override
-    public T get(long index) {
-        throw new UnsupportedOperationException();
+    public int getNumObservedVariables() {
+        return numObservedAtoms;
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String getTermPagePath(int index) {
-        // Make sure the path is built.
-        for (int i = termPagePaths.size(); i <= index; i++) {
-            // Creating new term page path.
-            termPagePaths.add(Paths.get(pageDir, String.format("%08d_term.page", i)).toString());
+    public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
+        if (variables.containsKey(atom)) {
+            return atom;
         }
 
-        return termPagePaths.get(index);
-    }
+        // Got a new variable.
 
-    public String getVolatilePagePath(int index) {
-        // Make sure the path is built.
-        for (int i = volatilePagePaths.size(); i <= index; i++) {
-            // Creating new volatile page path.
-            volatilePagePaths.add(Paths.get(pageDir, String.format("%08d_volatile.page", i)).toString());
+        if (totalVariableCount >= variableAtoms.length) {
+            ensureVariableCapacity(totalVariableCount * 2);
         }
 
-        return volatilePagePaths.get(index);
+        variables.put(atom, totalVariableCount);
+        variableValues[totalVariableCount] = atom.getValue();
+        variableAtoms[totalVariableCount] = atom;
+        totalVariableCount++;
+
+        if (atom instanceof RandomVariableAtom) {
+            numRandomVariableAtoms++;
+        } else {
+            numObservedAtoms++;
+        }
+
+        return atom;
+    }
+
+    @Override
+    public GroundAtom[] getAtoms() {
+        return variableAtoms;
+    }
+
+    @Override
+    public GroundAtom getAtom(int index) {
+        return variableAtoms[index];
+    }
+
+    @Override
+    public int getAtomIndex(GroundAtom atom) {
+        Integer index = variables.get(atom);
+        if (index == null) {
+            return -1;
+        }
+
+        return index.intValue();
+    }
+
+    @Override
+    public float[] getAtomValues() {
+        return variableValues;
+    }
+
+    @Override
+    public float getAtomValue(int index) {
+        return variableValues[index];
+    }
+
+    @Override
+    public void variablesExternallyUpdated() {
+    }
+
+    @Override
+    public double syncAtoms() {
+        double movement = 0.0;
+
+        for (int i = 0; i < totalVariableCount; i++) {
+            if (variableAtoms[i] == null) {
+                continue;
+            }
+
+            if (variableAtoms[i] instanceof RandomVariableAtom) {
+                movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
+                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            }
+        }
+
+        return Math.sqrt(movement);
     }
 
     /**
-     * A callback for the initial round iterator.
-     * The ByterBuffers are here because of possible reallocation.
+     * Get an iterator that will perform grounding queries and write pages to disk.
+     * By default, this is only called for the initial round of iteration,
+     * but children may override call this in different situations (like online inference).
      */
-    public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
-        seenTermCount += termCount;
-
-        this.numPages = numPages;
-        this.termBuffer = termBuffer;
-        this.volatileBuffer = volatileBuffer;
-
-        initialRound = false;
-        activeIterator = null;
-    }
+    protected abstract StreamingIterator<T> getGroundingIterator();
 
     /**
-     * A callback for the non-initial round iterator.
+     * Get an iterator that will read and write from disk.
      */
-    public void cacheIterationComplete() {
-        activeIterator = null;
-    }
+    protected abstract StreamingIterator<T> getCacheIterator();
+
+    /**
+     * Get an iterator that will not write to disk.
+     */
+    protected abstract StreamingIterator<T> getNoWriteIterator();
 
     /**
      * Get an iterator that goes over all the terms for only reading.
      * Before this method can be called, a full iteration must have already been done.
      * (The cache will need to have been built.)
      */
+    @Override
     public Iterator<T> noWriteIterator() {
         if (activeIterator != null) {
             throw new IllegalStateException("Iterator already exists for this StreamingTermStore. Exhaust the iterator first.");
@@ -413,6 +373,76 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     @Override
     public Iterator<T> iterator() {
         return streamingIterator();
+    }
+
+    @Override
+    public void iterationComplete() {
+    }
+
+    /**
+     * A callback for the initial round iterator.
+     * The ByterBuffers are here because of possible reallocation.
+     */
+    public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
+        seenTermCount += termCount;
+
+        this.numPages = numPages;
+        this.termBuffer = termBuffer;
+        this.volatileBuffer = volatileBuffer;
+
+        initialRound = false;
+        activeIterator = null;
+    }
+
+    /**
+     * A callback for the non-initial round iterator.
+     */
+    public void cacheIterationComplete() {
+        activeIterator = null;
+    }
+
+    /**
+     * Whether this is the first round of iteration.
+     * During the initial round, not all terms will be loaded into the cache
+     * (they will need to be grounded).
+     * If false, users can specifically call noWriteIterator() for faster iteration.
+     */
+    public boolean isInitialRound() {
+        return initialRound;
+    }
+
+    @Override
+    public boolean isLoaded() {
+        return !initialRound;
+    }
+
+    @Override
+    public void initForOptimization() {
+    }
+
+    @Override
+    public long size() {
+        return seenTermCount;
+    }
+
+    public String getTermPagePath(int index) {
+        // Make sure the path is built.
+        for (int i = termPagePaths.size(); i <= index; i++) {
+            // Creating new term page path.
+            termPagePaths.add(Paths.get(pageDir, String.format("%08d_term.page", i)).toString());
+        }
+
+        return termPagePaths.get(index);
+    }
+
+    public String getVolatilePagePath(int index) {
+        // Make sure the path is built.
+        for (int i = volatilePagePaths.size(); i <= index; i++) {
+            // Creating new volatile page path.
+            volatilePagePaths.add(Paths.get(pageDir, String.format("%08d_volatile.page", i)).toString());
+        }
+
+        return volatilePagePaths.get(index);
     }
 
     @Override
@@ -483,18 +513,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
         }
     }
 
-    @Override
-    public void initForOptimization() {
-    }
-
-    @Override
-    public void iterationComplete() {
-    }
-
-    @Override
-    public void variablesExternallyUpdated() {
-    }
-
     /**
      * Check if this term store supports this rule.
      * If the rule is not supported and |warnRules| is true, then a warning should be logged.
@@ -537,21 +555,4 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public boolean rejectCacheTerm(T term) {
         return false;
     }
-
-    /**
-     * Get an iterator that will perform grounding queries and write pages to disk.
-     * By default, this is only called for the initial round of iteration,
-     * but children may override call this in different situations (like online inference).
-     */
-    protected abstract StreamingIterator<T> getGroundingIterator();
-
-    /**
-     * Get an iterator that will read and write from disk.
-     */
-    protected abstract StreamingIterator<T> getCacheIterator();
-
-    /**
-     * Get an iterator that will not write to disk.
-     */
-    protected abstract StreamingIterator<T> getNoWriteIterator();
 }

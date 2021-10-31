@@ -69,7 +69,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     public synchronized void deleteLocalVariable(GroundAtom atom) {
-        int index = getVariableIndex(atom);
+        int index = getAtomIndex(atom);
         if (index == -1) {
             // Atom never used in any terms.
             return;
@@ -90,13 +90,13 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         if (!variables.containsKey(atom)) {
             // Atom does not exist in current model.
             return;
-        } else if (variableAtoms[getVariableIndex(atom)] instanceof RandomVariableAtom) {
+        } else if (variableAtoms[getAtomIndex(atom)] instanceof RandomVariableAtom) {
             numRandomVariableAtoms--;
             numObservedAtoms++;
         }
 
-        variableAtoms[getVariableIndex(atom)] = atom;
-        variableValues[getVariableIndex(atom)] = newValue;
+        variableAtoms[getAtomIndex(atom)] = atom;
+        variableValues[getAtomIndex(atom)] = newValue;
     }
 
     public abstract StreamingIterator<T> getGroundingIterator(List<Rule> rules);

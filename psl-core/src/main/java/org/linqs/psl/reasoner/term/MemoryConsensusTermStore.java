@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.admm.term.LocalVariable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.Iterator;
  * A TermStore specifically for a consensus optimizer.
  * A copy of each involved variable is made for each term.
  */
-public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermStore<T, V> {
+public abstract class MemoryConsensusTermStore<T extends ReasonerTerm> implements TermStore<T, LocalVariable> {
     /**
      * An internal store to track the terms and consensus variables.
      */
@@ -38,7 +39,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     /**
      * The local variables for each consensus variables (indexed by the consensus variable's index).
      */
-    protected List<List<V>> localVariables;
+    protected List<List<LocalVariable>> localVariables;
 
     /**
      * The total number of all local variables (the sum of the sizes of each list in |localVariables|).
@@ -52,12 +53,56 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
             }
         };
 
-        localVariables = new ArrayList<List<V>>();
+        localVariables = new ArrayList<List<LocalVariable>>();
         numLocalVariables = 0;
     }
 
     @Override
-    public synchronized V createLocalVariable(GroundAtom groundAtom) {
+    public void ensureTermCapacity(long capacity) {
+        store.ensureTermCapacity(capacity);
+    }
+
+    @Override
+    public void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane) {
+        store.addTerm(rule, term, hyperplane);
+    }
+
+    @Override
+    public T getTerm(long index) {
+        return store.getTerm(index);
+    }
+
+    @Override
+    public void ensureVariableCapacity(int capacity) {
+        store.ensureVariableCapacity(capacity);
+        ((ArrayList)localVariables).ensureCapacity(capacity);
+    }
+
+    @Override
+    public int getNumAtoms() {
+        return store.getNumAtoms();
+    }
+
+    @Override
+    public int getNumRandomVariables() {
+        return store.getNumRandomVariables();
+    }
+
+    @Override
+    public int getNumObservedVariables() {
+        return store.getNumObservedVariables();
+    }
+
+    public long getNumLocalVariables() {
+        return numLocalVariables;
+    }
+
+    public int getNumConsensusVariables() {
+        return store.getNumAtoms();
+    }
+
+    @Override
+    public synchronized LocalVariable createLocalVariable(GroundAtom groundAtom) {
         if (!(groundAtom instanceof RandomVariableAtom)) {
             throw new IllegalArgumentException("MemoryConsensusTermStores do not keep track of observed atoms (" + groundAtom + ").");
         }
@@ -67,35 +112,64 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
         numLocalVariables++;
 
         store.createLocalVariable(atom);
-        int consensusId = store.getVariableIndex(atom);
+        int consensusId = store.getAtomIndex(atom);
 
         // The underlying store should not give us an index that is more than one larger than the current highest.
         assert(consensusId <= localVariables.size());
 
         if (consensusId == localVariables.size()) {
-            localVariables.add(new ArrayList<V>());
+            localVariables.add(new ArrayList<LocalVariable>());
         }
 
-        V localVariable = createLocalVariableInternal(atom, consensusId, (float)atom.getValue());
+        LocalVariable localVariable = createLocalVariableInternal(atom, consensusId, (float)atom.getValue());
         localVariables.get(consensusId).add(localVariable);
 
         return localVariable;
     }
 
-    public long getNumLocalVariables() {
-        return numLocalVariables;
-    }
+    protected abstract LocalVariable createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value);
 
-    public int getNumConsensusVariables() {
-        return store.getNumRandomVariables();
-    }
+    protected abstract void resetLocalVariables();
 
-    public List<V> getLocalVariables(int consensusId) {
+    /**
+     * Get the local variables associated with the consensus variable index by the provided id.
+     */
+    public List<LocalVariable> getLocalVariables(int consensusId) {
         return localVariables.get(consensusId);
     }
 
+    @Override
+    public GroundAtom[] getAtoms() {
+        return store.getAtoms();
+    }
+
+    @Override
+    public GroundAtom getAtom(int index) {
+        return store.getAtom(index);
+    }
+
+    @Override
+    public int getAtomIndex(GroundAtom atom) {
+        return store.getAtomIndex(atom);
+    }
+
+    @Override
+    public float[] getAtomValues() {
+        return store.getAtomValues();
+    }
+
     public float[] getConsensusValues() {
-        return store.getVariableValues();
+        return store.getAtomValues();
+    }
+
+    @Override
+    public float getAtomValue(int index) {
+        return store.getAtomValue(index);
+    }
+
+    @Override
+    public void variablesExternallyUpdated() {
+        store.variablesExternallyUpdated();
     }
 
     @Override
@@ -104,27 +178,42 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public void add(GroundRule rule, T term, Hyperplane hyperplane) {
-        store.add(rule, term, hyperplane);
+    public Iterator<T> iterator() {
+        return store.iterator();
     }
 
     @Override
-    public void clear() {
-        if (store != null) {
-            store.clear();
-        }
-
-        if (localVariables != null) {
-            localVariables.clear();
-        }
-
-        numLocalVariables = 0;
+    public Iterator<T> noWriteIterator() {
+        return iterator();
     }
 
     @Override
-    public void reset() {
-        resetLocalVariables();
-        store.reset();
+    public void iterationComplete() {
+        store.iterationComplete();
+
+        if (store.getVariablesExternallyUpdatedFlag()) {
+            variablesExternallyUpdated();
+            store.resetVariablesExternallyUpdatedFlag();
+        }
+    }
+
+    public boolean isLoaded() {
+        return true;
+    }
+
+    @Override
+    public void initForOptimization() {
+        store.initForOptimization();
+
+        if (store.getVariablesExternallyUpdatedFlag()) {
+            variablesExternallyUpdated();
+            store.resetVariablesExternallyUpdatedFlag();
+        }
+    }
+
+    @Override
+    public long size() {
+        return store.size();
     }
 
     @Override
@@ -140,66 +229,21 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     }
 
     @Override
-    public void initForOptimization() {
-        store.initForOptimization();
+    public void reset() {
+        resetLocalVariables();
+        store.reset();
+    }
 
-        if (store.getVariablesExternallyUpdatedFlag()) {
-            variablesExternallyUpdated();
-            store.resetVariablesExternallyUpdatedFlag();
+    @Override
+    public void clear() {
+        if (store != null) {
+            store.clear();
         }
-    }
 
-    @Override
-    public void iterationComplete() {
-        store.iterationComplete();
-
-        if (store.getVariablesExternallyUpdatedFlag()) {
-            variablesExternallyUpdated();
-            store.resetVariablesExternallyUpdatedFlag();
+        if (localVariables != null) {
+            localVariables.clear();
         }
+
+        numLocalVariables = 0;
     }
-
-    public RandomVariableAtom getAtom(int index) {
-        return store.getAtom(index);
-    }
-
-    @Override
-    public T get(long index) {
-        return store.get(index);
-    }
-
-    @Override
-    public long size() {
-        return store.size();
-    }
-
-    @Override
-    public void ensureCapacity(long capacity) {
-        store.ensureCapacity(capacity);
-    }
-
-    @Override
-    public void ensureVariableCapacity(int capacity) {
-        store.ensureVariableCapacity(capacity);
-        ((ArrayList)localVariables).ensureCapacity(capacity);
-    }
-
-    @Override
-    public void variablesExternallyUpdated() {
-        store.variablesExternallyUpdated();
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        return store.iterator();
-    }
-
-    @Override
-    public Iterator<T> noWriteIterator() {
-        return iterator();
-    }
-
-    protected abstract V createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value);
-
-    protected abstract void resetLocalVariables();
 }

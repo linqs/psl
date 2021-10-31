@@ -21,8 +21,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 
 import java.nio.ByteBuffer;
@@ -43,7 +42,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public DCDObjectiveTerm(VariableTermStore<DCDObjectiveTerm, GroundAtom> termStore,
+    public DCDObjectiveTerm(TermStore<DCDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
             boolean squared,
             Hyperplane<GroundAtom> hyperplane,
@@ -57,7 +56,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
         variableIndexes = new int[size];
         GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getVariableIndex(variables[i]);
+            variableIndexes[i] = termStore.getAtomIndex(variables[i]);
         }
 
         this.rule = rule;
