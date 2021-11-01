@@ -57,7 +57,7 @@ public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
     }
 
     @Override
-    public boolean rejectCacheTerm(SGDObjectiveTerm term) {
+    public synchronized boolean rejectCacheTerm(SGDObjectiveTerm term) {
         boolean allObservedAtoms = true;
         int[] variableIndexes = term.getVariableIndexes();
 

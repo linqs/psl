@@ -25,6 +25,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,6 +66,11 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
     public abstract void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane);
 
     /**
+     * Get a list of all the terms.
+     */
+    public abstract List<T> getTerms();
+
+    /**
      * Get the term at the specified index.
      */
     public abstract T getTerm(long index);
@@ -75,7 +81,7 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
      * This is best called on an empty store so it can prepare.
      * Not all term stores will even manage variables.
      */
-    public void ensureVariableCapacity(int capacity) {
+    public synchronized void ensureVariableCapacity(int capacity) {
         if (capacity < 0) {
             throw new IllegalArgumentException("Variable capacity must be non-negative. Got: " + capacity);
         }
@@ -110,21 +116,21 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
      * Get the total number of atoms (dead or alive) tracked by this term store.
      * The number here must coincide with the size (not length) of the array returned by getAtomValues().
      */
-    public int getNumAtoms() {
+    public synchronized int getNumAtoms() {
         return totalVariableCount;
     }
 
     /**
      * Get the total number of random variables tracked by this term store.
      */
-    public int getNumRandomVariables() {
+    public synchronized int getNumRandomVariables() {
         return numRandomVariableAtoms;
     }
 
     /**
      * Get the total number of observed variables tracked by this term store.
      */
-    public int getNumObservedVariables() {
+    public synchronized int getNumObservedVariables() {
         return numObservedAtoms;
     }
 
@@ -137,21 +143,21 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
      * Get all the atoms tracked by this term store.
      * Note that atoms are allowed to be null if they have been deleted.
      */
-    public GroundAtom[] getAtoms() {
+    public synchronized GroundAtom[] getAtoms() {
         return variableAtoms;
     }
 
     /**
      * Get the atom at the specified index.
      */
-    public GroundAtom getAtom(int index) {
+    public synchronized GroundAtom getAtom(int index) {
         return variableAtoms[index];
     }
 
     /**
      * Get the index that matches up to getAtomValues().
      */
-    public int getAtomIndex(GroundAtom atom) {
+    public synchronized int getAtomIndex(GroundAtom atom) {
         Integer index = variables.get(atom);
         if (index == null) {
             return -1;
@@ -164,14 +170,14 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
      * Get the values for the variable atoms.
      * Changing a value in this array and calling syncAtoms() will change the actual atom's value.
      */
-    public float[] getAtomValues() {
+    public synchronized float[] getAtomValues() {
         return variableValues;
     }
 
     /**
      * Get the atom value for the given index.
      */
-    public float getAtomValue(int index) {
+    public synchronized float getAtomValue(int index) {
         return variableValues[index];
     }
 
@@ -185,7 +191,7 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
      * Note observed atom and atoms not tracked by this term store are not updated.
      * @return The RMSE between the tracked atoms and their internal representation.
      */
-    public double syncAtoms() {
+    public synchronized double syncAtoms() {
         double movement = 0.0;
 
         for (int i = 0; i < totalVariableCount; i++) {
@@ -229,7 +235,7 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
     /**
      * Remove any existing terms and prepare for a new set.
      */
-    public void clear() {
+    public synchronized void clear() {
         totalVariableCount = 0;
         numRandomVariableAtoms = 0;
         numObservedAtoms = 0;
@@ -247,7 +253,7 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
      * Atom values are used to reset variables.
      * Does NOT clear().
      */
-    public void reset() {
+    public synchronized void reset() {
         for (int i = 0; i < totalVariableCount; i++) {
             if (variableAtoms[i] == null) {
                 continue;
@@ -260,7 +266,7 @@ public abstract class TermStore<T extends ReasonerTerm, V extends ReasonerLocalV
     /**
      * Close down the term store, it will not be used any more.
      */
-    public void close() {
+    public synchronized void close() {
         clear();
 
         if (variables != null) {

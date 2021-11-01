@@ -32,6 +32,7 @@ import org.linqs.psl.util.Parallel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -279,6 +280,8 @@ public class ADMMReasoner extends Reasoner {
         private final ADMMTermStore termStore;
         private final long blockSize;
         private final float[] consensusValues;
+        private final List<ADMMObjectiveTerm> terms;
+        private final long numTerms;
         private final boolean useNonConvex;
 
         public TermWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
@@ -289,6 +292,8 @@ public class ADMMReasoner extends Reasoner {
             this.useNonConvex = useNonConvex;
 
             this.consensusValues = termStore.getConsensusValues();
+            this.terms = termStore.getTerms();
+            this.numTerms = termStore.size();;
         }
 
         @Override
@@ -298,11 +303,9 @@ public class ADMMReasoner extends Reasoner {
 
         @Override
         public void work(long blockIndex, Long ignore) {
-            long numTerms = termStore.size();
-
             // Minimize each local function (wrt the local variable copies).
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
-                long termIndex = blockIndex * blockSize + innerBlockIndex;
+                int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
 
                 if (termIndex >= numTerms) {
                     break;
@@ -312,8 +315,8 @@ public class ADMMReasoner extends Reasoner {
                     continue;
                 }
 
-                termStore.getTerm(termIndex).updateLagrange(stepSize, consensusValues);
-                termStore.getTerm(termIndex).minimize(stepSize, consensusValues);
+                terms.get(termIndex).updateLagrange(stepSize, consensusValues);
+                terms.get(termIndex).minimize(stepSize, consensusValues);
             }
         }
     }
@@ -321,7 +324,9 @@ public class ADMMReasoner extends Reasoner {
     private class VariableWorker extends Parallel.Worker<Long> {
         private final ADMMTermStore termStore;
         private final long blockSize;
+        private final long numConsensusVariables;
         private final float[] consensusValues;
+        private final List<List<LocalVariable>> localVariables;
         private final boolean useNonConvex;
 
         public VariableWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
@@ -332,6 +337,8 @@ public class ADMMReasoner extends Reasoner {
             this.useNonConvex = useNonConvex;
 
             this.consensusValues = termStore.getConsensusValues();
+            this.localVariables = termStore.getLocalVariables();
+            this.numConsensusVariables = termStore.getNumConsensusVariables();
         }
 
         public Object clone() {
@@ -340,8 +347,6 @@ public class ADMMReasoner extends Reasoner {
 
         @Override
         public void work(long blockIndex, Long ignore) {
-            int numVariables = termStore.getNumConsensusVariables();
-
             double primalResInc = 0.0f;
             double dualResInc = 0.0f;
             double AxNormInc = 0.0f;
@@ -355,16 +360,16 @@ public class ADMMReasoner extends Reasoner {
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
                 int variableIndex = (int)(blockIndex * blockSize + innerBlockIndex);
 
-                if (variableIndex >= numVariables) {
+                if (variableIndex >= numConsensusVariables) {
                     break;
                 }
 
                 double total = 0.0f;
-                int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
+                int numLocalVariables = localVariables.get(variableIndex).size();
 
                 // First pass computes newConsensusValue and dual residual fom all local copies.
                 for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-                    LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
+                    LocalVariable localVariable = localVariables.get(variableIndex).get(localVarIndex);
                     total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
 
                     AxNormInc += localVariable.getValue() * localVariable.getValue();
@@ -384,7 +389,7 @@ public class ADMMReasoner extends Reasoner {
                 // Second pass computes primal residuals.
 
                 for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-                    LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
+                    LocalVariable localVariable = localVariables.get(variableIndex).get(localVarIndex);
 
                     diff = localVariable.getValue() - newConsensusValue;
                     primalResInc += diff * diff;

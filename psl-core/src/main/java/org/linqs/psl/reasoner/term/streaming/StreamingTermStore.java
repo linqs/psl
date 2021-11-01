@@ -161,6 +161,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
     }
 
     @Override
+    public List<T> getTerms() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public T getTerm(long index) {
         throw new UnsupportedOperationException();
     }

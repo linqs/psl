@@ -107,7 +107,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
      * Returns movement in the random variables.
      */
     @Override
-    public double syncAtoms() {
+    public synchronized double syncAtoms() {
         double movement = 0.0;
         for (int i = 0; i < totalVariableCount; i++) {
             if (variableAtoms[i] == null) {

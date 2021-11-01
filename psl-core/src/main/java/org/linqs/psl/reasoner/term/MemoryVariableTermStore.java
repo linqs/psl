@@ -145,7 +145,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         super.clear();
 
         if (store != null) {
@@ -162,7 +162,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         super.close();
 
         if (store != null) {
@@ -182,7 +182,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         updateModelAtoms();
     }
 
-    private void updateModelAtoms() {
+    private synchronized void updateModelAtoms() {
         if (modelPredicates.size() == 0) {
             return;
         }
@@ -221,13 +221,13 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         variablesExternallyUpdated();
     }
 
-    private void initialFitModelAtoms() {
+    private synchronized void initialFitModelAtoms() {
         for (ModelPredicate predicate : modelPredicates) {
             predicate.initialFit();
         }
     }
 
-    private void fitModelAtoms() {
+    private synchronized void fitModelAtoms() {
         if (modelPredicates.size() == 0) {
             return;
         }
@@ -258,17 +258,22 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public T getTerm(long index) {
+    public synchronized List<T> getTerms() {
+        return store;
+    }
+
+    @Override
+    public synchronized T getTerm(long index) {
         return store.get((int)index);
     }
 
     @Override
-    public long size() {
+    public synchronized long size() {
         return store.size();
     }
 
     @Override
-    public void ensureTermCapacity(long capacity) {
+    public synchronized void ensureTermCapacity(long capacity) {
         assert((int)capacity >= 0);
 
         if (capacity == 0) {
@@ -279,7 +284,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public Iterator<T> iterator() {
+    public synchronized Iterator<T> iterator() {
         if (shuffle) {
             RandUtils.shuffle(store);
         }
