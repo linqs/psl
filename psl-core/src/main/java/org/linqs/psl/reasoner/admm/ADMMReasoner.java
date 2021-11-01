@@ -24,7 +24,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.LocalVariable;
+import org.linqs.psl.reasoner.term.LocalVariable;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;

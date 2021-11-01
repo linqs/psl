@@ -17,12 +17,12 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LocalVariable;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;

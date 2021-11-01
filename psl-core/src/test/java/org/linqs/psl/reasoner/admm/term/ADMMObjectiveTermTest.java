@@ -24,6 +24,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 
 import org.junit.Test;
+import org.linqs.psl.reasoner.term.LocalVariable;
 
 public class ADMMObjectiveTermTest {
     @Test

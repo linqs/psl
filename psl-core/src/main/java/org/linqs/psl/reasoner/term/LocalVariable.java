@@ -15,9 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.admm.term;
-
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
+package org.linqs.psl.reasoner.term;
 
 /**
  * The local context of a variable.
@@ -30,8 +28,7 @@ public class LocalVariable implements ReasonerLocalVariable {
     private float lagrange;
 
     /**
-     * In the context of ADMM, local variables should be initialized with the initial value of the
-     * global variable they are tracking.
+     * Local variables should be initialized with the initial value of the global variable they are tracking.
      */
     public LocalVariable(int globalId, float value) {
         this.value = value;

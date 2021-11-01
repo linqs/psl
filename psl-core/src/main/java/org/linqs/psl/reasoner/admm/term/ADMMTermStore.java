@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.reasoner.term.LocalVariable;
 import org.linqs.psl.reasoner.term.MemoryConsensusTermStore;
 
 /**

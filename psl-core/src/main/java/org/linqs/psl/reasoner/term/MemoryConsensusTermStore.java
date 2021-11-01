@@ -20,8 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.admm.term.LocalVariable;
+import org.linqs.psl.reasoner.term.LocalVariable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +43,7 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm> extends M
 
     public MemoryConsensusTermStore() {
         super();
-        
+
         localVariables = new ArrayList<List<LocalVariable>>();
         ((ArrayList)localVariables).ensureCapacity(Options.MEMORY_VTS_DEFAULT_SIZE.getInt());
         numLocalVariables = 0;
