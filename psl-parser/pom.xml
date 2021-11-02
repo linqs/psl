@@ -68,6 +68,7 @@
                 </executions>
                 <configuration>
                     <visitor>true</visitor>
+                    <libDirectory>${basedir}/src/main/antlr4/org/linqs/psl/parser/antlr</libDirectory>
                 </configuration>
             </plugin>
         </plugins>
