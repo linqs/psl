@@ -133,12 +133,12 @@ EXIT
     :   E X I T
     ;
 
-OBSERVE_ATOM
-    :   O B S E R V E A T O M
-    ;
-
 GET_ATOM
     :   G E T A T O M
+    ;
+
+OBSERVE_ATOM
+    :   O B S E R V E A T O M
     ;
 
 READ_PARTITION
