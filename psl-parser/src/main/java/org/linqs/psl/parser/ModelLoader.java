@@ -196,6 +196,31 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         return visitor.visitProgram(program, parser);
     }
 
+    static Atom loadAtom(String input) {
+        return loadAtom(new StringReader(input));
+    }
+
+    static Atom loadAtom(Reader input) {
+        PSLParser parser = null;
+        try {
+            parser = getParser(input);
+        } catch (IOException ex) {
+            // Cancel the lex and rethrow.
+            throw new RuntimeException("Failed to lex atom.", ex);
+        }
+
+        AtomContext atomContext = null;
+        try {
+            atomContext = parser.atom();
+        } catch (ParseCancellationException ex) {
+            // Cancel the parse and rethrow the cause.
+            throw (RuntimeException)ex.getCause();
+        }
+
+        ModelLoader visitor = new ModelLoader();
+        return visitor.visitAtom(atomContext);
+    }
+
     /**
      * Get a parser over the given input.
      */
