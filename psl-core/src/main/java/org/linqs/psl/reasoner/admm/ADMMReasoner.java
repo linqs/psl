@@ -311,7 +311,7 @@ public class ADMMReasoner extends Reasoner {
                     break;
                 }
 
-                if (!useNonConvex && !termStore.getTerm(termIndex).isConvex()) {
+                if (!useNonConvex && !terms.get(termIndex).isConvex()) {
                     continue;
                 }
 
