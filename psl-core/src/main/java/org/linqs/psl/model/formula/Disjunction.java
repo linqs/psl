@@ -17,11 +17,13 @@
  */
 package org.linqs.psl.model.formula;
 
-import java.util.ArrayList;
+import org.linqs.psl.util.HashCode;
 
 public class Disjunction extends AbstractBranchFormula<Disjunction> {
     public Disjunction(Formula... f) {
         super(f);
+
+        hashcode = HashCode.build(hashcode, "|");
     }
 
     @Override

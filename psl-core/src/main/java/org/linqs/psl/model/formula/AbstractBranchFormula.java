@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.HashCode;
 
 /**
  * An abstract branching formula.
@@ -31,6 +32,7 @@ import org.linqs.psl.model.term.VariableTypeMap;
  */
 public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> implements Formula {
     protected final Formula[] formulas;
+    protected int hashcode;
 
     public AbstractBranchFormula(Formula... f) {
         if (f.length < 2) {
@@ -44,6 +46,8 @@ public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> 
                 throw new IllegalArgumentException("Formulas must not be null!");
             }
         }
+
+        hashcode = HashCode.build(formulas);
     }
 
     public int length() {
@@ -72,7 +76,7 @@ public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> 
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(formulas);
+        return hashcode;
     }
 
     @Override
@@ -81,7 +85,7 @@ public abstract class AbstractBranchFormula<T extends AbstractBranchFormula<T>> 
             return true;
         }
 
-        if (oth == null || !(getClass().isInstance(oth))) {
+        if (oth == null || !(getClass().isInstance(oth)) || (this.hashCode() != oth.hashCode())) {
             return false;
         }
 

@@ -143,7 +143,7 @@ public abstract class Database implements ReadableDatabase, WritableDatabase {
     }
 
     public boolean hasCachedAtom(StandardPredicate predicate, Constant... arguments) {
-        // Only allocate one QueryAtom per thread.
+        // Only allocate one GetAtom per thread.
         QueryAtom queryAtom = null;
         if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
             queryAtom = new QueryAtom(predicate, arguments);

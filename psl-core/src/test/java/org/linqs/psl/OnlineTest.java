@@ -20,7 +20,7 @@ package org.linqs.psl;
 import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
-import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
+import org.linqs.psl.application.inference.online.messages.responses.GetAtomResponse;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
@@ -55,8 +55,8 @@ public class OnlineTest {
 
         int i = 0;
         for (OnlineResponse onlineResponse : onlineResponses) {
-            if (onlineResponse instanceof QueryAtomResponse) {
-                assertEquals(values[i], ((QueryAtomResponse)onlineResponse).getAtomValue(), MathUtils.EPSILON);
+            if (onlineResponse instanceof GetAtomResponse) {
+                assertEquals(values[i], ((GetAtomResponse)onlineResponse).getAtomValue(), MathUtils.EPSILON);
                 i++;
             }
         }
