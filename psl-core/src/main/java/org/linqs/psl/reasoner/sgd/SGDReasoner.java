@@ -163,18 +163,18 @@ public class SGDReasoner extends Reasoner {
 
             if (iteration == 1) {
                 // Initialize old atom values.
-                prevAtomValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
-                lowestAtomValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
+                prevAtomValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getNumAtoms());
+                lowestAtomValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getNumAtoms());
             } else {
                 // Update lowest objective and atom values.
                 if (objective < lowestObjective) {
                     lowestIteration = iteration - 1;
                     lowestObjective = objective;
-                    System.arraycopy(prevAtomValues, 0, lowestAtomValues, 0, lowestAtomValues.length);
+                    System.arraycopy(prevAtomValues, 0, lowestAtomValues, 0, termStore.getNumAtoms());
                 }
 
                 // Update old atom values and objective.
-                System.arraycopy(termStore.getAtomValues(), 0, prevAtomValues, 0, prevAtomValues.length);
+                System.arraycopy(termStore.getAtomValues(), 0, prevAtomValues, 0, termStore.getNumAtoms());
                 oldObjective = objective;
             }
 

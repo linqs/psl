@@ -292,7 +292,7 @@ public class ADMMReasoner extends Reasoner {
 
             this.consensusValues = termStore.getConsensusValues();
             this.terms = termStore.getTerms();
-            this.numTerms = termStore.size();;
+            this.numTerms = termStore.size();
         }
 
         @Override
