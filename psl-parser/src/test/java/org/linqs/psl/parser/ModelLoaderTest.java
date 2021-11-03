@@ -21,43 +21,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.PSLTest;
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
-import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.ListUtils;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModelLoaderTest {
-    private DataStore dataStore;
-
-    private StandardPredicate singlePredicate;
-    private StandardPredicate doublePredicate;
-
-    @Before
-    public void setup() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
-
-        singlePredicate = StandardPredicate.get("Single", ConstantType.UniqueStringID);
-        dataStore.registerPredicate(singlePredicate);
-
-        doublePredicate = StandardPredicate.get("Double", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-        dataStore.registerPredicate(doublePredicate);
-    }
-
+public class ModelLoaderTest extends LoaderTest{
     @Test
     public void testBase() {
         String input =

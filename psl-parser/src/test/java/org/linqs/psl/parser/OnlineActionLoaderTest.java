@@ -17,32 +17,11 @@
  */
 package org.linqs.psl.parser;
 
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.OnlinePSLTest;
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.ConstantType;
 
-public class OnlineActionLoaderTest {
-    private DataStore dataStore;
+import org.junit.Test;
 
-    private StandardPredicate singlePredicate;
-    private StandardPredicate doublePredicate;
-
-    @Before
-    public void setup() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
-
-        singlePredicate = StandardPredicate.get("Single", ConstantType.UniqueStringID);
-        dataStore.registerPredicate(singlePredicate);
-
-        doublePredicate = StandardPredicate.get("Double", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-        dataStore.registerPredicate(doublePredicate);
-    }
-
+public class OnlineActionLoaderTest extends LoaderTest {
     @Test
     public void testAddAtom() {
         String input =
