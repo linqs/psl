@@ -296,8 +296,8 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
 
     @Override
     public WriteInferredPredicates visitWriteInferredPredicates(WriteInferredPredicatesContext ctx) {
-        String outputDirectoryPath = ctx.STRING_LITERAL().getText();
-        return new WriteInferredPredicates(outputDirectoryPath.substring(1, outputDirectoryPath.length() - 1));
+        String outputDirectoryPath = ctx.STRING_LITERAL().getText().substring(1, ctx.STRING_LITERAL().getText().length() - 1);
+        return new WriteInferredPredicates(outputDirectoryPath);
     }
 
     @Override
