@@ -42,7 +42,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
     private short size;
     private float[] coefficients;
-    private int[] variableIndexes;
+    private int[] atomIndexes;
 
     public SGDObjectiveTerm(TermStore<SGDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
@@ -66,10 +66,10 @@ public class SGDObjectiveTerm implements StreamingTerm {
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
-        variableIndexes = new int[size];
-        GroundAtom[] variables = hyperplane.getVariables();
+        atomIndexes = new int[size];
+        GroundAtom[] atoms = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getAtomIndex(variables[i]);
+            atomIndexes[i] = termStore.getAtomIndex(atoms[i]);
         }
     }
 
@@ -98,12 +98,12 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return MathUtils.isZero(deterEpsilon);
     }
 
-    public float evaluate(float[] variableValues) {
-        float dot = dot(variableValues);
+    public float evaluate(float[] atomValues) {
+        float dot = dot(atomValues);
         float weight = getWeight();
 
         if (!MathUtils.isZero(deterEpsilon)) {
-            return evaluateDeter(weight, variableValues);
+            return evaluateDeter(weight, atomValues);
         } else if (squared && hinge) {
             // weight * [max(0.0, coeffs^T * x - constant)]^2
             return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
@@ -131,36 +131,36 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return weight * coefficients[varId];
     }
 
-    public float dot(float[] variableValues) {
+    public float dot(float[] atomValues) {
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[variableIndexes[i]];
+            value += coefficients[i] * atomValues[atomIndexes[i]];
         }
 
         return value - constant;
     }
 
     /**
-     * weight * 1/n * (sum_{i = 0}^{n} f(variable[i]))
+     * weight * 1/n * (sum_{i = 0}^{n} f(atom[i]))
      * f(x) =
      *   1.0 - x if x > 1/n
      *   x       else
      */
-    private float evaluateDeter(float weight, float[] variableValues) {
+    private float evaluateDeter(float weight, float[] atomValues) {
         float deterValue = 1.0f / size;
 
-        float value = 0.0f;
+        float evaluation = 0.0f;
         for (int i = 0; i < size; i++) {
-            float variableValue = variableValues[variableIndexes[i]];
-            if (variableValue > deterValue) {
-                value += 1.0f - variableValue;
+            float value = atomValues[atomIndexes[i]];
+            if (value > deterValue) {
+                evaluation += 1.0f - value;
             } else {
-                value += variableValue;
+                evaluation += value;
             }
         }
 
-        return weight * (1.0f / size) * value;
+        return weight * (1.0f / size) * evaluation;
     }
 
     /**
@@ -171,8 +171,8 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return rule;
     }
 
-    public int[] getVariableIndexes() {
-        return variableIndexes;
+    public int[] getAtomIndexes() {
+        return atomIndexes;
     }
 
     @Override
@@ -184,7 +184,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
             + Float.SIZE  // constant
             + Short.SIZE  // size
             + Float.SIZE // deter epsilon
-            + size * (Float.SIZE + Integer.SIZE);  // coefficients + variableIndexes
+            + size * (Float.SIZE + Integer.SIZE);  // coefficients + indexes
 
         return bitSize / 8;
     }
@@ -200,7 +200,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(variableIndexes[i]);
+            fixedBuffer.putInt(atomIndexes[i]);
         }
     }
 
@@ -213,15 +213,15 @@ public class SGDObjectiveTerm implements StreamingTerm {
         size = fixedBuffer.getShort();
         deterEpsilon = fixedBuffer.getFloat();
 
-        // Make sure that there is enough room for all these variables.
+        // Make sure that there is enough room for all the coefficients and indexes.
         if (coefficients.length < size) {
             coefficients = new float[size];
-            variableIndexes = new int[size];
+            atomIndexes = new int[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            variableIndexes[i] = fixedBuffer.getInt();
+            atomIndexes[i] = fixedBuffer.getInt();
         }
     }
 
@@ -250,11 +250,11 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
             if (termStore == null) {
                 builder.append(" * <index:");
-                builder.append(variableIndexes[i]);
+                builder.append(atomIndexes[i]);
                 builder.append(">)");
             } else {
                 builder.append(" * ");
-                builder.append(termStore.getAtomValue(variableIndexes[i]));
+                builder.append(termStore.getAtomValue(atomIndexes[i]));
                 builder.append(")");
             }
 

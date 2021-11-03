@@ -23,7 +23,6 @@ import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.LocalVariable;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 
@@ -32,7 +31,7 @@ import java.util.Collection;
 /**
  * A TermGenerator for ADMM objective terms.
  */
-public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm, LocalVariable> {
+public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm, LocalAtom> {
     public ADMMTermGenerator() {
         this(true);
     }
@@ -42,13 +41,13 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     }
 
     @Override
-    public Class<LocalVariable> getLocalVariableType() {
-        return LocalVariable.class;
+    public Class<LocalAtom> getLocalVariableType() {
+        return LocalAtom.class;
     }
 
     @Override
-    public int createLossTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+    public int createLossTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalAtom> termStore,
+            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalAtom> hyperplane) {
         if (isHinge && isSquared) {
             newTerms.add(ADMMObjectiveTerm.createSquaredHingeLossTerm(hyperplane, groundRule.getRule()));
         } else if (isHinge && !isSquared) {
@@ -63,8 +62,8 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     }
 
     @Override
-    public int createLinearConstraintTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
+    public int createLinearConstraintTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalAtom> termStore,
+            GroundRule groundRule, Hyperplane<LocalAtom> hyperplane, FunctionComparator comparator) {
         newTerms.add(ADMMObjectiveTerm.createLinearConstraintTerm(hyperplane, groundRule.getRule(), comparator));
         if (!addDeterTerms) {
             return 1;
@@ -93,8 +92,8 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
 
         // Make independent hyperplanes for each variable in the constant.
         for (int i = 0; i < hyperplane.size(); i++) {
-            Hyperplane<LocalVariable> independentHyperplane = new Hyperplane<LocalVariable>(
-                    new LocalVariable[]{hyperplane.getVariable(i)},
+            Hyperplane<LocalAtom> independentHyperplane = new Hyperplane<LocalAtom>(
+                    new LocalAtom[]{hyperplane.getVariable(i)},
                     new float[]{1.0f},
                     0.0f, 1);
 

@@ -15,22 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.term;
+package org.linqs.psl.reasoner.admm.term;
+
+import org.linqs.psl.reasoner.term.ReasonerAtom;
 
 /**
- * The local context of a variable.
- * A local variable keeps track of what global (consensus) variable it is associated with.
- * Note that local variables are hashed and equated by the global variable they track.
+ * A local copy of a GroundAtom.
+ * A LocalAtom keeps track of what GroundAtom (consensus atom) it is associated with.
+ * Note that LocalAtoms are hashed and equated by the global atom they track.
  */
-public class LocalVariable implements ReasonerLocalVariable {
+public class LocalAtom implements ReasonerAtom {
     private final int globalId;
     private float value;
     private float lagrange;
 
     /**
-     * Local variables should be initialized with the initial value of the global variable they are tracking.
+     * LocalAtoms should be initialized with the initial value of the ground atom they are tracking.
      */
-    public LocalVariable(int globalId, float value) {
+    public LocalAtom(int globalId, float value) {
         this.value = value;
         this.globalId = globalId;
 
@@ -45,6 +47,7 @@ public class LocalVariable implements ReasonerLocalVariable {
         return lagrange;
     }
 
+    @Override
     public float getValue() {
         return value;
     }
@@ -66,11 +69,11 @@ public class LocalVariable implements ReasonerLocalVariable {
     }
 
     public boolean equals(Object other) {
-        if (other == null || !(other instanceof LocalVariable)) {
+        if (other == null || !(other instanceof LocalAtom)) {
             return false;
         }
 
-        return this.globalId == ((LocalVariable)other).globalId;
+        return this.globalId == ((LocalAtom)other).globalId;
     }
 
     public String toString() {

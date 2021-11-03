@@ -26,7 +26,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
+import org.linqs.psl.reasoner.term.ReasonerAtom;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FileUtils;
@@ -42,7 +42,7 @@ import java.util.List;
 
 /**
  * A term store that does not hold all the terms in memory, but instead keeps most terms on disk.
- * Variables are kept in memory, but terms are kept on disk.
+ * Atoms are kept in memory, but terms are kept on disk.
  */
 public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermStore<T, GroundAtom> {
     private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
@@ -125,7 +125,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
         this.atomManager = atomManager;
         this.termGenerator = termGenerator;
 
-        ensureVariableCapacity(estimateVariableCapacity());
+        ensureAtomCapacity(estimateAtomCapacity());
 
         termPagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
         volatilePagePaths = new ArrayList<String>(INITIAL_PATH_CACHE_SIZE);
@@ -156,7 +156,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
     }
 
     @Override
-    public void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane) {
+    public void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerAtom> hyperplane) {
         throw new UnsupportedOperationException();
     }
 
@@ -171,28 +171,28 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
     }
 
     /**
-     * Estimate how many total variables this term store will need to track.
+     * Estimate how many total atoms this term store will need to track.
      */
-    protected int estimateVariableCapacity() {
+    protected int estimateAtomCapacity() {
         return atomManager.getCachedRVACount();
     }
 
     @Override
-    public synchronized GroundAtom createLocalVariable(GroundAtom atom) {
-        if (variables.containsKey(atom)) {
+    public synchronized GroundAtom createReasonerAtom(GroundAtom atom) {
+        if (atomIndexMap.containsKey(atom)) {
             return atom;
         }
 
-        // Got a new variable.
+        // Got a new atom.
 
-        if (totalVariableCount >= variableAtoms.length) {
-            ensureVariableCapacity(totalVariableCount * 2);
+        if (totalAtomCount >= atoms.length) {
+            ensureAtomCapacity(totalAtomCount * 2);
         }
 
-        variables.put(atom, totalVariableCount);
-        variableValues[totalVariableCount] = atom.getValue();
-        variableAtoms[totalVariableCount] = atom;
-        totalVariableCount++;
+        atomIndexMap.put(atom, totalAtomCount);
+        atomValues[totalAtomCount] = atom.getValue();
+        atoms[totalAtomCount] = atom;
+        totalAtomCount++;
 
         if (atom instanceof RandomVariableAtom) {
             numRandomVariableAtoms++;
@@ -204,7 +204,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
     }
 
     @Override
-    public void variablesExternallyUpdated() {
+    public void atomsExternallyUpdated() {
     }
 
     /**

@@ -18,9 +18,10 @@
 package org.linqs.psl.reasoner.term;
 
 /**
- * Local variables are the variables in reasoner terms.
- * In the simple case, they are the same as the global variables (RVAs).
- * But, depending on the reasoner (like ADMM), they may have special properties.
+ * ReasonerAtoms are the variables in reasoner terms.
+ * In the simple case, they are the same as the global variables (ObservedAtoms and RandomVariableAtoms).
+ * But they may be different depending on the reasoner, for instance see ADMMReasoners and LocalAtoms.
  */
-public interface ReasonerLocalVariable {
+public interface ReasonerAtom {
+    public float getValue();
 }

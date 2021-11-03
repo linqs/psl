@@ -24,7 +24,6 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 
 import org.junit.Test;
-import org.linqs.psl.reasoner.term.LocalVariable;
 
 public class ADMMObjectiveTermTest {
     @Test
@@ -219,34 +218,34 @@ public class ADMMObjectiveTermTest {
             float[] consensus, float[] lagrange,
             float[] coeffs, float constant,
             float weight, float stepSize, float[] expected) {
-        LocalVariable[] variables = new LocalVariable[consensus.length];
+        LocalAtom[] variables = new LocalAtom[consensus.length];
 
         for (int i = 0; i < consensus.length; i++) {
-            variables[i] = new LocalVariable(i, consensus[i]);
+            variables[i] = new LocalAtom(i, consensus[i]);
             variables[i].setLagrange(lagrange[i]);
         }
 
         ADMMObjectiveTerm term = null;
         if (comparator != null) {
             term = ADMMObjectiveTerm.createLinearConstraintTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane<LocalAtom>(variables, coeffs, constant, consensus.length),
                     null,
                     comparator);
         } else if (!squared && !hinge) {
             term = ADMMObjectiveTerm.createLinearLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, 0.0f, consensus.length),
+                    new Hyperplane<LocalAtom>(variables, coeffs, 0.0f, consensus.length),
                     new FakeRule(weight, squared));
         } else if (!squared && hinge) {
             term = ADMMObjectiveTerm.createHingeLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane<LocalAtom>(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         } else if (squared && !hinge) {
             term = ADMMObjectiveTerm.createSquaredLinearLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane<LocalAtom>(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         } else if (squared && hinge) {
             term = ADMMObjectiveTerm.createSquaredHingeLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane<LocalAtom>(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         }
 

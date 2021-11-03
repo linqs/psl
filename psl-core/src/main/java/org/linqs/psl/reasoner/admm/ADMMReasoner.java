@@ -24,7 +24,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.term.LocalVariable;
+import org.linqs.psl.reasoner.admm.term.LocalAtom;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
@@ -32,7 +32,6 @@ import org.linqs.psl.util.Parallel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -69,7 +68,7 @@ public class ADMMReasoner extends Reasoner {
     private int maxIterations;
 
     private long termBlockSize;
-    private long variableBlockSize;
+    private long atomBlockSize;
 
     public ADMMReasoner() {
         maxIterations = Options.ADMM_MAX_ITER.getInt();
@@ -114,18 +113,18 @@ public class ADMMReasoner extends Reasoner {
         termStore.initForOptimization();
 
         long numTerms = termStore.size();
-        int numVariables = termStore.getNumConsensusVariables();
+        int numAtoms = termStore.getNumConsensusAtoms();
 
-        log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
+        log.debug("Performing optimization with {} atoms and {} terms.", numAtoms, numTerms);
 
         termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
-        variableBlockSize = numVariables / (Parallel.getNumThreads() * 4) + 1;
+        atomBlockSize = numAtoms / (Parallel.getNumThreads() * 4) + 1;
 
         long numTermBlocks = (long)Math.ceil(numTerms / (double)termBlockSize);
-        long numVariableBlocks = (long)Math.ceil(numVariables / (double)variableBlockSize);
+        long numAtomBlocks = (long)Math.ceil(numAtoms / (double) atomBlockSize);
 
         // Performs inference.
-        double epsilonAbsTerm = Math.sqrt(termStore.getNumLocalVariables()) * epsilonAbs;
+        double epsilonAbsTerm = Math.sqrt(termStore.getNumLocalAtoms()) * epsilonAbs;
 
         ObjectiveResult objective = null;
         ObjectiveResult oldObjective = null;
@@ -139,7 +138,7 @@ public class ADMMReasoner extends Reasoner {
 
         int iteration = 1;
         while (true) {
-            // Zero out the iteration variables.
+            // Zero out the iteration atoms.
             primalRes = 0.0f;
             dualRes = 0.0f;
             AxNorm = 0.0f;
@@ -157,7 +156,7 @@ public class ADMMReasoner extends Reasoner {
             Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize, useNonConvex));
 
             // Compute new consensus values and residuals.
-            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize, useNonConvex));
+            Parallel.count(numAtomBlocks, new AtomWorker(termStore, atomBlockSize, useNonConvex));
 
             primalRes = Math.sqrt(primalRes);
             dualRes = stepSize * Math.sqrt(dualRes);
@@ -263,7 +262,7 @@ public class ADMMReasoner extends Reasoner {
         return new ObjectiveResult(objective, violatedConstraints);
     }
 
-    private synchronized void updateIterationVariables(
+    private synchronized void updateIterationAtoms(
             double primalRes, double dualRes,
             double AxNorm, double BzNorm, double AyNorm,
             double lagrangePenalty, double augmentedLagrangePenalty) {
@@ -303,7 +302,7 @@ public class ADMMReasoner extends Reasoner {
 
         @Override
         public void work(long blockIndex, Long ignore) {
-            // Minimize each local function (wrt the local variable copies).
+            // Minimize each local function (w.r.t. the local atom copies).
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
                 int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
 
@@ -321,15 +320,15 @@ public class ADMMReasoner extends Reasoner {
         }
     }
 
-    private class VariableWorker extends Parallel.Worker<Long> {
+    private class AtomWorker extends Parallel.Worker<Long> {
         private final ADMMTermStore termStore;
         private final long blockSize;
-        private final long numConsensusVariables;
+        private final long numConsensusAtoms;
         private final float[] consensusValues;
-        private final List<List<LocalVariable>> localVariables;
+        private final List<List<LocalAtom>> localAtoms;
         private final boolean useNonConvex;
 
-        public VariableWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
+        public AtomWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
             super();
 
             this.termStore = termStore;
@@ -337,12 +336,12 @@ public class ADMMReasoner extends Reasoner {
             this.useNonConvex = useNonConvex;
 
             this.consensusValues = termStore.getConsensusValues();
-            this.localVariables = termStore.getLocalVariables();
-            this.numConsensusVariables = termStore.getNumConsensusVariables();
+            this.localAtoms = termStore.getLocalAtoms();
+            this.numConsensusAtoms = termStore.getNumConsensusAtoms();
         }
 
         public Object clone() {
-            return new VariableWorker(termStore, blockSize, useNonConvex);
+            return new AtomWorker(termStore, blockSize, useNonConvex);
         }
 
         @Override
@@ -358,49 +357,49 @@ public class ADMMReasoner extends Reasoner {
             // Instead of dividing up the work ahead of time,
             // get one job at a time so the threads will have more even workloads.
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
-                int variableIndex = (int)(blockIndex * blockSize + innerBlockIndex);
+                int atomIndex = (int)(blockIndex * blockSize + innerBlockIndex);
 
-                if (variableIndex >= numConsensusVariables) {
+                if (atomIndex >= numConsensusAtoms) {
                     break;
                 }
 
                 double total = 0.0f;
-                int numLocalVariables = localVariables.get(variableIndex).size();
+                int numLocalAtoms = localAtoms.get(atomIndex).size();
 
                 // First pass computes newConsensusValue and dual residual fom all local copies.
-                for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-                    LocalVariable localVariable = localVariables.get(variableIndex).get(localVarIndex);
-                    total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
+                for (int localAtomIndex = 0; localAtomIndex < numLocalAtoms; localAtomIndex++) {
+                    LocalAtom localAtom = localAtoms.get(atomIndex).get(localAtomIndex);
+                    total += localAtom.getValue() + localAtom.getLagrange() / stepSize;
 
-                    AxNormInc += localVariable.getValue() * localVariable.getValue();
-                    AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
+                    AxNormInc += localAtom.getValue() * localAtom.getValue();
+                    AyNormInc += localAtom.getLagrange() * localAtom.getLagrange();
                 }
 
-                float newConsensusValue = (float)(total / numLocalVariables);
+                float newConsensusValue = (float)(total / numLocalAtoms);
                 newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
 
-                float diff = consensusValues[variableIndex] - newConsensusValue;
-                // Residual is diff^2 * number of local variables mapped to consensusValues element.
-                dualResInc += diff * diff * numLocalVariables;
-                BzNormInc += newConsensusValue * newConsensusValue * numLocalVariables;
+                float diff = consensusValues[atomIndex] - newConsensusValue;
+                // Residual is diff^2 * number of local atoms mapped to consensusAtoms element.
+                dualResInc += diff * diff * numLocalAtoms;
+                BzNormInc += newConsensusValue * newConsensusValue * numLocalAtoms;
 
-                consensusValues[variableIndex] = newConsensusValue;
+                consensusValues[atomIndex] = newConsensusValue;
 
                 // Second pass computes primal residuals.
 
-                for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-                    LocalVariable localVariable = localVariables.get(variableIndex).get(localVarIndex);
+                for (int localVarIndex = 0; localVarIndex < numLocalAtoms; localVarIndex++) {
+                    LocalAtom localAtom = localAtoms.get(atomIndex).get(localVarIndex);
 
-                    diff = localVariable.getValue() - newConsensusValue;
+                    diff = localAtom.getValue() - newConsensusValue;
                     primalResInc += diff * diff;
 
                     // compute Lagrangian penalties
-                    lagrangePenaltyInc += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[variableIndex]);
-                    augmentedLagrangePenaltyInc += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[variableIndex], 2);
+                    lagrangePenaltyInc += localAtom.getLagrange() * (localAtom.getValue() - consensusValues[atomIndex]);
+                    augmentedLagrangePenaltyInc += 0.5 * stepSize * Math.pow(localAtom.getValue() - consensusValues[atomIndex], 2);
                 }
             }
 
-            updateIterationVariables(primalResInc, dualResInc, AxNormInc, BzNormInc, AyNormInc, lagrangePenaltyInc, augmentedLagrangePenaltyInc);
+            updateIterationAtoms(primalResInc, dualResInc, AxNormInc, BzNormInc, AyNormInc, lagrangePenaltyInc, augmentedLagrangePenaltyInc);
         }
     }
 

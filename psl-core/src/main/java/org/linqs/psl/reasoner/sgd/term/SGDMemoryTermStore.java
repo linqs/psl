@@ -18,14 +18,14 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
+import org.linqs.psl.reasoner.term.memory.MemoryTermStore;
 
 /**
  * An in-memory TermStore specifically for SGD terms.
  */
-public class SGDMemoryTermStore extends MemoryVariableTermStore<SGDObjectiveTerm, RandomVariableAtom> {
+public class SGDMemoryTermStore extends MemoryTermStore<SGDObjectiveTerm, RandomVariableAtom> {
     @Override
-    protected RandomVariableAtom createVariableFromAtom(RandomVariableAtom atom) {
+    protected RandomVariableAtom createReasonerAtomFromAtom(RandomVariableAtom atom) {
         return atom;
     }
 }

@@ -22,7 +22,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.LocalVariable;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
@@ -71,24 +70,24 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
     protected int size;
 
-    private float[] coefficients;
-    private LocalVariable[] variables;
+    private final float[] coefficients;
+    private final LocalAtom[] localAtoms;
 
-    private boolean squared;
-    private boolean hinge;
+    private final boolean squared;
+    private final boolean hinge;
 
     /**
      * Used as either the deter epsilon (when DeterCollectiveTerm)
      * or as the deter value (when DeterIntependentTerm).
      */
-    private float deterConstant;
+    private final float deterConstant;
 
     private float constant;
 
     /**
      * When non-null, this term must be a hard constraint.
      */
-    private FunctionComparator comparator;
+    private final FunctionComparator comparator;
 
     // The following variables are used when solving the objective function.
     // We keep them as member data to avoid multiple allocations.
@@ -108,13 +107,13 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * What we are caching, specifically, is the lower triangle in the Cholesky decomposition of the symmetric matrix:
      * M[i, j] = 2 * weight * coefficients[i] * coefficients[j]
      */
-    private static Map<Integer, FloatMatrix> lowerTriangleCache = new HashMap<Integer, FloatMatrix>();
+    private static final Map<Integer, FloatMatrix> lowerTriangleCache = new HashMap<Integer, FloatMatrix>();
 
     /**
      * Construct an ADMM objective term by taking ownership of the hyperplane and all members of it.
      * Use the static creation methods.
      */
-    private ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, Rule rule,
+    private ADMMObjectiveTerm(Hyperplane<LocalAtom> hyperplane, Rule rule,
             boolean squared, boolean hinge,
             boolean collectiveDeter, float deterConstant,
             FunctionComparator comparator) {
@@ -126,7 +125,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         this.comparator = comparator;
 
         this.size = hyperplane.size();
-        this.variables = hyperplane.getVariables();
+        this.localAtoms = hyperplane.getVariables();
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
 
@@ -136,51 +135,51 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         }
     }
 
-    public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane<LocalVariable> hyperplane, Rule rule, FunctionComparator comparator) {
+    public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane<LocalAtom> hyperplane, Rule rule, FunctionComparator comparator) {
         return new ADMMObjectiveTerm(hyperplane, rule, false, false, false, 0.0f, comparator);
     }
 
-    public static ADMMObjectiveTerm createLinearLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createLinearLossTerm(Hyperplane<LocalAtom> hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane, rule, false, false, false, 0.0f, null);
     }
 
-    public static ADMMObjectiveTerm createHingeLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createHingeLossTerm(Hyperplane<LocalAtom> hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane,rule, false, true, false, 0.0f, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredLinearLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createSquaredLinearLossTerm(Hyperplane<LocalAtom> hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane, rule, true, false, false, 0.0f, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredHingeLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createSquaredHingeLossTerm(Hyperplane<LocalAtom> hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane, rule, true, true, false, 0.0f, null);
     }
 
-    public static ADMMObjectiveTerm createCollectiveDeterTerm(Hyperplane<LocalVariable> hyperplane, float deterWeight, float deterConstant) {
+    public static ADMMObjectiveTerm createCollectiveDeterTerm(Hyperplane<LocalAtom> hyperplane, float deterWeight, float deterConstant) {
         return new ADMMObjectiveTerm(hyperplane, new FakeRule(deterWeight, false), false, false, true, deterConstant, null);
     }
 
-    public static ADMMObjectiveTerm createIndependentDeterTerm(Hyperplane<LocalVariable> hyperplane, float deterWeight, float deterConstant) {
+    public static ADMMObjectiveTerm createIndependentDeterTerm(Hyperplane<LocalAtom> hyperplane, float deterWeight, float deterConstant) {
         return new ADMMObjectiveTerm(hyperplane, new FakeRule(deterWeight, false), false, false, false, deterConstant, null);
     }
 
     public void updateLagrange(float stepSize, float[] consensusValues) {
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
+            LocalAtom localAtom = localAtoms[i];
+            localAtom.setLagrange(localAtom.getLagrange() + stepSize * (localAtom.getValue() - consensusValues[localAtom.getGlobalId()]));
         }
     }
 
     /**
-     * Get the variables used in this term.
+     * Get the atoms used in this term.
      * The caller should not modify the returned array, and should check size() for a reliable length.
      */
-    public LocalVariable[] getVariables() {
-        return variables;
+    public LocalAtom[] getLocalAtoms() {
+        return localAtoms;
     }
 
     /**
-     * Get the number of variables in this term.
+     * Get the number of atoms in this term.
      */
     @Override
     public int size() {
@@ -227,7 +226,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     }
 
     /**
-     * Modify the local variables to minimize this term (within the bounds of the step size).
+     * Modify the LocalAtoms to minimize this term (within the bounds of the step size).
      */
     public void minimize(float stepSize, float[] consensusValues) {
         float weight = getWeight();
@@ -260,7 +259,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     }
 
     /**
-     * Evaluate this potential using the local variables.
+     * Evaluate this potential using the LocalAtoms.
      */
     public float evaluate() {
         float weight = getWeight();
@@ -320,9 +319,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
             // Take the lagrange step and see if that is the solution.
             for (int i = 0; i < size; i++) {
-                LocalVariable variable = variables[i];
-                variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-                total += coefficients[i] * variable.getValue();
+                LocalAtom localAtom = localAtoms[i];
+                localAtom.setValue(consensusValues[localAtom.getGlobalId()] - localAtom.getLagrange() / stepSize);
+                total += coefficients[i] * localAtom.getValue();
             }
 
             // If the constraint is satisfied, them we are done.
@@ -379,14 +378,14 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     private void minimizeLinearLoss(float stepSize, float weight, float[] consensusValues) {
         // Linear losses can be directly minimized.
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
+            LocalAtom localAtom = localAtoms[i];
 
             float value =
-                    consensusValues[variable.getGlobalId()]
-                    - variable.getLagrange() / stepSize
+                    consensusValues[localAtom.getGlobalId()]
+                    - localAtom.getLagrange() / stepSize
                     - (weight * coefficients[i] / stepSize);
 
-            variable.setValue(value);
+            localAtom.setValue(value);
         }
     }
 
@@ -415,9 +414,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Take a gradient step and see if we are in the flat region.
         float total = 0.0f;
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-            total += (coefficients[i] * variable.getValue());
+            LocalAtom localAtom = localAtoms[i];
+            localAtom.setValue(consensusValues[localAtom.getGlobalId()] - localAtom.getLagrange() / stepSize);
+            total += (coefficients[i] * localAtom.getValue());
         }
 
         // If we are on the flat region, then we are at a solution.
@@ -428,9 +427,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Take a gradient step and see if we are in the linear region.
         total = 0.0f;
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setValue((consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize) - (weight * coefficients[i] / stepSize));
-            total += coefficients[i] * variable.getValue();
+            LocalAtom localAtom = localAtoms[i];
+            localAtom.setValue((consensusValues[localAtom.getGlobalId()] - localAtom.getLagrange() / stepSize) - (weight * coefficients[i] / stepSize));
+            total += coefficients[i] * localAtom.getValue();
         }
 
         // If we are in the linear region, then we are at a solution.
@@ -482,9 +481,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Take a gradient step and see if we are in the flat region.
         float total = 0.0f;
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-            total += coefficients[i] * variable.getValue();
+            LocalAtom localAtom = localAtoms[i];
+            localAtom.setValue(consensusValues[localAtom.getGlobalId()] - localAtom.getLagrange() / stepSize);
+            total += coefficients[i] * localAtom.getValue();
         }
 
         // If we are on the flat region, then we are at a solution.
@@ -521,7 +520,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Check the average distance to the deter point.
         float distance = 0.0f;
         for (int i = 0; i < size; i++) {
-            distance += Math.abs(deterValue - consensusValues[variables[i].getGlobalId()]);
+            distance += Math.abs(deterValue - consensusValues[localAtoms[i].getGlobalId()]);
         }
         distance /= size;
 
@@ -537,7 +536,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
         for (int i = 0; i < size; i++) {
             float value = ((i == upPoint) ? 1.0f : 0.0f);
-            variables[i].setValue(value);
+            localAtoms[i].setValue(value);
         }
     }
 
@@ -552,11 +551,11 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
-            float variableValue = variables[i].getValue();
-            if (variableValue > deterValue) {
-                value += 1.0f - variableValue;
+            float localAtomValue = localAtoms[i].getValue();
+            if (localAtomValue > deterValue) {
+                value += 1.0f - localAtomValue;
             } else {
-                value += variableValue;
+                value += localAtomValue;
             }
         }
 
@@ -574,11 +573,11 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
-            float variableValue = consensusValues[variables[i].getGlobalId()];
-            if (variableValue > deterValue) {
-                value += 1.0f - variableValue;
+            float localAtomValue = consensusValues[localAtoms[i].getGlobalId()];
+            if (localAtomValue > deterValue) {
+                value += 1.0f - localAtomValue;
             } else {
-                value += variableValue;
+                value += localAtomValue;
             }
         }
 
@@ -592,23 +591,23 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     private void minimizeIndependentDeter(float stepSize, float weight, float[] consensusValues) {
         // Linear losses can be directly minimized.
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
+            LocalAtom localAtom = localAtoms[i];
 
             float value = 0.0f;
 
-            if (variable.getValue() > deterConstant) {
+            if (localAtom.getValue() > deterConstant) {
                 // If we are past the deter point, keep moving up.
-                value = consensusValues[variable.getGlobalId()]
-                        - variable.getLagrange() / stepSize
+                value = consensusValues[localAtom.getGlobalId()]
+                        - localAtom.getLagrange() / stepSize
                         + (weight * coefficients[i] / stepSize);
             } else {
                 // If we are lower than the deter point, then move down.
-                value = consensusValues[variable.getGlobalId()]
-                        - variable.getLagrange() / stepSize
+                value = consensusValues[localAtom.getGlobalId()]
+                        - localAtom.getLagrange() / stepSize
                         - (weight * coefficients[i] / stepSize);
             }
 
-            variable.setValue(value);
+            localAtom.setValue(value);
         }
     }
 
@@ -627,7 +626,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     // General Utilities
 
     private void initUnitNormal() {
-        // If the hyperplane only has one random variable, we can take shortcuts solving it.
+        // If the hyperplane only has one atom, we can take shortcuts solving it.
         if (size == 1) {
             consensusOptimizer = null;
             unitNormal = null;
@@ -654,7 +653,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     private float computeInnerPotential() {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variables[i].getValue();
+            value += coefficients[i] * localAtoms[i].getValue();
         }
 
         return value - constant;
@@ -666,7 +665,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     private float computeInnerPotential(float[] consensusValues) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
+            value += coefficients[i] * consensusValues[localAtoms[i].getGlobalId()];
         }
 
         return value - constant;
@@ -678,13 +677,13 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * The consensus problem is:
      * [argmin_local stepSize / 2 * ||local - consensus + lagrange / stepSize ||_2^2],
      * while this hyperplane is: [coefficients^T * local = constant].
-     * The result of the projection is stored in the local variables.
+     * The result of the projection is stored in the LocalAtom.
      */
     private void project(float stepSize, float[] consensusValues) {
-        // When there is only one variable, there is only one answer.
+        // When there is only one atom, there is only one answer.
         // This answer must satisfy the constraint.
         if (size == 1) {
-            variables[0].setValue(constant / coefficients[0]);
+            localAtoms[0].setValue(constant / coefficients[0]);
             return;
         }
 
@@ -695,7 +694,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Get the min w.r.t. to the consensus values.
         // This is done by taking a step according to the lagrange.
         for (int i = 0; i < size; i++) {
-            consensusOptimizer[i] = consensusValues[variables[i].getGlobalId()] - variables[i].getLagrange() / stepSize;
+            consensusOptimizer[i] = consensusValues[localAtoms[i].getGlobalId()] - localAtoms[i].getLagrange() / stepSize;
         }
 
         // Get the length of the normal.
@@ -712,7 +711,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
         // Projection = ConsensusOptimizer - (multiplier)(unitNormal).
         for (int i = 0; i < size; i++) {
-            variables[i].setValue(consensusOptimizer[i] - multiplier * unitNormal[i]);
+            localAtoms[i].setValue(consensusOptimizer[i] - multiplier * unitNormal[i]);
         }
     }
 
@@ -721,35 +720,35 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * The function to minimize takes the form:
      * weight * [coefficients^T * local - constant]^2 + (stepsize / 2) * || local - consensus + lagrange / stepsize ||_2^2.
      *
-     * The result of the minimization will be stored in the local variables.
+     * The result of the minimization will be stored in the LocalAtom.
      */
     private void minWeightedSquaredHyperplane(float stepSize, float weight, float[] consensusValues) {
         // Different solving methods will be used depending on the size of the hyperplane.
 
-        // Pre-load the local variable with a term that is common in all the solutions:
+        // Pre-load the LocalAtom with a term that is common in all the solutions:
         // stepsize * consensus - lagrange + (2 * weight * coefficients * constant).
         for (int i = 0; i < size; i++) {
             float value =
-                    stepSize * consensusValues[variables[i].getGlobalId()] - variables[i].getLagrange()
+                    stepSize * consensusValues[localAtoms[i].getGlobalId()] - localAtoms[i].getLagrange()
                     + 2.0f * weight * coefficients[i] * constant;
 
-            variables[i].setValue(value);
+            localAtoms[i].setValue(value);
         }
 
-        // Hyperplanes with only one variable can be solved trivially.
+        // Hyperplanes with only one atom can be solved trivially.
         if (size == 1) {
-            LocalVariable variable = variables[0];
+            LocalAtom localAtom = localAtoms[0];
             float coefficient = coefficients[0];
 
-            variable.setValue(variable.getValue() / (2.0f * weight * coefficient * coefficient + stepSize));
+            localAtom.setValue(localAtom.getValue() / (2.0f * weight * coefficient * coefficient + stepSize));
 
             return;
         }
 
-        // Hyperplanes with only two variables can be solved fairly easily.
+        // Hyperplanes with only two atoms can be solved fairly easily.
         if (size == 2) {
-            LocalVariable variable0 = variables[0];
-            LocalVariable variable1 = variables[1];
+            LocalAtom localAtom0 = localAtoms[0];
+            LocalAtom localAtom1 = localAtoms[1];
             float coefficient0 = coefficients[0];
             float coefficient1 = coefficients[1];
 
@@ -757,10 +756,10 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
             float b1 = 2.0f * weight * coefficient1 * coefficient1 + stepSize;
             float a1b0 = 2.0f * weight * coefficient0 * coefficient1;
 
-            variable1.setValue(variable1.getValue() - a1b0 * variable0.getValue() / a0);
-            variable1.setValue(variable1.getValue() / (b1 - a1b0 * a1b0 / a0));
+            localAtom1.setValue(localAtom1.getValue() - a1b0 * localAtom0.getValue() / a0);
+            localAtom1.setValue(localAtom1.getValue() / (b1 - a1b0 * a1b0 / a0));
 
-            variable0.setValue((variable0.getValue() - a1b0 * variable1.getValue()) / a0);
+            localAtom0.setValue((localAtom0.getValue() - a1b0 * localAtom1.getValue()) / a0);
 
             return;
         }
@@ -770,23 +769,23 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         FloatMatrix lowerTriangle = fetchLowerTriangle(stepSize, weight);
 
         for (int i = 0; i < size; i++) {
-            float newValue = variables[i].getValue();
+            float newValue = localAtoms[i].getValue();
 
             for (int j = 0; j < i; j++) {
-                newValue -= lowerTriangle.get(i, j) * variables[j].getValue();
+                newValue -= lowerTriangle.get(i, j) * localAtoms[j].getValue();
             }
 
-            variables[i].setValue(newValue / lowerTriangle.get(i, i));
+            localAtoms[i].setValue(newValue / lowerTriangle.get(i, i));
         }
 
         for (int i = size - 1; i >= 0; i--) {
-            float newValue = variables[i].getValue();
+            float newValue = localAtoms[i].getValue();
 
             for (int j = size - 1; j > i; j--) {
-                newValue -= lowerTriangle.get(j, i) * variables[j].getValue();
+                newValue -= lowerTriangle.get(j, i) * localAtoms[j].getValue();
             }
 
-            variables[i].setValue(newValue / lowerTriangle.get(i, i));
+            localAtoms[i].setValue(newValue / lowerTriangle.get(i, i));
         }
     }
 

@@ -64,20 +64,20 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
     }
 
     @Override
-    protected int estimateVariableCapacity() {
+    protected int estimateAtomCapacity() {
         return atomManager.getCachedRVACount() + atomManager.getCachedObsCount();
     }
 
-    public synchronized void deleteLocalVariable(GroundAtom atom) {
+    public synchronized void deleteAtom(GroundAtom atom) {
         int index = getAtomIndex(atom);
         if (index == -1) {
             // Atom never used in any terms.
             return;
         }
 
-        variables.remove(atom);
-        variableValues[index] = -1.0f;
-        variableAtoms[index] = null;
+        atomIndexMap.remove(atom);
+        atomValues[index] = -1.0f;
+        atoms[index] = null;
 
         if (atom instanceof RandomVariableAtom) {
             numRandomVariableAtoms--;
@@ -86,39 +86,38 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         }
     }
 
-    public synchronized void updateLocalVariable(ObservedAtom atom, float newValue) {
-        if (!variables.containsKey(atom)) {
+    public synchronized void updateAtom(ObservedAtom atom, float newValue) {
+        if (!atomIndexMap.containsKey(atom)) {
             // Atom does not exist in current model.
             return;
-        } else if (variableAtoms[getAtomIndex(atom)] instanceof RandomVariableAtom) {
+        } else if (atoms[getAtomIndex(atom)] instanceof RandomVariableAtom) {
             numRandomVariableAtoms--;
             numObservedAtoms++;
         }
 
-        variableAtoms[getAtomIndex(atom)] = atom;
-        variableValues[getAtomIndex(atom)] = newValue;
+        atoms[getAtomIndex(atom)] = atom;
+        atomValues[getAtomIndex(atom)] = newValue;
     }
 
     public abstract StreamingIterator<T> getGroundingIterator(List<Rule> rules);
 
     /**
-     * In addition to the typical behavior of setting values for random variable atoms,
-     * also set the values for observed atoms.
-     * Returns movement in the random variables.
+     * In addition to the typical behavior of setting values for RandomVariableAtoms,
+     * also set the values for ObservedAtoms.
      */
     @Override
     public synchronized double syncAtoms() {
         double movement = 0.0;
-        for (int i = 0; i < totalVariableCount; i++) {
-            if (variableAtoms[i] == null) {
+        for (int i = 0; i < totalAtomCount; i++) {
+            if (atoms[i] == null) {
                 continue;
             }
 
-            if (variableAtoms[i] instanceof RandomVariableAtom) {
-                movement += Math.pow(variableAtoms[i].getValue() - variableValues[i], 2);
-                ((RandomVariableAtom)variableAtoms[i]).setValue(variableValues[i]);
+            if (atoms[i] instanceof RandomVariableAtom) {
+                movement += Math.pow(atoms[i].getValue() - atomValues[i], 2);
+                ((RandomVariableAtom) atoms[i]).setValue(atomValues[i]);
             } else {
-                ((ObservedAtom)variableAtoms[i])._assumeValue(variableValues[i]);
+                ((ObservedAtom) atoms[i])._assumeValue(atomValues[i]);
             }
         }
 

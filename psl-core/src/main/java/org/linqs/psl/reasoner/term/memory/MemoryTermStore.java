@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.term;
+package org.linqs.psl.reasoner.term.memory;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -23,6 +23,10 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 
+import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.ReasonerAtom;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,27 +40,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A general TermStore that handles terms and variables all in memory.
- * Variables are stored in an array along with their values.
+ * A general TermStore that handles terms and atoms all in memory.
+ * Atoms are stored in an array along with their values.
  */
-public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends TermStore<T, V> {
-    private static final Logger log = LoggerFactory.getLogger(MemoryVariableTermStore.class);
+public abstract class MemoryTermStore<T extends ReasonerTerm, V extends ReasonerAtom> extends TermStore<T, V> {
+    private static final Logger log = LoggerFactory.getLogger(MemoryTermStore.class);
 
-    // Keep an internal store to hold the terms while this class focuses on variables.
+    // The data structure containing all of the ReasonerTerms.
     private ArrayList<T> store;
 
     private boolean shuffle;
 
-    private Set<ModelPredicate> modelPredicates;
+    private final Set<ModelPredicate> modelPredicates;
 
     // Mirror variables need to track what terms they are involved in.
     // Because they are observed during MAP inference (and unobserved during supporting model fitting),
     // their values are integrated into the constants of terms.
-    private Map<RandomVariableAtom, List<MirrorTermCoefficient>> mirrorVariables;
+    private final Map<RandomVariableAtom, List<MirrorTermCoefficient>> mirrorAtoms;
 
-    private boolean variablesExternallyUpdatedFlag;
+    private boolean atomsExternallyUpdatedFlag;
 
-    public MemoryVariableTermStore() {
+    public MemoryTermStore() {
         super();
 
         shuffle = Options.MEMORY_VTS_SHUFFLE.getBoolean();
@@ -64,9 +68,9 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         store =  new ArrayList<T>((int)Options.MEMORY_TS_INITIAL_SIZE.getLong());
 
         modelPredicates = new HashSet<ModelPredicate>();
-        mirrorVariables = new HashMap<RandomVariableAtom, List<MirrorTermCoefficient>>();
+        mirrorAtoms = new HashMap<RandomVariableAtom, List<MirrorTermCoefficient>>();
 
-        variablesExternallyUpdatedFlag = false;
+        atomsExternallyUpdatedFlag = false;
     }
 
     @Override
@@ -75,71 +79,71 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     @Override
-    public synchronized V createLocalVariable(GroundAtom groundAtom) {
+    public synchronized V createReasonerAtom(GroundAtom groundAtom) {
         if (!(groundAtom instanceof RandomVariableAtom)) {
             throw new IllegalArgumentException("MemoryVariableTermStores do not keep track of observed atoms (" + groundAtom + ").");
         }
 
         RandomVariableAtom atom = (RandomVariableAtom)groundAtom;
-        if (variables.containsKey(atom)) {
-            return  createVariableFromAtom(atom);
+        if (atomIndexMap.containsKey(atom)) {
+            return  createReasonerAtomFromAtom(atom);
         }
 
-        // Got a new variable.
+        // Got a new atom.
 
-        if (variables.size() >= variableAtoms.length) {
-            ensureVariableCapacity(variables.size() * 2);
+        if (atomIndexMap.size() >= atoms.length) {
+            ensureAtomCapacity(atomIndexMap.size() * 2);
         }
 
-        int index = variables.size();
+        int index = atomIndexMap.size();
 
-        variables.put(atom, index);
-        variableValues[index] = atom.getValue();
-        variableAtoms[index] = atom;
-        totalVariableCount++;
+        atomIndexMap.put(atom, index);
+        atomValues[index] = atom.getValue();
+        atoms[index] = atom;
+        totalAtomCount++;
         numRandomVariableAtoms++;
 
-        return createVariableFromAtom(atom);
+        return createReasonerAtomFromAtom(atom);
     }
 
-    private synchronized void createMirrorVariable(RandomVariableAtom atom, float coefficient, T term) {
+    private synchronized void createMirrorAtom(RandomVariableAtom atom, float coefficient, T term) {
         if (atom.getPredicate() instanceof ModelPredicate) {
             modelPredicates.add((ModelPredicate)atom.getPredicate());
         }
 
-        if (!mirrorVariables.containsKey(atom)) {
-            mirrorVariables.put(atom, new ArrayList<MirrorTermCoefficient>());
+        if (!mirrorAtoms.containsKey(atom)) {
+            mirrorAtoms.put(atom, new ArrayList<MirrorTermCoefficient>());
         }
 
-        mirrorVariables.get(atom).add(new MirrorTermCoefficient(term, coefficient));
+        mirrorAtoms.get(atom).add(new MirrorTermCoefficient(term, coefficient));
     }
 
     @Override
-    public void variablesExternallyUpdated() {
-        variablesExternallyUpdatedFlag = true;
+    public void atomsExternallyUpdated() {
+        atomsExternallyUpdatedFlag = true;
     }
 
     /**
-     * Check of the variables were updated externally.
+     * Check if the atoms were updated externally.
      */
-    public boolean getVariablesExternallyUpdatedFlag() {
-        return variablesExternallyUpdatedFlag;
+    public boolean getAtomsExternallyUpdatedFlag() {
+        return atomsExternallyUpdatedFlag;
     }
 
     /**
-     * Clear the flag for variables being updated externally.
+     * Clear the flag for atoms being updated externally.
      */
-    public void resetVariablesExternallyUpdatedFlag() {
-        variablesExternallyUpdatedFlag = false;
+    public void resetAtomsExternallyUpdatedFlag() {
+        atomsExternallyUpdatedFlag = false;
     }
 
     @Override
-    public synchronized void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerLocalVariable> hyperplane) {
+    public synchronized void addTerm(GroundRule rule, T term, Hyperplane<? extends ReasonerAtom> hyperplane) {
         store.add(term);
 
         if (hyperplane.getIntegratedRVAs() != null) {
             for (Hyperplane.IntegratedRVA integratedRVA : hyperplane.getIntegratedRVAs()) {
-                createMirrorVariable(integratedRVA.atom, integratedRVA.coefficient, term);
+                createMirrorAtom(integratedRVA.atom, integratedRVA.coefficient, term);
             }
         }
     }
@@ -156,8 +160,8 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             modelPredicates.clear();
         }
 
-        if (mirrorVariables != null) {
-            mirrorVariables.clear();
+        if (mirrorAtoms != null) {
+            mirrorAtoms.clear();
         }
     }
 
@@ -194,7 +198,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         double rmse = 0.0;
 
         int count = 0;
-        for (RandomVariableAtom mirrorAtom : mirrorVariables.keySet()) {
+        for (RandomVariableAtom mirrorAtom : mirrorAtoms.keySet()) {
             if (!(mirrorAtom.getPredicate() instanceof ModelPredicate)) {
                 continue;
             }
@@ -205,7 +209,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
             float newValue = predicate.getValue(mirrorAtom);
             mirrorAtom.setValue(newValue);
 
-            for (MirrorTermCoefficient pair : mirrorVariables.get(mirrorAtom)) {
+            for (MirrorTermCoefficient pair : mirrorAtoms.get(mirrorAtom)) {
                 pair.term.adjustConstant(pair.coefficient * oldValue, pair.coefficient * newValue);
             }
 
@@ -218,7 +222,7 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         log.trace("Batch update of {} model atoms. RMSE: {}", count, rmse);
-        variablesExternallyUpdated();
+        atomsExternallyUpdated();
     }
 
     private synchronized void initialFitModelAtoms() {
@@ -237,14 +241,14 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
         }
 
         int count = 0;
-        for (RandomVariableAtom mirrorAtom : mirrorVariables.keySet()) {
+        for (RandomVariableAtom mirrorAtom : mirrorAtoms.keySet()) {
             if (!(mirrorAtom.getPredicate() instanceof ModelPredicate)) {
                 continue;
             }
 
             // Get the value from the mirrored pair.
             // The conversion path looks like: RVA -> Mirror RVA -> Mirror Index -> Mirror Value
-            float labelValue = variableValues[variables.get(mirrorAtom.getMirror()).intValue()];
+            float labelValue = atomValues[atomIndexMap.get(mirrorAtom.getMirror()).intValue()];
 
             ((ModelPredicate)mirrorAtom.getPredicate()).setLabel(mirrorAtom, labelValue);
             count++;
@@ -298,13 +302,13 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
     }
 
     /**
-     * Get the variable (V) representation of the atom.
+     * Get the ReasonerAtom (V) representation of the atom.
      * This should be lightweight and may be called multiple times per atom.
      */
-    protected abstract V createVariableFromAtom(RandomVariableAtom atom );
+    protected abstract V createReasonerAtomFromAtom(RandomVariableAtom atom );
 
     /**
-     * A term and coefficient (for that term) associated with a mirror variable.
+     * A term and coefficient (for that term) associated with a mirror atom.
      */
     private class MirrorTermCoefficient {
         public T term;

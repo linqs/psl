@@ -44,10 +44,10 @@ import java.util.Set;
 public class DCDReasoner extends Reasoner {
     private static final Logger log = LoggerFactory.getLogger(DCDReasoner.class);
 
-    private int maxIterations;
+    private final int maxIterations;
 
-    private float c;
-    private boolean truncateEveryStep;
+    private final float c;
+    private final boolean truncateEveryStep;
 
     public DCDReasoner() {
         maxIterations = Options.DCD_MAX_ITER.getInt();
@@ -68,11 +68,11 @@ public class DCDReasoner extends Reasoner {
         double change = 0.0;
         double objective = Double.POSITIVE_INFINITY;
         // Starting on the second iteration, keep track of the previous iteration's objective value.
-        // The variable values from the term store cannot be used to calculate the objective during an
-        // optimization pass because they are being updated in the variableUpdate() method.
-        // Note that the number of variables may change in the first iteration (since grounding may happen then).
+        // The atom values from the term store cannot be used to calculate the objective during an
+        // optimization pass because they are being updated in the atomUpdate() method.
+        // Note that the number of atoms may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
-        float[] oldVariableValues = null;
+        float[] oldValues = null;
 
         long totalTime = 0;
         boolean breakDCD = false;
@@ -86,18 +86,18 @@ public class DCDReasoner extends Reasoner {
 
             for (DCDObjectiveTerm term : termStore) {
                 if (iteration > 1) {
-                    objective += term.evaluate(oldVariableValues) / c;
+                    objective += term.evaluate(oldValues) / c;
                 }
 
                 termCount++;
-                variableUpdate(term, termStore);
+                atomUpdate(term, termStore);
             }
 
-            // If we are truncating every step, then the variables are already in valid state.
+            // If we are truncating every step, then the atoms are already in valid state.
             if (!truncateEveryStep) {
-                float[] variableValues = termStore.getAtomValues();
+                float[] atomValues = termStore.getAtomValues();
                 for (int i = 0; i < termStore.getNumAtoms(); i++) {
-                    variableValues[i] = Math.max(0.0f, Math.min(1.0f, variableValues[i]));
+                    atomValues[i] = Math.max(0.0f, Math.min(1.0f, atomValues[i]));
                 }
             }
 
@@ -108,11 +108,11 @@ public class DCDReasoner extends Reasoner {
             breakDCD = breakOptimization(iteration, objective, oldObjective, termCount);
 
             if (iteration == 1) {
-                // Initialize old variables values.
-                oldVariableValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
+                // Initialize old atom values.
+                oldValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
             } else {
-                // Update old variables values and objective.
-                System.arraycopy(termStore.getAtomValues(), 0, oldVariableValues, 0, oldVariableValues.length);
+                // Update old atom values and objective.
+                System.arraycopy(termStore.getAtomValues(), 0, oldValues, 0, oldValues.length);
                 oldObjective = objective;
             }
 
@@ -131,8 +131,8 @@ public class DCDReasoner extends Reasoner {
         change = termStore.syncAtoms();
 
         log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", objective, objective / termCount, totalTime, iteration);
-        log.debug("Movement of variables from initial state: {}", change);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
+        log.debug("Movement of atoms from initial state: {}", change);
+        log.debug("Optimized with {} atoms and {} terms.", termStore.getNumRandomVariableAtoms(), termCount);
 
         return objective;
     }
@@ -174,24 +174,24 @@ public class DCDReasoner extends Reasoner {
         return objective;
     }
 
-    private void variableUpdate(DCDObjectiveTerm term, TermStore<DCDObjectiveTerm, GroundAtom> termStore) {
-        GroundAtom[] variableAtoms = termStore.getAtoms();
-        float[] variableValues = termStore.getAtomValues();
+    private void atomUpdate(DCDObjectiveTerm term, TermStore<DCDObjectiveTerm, GroundAtom> termStore) {
+        GroundAtom[] atoms = termStore.getAtoms();
+        float[] values = termStore.getAtomValues();
 
         WeightedRule rule = term.getRule();
 
         float adjustedWeight = rule.getWeight() * c;
-        float gradient = term.computeGradient(variableValues);
+        float gradient = term.computeGradient(values);
 
         if (term.isSquared()) {
             gradient += term.getLagrange() / (2.0f * adjustedWeight);
-            variableUpdate(term, gradient, adjustedWeight, Float.POSITIVE_INFINITY, variableValues, variableAtoms);
+            atomUpdate(term, gradient, adjustedWeight, Float.POSITIVE_INFINITY, values, atoms);
         } else {
-            variableUpdate(term, gradient, adjustedWeight, adjustedWeight, variableValues, variableAtoms);
+            atomUpdate(term, gradient, adjustedWeight, adjustedWeight, values, atoms);
         }
     }
 
-    private void variableUpdate(DCDObjectiveTerm term, float gradient, float adjustedWeight, float lim, float[] variableValues, GroundAtom[] variableAtoms) {
+    private void atomUpdate(DCDObjectiveTerm term, float gradient, float adjustedWeight, float lim, float[] values, GroundAtom[] atoms) {
         float pg = gradient;
 
         if (MathUtils.isZero(term.getLagrange())) {
@@ -207,21 +207,21 @@ public class DCDReasoner extends Reasoner {
         }
 
         float pa = term.getLagrange();
-        int[] variableIndexes = term.getVariableIndexes();
+        int[] atomIndexes = term.getAtomIndexes();
         float[] coefficients = term.getCoefficients();
 
         term.setLagrange(Math.min(lim, Math.max(0.0f, term.getLagrange() - gradient / term.getQii())));
 
         for (int i = 0; i < term.size(); i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+            if (atoms[atomIndexes[i]] instanceof ObservedAtom) {
                 continue;
             }
 
-            float val = variableValues[variableIndexes[i]] - ((term.getLagrange() - pa) * coefficients[i]);
+            float val = values[atomIndexes[i]] - ((term.getLagrange() - pa) * coefficients[i]);
             if (truncateEveryStep) {
                 val = Math.max(0.0f, Math.min(1.0f, val));
             }
-            variableValues[variableIndexes[i]] = val;
+            values[atomIndexes[i]] = val;
         }
     }
 

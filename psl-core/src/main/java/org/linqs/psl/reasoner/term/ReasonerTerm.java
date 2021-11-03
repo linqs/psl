@@ -29,7 +29,7 @@ public interface ReasonerTerm {
      */
     public void adjustConstant(float oldValue, float newValue);
 
-    /*
+    /**
      * Whether this term is convex.
      * Reasoners may treat non-convex terms differently.
      */

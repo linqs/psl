@@ -101,7 +101,7 @@ public abstract class Reasoner {
             return;
         }
 
-        // Sync variables before evaluation.
+        // Sync atom values before evaluation.
         termStore.syncAtoms();
 
         for (Evaluator evaluator : evaluators) {

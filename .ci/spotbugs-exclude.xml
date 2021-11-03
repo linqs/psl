@@ -68,7 +68,7 @@
     </Match>
 
     <Match>
-        <Class name="org.linqs.psl.reasoner.term.MemoryVariableTermStore" />
+        <Class name="org.linqs.psl.reasoner.term.memory.MemoryVariableTermStore" />
         <Method name="updateModelAtoms" />
         <Bug pattern="WMI_WRONG_MAP_ITERATOR" />
     </Match>

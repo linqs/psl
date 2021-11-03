@@ -115,14 +115,14 @@ public class SGDReasoner extends Reasoner {
         double change = 0.0;
         double objective = 0.0;
         // Starting on the second iteration, keep track of the previous iteration's objective value.
-        // The variable values from the term store cannot be used to calculate the objective during an
-        // optimization pass because they are being updated in the variableUpdate() method.
-        // Note that the number of variables may change in the first iteration (since grounding may happen then).
+        // The atom values from the term store cannot be used to calculate the objective during an
+        // optimization pass because they are being updated in the atomUpdate() method.
+        // Note that the number of atoms may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
-        float[] prevVariableValues = null;
-        // Save and use the variable values with the lowest computed objective.
+        float[] prevAtomValues = null;
+        // Save and use the atom values with the lowest computed objective.
         double lowestObjective = Double.POSITIVE_INFINITY;
-        float[] lowestVariableValues = null;
+        float[] lowestAtomValues = null;
         int lowestIteration = 0;
 
         long totalTime = 0;
@@ -144,11 +144,11 @@ public class SGDReasoner extends Reasoner {
 
             for (SGDObjectiveTerm term : termStore) {
                 if (iteration > 1) {
-                    objective += term.evaluate(prevVariableValues);
+                    objective += term.evaluate(prevAtomValues);
                 }
 
                 termCount++;
-                meanMovement += variableUpdate(term, termStore, iteration, learningRate);
+                meanMovement += atomUpdate(term, termStore, iteration, learningRate);
             }
 
             evaluate(termStore, iteration, evaluators, trainingMap, evaluationPredicates);
@@ -162,19 +162,19 @@ public class SGDReasoner extends Reasoner {
             breakSGD = breakOptimization(iteration, objective, oldObjective, meanMovement, termCount);
 
             if (iteration == 1) {
-                // Initialize old variables values.
-                prevVariableValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
-                lowestVariableValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
+                // Initialize old atom values.
+                prevAtomValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
+                lowestAtomValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
             } else {
-                // Update lowest objective and variable values.
+                // Update lowest objective and atom values.
                 if (objective < lowestObjective) {
                     lowestIteration = iteration - 1;
                     lowestObjective = objective;
-                    System.arraycopy(prevVariableValues, 0, lowestVariableValues, 0, lowestVariableValues.length);
+                    System.arraycopy(prevAtomValues, 0, lowestAtomValues, 0, lowestAtomValues.length);
                 }
 
-                // Update old variables values and objective.
-                System.arraycopy(termStore.getAtomValues(), 0, prevVariableValues, 0, prevVariableValues.length);
+                // Update old atom values and objective.
+                System.arraycopy(termStore.getAtomValues(), 0, prevAtomValues, 0, prevAtomValues.length);
                 oldObjective = objective;
             }
 
@@ -190,22 +190,22 @@ public class SGDReasoner extends Reasoner {
         }
         optimizationComplete();
 
-        // Compute final objective and update lowest variable values, then set termStore values with lowest values.
+        // Compute final objective and update lowest atom values, then set termStore values with lowest values.
         objective = computeObjective(termStore);
         if (objective < lowestObjective) {
             lowestIteration = iteration - 1;
             lowestObjective = objective;
-            lowestVariableValues = prevVariableValues;
+            lowestAtomValues = prevAtomValues;
         }
 
-        float[] variableValues = termStore.getAtomValues();
-        System.arraycopy(lowestVariableValues, 0, variableValues, 0, variableValues.length);
+        float[] atomValues = termStore.getAtomValues();
+        System.arraycopy(lowestAtomValues, 0, atomValues, 0, atomValues.length);
 
-        // Compute variable change and log optimization information.
+        // Compute atom change and log optimization information.
         change = termStore.syncAtoms();
         log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", lowestObjective, lowestObjective / termCount, totalTime, iteration);
-        log.debug("Movement of variables from initial state: {}", change);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
+        log.debug("Movement of atoms from initial state: {}", change);
+        log.debug("Optimized with {} atoms and {} terms.", termStore.getNumRandomVariableAtoms(), termCount);
         log.debug("Lowest objective reached at iteration: {}", lowestIteration);
 
         return lowestObjective;
@@ -216,11 +216,11 @@ public class SGDReasoner extends Reasoner {
             case NONE:
                 break;
             case ADAGRAD:
-                accumulatedGradientSquares = new float[termStore.getNumRandomVariables()];
+                accumulatedGradientSquares = new float[termStore.getNumRandomVariableAtoms()];
                 break;
             case ADAM:
-                accumulatedGradientMean = new float[termStore.getNumRandomVariables()];
-                accumulatedGradientVariance = new float[termStore.getNumRandomVariables()];
+                accumulatedGradientMean = new float[termStore.getNumRandomVariableAtoms()];
+                accumulatedGradientVariance = new float[termStore.getNumRandomVariableAtoms()];
                 break;
             default:
                 throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
@@ -268,9 +268,9 @@ public class SGDReasoner extends Reasoner {
             termIterator = termStore.iterator();
         }
 
-        float[] variableValues = termStore.getAtomValues();
+        float[] values = termStore.getAtomValues();
         for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
-            objective += term.evaluate(variableValues);
+            objective += term.evaluate(values);
         }
 
         return objective;
@@ -288,41 +288,41 @@ public class SGDReasoner extends Reasoner {
     }
 
     /**
-     * Update the random variables by taking a step in the direction of the negative gradient of the term.
+     * Update the atom values by taking a step in the direction of the negative gradient of the term.
      */
-    private float variableUpdate(SGDObjectiveTerm term, TermStore<SGDObjectiveTerm, GroundAtom> termStore,
-                                int iteration, float learningRate) {
+    private float atomUpdate(SGDObjectiveTerm term, TermStore<SGDObjectiveTerm, GroundAtom> termStore,
+                             int iteration, float learningRate) {
         if (!MathUtils.isZero(term.getDeterEpsilon())) {
             return updateDeter(term, termStore);
         }
 
         float movement = 0.0f;
-        float variableStep = 0.0f;
+        float step = 0.0f;
         float newValue = 0.0f;
         float partial = 0.0f;
 
-        GroundAtom[] variableAtoms = termStore.getAtoms();
-        float[] variableValues = termStore.getAtomValues();
+        GroundAtom[] atoms = termStore.getAtoms();
+        float[] atomValues = termStore.getAtomValues();
 
         int size = term.size();
         WeightedRule rule = term.getRule();
-        int[] variableIndexes = term.getVariableIndexes();
-        float dot = term.dot(variableValues);
+        int[] atomIndexes = term.getAtomIndexes();
+        float dot = term.dot(atomValues);
 
         for (int i = 0 ; i < size; i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+            if (atoms[atomIndexes[i]] instanceof ObservedAtom) {
                 continue;
             }
 
             partial = term.computePartial(i, dot, rule.getWeight());
-            variableStep = computeVariableStep(variableIndexes[i], iteration, learningRate, partial);
+            step = computeStep(atomIndexes[i], iteration, learningRate, partial);
 
-            newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - variableStep));
-            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
-            variableValues[variableIndexes[i]] = newValue;
+            newValue = Math.max(0.0f, Math.min(1.0f, atomValues[atomIndexes[i]] - step));
+            movement += Math.abs(newValue - atomValues[atomIndexes[i]]);
+            atomValues[atomIndexes[i]] = newValue;
 
             if (coordinateStep) {
-                dot = term.dot(variableValues);
+                dot = term.dot(atomValues);
             }
         }
 
@@ -330,12 +330,12 @@ public class SGDReasoner extends Reasoner {
     }
 
     /**
-     * Compute the step for a single variable according SGD or one of it's extensions.
+     * Compute the step for a single atom according SGD or one of it's extensions.
      * For details on the math behind the SGD extensions see the corresponding papers listed below:
      *  - AdaGrad: https://jmlr.org/papers/volume12/duchi11a/duchi11a.pdf
      *  - Adam: https://arxiv.org/pdf/1412.6980.pdf
      */
-    private float computeVariableStep(int variableIndex, int iteration, float learningRate, float partial) {
+    private float computeStep(int atomIndex, int iteration, float learningRate, float partial) {
         float step = 0.0f;
         float adaptedLearningRate = 0.0f;
 
@@ -344,24 +344,24 @@ public class SGDReasoner extends Reasoner {
                 step = partial * learningRate;
                 break;
             case ADAGRAD:
-                accumulatedGradientSquares = ArrayUtils.ensureCapacity(accumulatedGradientSquares, variableIndex);
-                accumulatedGradientSquares[variableIndex] = accumulatedGradientSquares[variableIndex] + partial * partial;
+                accumulatedGradientSquares = ArrayUtils.ensureCapacity(accumulatedGradientSquares, atomIndex);
+                accumulatedGradientSquares[atomIndex] = accumulatedGradientSquares[atomIndex] + partial * partial;
 
-                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[variableIndex] + EPSILON);
+                adaptedLearningRate = learningRate / (float)Math.sqrt(accumulatedGradientSquares[atomIndex] + EPSILON);
                 step = partial * adaptedLearningRate;
                 break;
             case ADAM:
                 float biasedGradientMean = 0.0f;
                 float biasedGradientVariance = 0.0f;
 
-                accumulatedGradientMean = ArrayUtils.ensureCapacity(accumulatedGradientMean, variableIndex);
-                accumulatedGradientMean[variableIndex] = adamBeta1 * accumulatedGradientMean[variableIndex] + (1.0f - adamBeta1) * partial;
+                accumulatedGradientMean = ArrayUtils.ensureCapacity(accumulatedGradientMean, atomIndex);
+                accumulatedGradientMean[atomIndex] = adamBeta1 * accumulatedGradientMean[atomIndex] + (1.0f - adamBeta1) * partial;
 
-                accumulatedGradientVariance = ArrayUtils.ensureCapacity(accumulatedGradientVariance, variableIndex);
-                accumulatedGradientVariance[variableIndex] = adamBeta2 * accumulatedGradientVariance[variableIndex] + (1.0f - adamBeta2) * partial * partial;
+                accumulatedGradientVariance = ArrayUtils.ensureCapacity(accumulatedGradientVariance, atomIndex);
+                accumulatedGradientVariance[atomIndex] = adamBeta2 * accumulatedGradientVariance[atomIndex] + (1.0f - adamBeta2) * partial * partial;
 
-                biasedGradientMean = accumulatedGradientMean[variableIndex] / (1.0f - (float)Math.pow(adamBeta1, iteration));
-                biasedGradientVariance = accumulatedGradientVariance[variableIndex] / (1.0f - (float)Math.pow(adamBeta2, iteration));
+                biasedGradientMean = accumulatedGradientMean[atomIndex] / (1.0f - (float)Math.pow(adamBeta1, iteration));
+                biasedGradientVariance = accumulatedGradientVariance[atomIndex] / (1.0f - (float)Math.pow(adamBeta2, iteration));
                 adaptedLearningRate = learningRate / ((float)Math.sqrt(biasedGradientVariance) + EPSILON);
                 step = biasedGradientMean * adaptedLearningRate;
                 break;
@@ -376,8 +376,8 @@ public class SGDReasoner extends Reasoner {
      * Update deter terms.
      */
     private float updateDeter(SGDObjectiveTerm term, TermStore<SGDObjectiveTerm, GroundAtom> termStore) {
-        float[] variableValues = termStore.getAtomValues();
-        int[] variableIndexes = term.getVariableIndexes();
+        float[] atomValues = termStore.getAtomValues();
+        int[] atomIndexes = term.getAtomIndexes();
         int size = term.size();
 
         // TODO(eriq): This minimization is naive.
@@ -388,7 +388,7 @@ public class SGDReasoner extends Reasoner {
         // Check the average distance to the deter point.
         float distance = 0.0f;
         for (int i = 0; i < size; i++) {
-            distance += Math.abs(deterValue - variableValues[variableIndexes[i]]);
+            distance += Math.abs(deterValue - atomValues[atomIndexes[i]]);
         }
         distance /= size;
 
@@ -405,8 +405,8 @@ public class SGDReasoner extends Reasoner {
         float movement = 0.0f;
         for (int i = 0; i < size; i++) {
             float newValue = ((i == upPoint) ? 1.0f : 0.0f);
-            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
-            variableValues[variableIndexes[i]] = newValue;
+            movement += Math.abs(newValue - atomValues[atomIndexes[i]]);
+            atomValues[atomIndexes[i]] = newValue;
         }
 
         return movement;

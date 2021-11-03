@@ -40,7 +40,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
 
     private short size;
     private float[] coefficients;
-    private int[] variableIndexes;
+    private int[] atomIndexes;
 
     public DCDObjectiveTerm(TermStore<DCDObjectiveTerm, GroundAtom> termStore,
             WeightedRule rule,
@@ -53,10 +53,10 @@ public class DCDObjectiveTerm implements StreamingTerm {
         coefficients = hyperplane.getCoefficients();
         constant = hyperplane.getConstant();
 
-        variableIndexes = new int[size];
+        atomIndexes = new int[size];
         GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getAtomIndex(variables[i]);
+            atomIndexes[i] = termStore.getAtomIndex(variables[i]);
         }
 
         this.rule = rule;
@@ -76,7 +76,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
         float adjustedWeight = rule.getWeight() * c;
 
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[variableIndexes[i]];
+            value += coefficients[i] * variableValues[atomIndexes[i]];
         }
 
         value -= constant;
@@ -112,7 +112,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
         float val = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            val += variableValues[variableIndexes[i]] * coefficients[i];
+            val += variableValues[atomIndexes[i]] * coefficients[i];
         }
 
         return constant - val;
@@ -134,8 +134,8 @@ public class DCDObjectiveTerm implements StreamingTerm {
         return rule;
     }
 
-    public int[] getVariableIndexes() {
-        return variableIndexes;
+    public int[] getAtomIndexes() {
+        return atomIndexes;
     }
 
     public float getQii() {
@@ -167,7 +167,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(variableIndexes[i]);
+            fixedBuffer.putInt(atomIndexes[i]);
         }
     }
 
@@ -183,12 +183,12 @@ public class DCDObjectiveTerm implements StreamingTerm {
         // Make sure that there is enough room for all these variableIndexes.
         if (coefficients.length < size) {
             coefficients = new float[size];
-            variableIndexes = new int[size];
+            atomIndexes = new int[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            variableIndexes[i] = fixedBuffer.getInt();
+            atomIndexes[i] = fixedBuffer.getInt();
         }
 
         lagrange = volatileBuffer.getFloat();
@@ -207,7 +207,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
             builder.append("(");
             builder.append(coefficients[i]);
             builder.append(" * ");
-            builder.append(variableIndexes[i]);
+            builder.append(atomIndexes[i]);
             builder.append(")");
 
             if (i != size - 1) {

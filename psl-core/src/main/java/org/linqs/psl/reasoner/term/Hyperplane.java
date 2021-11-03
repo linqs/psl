@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Information representing a raw hyperplane.
  */
-public class Hyperplane<E extends ReasonerLocalVariable> {
+public class Hyperplane<E extends ReasonerAtom> {
     private E[] variables;
     private float[] coefficients;
     private int size;

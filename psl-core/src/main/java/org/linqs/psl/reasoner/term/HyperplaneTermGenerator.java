@@ -45,7 +45,7 @@ import java.util.Set;
 /**
  * A base term generator for terms that come from hyperplanes.
  */
-public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
+public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerAtom> implements TermGenerator<T, V> {
     private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
 
     protected boolean invertNegativeWeight;
@@ -217,7 +217,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
                 // and "removing" this term would be subtracting.
                 hyperplane.addIntegratedRVA((RandomVariableAtom)term, -coefficient);
             } else if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
-                V variable = termStore.createLocalVariable((GroundAtom)term);
+                V variable = termStore.createReasonerAtom((GroundAtom)term);
 
                 // Check to see if we have seen this variable before in this hyperplane.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of

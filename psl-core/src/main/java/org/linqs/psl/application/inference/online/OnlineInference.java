@@ -84,7 +84,7 @@ public abstract class OnlineInference extends InferenceApplication {
 
         super.initialize();
 
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount() + atomManager.getCachedObsCount());
+        termStore.ensureAtomCapacity(atomManager.getCachedRVACount() + atomManager.getCachedObsCount());
     }
 
     @Override
@@ -144,7 +144,7 @@ public abstract class OnlineInference extends InferenceApplication {
 
         if (atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
             deleteAtom(action.getPredicate(), action.getArguments());
-            ((OnlineTermStore)termStore).deleteLocalVariable(atom);
+            ((OnlineTermStore)termStore).deleteAtom(atom);
         }
 
         if (action.getPartitionName().equalsIgnoreCase("READ")) {
@@ -157,7 +157,7 @@ public abstract class OnlineInference extends InferenceApplication {
             }
         }
 
-        ((OnlineTermStore)termStore).createLocalVariable(atom);
+        ((OnlineTermStore)termStore).createReasonerAtom(atom);
 
         modelUpdates = true;
         return String.format("Added atom: %s", atom.toStringWithValue());
@@ -170,7 +170,7 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         GroundAtom atom = deleteAtom(action.getPredicate(), action.getArguments());
-        ((OnlineTermStore)termStore).deleteLocalVariable(atom);
+        ((OnlineTermStore)termStore).deleteAtom(atom);
 
         modelUpdates = true;
         return String.format("Deleted atom: %s", atom);
@@ -192,7 +192,7 @@ public abstract class OnlineInference extends InferenceApplication {
         deleteAtom(action.getPredicate(), action.getArguments());
 
         ObservedAtom observedAtom = ((OnlineAtomManager)atomManager).addObservedAtom(action.getPredicate(), action.getValue(), false, action.getArguments());
-        ((OnlineTermStore)termStore).updateLocalVariable(observedAtom, action.getValue());
+        ((OnlineTermStore)termStore).updateAtom(observedAtom, action.getValue());
 
         modelUpdates = true;
         return String.format("Observed atom: %s => %s", atom.toStringWithValue(), observedAtom.toStringWithValue());
@@ -210,7 +210,7 @@ public abstract class OnlineInference extends InferenceApplication {
         }
 
         float oldAtomValue = atom.getValue();
-        ((OnlineTermStore)termStore).updateLocalVariable((ObservedAtom)atom, action.getValue());
+        ((OnlineTermStore)termStore).updateAtom((ObservedAtom)atom, action.getValue());
         ((ObservedAtom)atom)._assumeValue(action.getValue());
 
         modelUpdates = true;

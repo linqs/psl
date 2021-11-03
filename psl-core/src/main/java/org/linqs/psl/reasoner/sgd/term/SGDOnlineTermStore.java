@@ -59,16 +59,16 @@ public class SGDOnlineTermStore extends OnlineTermStore<SGDObjectiveTerm> {
     @Override
     public synchronized boolean rejectCacheTerm(SGDObjectiveTerm term) {
         boolean allObservedAtoms = true;
-        int[] variableIndexes = term.getVariableIndexes();
+        int[] variableIndexes = term.getAtomIndexes();
 
         for (int i=0; i < term.size(); i++) {
-            if (variableAtoms[variableIndexes[i]] == null) {
+            if (atoms[variableIndexes[i]] == null) {
                 return true;
             }
 
             // If a random variable atom is present in the term,
             // then the term contributes to optimization and should not be rejected.
-            if (variableAtoms[variableIndexes[i]] instanceof RandomVariableAtom) {
+            if (atoms[variableIndexes[i]] instanceof RandomVariableAtom) {
                 allObservedAtoms = false;
             }
         }
