@@ -59,11 +59,11 @@ public class OnlineActionLoaderTest {
     @Test
     public void testDeleteAtom() {
         String input =
-                "DeleteAtom Read SINGLE('A')\n" +
-                "DeleteAtom Write DOUBLE('A', 'B')";
+            "DeleteAtom Read SINGLE('A')\n" +
+            "DeleteAtom Write DOUBLE('A', 'B')";
         String[] expected = new String[]{
-                "DELETEATOM\tREAD\tSINGLE\t'A'",
-                "DELETEATOM\tWRITE\tDOUBLE\t'A'\t'B'"
+            "DELETEATOM\tREAD\tSINGLE\t'A'",
+            "DELETEATOM\tWRITE\tDOUBLE\t'A'\t'B'"
         };
 
         OnlinePSLTest.assertActions(input, expected);
@@ -72,11 +72,11 @@ public class OnlineActionLoaderTest {
     @Test
     public void testObserveAtom() {
         String input =
-                "ObserveAtom SINGLE('A') 0.5\n" +
-                "ObserveAtom DOUBLE('A', 'B') 1";
+            "ObserveAtom SINGLE('A') 0.5\n" +
+            "ObserveAtom DOUBLE('A', 'B') 1";
         String[] expected = new String[]{
-                "OBSERVEATOM\tSINGLE\t'A'\t0.50",
-                "OBSERVEATOM\tDOUBLE\t'A'\t'B'\t1.00"
+            "OBSERVEATOM\tSINGLE\t'A'\t0.50",
+            "OBSERVEATOM\tDOUBLE\t'A'\t'B'\t1.00"
         };
 
         OnlinePSLTest.assertActions(input, expected);
@@ -85,11 +85,11 @@ public class OnlineActionLoaderTest {
     @Test
     public void testUpdateObservation() {
         String input =
-                "UpdateAtom SINGLE('A') 0.5\n" +
-                "UpdateAtom DOUBLE('A', 'B') 1";
+            "UpdateAtom SINGLE('A') 0.5\n" +
+            "UpdateAtom DOUBLE('A', 'B') 1";
         String[] expected = new String[]{
-                "UPDATEATOM\tSINGLE\t'A'\t0.50",
-                "UPDATEATOM\tDOUBLE\t'A'\t'B'\t1.00"
+            "UPDATEATOM\tSINGLE\t'A'\t0.50",
+            "UPDATEATOM\tDOUBLE\t'A'\t'B'\t1.00"
         };
 
         OnlinePSLTest.assertActions(input, expected);
@@ -98,11 +98,11 @@ public class OnlineActionLoaderTest {
     @Test
     public void testGetAtom() {
         String input =
-                "GetAtom SINGLE('A')\n" +
-                "GetAtom DOUBLE('A', 'B')";
+            "GetAtom SINGLE('A')\n" +
+            "GetAtom DOUBLE('A', 'B')";
         String[] expected = new String[]{
-                "GETATOM\tSINGLE\t'A'",
-                "GETATOM\tDOUBLE\t'A'\t'B'"
+            "GETATOM\tSINGLE\t'A'",
+            "GETATOM\tDOUBLE\t'A'\t'B'"
         };
 
         OnlinePSLTest.assertActions(input, expected);

@@ -20,10 +20,6 @@ grammar OnlinePSL;
 
 import PSL;
 
-/*
- * Parser Rules
- */
-
 onlineProgram
     :   action+ EOF
     ;
@@ -96,10 +92,6 @@ writeInferredPredicates
     :   WRITE_INFERRED_PREDICATES STRING_LITERAL
     ;
 
-/*
- * Lexer Rules
- */
-
 PARTITION
     :   READ_PARTITION
     |   WRITE_PARTITION
@@ -165,132 +157,29 @@ WRITE_PARTITION
     :   W R I T E
     ;
 
-fragment A
-    :   'A'
-    |   'a'
-    ;
-
-fragment B
-    :   'B'
-    |   'b'
-    ;
-
-fragment C
-    :   'C'
-    |   'c'
-    ;
-
-fragment D
-    :   'D'
-    |   'd'
-    ;
-
-fragment E
-    :   'E'
-    |   'e'
-    ;
-
-fragment F
-    :   'F'
-    |   'f'
-    ;
-
-fragment G
-    :   'G'
-    |   'g'
-    ;
-
-fragment H
-    :   'H'
-    |   'h'
-    ;
-
-fragment I
-    :   'I'
-    |   'i'
-    ;
-
-fragment J
-    :   'J'
-    |   'j'
-    ;
-
-fragment K
-    :   'K'
-    |   'k'
-    ;
-
-fragment L
-    :   'L'
-    |   'l'
-    ;
-
-fragment M
-    :   'M'
-    |   'm'
-    ;
-
-fragment N
-    :   'N'
-    |   'n'
-    ;
-
-fragment O
-    :   'O'
-    |   'o'
-    ;
-
-fragment P
-    :   'P'
-    |   'p'
-    ;
-
-fragment Q
-    :   'Q'
-    |   'q'
-    ;
-
-fragment R
-    :   'R'
-    |   'r'
-    ;
-
-fragment S
-    :   'S'
-    |   's'
-    ;
-
-fragment T
-    :   'T'
-    |   't'
-    ;
-
-fragment U
-    :   'U'
-    |   'u'
-    ;
-
-fragment V
-    :   'V'
-    |   'v'
-    ;
-
-fragment W
-    :   'W'
-    |   'w'
-    ;
-
-fragment X
-    :   'X'
-    |   'x'
-    ;
-
-fragment Y
-    :   'Y'
-    |   'y'
-    ;
-
-fragment Z
-    :   'Z'
-    |   'z'
-    ;
+fragment A : [aA]; // match either an 'a' or 'A'
+fragment B : [bB];
+fragment C : [cC];
+fragment D : [dD];
+fragment E : [eE];
+fragment F : [fF];
+fragment G : [gG];
+fragment H : [hH];
+fragment I : [iI];
+fragment J : [jJ];
+fragment K : [kK];
+fragment L : [lL];
+fragment M : [mM];
+fragment N : [nN];
+fragment O : [oO];
+fragment P : [pP];
+fragment Q : [qQ];
+fragment R : [rR];
+fragment S : [sS];
+fragment T : [tT];
+fragment U : [uU];
+fragment V : [vV];
+fragment W : [wW];
+fragment X : [xX];
+fragment Y : [yY];
+fragment Z : [zZ];

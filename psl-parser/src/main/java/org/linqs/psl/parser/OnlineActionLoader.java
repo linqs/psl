@@ -69,7 +69,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
-
     /**
      * Parse and return a single OnlineAction.
      * If exactly one action is not specified, an exception is thrown.
@@ -143,10 +142,10 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
         return parser;
     }
 
-    OnlineActionLoader() {}
+    private OnlineActionLoader() {}
 
-    public List<OnlineMessage> visitOnlineProgram(OnlinePSLParser.OnlineProgramContext ctx, OnlinePSLParser parser) {
-        LinkedList<OnlineMessage> actions = new LinkedList<OnlineMessage>();
+    public List<OnlineMessage> visitOnlineProgram(OnlineProgramContext ctx, OnlinePSLParser parser) {
+        List<OnlineMessage> actions = new LinkedList<OnlineMessage>();
         for (ActionContext actionCtx : ctx.action()) {
             try {
                 actions.add((OnlineMessage)visit(actionCtx));
@@ -297,8 +296,8 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
 
     @Override
     public WriteInferredPredicates visitWriteInferredPredicates(WriteInferredPredicatesContext ctx) {
-        String outputDirectoryPath = ctx.STRING_LITERAL().getText().replace("'","").replace("\"", "");
-        return new WriteInferredPredicates(outputDirectoryPath);
+        String outputDirectoryPath = ctx.STRING_LITERAL().getText();
+        return new WriteInferredPredicates(outputDirectoryPath.substring(1, outputDirectoryPath.length() - 1));
     }
 
     @Override

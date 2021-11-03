@@ -196,11 +196,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         return visitor.visitProgram(program, parser);
     }
 
-    static Atom loadAtom(String input) {
+    public static Atom loadAtom(String input) {
         return loadAtom(new StringReader(input));
     }
 
-    static Atom loadAtom(Reader input) {
+    public static Atom loadAtom(Reader input) {
         PSLParser parser = null;
         try {
             parser = getParser(input);
