@@ -109,10 +109,10 @@ public class DCDReasoner extends Reasoner {
 
             if (iteration == 1) {
                 // Initialize old atom values.
-                oldValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getAtomValues().length);
+                oldValues = Arrays.copyOf(termStore.getAtomValues(), termStore.getNumAtoms());
             } else {
                 // Update old atom values and objective.
-                System.arraycopy(termStore.getAtomValues(), 0, oldValues, 0, oldValues.length);
+                System.arraycopy(termStore.getAtomValues(), 0, oldValues, 0, termStore.getNumAtoms());
                 oldObjective = objective;
             }
 

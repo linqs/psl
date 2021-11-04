@@ -199,7 +199,7 @@ public class SGDReasoner extends Reasoner {
         }
 
         float[] atomValues = termStore.getAtomValues();
-        System.arraycopy(lowestAtomValues, 0, atomValues, 0, atomValues.length);
+        System.arraycopy(lowestAtomValues, 0, atomValues, 0, termStore.getNumAtoms());
 
         // Compute atom change and log optimization information.
         change = termStore.syncAtoms();
