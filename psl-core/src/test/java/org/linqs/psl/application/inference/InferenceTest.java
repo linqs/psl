@@ -34,9 +34,9 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
-import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
+import org.linqs.psl.model.rule.arithmetic.expression.*;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
@@ -312,6 +312,47 @@ public abstract class InferenceTest {
             oldAvgObjective = avgObjective;
             oldInitialValue = initialValue;
         }
+    }
+
+    /**
+     * Test that inference application find a nearly feasible solution with a simplex constraint.
+     */
+    @Test
+    public void testSimplexConstraints() {
+        TestModel.ModelInformation info = TestModel.getModel();
+
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+
+        coefficients = Arrays.asList(
+                (Coefficient)(new ConstantNumber(1.0f))
+        );
+
+        atoms = Arrays.asList(
+                (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Friends"),
+                        new SummationVariableOrTerm[]{new SummationVariable("A"), new SummationVariable("B")}))
+        );
+
+        // Friends(+A, +B) = 1.0
+        info.model.addRule(new UnweightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1))
+        ));
+
+        // Close the predicates we are using.
+        Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+        inference.inference();
+        // Test if the constraint is enforced.
+        float sum = 0.0f;
+        for (RandomVariableAtom cachedRandomVariableAtom : inferDB.getAllCachedRandomVariableAtoms()) {
+            sum += cachedRandomVariableAtom.getValue();
+        }
+        assertEquals(1.0f, sum, 0.1f);
+        inference.close();
+        inferDB.close();
     }
 
     /**

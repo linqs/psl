@@ -81,4 +81,12 @@ public class SGDInferenceTest extends InferenceTest {
         Options.SGD_COORDINATE_STEP.set(true);
         super.initialValueTest();
     }
+
+    @Override
+    public void testSimplexConstraints() {
+        Options.SGD_LEARNING_RATE.set(1.0);
+        Options.SGD_INVERSE_TIME_EXP.set(2.0);
+        Options.SGD_COORDINATE_STEP.set(false);
+        super.testSimplexConstraints();
+    }
 }

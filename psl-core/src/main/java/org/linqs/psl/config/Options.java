@@ -428,7 +428,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
-        true,
+        false,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
     );
 
