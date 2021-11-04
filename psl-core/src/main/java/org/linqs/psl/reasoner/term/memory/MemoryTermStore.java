@@ -198,7 +198,10 @@ public abstract class MemoryTermStore<T extends ReasonerTerm, V extends Reasoner
         double rmse = 0.0;
 
         int count = 0;
-        for (RandomVariableAtom mirrorAtom : mirrorAtoms.keySet()) {
+        for (Map.Entry<RandomVariableAtom, List<MirrorTermCoefficient>> mirrorAtomEntry : mirrorAtoms.entrySet()) {
+            RandomVariableAtom mirrorAtom = mirrorAtomEntry.getKey();
+            List<MirrorTermCoefficient> mirrorAtomCoefficients = mirrorAtomEntry.getValue();
+
             if (!(mirrorAtom.getPredicate() instanceof ModelPredicate)) {
                 continue;
             }
@@ -209,7 +212,7 @@ public abstract class MemoryTermStore<T extends ReasonerTerm, V extends Reasoner
             float newValue = predicate.getValue(mirrorAtom);
             mirrorAtom.setValue(newValue);
 
-            for (MirrorTermCoefficient pair : mirrorAtoms.get(mirrorAtom)) {
+            for (MirrorTermCoefficient pair : mirrorAtomCoefficients) {
                 pair.term.adjustConstant(pair.coefficient * oldValue, pair.coefficient * newValue);
             }
 
