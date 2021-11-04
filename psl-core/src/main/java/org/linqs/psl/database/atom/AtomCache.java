@@ -65,10 +65,10 @@ public class AtomCache {
     }
 
     /**
-     * Checks whether a {@link GroundAtom} matching a QueryAtom exists in the
+     * Checks whether a {@link GroundAtom} matching a GetAtom exists in the
      * cache and returns it if so.
      *
-     * @param atom QueryAtom with all {@link Constant GroundTerms}
+     * @param atom GetAtom with all {@link Constant GroundTerms}
      * @return the requested GroundAtom, or NULL if it is not cached
      */
     public GroundAtom getCachedAtom(QueryAtom atom) {

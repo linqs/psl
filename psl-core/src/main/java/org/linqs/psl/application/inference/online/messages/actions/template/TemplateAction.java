@@ -22,11 +22,13 @@ import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.rule.Rule;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 public abstract class TemplateAction extends OnlineMessage {
     protected Rule rule;
+    protected boolean newRule;
 
     public TemplateAction(Rule rule) {
         super();
@@ -40,6 +42,7 @@ public abstract class TemplateAction extends OnlineMessage {
             }
         }
         this.rule = rule;
+        this.newRule = false;
     }
 
     public Rule getRule() {
@@ -48,5 +51,15 @@ public abstract class TemplateAction extends OnlineMessage {
 
     public void setRule(Rule rule) {
         this.rule = rule;
+    }
+
+    public boolean isNewRule() {
+        return newRule;
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        newRule = !rule.isRegistered();
     }
 }

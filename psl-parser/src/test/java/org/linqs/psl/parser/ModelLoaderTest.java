@@ -906,7 +906,7 @@ public class ModelLoaderTest {
     // QueryAtoms and SummationAtoms.
     @Test
     public void testArithmeticSummationAtom() {
-        // QueryAtom
+        // GetAtom
         String input = "1.0: Double(A, B) <= 1.0 ^2";
         List<Rule> rules = PSLTest.getRules(input);
 

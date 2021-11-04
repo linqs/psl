@@ -17,11 +17,13 @@
  */
 package org.linqs.psl.model.formula;
 
-import java.util.ArrayList;
+import org.linqs.psl.util.HashCode;
 
 public class Conjunction extends AbstractBranchFormula<Conjunction> {
     public Conjunction(Formula... f) {
         super(f);
+
+        hashcode = HashCode.build(hashcode, "&");
     }
 
     @Override

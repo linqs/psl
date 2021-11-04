@@ -216,7 +216,7 @@ public class AtomTest {
      * Atom equality is a high-traffic piece of code because of Sets and Maps that hold them.
      * As such, equals() has been optimized.
      * Make sure these optmizations don't miss any cases.
-     * We are specifically checking Atom.equals(), so no need to have anything more complex than a QueryAtom.
+     * We are specifically checking Atom.equals(), so no need to have anything more complex than a GetAtom.
      */
     @Test
     public void testEqualityBase() {

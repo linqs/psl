@@ -23,44 +23,71 @@ import java.util.Map;
 
 /**
  * Base class for all (first order, i.e., not ground) rules.
- *
- * Care should always be taken when creating multiple instance of the same rule (e.g. through deserialization) or checking rules for equality.
- * In general, there should only be one instance of each rule, but this is not tightly enforced.
- * Rule hashes are by default their identity hash code (object id).
- * This means that it may be possible to have rules that are equal(), but that do not have matching hashes.
  */
 public abstract class AbstractRule implements Rule {
-    private static Map<Integer, AbstractRule> rules = new HashMap<Integer, AbstractRule>();
+    private static final Map<Integer, Rule> rules = new HashMap<Integer, Rule>();
 
-    protected final String name;
+    protected String name;
+    protected int hashcode;
 
-    public static AbstractRule getRule(int hashcode) {
+    public static Rule getRule(int hashcode) {
         return rules.get(hashcode);
     }
 
-    public AbstractRule(String name) {
-        this(name, true);
+    /**
+     * This default constructor only initializes name and hashcode to their empty values.
+     * The caller of this constructor is responsible for initializing the name and hashcode of the object
+     * and ensuring that the rule is registered.
+     */
+    protected AbstractRule() {
+        this.name = null;
+        this.hashcode = 0;
     }
 
-    protected AbstractRule(String name, boolean storeRule) {
+    protected AbstractRule(String name, int hashcode) {
         this.name = name;
+        this.hashcode = hashcode;
 
-        if (storeRule) {
-            rules.put(System.identityHashCode(this), this);
-        }
+        ensureRegistration();
     }
 
     public String getName() {
         return this.name;
     }
 
-    /**
-     * Explicitly define the hash for rules to be the identity hash code (object id).
-     */
+    private static void registerRule(Rule rule) {
+        rules.put(rule.hashCode(), rule);
+    }
+
+    private static void unregisterRule(Rule rule) {
+        rules.remove(rule.hashCode());
+    }
+
+    @Override
+    public boolean isRegistered() {
+        return rules.containsKey(this.hashcode);
+    }
+
+    @Override
+    public void ensureRegistration() {
+        if (!isRegistered()) {
+            registerRule(this);
+        }
+    }
+
+    @Override
+    public void unregister() {
+        if (isRegistered()) {
+            unregisterRule(this);
+        }
+    }
+
     @Override
     public int hashCode() {
-        return System.identityHashCode(this);
+        return hashcode;
     }
+
+    public abstract boolean equals(Object other);
 
     @Override
     public boolean requiresSplit() {

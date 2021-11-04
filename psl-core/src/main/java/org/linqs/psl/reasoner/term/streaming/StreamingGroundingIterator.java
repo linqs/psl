@@ -237,8 +237,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
             }
         }
 
-        currentRule++;
-        if (currentRule >= rules.size()) {
+        if (!primeNextRuleIndex()) {
             // There are no more rules, we are done.
             return null;
         }
@@ -247,6 +246,11 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
         startGroundingQuery();
 
         return fetchNextGroundRule();
+    }
+
+    protected boolean primeNextRuleIndex() {
+        currentRule++;
+        return currentRule < rules.size();
     }
 
     /**

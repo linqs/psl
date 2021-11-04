@@ -78,6 +78,20 @@ public abstract class OnlineGroundingIterator<T extends StreamingTerm> extends S
     }
 
     @Override
+    protected boolean primeNextRuleIndex() {
+        // Flush remaining terms from current rule.
+        // This flush ensures all terms found in the same page where instantiated by the same rule.
+        if (termCache.size() > 0) {
+            // Add the page to the rule mapping.
+            ((OnlineTermStore<T>)parentStore).addRuleMapping(rules.get(currentRule), nextPage);
+
+            flushCache();
+        }
+
+        return super.primeNextRuleIndex();
+    }
+
+    @Override
     protected void startGroundingQuery() {
         // If the term store has not been initially loaded (initial round), then just do normal grounding.
         if (parentStore.isInitialRound()) {

@@ -57,7 +57,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
 
     protected boolean initialRound;
     protected StreamingIterator<T> activeIterator;
-    protected long seenTermCount;
+    protected long termCount;
     protected int numPages;
 
     protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
@@ -132,7 +132,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
 
         initialRound = true;
         activeIterator = null;
-        seenTermCount = 0l;
+        termCount = 0l;
         numPages = 0;
 
         termBuffer = null;
@@ -244,6 +244,11 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
         return activeIterator;
     }
 
+    @Override
+    public long size() {
+        return termCount;
+    }
+
     /**
      * Provide the iterator that will be used in iterator(), along with any additional setup.
      * This method is used instead of just iterator() for type safety in child classes.
@@ -276,7 +281,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
      * The ByterBuffers are here because of possible reallocation.
      */
     public void groundingIterationComplete(long termCount, int numPages, ByteBuffer termBuffer, ByteBuffer volatileBuffer) {
-        seenTermCount += termCount;
+        this.termCount += termCount;
 
         this.numPages = numPages;
         this.termBuffer = termBuffer;
@@ -289,7 +294,8 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
     /**
      * A callback for the non-initial round iterator.
      */
-    public void cacheIterationComplete() {
+    public void cacheIterationComplete(long termCount) {
+        this.termCount = termCount;
         activeIterator = null;
     }
 
@@ -310,11 +316,6 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
 
     @Override
     public void initForOptimization() {
-    }
-
-    @Override
-    public long size() {
-        return seenTermCount;
     }
 
     public String getTermPagePath(int index) {
@@ -342,7 +343,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> extends TermSto
         super.clear();
 
         initialRound = true;
-        seenTermCount = 0l;
+        termCount = 0l;
         numPages = 0;
 
         if (activeIterator != null) {

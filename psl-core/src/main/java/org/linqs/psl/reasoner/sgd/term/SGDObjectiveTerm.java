@@ -193,7 +193,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
         fixedBuffer.put((byte)(hinge ? 1 : 0));
-        fixedBuffer.putInt(System.identityHashCode(rule));
+        fixedBuffer.putInt(rule.hashCode());
         fixedBuffer.putFloat(constant);
         fixedBuffer.putShort(size);
         fixedBuffer.putFloat(deterEpsilon);
