@@ -47,6 +47,7 @@ public abstract class LoaderTest {
     public void shutDown() {
         if (dataStore != null) {
             dataStore.close();
+            dataStore = null;
         }
     }
 }
