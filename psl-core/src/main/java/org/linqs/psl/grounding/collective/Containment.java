@@ -156,6 +156,11 @@ public class Containment {
     private static Map<Variable, Set<VariableInstance>> getVariableUsage(Rule rule) {
         Set<Atom> atoms = new HashSet<Atom>();
         rule.getCoreAtoms(atoms);
+
+        if (atoms.size() == 1) {
+            return getVariableUsage(atoms.iterator().next());
+        }
+
         Formula formula = new Conjunction(atoms.toArray(new Formula[0]));
         return getVariableUsage(formula);
     }
