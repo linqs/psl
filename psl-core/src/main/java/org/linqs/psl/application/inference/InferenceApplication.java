@@ -106,13 +106,6 @@ public abstract class InferenceApplication implements ModelApplication {
 
         initializeAtoms();
 
-        reasoner = createReasoner();
-        termGenerator = createTermGenerator();
-        termStore = createTermStore();
-        groundRuleStore = createGroundRuleStore();
-
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
-
         if (normalizeWeights) {
             normalizeWeights();
         }
@@ -120,6 +113,13 @@ public abstract class InferenceApplication implements ModelApplication {
         if (relaxHardConstraints) {
             relaxHardConstraints();
         }
+
+        reasoner = createReasoner();
+        termGenerator = createTermGenerator();
+        termStore = createTermStore();
+        groundRuleStore = createGroundRuleStore();
+
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
         completeInitialize();
     }
