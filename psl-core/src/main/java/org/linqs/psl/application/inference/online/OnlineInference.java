@@ -111,7 +111,7 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     private void startServer() {
-        server = new OnlineServer();
+        server = new OnlineServer(rules);
         server.start();
     }
 

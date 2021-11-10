@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.cli;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.database.ReadableDatabase;
@@ -151,6 +152,26 @@ public class SimpleAcquaintancesTest extends CLITest {
         } catch (RuntimeException ex) {
             // Expected.
         }
+    }
+
+    @Test
+    public void testOnlineBase() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "base-actions.txt").toString();
+
+        String clientOutput = runOnline(modelPath, dataPath, actionPath);
+        assertTrue(clientOutput.contains("OnlinePSL inference stopped."));
+    }
+
+    @Test
+    public void testOnlinePredicateError() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "predicate-error-actions.txt").toString();
+
+        String clientOutput = runOnline(modelPath, dataPath, actionPath);
+        assertTrue(clientOutput.contains("Error parsing command:"));
     }
 
     // Not an actual similarity.

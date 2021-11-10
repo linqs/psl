@@ -1,0 +1,14 @@
+AddAtom Read Likes('Charles','Surfing') 1.0
+AddAtom Read Likes('Connor','Chess') 1.0
+AddAtom Read Likes('Eriq','Machine Learning') 1.0
+AddAtom Write Knows('Charles','Alex')
+AddAtom Write Knows('Charles','Ben')
+AddAtom Write Knows('Connor','Alex')
+AddAtom Write Knows('Connor','Ben')
+AddAtom Write Knows('Eriq','Alex')
+AddAtom Write Knows('Eriq','Ben')
+GetAtom Knows('Charles','Alex')
+AddRule 5: Likes(P1, L1) & Likes(P2, L2) & (P1 != P2) & (L1 != L2) -> !Knows(P1, P2) ^2
+GetAtom Knows('Charles','Alex')
+Stop
+Exit
