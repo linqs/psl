@@ -57,6 +57,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -179,14 +180,11 @@ public class Launcher {
     }
 
     private void outputServerResponses(List<OnlineResponse> serverResponses, String outputPath) {
-        File outputDir = new File(outputPath);
-
-        // mkdir -p
-        outputDir.mkdirs();
+        FileUtils.mkdir(outputPath);
 
         try {
-            FileWriter fileWriter = new FileWriter(new File(outputDir, "serverResponses.txt"));
-            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            BufferedWriter bufferedWriter = FileUtils.getBufferedWriter(
+                    Paths.get(outputPath, "serverResponses.txt").toString());
 
             for (OnlineResponse response : serverResponses) {
                 bufferedWriter.write(response.toString() + "\n");

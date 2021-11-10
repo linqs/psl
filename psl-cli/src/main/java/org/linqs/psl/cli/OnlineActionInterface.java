@@ -23,6 +23,7 @@ import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.parser.OnlineActionLoader;
+import org.linqs.psl.util.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class OnlineActionInterface {
         List<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
         CountDownLatch modelRegistrationLatch = new CountDownLatch(1);
 
-        try (BufferedReader commandReader = new BufferedReader(new InputStreamReader(in))) {
+        try (BufferedReader commandReader = FileUtils.getBufferedReader(in)) {
             String userInput = null;
             OnlineMessage onlineAction = null;
             BlockingQueue<OnlineMessage> onlineActions = new LinkedBlockingQueue<OnlineMessage>();
