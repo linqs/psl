@@ -155,7 +155,7 @@ public abstract class OnlineInference extends InferenceApplication {
         GroundAtom atom = null;
 
         if (atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
-            deleteAtom(action.getPredicate(), action.getArguments());
+            atom = deleteAtom(action.getPredicate(), action.getArguments());
             ((OnlineTermStore)termStore).deleteLocalVariable(atom);
         }
 
