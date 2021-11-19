@@ -103,7 +103,7 @@ public class OnlineServer {
                 throw new IllegalStateException(String.format("Temp file already exists at: %s", tempFile.getAbsolutePath()));
             }
         } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            throw new RuntimeException(String.format("Error creating temp file at: %s", tempFile.getAbsolutePath()), ex);
         }
         tempFile.deleteOnExit();
         log.debug("Temporary server config file at: " + tempFile.getAbsolutePath());
