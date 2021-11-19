@@ -22,6 +22,8 @@ import org.linqs.psl.parser.CommandLineLoader;
 
 import org.junit.After;
 import org.junit.Before;
+import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.SystemUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,15 +44,13 @@ public abstract class CLITest {
     public static final String BASE_DATA_DIR_NAME = "data";
     public static final String BASE_MODELS_DIR_NAME = "models";
     public static final String BASE_ONLINE_ACTIONS_DIR_NAME = "onlineActions";
-    public static final String SERVER_TEMP_FILE_NAME_PREFIX = "onlinePSLServer";
-    public static final String SERVER_TEMP_FILE_NAME_SUFFIX = ".tmp";
+    public static final String SERVER_TEMP_FILE_PATH = Paths.get(SystemUtils.getTempDir("onlinePSLServer"), "onlinePSLServer.lock").toString();
 
     protected final String outDir;
     protected final String resourceDir;
     protected final String baseDataDir;
     protected final String baseModelsDir;
     protected final String baseOnlineActionsDir;
-    protected final String serverTempFileDir;
 
     public CLITest() {
         outDir = Paths.get(System.getProperty("java.io.tmpdir"), PREFIX + "_" + this.getClass().getName()).toString();
@@ -59,7 +59,6 @@ public abstract class CLITest {
         baseDataDir = Paths.get(resourceDir, BASE_DATA_DIR_NAME).toString();
         baseModelsDir = Paths.get(resourceDir, BASE_MODELS_DIR_NAME).toString();
         baseOnlineActionsDir = Paths.get(resourceDir, BASE_ONLINE_ACTIONS_DIR_NAME).toString();
-        serverTempFileDir= Paths.get(System.getProperty("java.io.tmpdir")).toString();
     }
 
     @Before
@@ -137,13 +136,12 @@ public abstract class CLITest {
         serverArgs.add("log4j.threshold=" + loggingLevel);
 
         // Start the server.
-        Runnable serverTask = new Runnable() {
+        Thread serverThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 Launcher.main(serverArgs.toArray(new String[0]), true);
             }
-        };
-        Thread serverThread = new Thread(serverTask);
+        });
         serverThread.start();
 
         // Wait until the server is ready to accept client connections.
@@ -188,23 +186,7 @@ public abstract class CLITest {
      * Wait for the online server to drop its temporary file.
      */
     public void waitForServerTempFile() {
-        boolean tempFileExists = false;
-
-        while (!tempFileExists) {
-            File tempDir = new File(serverTempFileDir);
-            File[] tempDirFiles = tempDir.listFiles();
-
-            for (File tempDirFile : tempDirFiles) {
-                if (tempDirFile.isFile()) {
-                    String serverTempFileName = tempDirFile.getName();
-                    if (serverTempFileName.startsWith(SERVER_TEMP_FILE_NAME_PREFIX)
-                            && serverTempFileName.endsWith(SERVER_TEMP_FILE_NAME_SUFFIX)) {
-                        tempFileExists = true;
-                        break;
-                    }
-                }
-            }
-
+        while (!FileUtils.exists(SERVER_TEMP_FILE_PATH)) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException ex) {

@@ -28,6 +28,8 @@ import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 
+import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,12 +63,12 @@ public class OnlineServer {
     private BlockingQueue<OnlineMessage> queue;
     private ConcurrentMap<UUID, ClientConnectionThread> messageIDConnectionMap;
     private List<Rule> rules;
-    private File tmpFile;
+    private File tempFile;
 
     public OnlineServer(List<Rule> rules) {
         listening = false;
         serverThread = new ServerConnectionThread();
-        tmpFile = null;
+        tempFile = null;
         queue = new LinkedBlockingQueue<OnlineMessage>();
         messageIDConnectionMap = new ConcurrentHashMap<UUID, ClientConnectionThread>();
         clientConnectionThreads = Collections.newSetFromMap(new ConcurrentHashMap<ClientConnectionThread, Boolean>());
@@ -89,13 +91,19 @@ public class OnlineServer {
      * ready to accept client connections and online actions.
      */
     private void createServerTempFile() {
+        String tempDirectory = SystemUtils.getTempDir("onlinePSLServer");
+        FileUtils.mkdir(tempDirectory);
+
+        tempFile = new File(new File(tempDirectory), "onlinePSLServer.lock");
         try {
-            tmpFile = File.createTempFile("onlinePSLServer", ".tmp");
+            if (!tempFile.createNewFile()) {
+                throw new IllegalStateException(String.format("Temp file already exists at: %s", tempFile.getAbsolutePath()));
+            }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        tmpFile.deleteOnExit();
-        log.info("Temporary server config file at: " + tmpFile.getAbsolutePath());
+        tempFile.deleteOnExit();
+        log.debug("Temporary server config file at: " + tempFile.getAbsolutePath());
     }
 
     /**
@@ -152,6 +160,11 @@ public class OnlineServer {
 
     public void close() {
         listening = false;
+
+        if (tempFile != null) {
+            FileUtils.delete(tempFile);
+            tempFile = null;
+        }
 
         if (serverThread != null) {
             serverThread.close();
@@ -274,7 +287,7 @@ public class OnlineServer {
             List<Predicate> predicates = new ArrayList<Predicate>(Predicate.getAll());
             List<Predicate> modelInformationPredicates = new ArrayList<Predicate>();
 
-            // Remove Functional Predicates.
+            // Add non-functional predicates.
             for (Predicate predicate : predicates) {
                 if (!(predicate instanceof FunctionalPredicate)) {
                     modelInformationPredicates.add(predicate);
