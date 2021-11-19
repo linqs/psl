@@ -329,7 +329,7 @@ public class CommandLineLoader {
                 .build());
 
         newOptions.addOption(Option.builder(OPTION_ONLINE_SERVER_RESPONSE_OUTPUT)
-                .desc("Optional path for writing server responses to filesystem (default is STDOUT)")
+                .desc("Optional file path for writing server responses to filesystem (default is STDOUT)")
                 .hasArg()
                 .argName("path")
                 .build());
