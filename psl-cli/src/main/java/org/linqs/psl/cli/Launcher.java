@@ -52,9 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Paths;
@@ -179,20 +177,15 @@ public class Launcher {
         }
     }
 
-    private void outputServerResponses(List<OnlineResponse> serverResponses, String outputPath) {
-        FileUtils.mkdir(outputPath);
+    private void outputServerResponses(List<OnlineResponse> serverResponses, String outputFilePath) {
+        FileUtils.mkdir(Paths.get(outputFilePath).getParent().toString());
 
-        try {
-            BufferedWriter bufferedWriter = FileUtils.getBufferedWriter(
-                    Paths.get(outputPath, "serverResponses.txt").toString());
-
+        try (BufferedWriter bufferedWriter = FileUtils.getBufferedWriter(outputFilePath)) {
             for (OnlineResponse response : serverResponses) {
                 bufferedWriter.write(response.toString() + "\n");
             }
-
-            bufferedWriter.close();
         } catch (IOException ex) {
-            throw new RuntimeException("Error writing online server responses.", ex);
+            throw new RuntimeException(String.format("Error writing online server responses to file: %s", outputFilePath), ex);
         }
     }
 
@@ -377,17 +370,17 @@ public class Launcher {
 
     private void runOnlineClient() {
         log.info("Starting OnlinePSL client.");
-        List<OnlineResponse> serverResponses = OnlineActionInterface.run(System.in);
+        List<OnlineResponse> serverResponses = OnlineActionInterface.run();
         log.info("OnlinePSL client closed.");
 
         // Output the results.
-        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_SERVER_RESPONSE_OUTPUT))) {
-            log.trace("Writing server responses to out stream.");
+        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_ONLINE_SERVER_RESPONSE_OUTPUT))) {
+            log.trace("Writing server responses to stdout.");
             outputServerResponses(serverResponses);
         } else {
-            String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_SERVER_RESPONSE_OUTPUT);
-            log.info("Writing inferred predicates to file: " + outputDirectoryPath);
-            outputServerResponses(serverResponses, outputDirectoryPath);
+            String outputFilePath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_ONLINE_SERVER_RESPONSE_OUTPUT);
+            log.trace("Writing inferred predicates to file: " + outputFilePath);
+            outputServerResponses(serverResponses, outputFilePath);
         }
     }
 

@@ -33,14 +33,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.PropertyConfigurator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.net.InetAddress;
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Properties;
 import java.util.Map;
@@ -78,7 +72,7 @@ public class CommandLineLoader {
     public static final String OPTION_PROPERTIES = "D";
     public static final String OPTION_PROPERTIES_FILE = "p";
     public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
-    public static final String OPTION_SERVER_RESPONSE_OUTPUT= "serverOutput";
+    public static final String OPTION_ONLINE_SERVER_RESPONSE_OUTPUT = "onlineServerOutput";
     public static final String OPTION_SKIP_ATOM_COMMIT_LONG = "skipAtomCommit";
     public static final String OPTION_VERSION = "v";
     public static final String OPTION_VERSION_LONG = "version";
@@ -334,7 +328,7 @@ public class CommandLineLoader {
                 .valueSeparator('=')
                 .build());
 
-        newOptions.addOption(Option.builder(OPTION_SERVER_RESPONSE_OUTPUT)
+        newOptions.addOption(Option.builder(OPTION_ONLINE_SERVER_RESPONSE_OUTPUT)
                 .desc("Optional path for writing server responses to filesystem (default is STDOUT)")
                 .hasArg()
                 .argName("path")

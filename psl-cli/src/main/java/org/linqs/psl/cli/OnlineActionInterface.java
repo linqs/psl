@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.cli;
 
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
@@ -25,9 +24,10 @@ import org.linqs.psl.application.inference.online.messages.responses.OnlineRespo
 import org.linqs.psl.parser.OnlineActionLoader;
 import org.linqs.psl.util.FileUtils;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
@@ -40,11 +40,11 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Online actions are parsed and provided to a client to send to the online server.
  */
 public class OnlineActionInterface {
-    public static List<OnlineResponse> run(InputStream in) {
+    public static List<OnlineResponse> run() {
         List<OnlineResponse> serverResponses = new ArrayList<OnlineResponse>();
         CountDownLatch modelRegistrationLatch = new CountDownLatch(1);
 
-        try (BufferedReader commandReader = FileUtils.getBufferedReader(in)) {
+        try (BufferedReader commandReader = FileUtils.getBufferedReader(System.in)) {
             String userInput = null;
             OnlineMessage onlineAction = null;
             BlockingQueue<OnlineMessage> onlineActions = new LinkedBlockingQueue<OnlineMessage>();
@@ -65,7 +65,7 @@ public class OnlineActionInterface {
                     }
 
                     // Parse command.
-                    if (userInput.equals("")) {
+                    if (userInput.trim().equals("")) {
                         continue;
                     }
                     onlineAction = OnlineActionLoader.loadAction(userInput);
