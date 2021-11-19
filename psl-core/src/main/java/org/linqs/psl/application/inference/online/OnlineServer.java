@@ -57,6 +57,9 @@ import java.util.concurrent.Semaphore;
 public class OnlineServer {
     private static final Logger log = LoggerFactory.getLogger(OnlineServer.class);
 
+    public static final String TEMP_FILE_DIR_PREFIX = "onlinePSLServer";
+    public static final String TEMP_FILE_NAME = "onlinePSLServer.lock";
+
     private boolean listening;
     private ServerConnectionThread serverThread;
     private Set<ClientConnectionThread> clientConnectionThreads;
@@ -91,10 +94,10 @@ public class OnlineServer {
      * ready to accept client connections and online actions.
      */
     private void createServerTempFile() {
-        String tempDirectory = SystemUtils.getTempDir("onlinePSLServer");
+        String tempDirectory = SystemUtils.getTempDir(TEMP_FILE_DIR_PREFIX);
         FileUtils.mkdir(tempDirectory);
 
-        tempFile = new File(new File(tempDirectory), "onlinePSLServer.lock");
+        tempFile = new File(new File(tempDirectory), TEMP_FILE_NAME);
         try {
             if (!tempFile.createNewFile()) {
                 throw new IllegalStateException(String.format("Temp file already exists at: %s", tempFile.getAbsolutePath()));
