@@ -106,7 +106,7 @@ public class OnlineServer {
             throw new RuntimeException(String.format("Error creating temp file at: %s", tempFile.getAbsolutePath()), ex);
         }
         tempFile.deleteOnExit();
-        log.debug("Temporary server config file at: " + tempFile.getAbsolutePath());
+        log.debug(String.format("Temporary server config file at: %s", tempFile.getAbsolutePath()));
     }
 
     /**
