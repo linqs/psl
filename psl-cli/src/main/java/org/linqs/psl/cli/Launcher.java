@@ -55,6 +55,7 @@ import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -178,7 +179,10 @@ public class Launcher {
     }
 
     private void outputServerResponses(List<OnlineResponse> serverResponses, String outputFilePath) {
-        FileUtils.mkdir(Paths.get(outputFilePath).getParent().toString());
+        Path outputDirectory = Paths.get(outputFilePath).getParent();
+        if (outputDirectory != null) {
+            FileUtils.mkdir(outputDirectory.toString());
+        }
 
         try (BufferedWriter bufferedWriter = FileUtils.getBufferedWriter(outputFilePath)) {
             for (OnlineResponse response : serverResponses) {
