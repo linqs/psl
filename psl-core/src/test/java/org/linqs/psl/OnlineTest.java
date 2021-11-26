@@ -26,6 +26,7 @@ import org.linqs.psl.util.MathUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertEquals;
 
@@ -37,7 +38,7 @@ public class OnlineTest {
         OnlineClient onlineClient = null;
         List<OnlineResponse> sessionOutput = new ArrayList<OnlineResponse>();
 
-        onlineClient = new OnlineClient(onlineActions, sessionOutput);
+        onlineClient = new OnlineClient(onlineActions, sessionOutput, new CountDownLatch(0));
         Thread onlineClientThread = new Thread(onlineClient);
         onlineClientThread.start();
 

@@ -1,0 +1,3 @@
+AddAtom Read NewPredicate('Test') 1.0
+Stop
+Exit

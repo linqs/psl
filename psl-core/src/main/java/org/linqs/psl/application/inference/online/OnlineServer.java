@@ -17,23 +17,32 @@
  */
 package org.linqs.psl.application.inference.online;
 
+import org.linqs.psl.application.inference.online.messages.ModelInformation;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.predicate.FunctionalPredicate;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.SystemUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -48,18 +57,25 @@ import java.util.concurrent.Semaphore;
 public class OnlineServer {
     private static final Logger log = LoggerFactory.getLogger(OnlineServer.class);
 
+    public static final String TEMP_FILE_DIR_PREFIX = "onlinePSLServer";
+    public static final String TEMP_FILE_NAME = "onlinePSLServer.lock";
+
     private boolean listening;
     private ServerConnectionThread serverThread;
     private Set<ClientConnectionThread> clientConnectionThreads;
     private BlockingQueue<OnlineMessage> queue;
     private ConcurrentMap<UUID, ClientConnectionThread> messageIDConnectionMap;
+    private List<Rule> rules;
+    private File tempFile;
 
-    public OnlineServer() {
+    public OnlineServer(List<Rule> rules) {
         listening = false;
         serverThread = new ServerConnectionThread();
+        tempFile = null;
         queue = new LinkedBlockingQueue<OnlineMessage>();
         messageIDConnectionMap = new ConcurrentHashMap<UUID, ClientConnectionThread>();
         clientConnectionThreads = Collections.newSetFromMap(new ConcurrentHashMap<ClientConnectionThread, Boolean>());
+        this.rules = rules;
     }
 
     /**
@@ -70,6 +86,27 @@ public class OnlineServer {
         listening = true;
         serverThread.start();
         serverThread.blockUntilReady();
+    }
+
+    /**
+     * Create a temporary file in the default temporary file directory.
+     * The creation of the temporary file may be used as a signal that this server is
+     * ready to accept client connections and online actions.
+     */
+    private void createServerTempFile() {
+        String tempDirectory = SystemUtils.getTempDir(TEMP_FILE_DIR_PREFIX);
+        FileUtils.mkdir(tempDirectory);
+
+        tempFile = new File(new File(tempDirectory), TEMP_FILE_NAME);
+        try {
+            if (!tempFile.createNewFile()) {
+                throw new IllegalStateException(String.format("Temp file already exists at: %s", tempFile.getAbsolutePath()));
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(String.format("Error creating temp file at: %s", tempFile.getAbsolutePath()), ex);
+        }
+        tempFile.deleteOnExit();
+        log.debug(String.format("Temporary server config file at: %s", tempFile.getAbsolutePath()));
     }
 
     /**
@@ -126,6 +163,11 @@ public class OnlineServer {
 
     public void close() {
         listening = false;
+
+        if (tempFile != null) {
+            FileUtils.delete(tempFile);
+            tempFile = null;
+        }
 
         if (serverThread != null) {
             serverThread.close();
@@ -192,6 +234,7 @@ public class OnlineServer {
             ClientConnectionThread connectionThread = null;
 
             openListenSocket();
+            createServerTempFile();
             readyLock.release();
             log.info(String.format("Online server started on port %s.", port));
 
@@ -242,11 +285,35 @@ public class OnlineServer {
             }
         }
 
+        private void sendModelInformation() {
+            // Send Client model information for action validation.
+            List<Predicate> predicates = new ArrayList<Predicate>(Predicate.getAll());
+            List<Predicate> modelInformationPredicates = new ArrayList<Predicate>();
+
+            // Add non-functional predicates.
+            for (Predicate predicate : predicates) {
+                if (!(predicate instanceof FunctionalPredicate)) {
+                    modelInformationPredicates.add(predicate);
+                }
+            }
+
+            ModelInformation modelInformation = new ModelInformation(
+                    modelInformationPredicates.toArray(new Predicate[]{}),
+                    rules.toArray(new Rule[]{}));
+            try {
+                outputStream.writeObject(modelInformation);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
         @Override
         public void run() {
             OnlineMessage newAction = null;
 
             initializeConnection();
+
+            sendModelInformation();
 
             // Read and queue new actions from client until exit or stop.
             while (true) {

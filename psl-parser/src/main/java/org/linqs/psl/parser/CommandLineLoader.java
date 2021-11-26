@@ -33,14 +33,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.PropertyConfigurator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.net.InetAddress;
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Properties;
 import java.util.Map;
@@ -57,6 +51,7 @@ public class CommandLineLoader {
     public static final String OPERATION_INFER_LONG = "infer";
     public static final String OPERATION_LEARN = "l";
     public static final String OPERATION_LEARN_LONG = "learn";
+    public static final String OPERATION_ONLINE_CLIENT_LONG = "onlineClient";
 
     public static final String OPTION_DATA = "d";
     public static final String OPTION_DATA_LONG = "data";
@@ -77,6 +72,7 @@ public class CommandLineLoader {
     public static final String OPTION_PROPERTIES = "D";
     public static final String OPTION_PROPERTIES_FILE = "p";
     public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
+    public static final String OPTION_ONLINE_SERVER_RESPONSE_OUTPUT = "onlineServerOutput";
     public static final String OPTION_SKIP_ATOM_COMMIT_LONG = "skipAtomCommit";
     public static final String OPTION_VERSION = "v";
     public static final String OPTION_VERSION_LONG = "version";
@@ -218,6 +214,12 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
+        newOptions.addOption(Option.builder()
+                .longOpt(OPERATION_ONLINE_CLIENT_LONG)
+                .desc("Accept Commands for the Online PSL Client." +
+                        " You must supply commands via STDIN.")
+                .build());
+
         // Make sure that help and version are in the main group so a successful run can use them.
         newOptions.addOption(Option.builder(OPTION_HELP)
                 .longOpt(OPTION_HELP_LONG)
@@ -324,6 +326,12 @@ public class CommandLineLoader {
                 .hasArg()
                 .numberOfArgs(2)
                 .valueSeparator('=')
+                .build());
+
+        newOptions.addOption(Option.builder(OPTION_ONLINE_SERVER_RESPONSE_OUTPUT)
+                .desc("Optional file path for writing online server responses to filesystem (default is STDOUT)")
+                .hasArg()
+                .argName("path")
                 .build());
 
         newOptions.addOption(Option.builder()

@@ -100,16 +100,11 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
             parser = getParser(input);
         } catch (IOException ex) {
             // Cancel the lex and rethrow.
-            throw new RuntimeException("Failed to lex action.", ex);
+            throw new ParseCancellationException("Failed to lex action.", ex);
         }
 
         OnlineProgramContext onlineProgram = null;
-        try {
-            onlineProgram = parser.onlineProgram();
-        } catch (ParseCancellationException ex) {
-            // Cancel the parse and rethrow the cause.
-            throw (RuntimeException)ex.getCause();
-        }
+        onlineProgram = parser.onlineProgram();
 
         OnlineActionLoader visitor = new OnlineActionLoader();
         return visitor.visitOnlineProgram(onlineProgram, parser);
@@ -150,7 +145,7 @@ public class OnlineActionLoader extends OnlinePSLBaseVisitor<Object> {
             try {
                 actions.add((OnlineMessage)visit(actionCtx));
             } catch (RuntimeException ex) {
-                throw new RuntimeException("Failed to compile online action: [" + parser.getTokenStream().getText(actionCtx) + "]", ex);
+                throw new ParseCancellationException("Failed to compile online action: [" + parser.getTokenStream().getText(actionCtx) + "]", ex);
             }
         }
         return actions;

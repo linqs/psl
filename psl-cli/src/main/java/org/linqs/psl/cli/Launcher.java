@@ -18,6 +18,7 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.DataStore;
@@ -54,6 +55,8 @@ import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -166,6 +169,27 @@ public class Launcher {
 
         if (closeOut) {
             out.close();
+        }
+    }
+
+    private void outputServerResponses(List<OnlineResponse> serverResponses) {
+        for (OnlineResponse response : serverResponses) {
+            System.out.println(response.toString());
+        }
+    }
+
+    private void outputServerResponses(List<OnlineResponse> serverResponses, String outputFilePath) {
+        Path outputDirectory = Paths.get(outputFilePath).getParent();
+        if (outputDirectory != null) {
+            FileUtils.mkdir(outputDirectory.toString());
+        }
+
+        try (BufferedWriter bufferedWriter = FileUtils.getBufferedWriter(outputFilePath)) {
+            for (OnlineResponse response : serverResponses) {
+                bufferedWriter.write(response.toString() + "\n");
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(String.format("Error writing online server responses to file: %s", outputFilePath), ex);
         }
     }
 
@@ -348,16 +372,23 @@ public class Launcher {
         return model;
     }
 
-    private void run() {
-        log.info("Running PSL CLI Version {}", Version.getFull());
-        DataStore dataStore = initDataStore();
+    private void runOnlineClient() {
+        log.info("Starting OnlinePSL client.");
+        List<OnlineResponse> serverResponses = OnlineActionInterface.run();
+        log.info("OnlinePSL client closed.");
 
-        // Load data
-        Set<StandardPredicate> closedPredicates = loadData(dataStore);
+        // Output the results.
+        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_ONLINE_SERVER_RESPONSE_OUTPUT))) {
+            log.trace("Writing server responses to stdout.");
+            outputServerResponses(serverResponses);
+        } else {
+            String outputFilePath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_ONLINE_SERVER_RESPONSE_OUTPUT);
+            log.trace("Writing inferred predicates to file: " + outputFilePath);
+            outputServerResponses(serverResponses, outputFilePath);
+        }
+    }
 
-        // Load model
-        Model model = loadModel();
-
+    private void runPSL(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
         // Initialize evaluators.
         List<Evaluator> evaluators = null;
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
@@ -387,6 +418,25 @@ public class Launcher {
         if (evalDB != null) {
             evalDB.close();
         }
+    }
+
+    private void run() {
+        log.info("Running PSL CLI Version {}", Version.getFull());
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
+            runOnlineClient();
+            return;
+        }
+
+        DataStore dataStore = initDataStore();
+
+        // Load data
+        Set<StandardPredicate> closedPredicates = loadData(dataStore);
+
+        // Load model
+        Model model = loadModel();
+
+        runPSL(model, dataStore, closedPredicates);
 
         dataStore.close();
     }
@@ -398,7 +448,11 @@ public class Launcher {
             return false;
         }
 
-        // Data and model are required.
+        if (givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
+            return true;
+        }
+
+        // Data and model are required for non-online PSL runs.
         // (We don't enforce them earlier so we can have successful runs with help and version.)
         HelpFormatter helpFormatter = new HelpFormatter();
         if (!givenOptions.hasOption(CommandLineLoader.OPTION_DATA)) {
