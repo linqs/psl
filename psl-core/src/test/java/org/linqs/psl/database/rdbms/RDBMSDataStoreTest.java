@@ -67,4 +67,16 @@ public abstract class RDBMSDataStoreTest extends DataStoreTest {
     }
 
    // TODO(eriq): Add a test that estimates join sizes with histograms.
+
+    @Test
+    public void testLongPredicateName() {
+        if (datastore == null) {
+            return;
+        }
+
+        super.testLongPredicateName();
+
+        // Indexing the database will also check the length of index names.
+        ((RDBMSDataStore)datastore).indexPredicates();
+    }
 }
