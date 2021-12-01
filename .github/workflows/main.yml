@@ -242,11 +242,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev_requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
 
       - name: Python Dependencies
         run: |
-          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/dev_requirements.txt
           pip3 install -r psl-python/optional_requirements.txt
 
       - name: Build with Maven
