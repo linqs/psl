@@ -68,6 +68,9 @@ public class SGDReasoner extends Reasoner {
 
     private int maxIterations;
 
+    private float firstOrderTolerance;
+    private float firstOrderNorm;
+
     private boolean watchMovement;
     private float movementThreshold;
 
@@ -85,18 +88,22 @@ public class SGDReasoner extends Reasoner {
     public SGDReasoner() {
         maxIterations = Options.SGD_MAX_ITER.getInt();
 
+        firstOrderTolerance = Options.SGD_FIRST_ORDER_THRESHOLD.getFloat();
+        firstOrderNorm = Options.SGD_FIRST_ORDER_NORM.getFloat();
+
         watchMovement = Options.SGD_MOVEMENT.getBoolean();
         movementThreshold = Options.SGD_MOVEMENT_THRESHOLD.getFloat();
 
         initialLearningRate = Options.SGD_LEARNING_RATE.getFloat();
         learningRateInverseScaleExp = Options.SGD_INVERSE_TIME_EXP.getFloat();
+        learningSchedule = SGDLearningSchedule.valueOf(Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase());
+
         adamBeta1 = Options.SGD_ADAM_BETA_1.getFloat();
         adamBeta2 = Options.SGD_ADAM_BETA_2.getFloat();
         accumulatedGradientSquares = null;
         accumulatedGradientMean = null;
         accumulatedGradientVariance = null;
         coordinateStep = Options.SGD_COORDINATE_STEP.getBoolean();
-        learningSchedule = SGDLearningSchedule.valueOf(Options.SGD_LEARNING_SCHEDULE.getString().toUpperCase());
         sgdExtension = SGDExtension.valueOf(Options.SGD_EXTENSION.getString().toUpperCase());
     }
 
@@ -123,6 +130,7 @@ public class SGDReasoner extends Reasoner {
         // optimization pass because they are being updated in the variableUpdate() method.
         // Note that the number of variables may change in the first iteration (since grounding may happen then).
         double oldObjective = Double.POSITIVE_INFINITY;
+        float[] prevGradient = null;
         float[] prevVariableValues = null;
         // Save and use the variable values with the lowest computed objective.
         double lowestObjective = Double.POSITIVE_INFINITY;
@@ -146,9 +154,15 @@ public class SGDReasoner extends Reasoner {
                 useNonConvex = true;
             }
 
+            if (iteration > 1) {
+                // Reset gradients for next round.
+                Arrays.fill(prevGradient, 0.0f);
+            }
+
             for (SGDObjectiveTerm term : termStore) {
                 if (iteration > 1) {
                     objective += term.evaluate(prevVariableValues);
+                    addTermGradient(prevGradient, term, termStore.getVariableAtoms(), prevVariableValues);
                 }
 
                 termCount++;
@@ -163,10 +177,14 @@ public class SGDReasoner extends Reasoner {
                 meanMovement /= termCount;
             }
 
-            breakSGD = breakOptimization(iteration, objective, oldObjective, meanMovement, termCount);
+            if (iteration > 1) {
+                clipGradient(prevGradient, prevVariableValues);
+                breakSGD = breakOptimization(iteration, objective, oldObjective, prevGradient, meanMovement, termCount);
+            }
 
             if (iteration == 1) {
-                // Initialize old variables values.
+                // Initialize old variables values and gradient.
+                prevGradient = new float[termStore.getVariableValues().length];
                 prevVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
                 lowestVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
             } else {
@@ -186,8 +204,8 @@ public class SGDReasoner extends Reasoner {
             totalTime += end - start;
 
             if (iteration > 1 && log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Iteration Time: {}, Total Optimization Time: {}",
-                        iteration - 1, objective, objective / termCount, (end - start), totalTime);
+                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Gradient Magnitude: {}, Iteration Time: {}, Total Optimization Time: {}",
+                        iteration - 1, objective, objective / termCount, MathUtils.pNorm(prevGradient, firstOrderNorm), (end - start), totalTime);
             }
 
             iteration++;
@@ -237,7 +255,7 @@ public class SGDReasoner extends Reasoner {
         accumulatedGradientVariance = null;
     }
 
-    private boolean breakOptimization(int iteration, double objective, double oldObjective, float movement, long termCount) {
+    private boolean breakOptimization(int iteration, double objective, double oldObjective, float[] gradient, float movement, long termCount) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations * budget)) {
             return true;
@@ -253,12 +271,42 @@ public class SGDReasoner extends Reasoner {
             return false;
         }
 
+        // Break if the norm of the gradient is zero.
+        if (MathUtils.equals(MathUtils.pNorm(gradient, firstOrderNorm), 0.0f, firstOrderTolerance)) {
+            return true;
+        }
+
         // Break if the objective has not changed.
         if (objectiveBreak && MathUtils.equals(objective / termCount, oldObjective / termCount, tolerance)) {
             return true;
         }
 
         return false;
+    }
+
+    private void clipGradient(float[] gradient, float[] variableValues) {
+        for(int i = 0; i < gradient.length; i++) {
+            if (MathUtils.equals(variableValues[i], 0.0f) && gradient[i] > 0.0f) {
+                gradient[i] = 0.0f;
+            } else if (MathUtils.equals(variableValues[i], 1.0f) && gradient[i] < 0.0f) {
+                gradient[i] = 0.0f;
+            }
+        }
+    }
+
+    private void addTermGradient(float[] gradient, SGDObjectiveTerm term, GroundAtom[] variableAtoms, float[] variableValues) {
+        int size = term.size();
+        WeightedRule rule = term.getRule();
+        int[] variableIndexes = term.getVariableIndexes();
+        float dot = term.dot(variableValues);
+
+        for (int i = 0 ; i < size; i++) {
+            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+                continue;
+            }
+
+            gradient[variableIndexes[i]] += term.computePartial(i, dot, rule.getWeight());
+        }
     }
 
     private double computeObjective(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {

@@ -22,12 +22,19 @@ import org.linqs.psl.application.inference.InferenceTest;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.reasoner.sgd.SGDReasoner;
 
 import org.junit.After;
+import org.junit.Before;
 
 import java.util.List;
 
 public class SGDStreamingInferenceTest extends InferenceTest {
+    @Before
+    public void setup() {
+        Options.REASONER_OBJECTIVE_BREAK.set(false);
+    }
+
     @After
     public void cleanup() {
         Options.SGD_LEARNING_RATE.clear();
@@ -61,7 +68,7 @@ public class SGDStreamingInferenceTest extends InferenceTest {
         cleanup();
 
         // Adam.
-        Options.SGD_EXTENSION.set("ADAM");
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAM);
         // Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(1.0);
         Options.SGD_INVERSE_TIME_EXP.set(0.5);
@@ -75,7 +82,7 @@ public class SGDStreamingInferenceTest extends InferenceTest {
         cleanup();
 
         // AdaGrad.
-        Options.SGD_EXTENSION.set("ADAGRAD");
+        Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.ADAGRAD);
         // Non-coordinate step.
         Options.SGD_LEARNING_RATE.set(1.0);
         Options.SGD_INVERSE_TIME_EXP.set(0.5);
