@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression;
 
-import static org.junit.Assert.fail;
-
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;

@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;

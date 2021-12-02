@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.evaluation.statistics;
 
-import static org.junit.Assert.assertEquals;
-
-import org.linqs.psl.util.MathUtils;
-
 import org.junit.Test;
 
 public class ContinuousEvaluatorTest extends EvaluatorTest<ContinuousEvaluator> {
@@ -33,13 +29,13 @@ public class ContinuousEvaluatorTest extends EvaluatorTest<ContinuousEvaluator> 
     public void testMAE() {
         ContinuousEvaluator computer = new ContinuousEvaluator();
         computer.compute(trainingMap, predicate);
-        assertEquals(0.40, computer.mae(), MathUtils.EPSILON);
+        assertEquals(0.40, computer.mae());
     }
 
     @Test
     public void testMSE() {
         ContinuousEvaluator computer = new ContinuousEvaluator();
         computer.compute(trainingMap, predicate);
-        assertEquals(0.24, computer.mse(), MathUtils.EPSILON);
+        assertEquals(0.24, computer.mse());
     }
 }

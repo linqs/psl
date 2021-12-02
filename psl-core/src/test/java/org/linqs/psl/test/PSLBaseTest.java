@@ -18,8 +18,10 @@
 package org.linqs.psl.test;
 
 import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.util.MathUtils;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,5 +38,173 @@ public abstract class PSLBaseTest {
     public void pslBaseCleanup() {
         // Remove any defined rules.
         AbstractRule.unregisterAllRulesForTesting();
+    }
+
+    // Implement assertions so downstream tests don't have to import or configure.
+
+    // fail
+
+    public void fail(String message) {
+        Assert.fail(message);
+    }
+
+    public void assertNotEquals() {
+        Assert.fail();
+    }
+
+    // assertNull
+
+    public void assertNull(String message, Object object) {
+        Assert.assertNull(message, object);
+    }
+
+    public void assertNull(Object object) {
+        Assert.assertNull(object);
+    }
+
+    // assertNotNull
+
+    public void assertNotNull(String message, Object object) {
+        Assert.assertNotNull(message, object);
+    }
+
+    public void assertNotNull(Object object) {
+        Assert.assertNotNull(object);
+    }
+
+    // assertTrue
+
+    public void assertTrue(String message, boolean condition) {
+        Assert.assertTrue(message, condition);
+    }
+
+    public void assertTrue(boolean condition) {
+        Assert.assertTrue(condition);
+    }
+
+    // assertFalse
+
+    public void assertFalse(String message, boolean condition) {
+        Assert.assertFalse(message, condition);
+    }
+
+    public void assertFalse(boolean condition) {
+        Assert.assertFalse(condition);
+    }
+
+    // assertEquals
+
+    public void assertEquals(String message, float a, float b, float epsilon) {
+        Assert.assertEquals(message, a, b, epsilon);
+    }
+
+    public void assertEquals(String message, float a, float b) {
+        Assert.assertEquals(message, a, b, MathUtils.EPSILON);
+    }
+
+    public void assertEquals(float a, float b, float epsilon) {
+        Assert.assertEquals(a, b, epsilon);
+    }
+
+    public void assertEquals(float a, float b) {
+        Assert.assertEquals(a, b, MathUtils.EPSILON);
+    }
+
+    public void assertEquals(String message, double a, double b, double epsilon) {
+        Assert.assertEquals(message, a, b, epsilon);
+    }
+
+    public void assertEquals(String message, double a, double b) {
+        Assert.assertEquals(message, a, b, MathUtils.EPSILON);
+    }
+
+    public void assertEquals(double a, double b, double epsilon) {
+        Assert.assertEquals(a, b, epsilon);
+    }
+
+    public void assertEquals(double a, double b) {
+        Assert.assertEquals(a, b, MathUtils.EPSILON);
+    }
+
+    public void assertEquals(String message, int a, int b) {
+        Assert.assertEquals(message, a, b);
+    }
+
+    public void assertEquals(int a, int b) {
+        Assert.assertEquals(a, b);
+    }
+
+    public void assertEquals(String message, long a, long b) {
+        Assert.assertEquals(message, a, b);
+    }
+
+    public void assertEquals(long a, long b) {
+        Assert.assertEquals(a, b);
+    }
+
+    public void assertEquals(String message, Object a, Object b) {
+        Assert.assertEquals(message, a, b);
+    }
+
+    public void assertEquals(Object a, Object b) {
+        Assert.assertEquals(a, b);
+    }
+
+    // assertNotEquals
+
+    public void assertNotEquals(String message, float a, float b, float epsilon) {
+        Assert.assertNotEquals(message, a, b, epsilon);
+    }
+
+    public void assertNotEquals(String message, float a, float b) {
+        Assert.assertNotEquals(message, a, b, MathUtils.EPSILON);
+    }
+
+    public void assertNotEquals(float a, float b, float epsilon) {
+        Assert.assertNotEquals(a, b, epsilon);
+    }
+
+    public void assertNotEquals(float a, float b) {
+        Assert.assertNotEquals(a, b, MathUtils.EPSILON);
+    }
+
+    public void assertNotEquals(String message, double a, double b, double epsilon) {
+        Assert.assertNotEquals(message, a, b, epsilon);
+    }
+
+    public void assertNotEquals(String message, double a, double b) {
+        Assert.assertNotEquals(message, a, b, MathUtils.EPSILON);
+    }
+
+    public void assertNotEquals(double a, double b, double epsilon) {
+        Assert.assertNotEquals(a, b, epsilon);
+    }
+
+    public void assertNotEquals(double a, double b) {
+        Assert.assertNotEquals(a, b, MathUtils.EPSILON);
+    }
+
+    public void assertNotEquals(String message, int a, int b) {
+        Assert.assertNotEquals(message, a, b);
+    }
+
+    public void assertNotEquals(int a, int b) {
+        Assert.assertNotEquals(a, b);
+    }
+
+    public void assertNotEquals(String message, long a, long b) {
+        Assert.assertNotEquals(message, a, b);
+    }
+
+    public void assertNotEquals(long a, long b) {
+        Assert.assertNotEquals(a, b);
+    }
+
+    public void assertNotEquals(String message, Object a, Object b) {
+        Assert.assertNotEquals(message, a, b);
+    }
+
+    public void assertNotEquals(Object a, Object b) {
+        Assert.assertNotEquals(a, b);
     }
 }

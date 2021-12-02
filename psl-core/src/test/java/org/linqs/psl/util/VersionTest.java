@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.util;
 
-import static org.junit.Assert.assertNotEquals;
-
 import org.linqs.psl.config.Options;
 import org.linqs.psl.test.PSLBaseTest;
 

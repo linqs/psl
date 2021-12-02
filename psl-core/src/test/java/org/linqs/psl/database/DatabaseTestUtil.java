@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.database;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;

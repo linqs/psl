@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.database.atom;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -30,7 +26,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
-import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
@@ -52,11 +47,11 @@ public class PersistedAtomManagerTest extends PSLBaseTest {
 
         GroundAtom atom = atomManager.getAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new UniqueStringID("Bob"));
         assertTrue(atom instanceof RandomVariableAtom);
-        assertEquals(atom.getValue(), 1.0, MathUtils.EPSILON);
+        assertEquals(atom.getValue(), 1.0);
 
         atom = atomManager.getAtom(info.predicates.get("Nice"), new UniqueStringID("Alice"));
         assertTrue(atom instanceof ObservedAtom);
-        assertEquals(atom.getValue(), 0.9, MathUtils.EPSILON);
+        assertEquals(atom.getValue(), 0.9);
 
         database.close();
     }

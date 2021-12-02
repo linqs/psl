@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.test;
 
+import static org.junit.Assert.assertEquals;
+
 import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
@@ -27,8 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Utilities for Online PSL Inference Tests.

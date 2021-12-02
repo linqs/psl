@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.application.inference.mpe;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.atom.QueryAtom;

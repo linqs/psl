@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;

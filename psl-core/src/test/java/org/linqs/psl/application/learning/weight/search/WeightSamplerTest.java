@@ -17,9 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight.search;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.linqs.psl.config.Options;
 import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.util.RandUtils;

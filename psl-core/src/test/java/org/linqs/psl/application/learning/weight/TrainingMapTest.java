@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;

@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.mpe.MPEInference;
 import org.linqs.psl.database.Database;

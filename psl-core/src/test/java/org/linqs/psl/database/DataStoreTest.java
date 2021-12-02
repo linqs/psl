@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.database;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
@@ -665,7 +661,6 @@ public abstract class DataStoreTest extends PSLBaseTest {
         Database db2 = datastore.getDatabase(datastore.getPartition("2"), datastore.getPartition("0"));
         dbs.add(db1);
         dbs.add(db2);
-
 
         GroundAtom atom = db1.getAtom(p1, b, c);
         assertTrue(atom instanceof ObservedAtom);
