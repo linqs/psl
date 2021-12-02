@@ -34,6 +34,7 @@ import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 
 import org.junit.After;
@@ -44,7 +45,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class AbstractLogicalRuleTest {
+public class AbstractLogicalRuleTest extends PSLBaseTest {
     private DataStore dataStore;
     private Database database;
 

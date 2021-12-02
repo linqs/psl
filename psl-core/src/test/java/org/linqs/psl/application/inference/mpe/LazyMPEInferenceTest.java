@@ -41,6 +41,7 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 
@@ -55,7 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class LazyMPEInferenceTest {
+public class LazyMPEInferenceTest extends PSLBaseTest {
     private Database inferDB;
     private Partition targetPartition;
     private Set<StandardPredicate> allPredicates;

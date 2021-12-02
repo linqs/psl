@@ -28,6 +28,7 @@ import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,7 +37,7 @@ import org.junit.Test;
 /**
  * Base testing functionality for all metric computers.
  */
-public abstract class EvaluatorTest<T extends Evaluator> {
+public abstract class EvaluatorTest<T extends Evaluator> extends PSLBaseTest {
     protected DataStore dataStore;
     protected StandardPredicate predicate;
     protected TrainingMap trainingMap;

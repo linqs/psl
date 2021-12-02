@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 
@@ -32,7 +33,7 @@ import org.junit.Test;
 /**
  * Check that getDNF() is working properly for a variety of formulas.
  */
-public class DNFTest {
+public class DNFTest extends PSLBaseTest {
     private TestModel.ModelInformation model;
 
     @Before

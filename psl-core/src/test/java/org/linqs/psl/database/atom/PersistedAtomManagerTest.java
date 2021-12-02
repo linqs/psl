@@ -28,6 +28,7 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.MathUtils;
 
@@ -36,7 +37,7 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-public class PersistedAtomManagerTest {
+public class PersistedAtomManagerTest extends PSLBaseTest {
     /**
      * Base test to see if the PAM gets populated and can get atoms.
      */

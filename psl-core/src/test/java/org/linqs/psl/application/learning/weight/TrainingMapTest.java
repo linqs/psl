@@ -33,6 +33,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.util.IteratorUtils;
 
 import org.junit.After;
@@ -49,7 +50,7 @@ import java.util.Set;
 /**
  * Test training maps, which create the mapping between RVAs and their observed truth values.
  */
-public class TrainingMapTest {
+public class TrainingMapTest extends PSLBaseTest {
     private DataStore dataStore;
     private StandardPredicate predicate;
     private TrainingMap trainingMap;

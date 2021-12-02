@@ -51,6 +51,7 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 
 import org.junit.After;
@@ -64,7 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class AbstractArithmeticRuleTest {
+public class AbstractArithmeticRuleTest extends PSLBaseTest {
     private DataStore dataStore;
     private Database database;
 

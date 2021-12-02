@@ -25,6 +25,7 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
@@ -36,7 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class BatchOperationsTest {
+public class BatchOperationsTest extends PSLBaseTest {
     private TestModel.ModelInformation model;
     private Database database;
 

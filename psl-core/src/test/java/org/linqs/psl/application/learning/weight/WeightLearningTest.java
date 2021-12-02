@@ -34,6 +34,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.MathUtils;
@@ -56,7 +57,7 @@ import java.util.Set;
  * TODO(eriq): We have to disable some tests because they give different weights.
  *  But some are legitimately different. We need more robust cases.
  */
-public abstract class WeightLearningTest {
+public abstract class WeightLearningTest extends PSLBaseTest {
     public static final String RULE_PRIOR = "prior";
     public static final String RULE_NICE = "nice";
     public static final String RULE_SYMMETRY = "symmetry";

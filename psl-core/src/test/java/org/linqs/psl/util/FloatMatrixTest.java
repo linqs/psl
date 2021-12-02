@@ -22,11 +22,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
+import org.linqs.psl.test.PSLBaseTest;
+
 import org.junit.Test;
 
 import java.util.Arrays;
 
-public class FloatMatrixTest {
+public class FloatMatrixTest extends PSLBaseTest {
     public static final float EPSILON = 1e-6f;
     @Test
     public void testConstruction() {

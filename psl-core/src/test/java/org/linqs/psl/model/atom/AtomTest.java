@@ -32,6 +32,7 @@ import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 
@@ -43,7 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class AtomTest {
+public class AtomTest extends PSLBaseTest {
     /**
      * Make sure that we can to trivial (and numeric string parsing) type conversions.
      * This test does not include ConstantType.DeferredFunctionalUniqueID.

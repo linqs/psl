@@ -50,6 +50,7 @@ import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.test.OnlineTest;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
@@ -61,7 +62,7 @@ import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class SGDOnlineInferenceTest {
+public class SGDOnlineInferenceTest extends PSLBaseTest {
     private TestModel.ModelInformation modelInfo;
     private Database inferDB;
     private OnlineInferenceThread onlineInferenceThread;

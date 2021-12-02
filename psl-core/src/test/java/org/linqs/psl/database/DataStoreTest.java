@@ -46,6 +46,7 @@ import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -60,7 +61,7 @@ import java.util.Set;
 /**
  * Tests for classes that implement {@link DataStore}.
  */
-public abstract class DataStoreTest {
+public abstract class DataStoreTest extends PSLBaseTest {
     protected StandardPredicate p1;
     protected StandardPredicate p2;
     protected StandardPredicate p3;

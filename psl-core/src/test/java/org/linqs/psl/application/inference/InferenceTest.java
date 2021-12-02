@@ -46,6 +46,7 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
@@ -57,7 +58,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public abstract class InferenceTest {
+public abstract class InferenceTest extends PSLBaseTest {
     public static final int NUM_INFERENCE_RUNS = 10;
 
     protected abstract InferenceApplication getInference(List<Rule> rules, Database db);

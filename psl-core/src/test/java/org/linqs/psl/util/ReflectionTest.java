@@ -21,9 +21,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import org.linqs.psl.test.PSLBaseTest;
+
 import org.junit.Test;
 
-public class ReflectionTest {
+public class ReflectionTest extends PSLBaseTest {
     @Test
     public void testResolveClassNameBase() {
           assertEquals("org.linqs.psl.util.Reflection", Reflection.resolveClassName("Reflection"));

@@ -20,11 +20,13 @@ package org.linqs.psl.util;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import org.linqs.psl.test.PSLBaseTest;
+
 import org.junit.Test;
 
 import java.util.Arrays;
 
-public class IteratorUtilsTest {
+public class IteratorUtilsTest extends PSLBaseTest {
     @Test
     public void testPowersetOne() {
         boolean[][] expected = new boolean[][]{

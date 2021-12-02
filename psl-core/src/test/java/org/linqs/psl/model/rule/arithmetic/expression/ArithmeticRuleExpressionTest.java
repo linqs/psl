@@ -25,6 +25,7 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.Test;
@@ -32,7 +33,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-public class ArithmeticRuleExpressionTest {
+public class ArithmeticRuleExpressionTest extends PSLBaseTest {
     @Test
     public void testHash() {
         TestModel.ModelInformation model = TestModel.getModel();

@@ -22,10 +22,11 @@ import static org.junit.Assert.assertEquals;
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.Test;
 
-public class ADMMObjectiveTermTest {
+public class ADMMObjectiveTermTest extends PSLBaseTest {
     @Test
     public void testLinearConstraintTermMinimize() {
         // Problem 1: Constraint inactive at solution

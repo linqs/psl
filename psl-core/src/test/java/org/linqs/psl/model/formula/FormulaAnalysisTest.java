@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.ListUtils;
@@ -33,7 +34,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FormulaAnalysisTest {
+public class FormulaAnalysisTest extends PSLBaseTest {
     private TestModel.ModelInformation model;
 
     @Before

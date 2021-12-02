@@ -18,11 +18,12 @@
  package org.linqs.psl.application.learning.weight.search.bayesian;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SquaredExpKernelTest {
+public class SquaredExpKernelTest extends PSLBaseTest {
     public static final double EPSILON = 1e-5;
 
     @Test

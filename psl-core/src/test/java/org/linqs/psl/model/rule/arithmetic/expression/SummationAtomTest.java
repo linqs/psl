@@ -19,9 +19,6 @@ package org.linqs.psl.model.rule.arithmetic.expression;
 
 import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -31,8 +28,13 @@ import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.test.PSLBaseTest;
 
-public class SummationAtomTest {
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+public class SummationAtomTest extends PSLBaseTest {
     private DataStore dataStore;
 
     private StandardPredicate singlePredicate;

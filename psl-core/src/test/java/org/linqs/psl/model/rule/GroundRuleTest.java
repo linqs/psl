@@ -71,6 +71,7 @@ import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 
@@ -90,7 +91,7 @@ import java.util.Set;
 /**
  * Check for ground rules being created properly.
  */
-public class GroundRuleTest {
+public class GroundRuleTest extends PSLBaseTest {
     private static final double EPSILON = 0.00001;
     private TestModel.ModelInformation model;
     private Database database;

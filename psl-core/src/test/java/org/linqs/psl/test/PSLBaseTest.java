@@ -15,21 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.util;
+package org.linqs.psl.test;
 
-import static org.junit.Assert.assertNotEquals;
-
-import org.linqs.psl.config.Options;
-import org.linqs.psl.test.PSLBaseTest;
-
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-public class VersionTest extends PSLBaseTest {
-    /**
-     * Just make sure we don't pick up the default.
-     */
-    @Test
-    public void testBase() {
-        assertNotEquals((String)Options.PROJECT_VERSION.defaultValue(), Version.get());
+/**
+ * The base test that all PSL core tests derive from.
+ * This base ensures that all PSL resources get properly cleaned up after a test completes.
+ */
+public abstract class PSLBaseTest {
+    @Before
+    public void pslBaseSetup() {
+    }
+
+    @After
+    public void pslBaseCleanup() {
     }
 }

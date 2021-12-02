@@ -21,6 +21,7 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.mpe.SGDInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.Test;
@@ -28,7 +29,7 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-public class SGDReasonerTest {
+public class SGDReasonerTest extends PSLBaseTest {
     /**
      * A quick test that only checks to see if SGDReasoner runs.
      * This is not a targeted or exhaustive test, just a starting point.

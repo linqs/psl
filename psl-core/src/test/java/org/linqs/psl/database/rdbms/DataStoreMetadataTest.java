@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertEquals;
 
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
@@ -30,7 +31,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DataStoreMetadataTest {
+public class DataStoreMetadataTest extends PSLBaseTest {
     private TestModel.ModelInformation model;
 
     @Before

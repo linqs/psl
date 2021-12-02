@@ -20,14 +20,16 @@ package org.linqs.psl.application.learning.weight.search;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.util.RandUtils;
+
+import org.junit.Test;
 
 /**
  * Test weight sampler class, which samples weight configurations from various distributions.
  */
-public class WeightSamplerTest {
+public class WeightSamplerTest extends PSLBaseTest {
     /**
      * Test sampling weight configurations from a Dirichlet distribution.
      */

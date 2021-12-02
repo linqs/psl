@@ -20,13 +20,14 @@ package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.util.MathUtils;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CoefficientTest {
+public class CoefficientTest extends PSLBaseTest {
     @Test
     // Avoid using cardinality so all end coefficients will be constants.
     public void testSimplifyWithoutCardinality() {
