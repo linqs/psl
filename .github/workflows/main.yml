@@ -61,11 +61,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev_requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
 
       - name: Python Dependencies
         run: |
-          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/dev_requirements.txt
           pip3 install -r psl-python/optional_requirements.txt
 
       - name: Build with Maven
@@ -111,11 +111,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev_requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
 
       - name: Python Dependencies
         run: |
-          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/dev_requirements.txt
           pip3 install -r psl-python/optional_requirements.txt
 
       - name: Style and Lint
@@ -127,7 +127,7 @@ jobs:
 
     runs-on: ubuntu-20.04
 
-    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/')) }}
+    if: ${{ github.event_name == 'push' && github.repository_owner == 'linqs' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/')) }}
 
     steps:
       - name: Checkout
@@ -156,11 +156,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev-requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev_requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
 
       - name: Python Dependencies
         run: |
-          pip3 install -r psl-python/dev-requirements.txt
+          pip3 install -r psl-python/dev_requirements.txt
           pip3 install -r psl-python/optional_requirements.txt
 
       - name: Download Archived Build
@@ -203,3 +203,51 @@ jobs:
         env:
           LINQS_DEPLOY_TOKEN: ${{ secrets.LINQS_DEPLOY_PASSOWRD }}
         run: ./.ci/deploy-docs.sh
+
+  version-matrix:
+
+    needs: [build-test, style-lint]
+
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        java-version: [8, 11, 16, 17]
+        python-version: ['3.7', '3.8', '3.9']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Needs to be deep enough to hit the last tagged version.
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v2
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: adopt
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache Maven
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-java${{ matrix.java-version }}-${{ hashFiles('**/pom.xml') }}
+
+      - name: Cache Python Dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('psl-python/setup.py') }}-${{ hashFiles('psl-python/dev_requirements.txt') }}-${{ hashFiles('psl-python/optional_requirements.txt') }}
+
+      - name: Python Dependencies
+        run: |
+          pip3 install -r psl-python/dev_requirements.txt
+          pip3 install -r psl-python/optional_requirements.txt
+
+      - name: Build with Maven
+        run: mvn integration-test -B -P all-modules
