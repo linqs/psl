@@ -47,7 +47,6 @@ import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -218,7 +217,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
         AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}");
+        assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}");
     }
 
     @Test
@@ -246,7 +245,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
         AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
+        assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
     }
 
     @Test
@@ -273,7 +272,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
         AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .   {A : SINGLECLOSED(B)}");
+        assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .   {A : SINGLECLOSED(B)}");
     }
 
     @Test
@@ -299,7 +298,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
         AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}", true);
+        assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}", true);
     }
 
     @Test
@@ -456,7 +455,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = 1.0 .");
+        assertRule(rule, "|A| * SINGLECLOSED(+A) = 1.0 .");
     }
 
     @Test
@@ -476,7 +475,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new Cardinality(new SummationVariable("A"))));
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = |A| .");
+        assertRule(rule, "|A| * SINGLECLOSED(+A) = |A| .");
     }
 
     @Test
@@ -498,7 +497,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0 .", true);
+        assertRule(rule, "|A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0 .", true);
     }
 
     @Test
@@ -539,7 +538,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "@Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0 .");
+        assertRule(rule, "@Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
 
     @Test
@@ -559,7 +558,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "@Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0 .");
+        assertRule(rule, "@Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
 
     @Test
@@ -581,7 +580,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "@Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", true);
+        assertRule(rule, "@Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", true);
     }
 
     @Test
@@ -601,7 +600,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
         assertEquals(rule, equalityTestRule);
-        PSLTest.assertRule(rule, "@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .");
+        assertRule(rule, "@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .");
     }
 
     /**
@@ -688,7 +687,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
             expected[1] = temp;
         }
 
-        PSLTest.assertRules(splitRules.toArray(new Rule[0]), expected, false);
+        assertRules(splitRules.toArray(new Rule[0]), expected, false);
     }
 
     @Test
@@ -735,6 +734,6 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
             expected[1] = temp;
         }
 
-        PSLTest.assertRules(splitRules.toArray(new Rule[0]), expected, true);
+        assertRules(splitRules.toArray(new Rule[0]), expected, true);
     }
 }

@@ -55,7 +55,6 @@ import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -194,7 +193,7 @@ public class RuleStringTest extends PSLBaseTest {
             "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Squared
         rule = new WeightedLogicalRule(logicalBaseRule, 10.0f, true);
@@ -205,7 +204,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Not Squared
         rule = new WeightedLogicalRule(logicalBaseRule, 10.0f, false);
@@ -216,7 +215,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -236,7 +235,7 @@ public class RuleStringTest extends PSLBaseTest {
             "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') = 1.0 ."
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Squared
         rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0f, true);
@@ -251,7 +250,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Not Squared
         rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0f, false);
@@ -266,7 +265,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test

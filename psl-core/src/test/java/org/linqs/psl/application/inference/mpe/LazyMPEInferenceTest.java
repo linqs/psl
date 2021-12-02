@@ -38,7 +38,6 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.After;

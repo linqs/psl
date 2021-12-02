@@ -20,7 +20,6 @@ package org.linqs.psl.model.formula;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.ListUtils;
 
@@ -320,6 +319,6 @@ public class FormulaAnalysisTest extends PSLBaseTest {
             actual[i] = ListUtils.join(" | ", clauses);
         }
 
-        PSLTest.assertStringsEquals(expected, actual, true);
+        assertStringsEquals(expected, actual, true);
     }
 }

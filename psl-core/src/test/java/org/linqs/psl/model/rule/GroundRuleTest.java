@@ -69,7 +69,6 @@ import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
@@ -189,7 +188,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     /**
@@ -229,7 +228,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Nice(A) & Nice(B) & (A != B) -> Friends(A, B)
         rule = new WeightedLogicalRule(
@@ -268,7 +267,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Derek') ) | FRIENDS('Eugene', 'Derek') ) ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Nice(A) & Nice(B) & (A % B) -> Friends(A, B)
         rule = new WeightedLogicalRule(
@@ -297,7 +296,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -342,7 +341,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * ('Eugene' == 'Eugene') + -1.0 * FRIENDS('Eugene', 'Eugene') <= 0.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Ensure that the grounding only predicate is not contributing to the value (incompatibility) of the rule.
         for (GroundRule groundRule : store.getGroundRules(rule)) {
@@ -395,7 +394,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * ('Eugene' != 'Derek') + -1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Nice(A) + Nice(B) + (A % B) <= Friends(A, B)
         // Nice(A) + Nice(B) + (A % B) - Friends(A, B) <= 0
@@ -432,7 +431,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') + 1.0 * ('Derek' % 'Eugene') + -1.0 * FRIENDS('Derek', 'Eugene') <= 0.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -492,7 +491,7 @@ public class GroundRuleTest extends PSLBaseTest {
             // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // 1.0: Nice(A) + Nice(B) <= 1 ^2
         coefficients = Arrays.asList(
@@ -541,7 +540,7 @@ public class GroundRuleTest extends PSLBaseTest {
             // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') <= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // 1.0: Nice(A) + -1 * Nice(B) = 0 ^2
         coefficients = Arrays.asList(
@@ -617,7 +616,7 @@ public class GroundRuleTest extends PSLBaseTest {
             // "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -664,7 +663,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Now negate the select.
         store = new MemoryGroundRuleStore();
@@ -682,7 +681,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // There will be no results because ground rules with no subs in the selects do not ground.
         expected = new ArrayList<String>();
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store, false);
+        compareGroundRules(expected, rule, store, false);
     }
 
     @Test
@@ -732,7 +731,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Now negate the select.
         store = new MemoryGroundRuleStore();
@@ -756,7 +755,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store, false);
+        compareGroundRules(expected, rule, store, false);
     }
 
     @Test
@@ -825,7 +824,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * PERSON('Eugene') + 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Now change the select to a disjunction.
         store = new MemoryGroundRuleStore();
@@ -894,7 +893,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -944,7 +943,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Add a select on A.
         store = new MemoryGroundRuleStore();
@@ -970,7 +969,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Add a select on B.
         store = new MemoryGroundRuleStore();
@@ -996,7 +995,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -1054,7 +1053,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // |B|
         store = new MemoryGroundRuleStore();
@@ -1080,7 +1079,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // |A| + |B|
         store = new MemoryGroundRuleStore();
@@ -1106,7 +1105,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // |A| - |B|
         store = new MemoryGroundRuleStore();
@@ -1132,7 +1131,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // |A| * |B|
         store = new MemoryGroundRuleStore();
@@ -1158,7 +1157,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // |A| / |B|
         store = new MemoryGroundRuleStore();
@@ -1184,7 +1183,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 ">= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -1275,7 +1274,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Add the additional clause to the select.
         store = new MemoryGroundRuleStore();
@@ -1329,7 +1328,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -1447,7 +1446,7 @@ public class GroundRuleTest extends PSLBaseTest {
             );
 
             rule.groundAll(manager, store);
-            PSLTest.compareGroundRules(expected, rule, store);
+            compareGroundRules(expected, rule, store);
         }
     }
 
@@ -1553,7 +1552,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
         rule.groundAll(manager, store);
         // No need for order with one atom.
-        PSLTest.compareGroundRules(expected, rule, store, false);
+        compareGroundRules(expected, rule, store, false);
     }
 
     @Test
@@ -1603,7 +1602,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Derek') ) ) ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     /**
@@ -1637,7 +1636,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         expected = Arrays.asList();
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // All trivial.
         // 1.0: Friends(A, B) <= 1.0 ^2
@@ -1657,7 +1656,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         expected = Arrays.asList();
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // All trivial.
         // 1.0: -1.0 * Friends(A, B) >= -1.0 ^2
@@ -1677,7 +1676,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         expected = Arrays.asList();
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // All trivial.
         // 1.0: -1.0 * Friends(A, B) <= 0.0 ^2
@@ -1697,7 +1696,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         expected = Arrays.asList();
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     /**
@@ -1745,7 +1744,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Eugene', 'Alice') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Now swap the equality to not equals.
 
@@ -1778,7 +1777,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Now use another variable in the equality check.
 
@@ -1807,7 +1806,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     /**

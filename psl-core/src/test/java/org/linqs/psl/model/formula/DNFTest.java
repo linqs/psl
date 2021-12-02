@@ -20,7 +20,6 @@ package org.linqs.psl.model.formula;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
@@ -314,6 +313,6 @@ public class DNFTest extends PSLBaseTest {
             actual[i] = inputs[i].getDNF().toString();
         }
 
-        PSLTest.assertStringsEquals(expected, actual, true);
+        assertStringsEquals(expected, actual, true);
     }
 }

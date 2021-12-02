@@ -32,7 +32,6 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.MathUtils;
 
@@ -84,7 +83,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
 
     @After
     public void cleanup() {
-        PSLTest.disableLogger();
+        disableLogger();
 
         weightLearningTrainDB.close();
         weightLearningTrainDB = null;

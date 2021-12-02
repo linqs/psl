@@ -30,7 +30,6 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.PSLTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -88,7 +87,7 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
             true
         );
 
-        PSLTest.assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
+        assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
     }
 
     @Test
