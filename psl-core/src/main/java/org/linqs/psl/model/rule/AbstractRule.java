@@ -63,6 +63,10 @@ public abstract class AbstractRule implements Rule {
         rules.remove(rule.hashCode());
     }
 
+    public static void unregisterAllRulesForTesting() {
+        rules.clear();
+    }
+
     @Override
     public boolean isRegistered() {
         return rules.containsKey(this.hashcode);

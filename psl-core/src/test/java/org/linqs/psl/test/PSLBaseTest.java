@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.test;
 
+import org.linqs.psl.model.rule.AbstractRule;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,5 +34,7 @@ public abstract class PSLBaseTest {
 
     @After
     public void pslBaseCleanup() {
+        // Remove any defined rules.
+        AbstractRule.unregisterAllRulesForTesting();
     }
 }
