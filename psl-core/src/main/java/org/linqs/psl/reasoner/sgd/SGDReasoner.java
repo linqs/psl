@@ -162,7 +162,7 @@ public class SGDReasoner extends Reasoner {
             for (SGDObjectiveTerm term : termStore) {
                 if (iteration > 1) {
                     objective += term.evaluate(prevVariableValues);
-                    addTermGradient(prevGradient, term, termStore.getVariableAtoms(), prevVariableValues);
+                    addTermGradient(term, prevGradient, prevVariableValues, termStore.getVariableAtoms());
                 }
 
                 termCount++;
@@ -204,7 +204,7 @@ public class SGDReasoner extends Reasoner {
             totalTime += end - start;
 
             if (iteration > 1 && log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Gradient Magnitude: {}, Iteration Time: {}, Total Optimization Time: {}",
+                log.trace("Iteration {} -- Objective: {}, Normalized Objective: {}, Gradient Norm: {}, Iteration Time: {}, Total Optimization Time: {}",
                         iteration - 1, objective, objective / termCount, MathUtils.pNorm(prevGradient, firstOrderNorm), (end - start), totalTime);
             }
 
@@ -294,7 +294,7 @@ public class SGDReasoner extends Reasoner {
         }
     }
 
-    private void addTermGradient(float[] gradient, SGDObjectiveTerm term, GroundAtom[] variableAtoms, float[] variableValues) {
+    private void addTermGradient(SGDObjectiveTerm term, float[] gradient, float[] variableValues, GroundAtom[] variableAtoms) {
         int size = term.size();
         WeightedRule rule = term.getRule();
         int[] variableIndexes = term.getVariableIndexes();
