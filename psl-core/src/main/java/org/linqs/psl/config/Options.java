@@ -797,6 +797,22 @@ public class Options {
         + " ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
     );
 
+    public static final Option SGD_FIRST_ORDER_NORM = new Option(
+        "sgd.firstordernorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the first order optimality condition."
+        + " Default is the infinity-norm which is the absolute value of the maximum component of the gradient vector."
+        + " Note that the infinity-norm can be explicitly set with the string literal: 'Infinity'.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option SGD_FIRST_ORDER_THRESHOLD = new Option(
+        "sgd.firstorderthreshold",
+        0.01f,
+        "Stochastic gradient descent stops when the norm of the gradient is less than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option SGD_INVERSE_TIME_EXP = new Option(
         "sgd.inversescaleexp",
         1.0f,
