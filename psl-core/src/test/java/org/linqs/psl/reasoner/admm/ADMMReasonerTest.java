@@ -17,11 +17,11 @@
  */
 package org.linqs.psl.reasoner.admm;
 
-import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.Test;
 

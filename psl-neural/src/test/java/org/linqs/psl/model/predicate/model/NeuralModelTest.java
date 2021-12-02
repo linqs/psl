@@ -19,7 +19,7 @@ package org.linqs.psl.model.predicate.model;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.NeuralPSLTest;
+import org.linqs.psl.test.NeuralPSLTest;
 import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;

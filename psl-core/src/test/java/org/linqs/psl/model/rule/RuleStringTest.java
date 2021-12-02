@@ -19,10 +19,6 @@ package org.linqs.psl.model.rule;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.linqs.psl.PSLTest;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -60,6 +56,11 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLTest;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;

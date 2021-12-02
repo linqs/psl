@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl;
+package org.linqs.psl.test;
+
+import static org.junit.Assert.assertEquals;
 
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.parser.OnlineActionLoader;
 
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Utilities for testing Online PSL.

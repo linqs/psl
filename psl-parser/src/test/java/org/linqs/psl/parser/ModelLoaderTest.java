@@ -20,12 +20,12 @@ package org.linqs.psl.parser;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.PSLTest;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
+import org.linqs.psl.test.PSLTest;
 import org.linqs.psl.util.ListUtils;
 
 import org.junit.Test;

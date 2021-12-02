@@ -20,8 +20,8 @@ package org.linqs.psl.database.rdbms;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
 import org.junit.Before;

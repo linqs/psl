@@ -19,13 +19,13 @@ package org.linqs.psl.model.rule.arithmetic.expression;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.TestModel;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.Test;
 

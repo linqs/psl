@@ -21,8 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -43,6 +41,8 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLTest;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
 import org.junit.Before;

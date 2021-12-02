@@ -21,8 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -34,6 +32,8 @@ import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.test.PSLTest;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.Test;
 

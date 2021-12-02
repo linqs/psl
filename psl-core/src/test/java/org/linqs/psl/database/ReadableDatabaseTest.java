@@ -23,10 +23,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.mpe.MPEInference;
 import org.linqs.psl.database.Database;
@@ -49,6 +45,11 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.TestModel;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;

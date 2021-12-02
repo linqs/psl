@@ -20,7 +20,6 @@ package org.linqs.psl.application.inference;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import org.linqs.psl.TestModel;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -47,6 +46,7 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
 import org.junit.Test;

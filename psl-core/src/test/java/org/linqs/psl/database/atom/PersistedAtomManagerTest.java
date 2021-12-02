@@ -21,8 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.Test;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -30,7 +28,10 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.MathUtils;
+
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;

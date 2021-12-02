@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.parser;
 
-import org.linqs.psl.OnlinePSLTest;
+import org.linqs.psl.test.OnlinePSLTest;
 
 import org.junit.Test;
 

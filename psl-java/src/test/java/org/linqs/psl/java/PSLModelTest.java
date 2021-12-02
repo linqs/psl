@@ -20,13 +20,13 @@ package org.linqs.psl.java;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.PSLTest;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.java.PSLModel;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.test.PSLTest;
 
 import org.junit.Before;
 import org.junit.Test;

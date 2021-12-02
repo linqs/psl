@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl;
+package org.linqs.psl.test;
 
 import org.linqs.psl.application.inference.online.OnlineClient;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
