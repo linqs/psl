@@ -177,17 +177,15 @@ public class SGDReasoner extends Reasoner {
                 meanMovement /= termCount;
             }
 
-            if (iteration > 1) {
-                clipGradient(prevGradient, prevVariableValues);
-                breakSGD = breakOptimization(iteration, objective, oldObjective, prevGradient, meanMovement, termCount);
-            }
-
             if (iteration == 1) {
                 // Initialize old variables values and gradient.
                 prevGradient = new float[termStore.getVariableValues().length];
                 prevVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
                 lowestVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
             } else {
+                clipGradient(prevGradient, prevVariableValues);
+                breakSGD = breakOptimization(iteration, objective, oldObjective, prevGradient, meanMovement, termCount);
+
                 // Update lowest objective and variable values.
                 if (objective < lowestObjective) {
                     lowestIteration = iteration - 1;

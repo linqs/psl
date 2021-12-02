@@ -801,7 +801,8 @@ public class Options {
         "sgd.firstordernorm",
         Float.POSITIVE_INFINITY,
         "The p-norm used to measure the first order optimality condition."
-        + " Default is the infinity-norm which is the absolute value of the maximum component of the gradient vector.",
+        + " Default is the infinity-norm which is the absolute value of the maximum component of the gradient vector."
+        + " Note that the infinity-norm can be explicitly set with the string literal: 'Infinity'.",
         Option.FLAG_NON_NEGATIVE
     );
 

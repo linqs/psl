@@ -178,7 +178,7 @@ public final class MathUtils {
             throw new ArithmeticException("Cannot scale a vector to a non-positive magnitude.");
         }
 
-        double norm = pNorm(vector, 2);
+        double norm = pNorm(vector, 2.0f);
         if (!((norm != 0.0) || (vector.length == 0))) {
             throw new ArithmeticException("Cannot scale a zero vector to a non-zero magnitude.");
         }
@@ -212,7 +212,7 @@ public final class MathUtils {
     public static float pNorm(float[] vector, float p) {
         float norm = 0.0f;
 
-        if (p <= 0.0) {
+        if (p <= 0.0f) {
             throw new ArithmeticException("The p-norm for p <= 0.0 is not defined.");
         }
 
@@ -255,7 +255,7 @@ public final class MathUtils {
         for (double v : vector) {
             norm += Math.pow(v, p);
         }
-        norm = Math.pow(norm, 1 / p);
+        norm = Math.pow(norm, 1.0f / p);
 
         return norm;
     }
