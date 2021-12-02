@@ -67,9 +67,9 @@ public class AtomTest {
         };
 
         // Make sure to only use term values that can actually be converted into the target types (ie ints).
-        Term termDouble = new DoubleAttribute(new Double(1));
-        Term termInteger = new IntegerAttribute(new Integer(2));
-        Term termLong = new LongAttribute(new Long(3));
+        Term termDouble = new DoubleAttribute(Double.valueOf(1.0));
+        Term termInteger = new IntegerAttribute(Integer.valueOf(2));
+        Term termLong = new LongAttribute(Long.valueOf(3l));
         Term termString = new StringAttribute("4");
         Term termUniqueIntID = new UniqueIntID(5);
         Term termUniqueStringID = new UniqueStringID("6");

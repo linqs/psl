@@ -123,7 +123,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             double objective = inspectLocation(weights);
 
             // Log this location.
-            objectives.put(currentLocation, new Double(objective));
+            objectives.put(currentLocation, Double.valueOf(objective));
 
             if (iteration == 0 || objective < bestObjective) {
                 bestObjective = objective;

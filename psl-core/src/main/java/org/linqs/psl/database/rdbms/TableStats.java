@@ -44,7 +44,7 @@ public class TableStats {
 
     public void addColumnSelectivity(String column, double columnSelectivity) {
         column = column.toUpperCase();
-        selectivity.put(column, new Double(columnSelectivity));
+        selectivity.put(column, Double.valueOf(columnSelectivity));
     }
 
     public void addColumnHistogram(String column, SelectivityHistogram histogram) {
