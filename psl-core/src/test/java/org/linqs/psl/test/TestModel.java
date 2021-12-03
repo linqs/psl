@@ -299,6 +299,9 @@ public class TestModel {
         public Partition targetPartition;
         public Partition truthPartition;
 
+        // Keep track of open models so we can close them.
+        private static List<ModelInformation> openModels = new ArrayList<ModelInformation>();
+
         public ModelInformation(
                 int id, DataStore dataStore, Model model,
                 Map<String, StandardPredicate> predicates,
@@ -310,6 +313,37 @@ public class TestModel {
             this.observationPartition = observationPartition;
             this.targetPartition = targetPartition;
             this.truthPartition = truthPartition;
+
+            openModels.add(this);
+        }
+
+        public void close() {
+            if (dataStore != null) {
+                for (Database database : dataStore.getOpenDatabases()) {
+                    database.close();
+                }
+
+                dataStore.close();
+                dataStore = null;
+            }
+
+            if (predicates != null) {
+                predicates.clear();
+                predicates = null;
+            }
+        }
+
+        public static void closeAll() {
+            for (ModelInformation model : openModels) {
+                model.close();
+            }
+
+            openModels.clear();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return (other != null && other == this);
         }
     }
 

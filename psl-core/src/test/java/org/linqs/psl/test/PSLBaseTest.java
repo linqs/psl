@@ -48,6 +48,8 @@ public abstract class PSLBaseTest {
     public void pslBaseCleanup() {
         // Remove any defined rules.
         AbstractRule.unregisterAllRulesForTesting();
+
+        TestModel.ModelInformation.closeAll();
     }
 
     // General utils.

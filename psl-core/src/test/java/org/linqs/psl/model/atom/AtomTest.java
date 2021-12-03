@@ -29,7 +29,6 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.test.PSLBaseTest;
-import org.linqs.psl.test.TestModel;
 
 import org.junit.Test;
 
