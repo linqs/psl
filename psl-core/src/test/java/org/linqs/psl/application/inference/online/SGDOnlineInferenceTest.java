@@ -101,9 +101,6 @@ public class SGDOnlineInferenceTest extends PSLBaseTest {
             modelInfo.dataStore.close();
             modelInfo = null;
         }
-
-        Options.SGD_LEARNING_RATE.clear();
-        Options.SGD_INVERSE_TIME_EXP.clear();
     }
 
     protected void stop() {

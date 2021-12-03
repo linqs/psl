@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.test;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
@@ -49,7 +50,11 @@ public abstract class PSLBaseTest {
         // Remove any defined rules.
         AbstractRule.unregisterAllRulesForTesting();
 
+        // Close any known open models.
         TestModel.ModelInformation.closeAll();
+
+        // Clear all options.
+        Options.clearAll();
     }
 
     // General utils.

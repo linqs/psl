@@ -1012,6 +1012,29 @@ public class Options {
         return options;
     }
 
+    /**
+     * Clean all the known options.
+     * Mainly used for testing.
+     */
+    public static void clearAll() {
+        clearAll(false);
+    }
+
+    public static void clearAll(boolean force) {
+        try {
+            for (Option option : fetchOptions()) {
+                // Leave a carve-out for special options.
+                if (!force && option == PROJECT_VERSION) {
+                    continue;
+                }
+
+                option.clear();
+            }
+        } catch (IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws IllegalAccessException {
         JSONArray json = new JSONArray();

@@ -60,11 +60,6 @@ public abstract class InferenceTest extends PSLBaseTest {
 
     protected abstract InferenceApplication getInference(List<Rule> rules, Database db);
 
-    @After
-    public void cleanup() {
-        Options.INFERENCE_INITIAL_VARIABLE_VALUE.clear();
-    }
-
     /**
      * A quick test that only checks to see if the inference method is running.
      * This is not a targeted or exhaustive test, just a starting point.
