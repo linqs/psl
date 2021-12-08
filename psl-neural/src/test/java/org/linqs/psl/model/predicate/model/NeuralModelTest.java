@@ -17,10 +17,7 @@
  */
 package org.linqs.psl.model.predicate.model;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.test.NeuralPSLTest;
-import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
@@ -40,20 +37,20 @@ public class NeuralModelTest extends NeuralPSLTest {
 
         model.run();
 
-        assertEquals(1.0f, model.getValue(null, swapIndex, 0), MathUtils.EPSILON_FLOAT);
-        assertEquals(0.0f, model.getValue(null, swapIndex, 1), MathUtils.EPSILON_FLOAT);
+        assertEquals(1.0f, model.getValue(null, swapIndex, 0));
+        assertEquals(0.0f, model.getValue(null, swapIndex, 1));
 
-        assertEquals(1.0f, model.getValue(null, sameIndex, 0), MathUtils.EPSILON_FLOAT);
-        assertEquals(0.0f, model.getValue(null, sameIndex, 1), MathUtils.EPSILON_FLOAT);
+        assertEquals(1.0f, model.getValue(null, sameIndex, 0));
+        assertEquals(0.0f, model.getValue(null, sameIndex, 1));
 
         model.initialFit();
 
         model.run();
 
-        assertEquals(0.0f, model.getValue(null, swapIndex, 0), MathUtils.EPSILON_FLOAT);
-        assertEquals(1.0f, model.getValue(null, swapIndex, 1), MathUtils.EPSILON_FLOAT);
+        assertEquals(0.0f, model.getValue(null, swapIndex, 0));
+        assertEquals(1.0f, model.getValue(null, swapIndex, 1));
 
-        assertEquals(1.0f, model.getValue(null, sameIndex, 0), MathUtils.EPSILON_FLOAT);
-        assertEquals(0.0f, model.getValue(null, sameIndex, 1), MathUtils.EPSILON_FLOAT);
+        assertEquals(1.0f, model.getValue(null, sameIndex, 0));
+        assertEquals(0.0f, model.getValue(null, sameIndex, 1));
     }
 }

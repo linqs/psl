@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class NeuralPSLTest {
+public abstract class NeuralPSLTest extends PSLBaseTest {
     public static final String RESOURCES_BASE_FILE = ".resources";
     public static final String SAVED_MODELS_DIRNAME = "saved-models";
 
