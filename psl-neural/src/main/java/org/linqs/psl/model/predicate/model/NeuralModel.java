@@ -176,20 +176,25 @@ public class NeuralModel extends SupportingModel {
 
         log.trace("Initial fitting {}.", this);
 
+        // Note that these get thrown away after the initial fit, so index mapping is not necessary.
         TFloat32 initialFeatures = TFloat32.tensorOf(Shape.of(observedLabels.size(), numFeatures()));
         TFloat32 initialLabels = TFloat32.tensorOf(Shape.of(observedLabels.size(), numLabels()));
 
         for (Map.Entry<Integer, float[]> entry : observedLabels.entrySet()) {
+            int initialIndex = 0;
+
             int entityIndex = entry.getKey().intValue();
             float[] labels = entry.getValue();
 
             for (int i = 0; i < numFeatures(); i++) {
-                initialFeatures.setFloat(features.getFloat(entityIndex, i), entityIndex, i);
+                initialFeatures.setFloat(features.getFloat(entityIndex, i), initialIndex, i);
             }
 
             for (int i = 0; i < numLabels(); i++) {
-                initialLabels.setFloat(labels[i], entityIndex, i);
+                initialLabels.setFloat(labels[i], initialIndex, i);
             }
+
+            initialIndex++;
         }
 
         Map<String, Tensor> inputMap = new HashMap<String, Tensor>(1);

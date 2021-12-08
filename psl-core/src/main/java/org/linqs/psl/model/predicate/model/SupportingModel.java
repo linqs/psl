@@ -273,6 +273,13 @@ public abstract class SupportingModel {
                             lineNumber, width, parts.length));
                 }
 
+                String entityIdentifier = getAtomIdentifier(parts, entityArgumentIndexes);
+                if (entityIndexMapping.containsKey(entityIdentifier)) {
+                    throw new RuntimeException(String.format(
+                            "Duplicate feature seen for %s on line %d in file: %s",
+                            this, lineNumber, path));
+                }
+
                 // Pull the features out of text.
                 float[] features = new float[numFeatures];
                 for (int i = 0; i < numFeatures; i++) {
@@ -280,7 +287,7 @@ public abstract class SupportingModel {
                 }
 
                 rawFeatures.add(features);
-                entityIndexMapping.put(getAtomIdentifier(parts, entityArgumentIndexes), entityIndexMapping.size());
+                entityIndexMapping.put(entityIdentifier, entityIndexMapping.size());
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse features file: " + path, ex);
