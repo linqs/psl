@@ -145,6 +145,25 @@ public class PostgreSQLDriver implements DatabaseDriver {
             // Make sure to change the table's default partition value back (to nothing).
             dropColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME);
         }
+
+        // Check for any bad values that got inserted.
+        String query = "SELECT COUNT(*) FROM " + predicateInfo.tableName() + " WHERE value < 0.0 OR value > 1.0";
+        try (
+            Connection connection = getConnection();
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet result = statement.executeQuery();
+        ) {
+            result.next();
+            int badValuesCount = result.getInt(1);
+
+            if (badValuesCount != 0) {
+                throw new IllegalArgumentException(String.format(
+                        "Found %d invalid truth value(s) for predicate %s (table '%s'). Values must be between 0 and 1 inclusive.",
+                        badValuesCount, predicateInfo.predicate().getName(), predicateInfo.tableName()));
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to check results of bulk copy on table: " + predicateInfo.tableName(), ex);
+        }
     }
 
     /**

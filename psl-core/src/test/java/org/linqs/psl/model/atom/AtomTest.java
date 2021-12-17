@@ -17,9 +17,9 @@
  */
 package org.linqs.psl.model.atom;
 
-import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.IntegerAttribute;
@@ -490,5 +490,34 @@ public class AtomTest extends PSLBaseTest {
         assertNotEquals(atomCollision1, atomCollision2);
         assertNotEquals(atomCollision1, atomNoCollision);
         assertNotEquals(atomCollision2, atomNoCollision);
+    }
+
+    @Test
+    public void testBadTruthValues() {
+        Predicate singleInt = StandardPredicate.get("SingleInt", new ConstantType[]{ConstantType.Integer});
+
+        Constant[] args = new Constant[1];
+
+        float[] badValues = new float[]{
+            Float.NEGATIVE_INFINITY,
+            -Float.MAX_VALUE,
+            -1.0f,
+            -0.01f,
+            1.01f,
+            2.0f,
+            Float.MAX_VALUE,
+            Float.POSITIVE_INFINITY,
+        };
+
+        for (int i = 0; i < badValues.length; i++) {
+            args[0] = new IntegerAttribute(i);
+
+            try {
+                new ObservedAtom(singleInt, args, badValues[i]);
+                fail("IllegalArgumentException not thrown as expected on index " + i + ", value: " + badValues[i]);
+            } catch (IllegalArgumentException ex) {
+                // Expected
+            }
+        }
     }
 }

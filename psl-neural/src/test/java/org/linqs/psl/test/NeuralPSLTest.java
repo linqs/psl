@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class NeuralPSLTest extends PSLBaseTest {
-    public static final String RESOURCES_BASE_FILE = ".resources";
     public static final String SAVED_MODELS_DIRNAME = "saved-models";
 
     public static final String MODELS_DIRNAME = "model";
@@ -37,11 +36,9 @@ public abstract class NeuralPSLTest extends PSLBaseTest {
 
     public static final String SIGN_MODEL_ID = "sign";
 
-    protected final String RESOURCE_DIR;
     protected final String SAVED_MODELS_DIR;
 
     public NeuralPSLTest() {
-        RESOURCE_DIR = (new File(this.getClass().getClassLoader().getResource(RESOURCES_BASE_FILE).getFile())).getParentFile().getAbsolutePath();
         SAVED_MODELS_DIR = Paths.get(RESOURCE_DIR, SAVED_MODELS_DIRNAME).toString();
     }
 

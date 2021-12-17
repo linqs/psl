@@ -22,6 +22,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
+import org.linqs.psl.util.StringUtils;
 
 /**
  * An Atom with only {@link Constant GroundTerms} for arguments.
@@ -33,6 +34,12 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
 
     protected GroundAtom(Predicate predicate, Constant[] args, float value) {
         super(predicate, args);
+
+        if (value < 0.0f || value > 1.0f) {
+            throw new IllegalArgumentException(String.format(
+                    "Attempt to instantiate an atom with a truth value outside of [0, 1]. Value: %f, Predicate: %s, Arguments: [%s].",
+                    value, predicate, StringUtils.join(", ", args)));
+        }
         this.value = value;
     }
 

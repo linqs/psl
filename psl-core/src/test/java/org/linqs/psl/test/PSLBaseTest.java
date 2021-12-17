@@ -30,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,6 +42,13 @@ import java.util.Properties;
  * This base ensures that all PSL resources get properly cleaned up after a test completes.
  */
 public abstract class PSLBaseTest {
+    public static final String RESOURCES_BASE_FILE = ".resources";
+    protected final String RESOURCE_DIR;
+
+    public PSLBaseTest() {
+        RESOURCE_DIR = (new File(this.getClass().getClassLoader().getResource(RESOURCES_BASE_FILE).getFile())).getParentFile().getAbsolutePath();
+    }
+
     @Before
     public void pslBaseSetup() {
     }
