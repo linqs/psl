@@ -55,7 +55,7 @@ public class PredicateInfo {
 
     public static final String PREDICATE_TABLE_SUFFIX = "_PREDICATE";
     public static final String PARTITION_COLUMN_NAME = "partition_id";
-    public static final String VALUE_COLUMN_NAME = "value";
+    public static final String VALUE_COLUMN_NAME = "truth_value";
 
     // Postgres has a compile-time limit set on identifiers (64 including null).
     // The longest identifier we will see is an index on a UniqueStringID column (assume max of two digits):

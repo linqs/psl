@@ -147,7 +147,11 @@ public class PostgreSQLDriver implements DatabaseDriver {
         }
 
         // Check for any bad values that got inserted.
-        String query = "SELECT COUNT(*) FROM " + predicateInfo.tableName() + " WHERE value < 0.0 OR value > 1.0";
+        String query = String.format("SELECT COUNT(*) FROM %s WHERE %s < 0.0 OR %s > 1.0",
+                predicateInfo.tableName(),
+                PredicateInfo.VALUE_COLUMN_NAME,
+                PredicateInfo.VALUE_COLUMN_NAME);
+
         try (
             Connection connection = getConnection();
             PreparedStatement statement = connection.prepareStatement(query);
