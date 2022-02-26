@@ -551,6 +551,53 @@ public class SGDOnlineInferenceTest extends PSLBaseTest {
         OnlineTest.assertAtomValues(commands, new double[] {0.0});
     }
 
+    /**
+     * Test adding atoms to an empty model.
+     */
+    @Test
+    public void testAddingToEmptyModel() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+
+        Rule niceRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                0.5f, true);
+
+        Rule friendsRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                ),
+                10.0f, true);
+
+        Rule negativePriorRule = new WeightedLogicalRule(
+                new Negation(
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                1.0f, true);
+
+        commands.add(new DeleteRule(negativePriorRule));
+        commands.add(new DeleteRule(friendsRule));
+        commands.add(new DeleteRule(niceRule));
+        commands.add(new Sync());
+        commands.add(new AddAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+        commands.add(new GetAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {1.0});
+    }
+
     private class OnlineInferenceThread extends Thread {
         SGDOnlineInference onlineInference;
 
