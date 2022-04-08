@@ -166,7 +166,7 @@ class Predicate(object):
             # Missing the truth value.
             data[size] = Predicate.DEFAULT_TRUTH_VALUE
             
-        self._data[partition] = self._data[partition].append(data, ignore_index = True)
+        self._data[partition] = pandas.concat([self._data[partition], data], ignore_index = True)
 
         return self
 
