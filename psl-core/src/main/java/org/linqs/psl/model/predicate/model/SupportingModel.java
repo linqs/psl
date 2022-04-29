@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,9 @@ public abstract class SupportingModel {
 
         entityArgumentIndexes = StringUtils.splitInt(Options.MODEL_PREDICATE_ENTITY_ARGS.getString(), ",");
         labelArgumentIndexes = StringUtils.splitInt(Options.MODEL_PREDICATE_LABEL_ARGS.getString(), ",");
+
+        checkArgumentIndexes(entityArgumentIndexes, "entity");
+        checkArgumentIndexes(labelArgumentIndexes, "label");
     }
 
     /**
@@ -231,6 +234,9 @@ public abstract class SupportingModel {
 
     /**
      * Load the file that maps entities to features.
+     * Feature files should be a tsv file.
+     * The first column(s) should contain the entity identifiers (in-order, not including any label identifiers),
+     * followed by the feature columns.
      * The mapping of entity to index will be placed in |entityIndexMapping|,
      * |numFeatures| will be set, and the actual features are returned.
      * Although not invoked directly by this class, this is made available to supporting models.
@@ -241,6 +247,13 @@ public abstract class SupportingModel {
         entityIndexMapping = new HashMap<String, Integer>();
 
         int width = -1;
+
+        // The entity arugment indexes for the feature file will be the same size and order as the standard entityArgumentIndexes,
+        // but must start at zero and count up, e.g. [0, 1, 2].
+        int[] featureEntityArgumentIndexes = new int[entityArgumentIndexes.length];
+        for (int i = 0; i < featureEntityArgumentIndexes.length; i++) {
+            featureEntityArgumentIndexes[i] = i;
+        }
 
         List<float[]> rawFeatures = new ArrayList<float[]>();
 
@@ -260,12 +273,12 @@ public abstract class SupportingModel {
 
                 if (width == -1) {
                     width = parts.length;
-                    numFeatures = width - entityArgumentIndexes.length;
+                    numFeatures = width - featureEntityArgumentIndexes.length;
 
                     if (numFeatures <= 0) {
                         throw new RuntimeException(String.format(
                                 "Line too short (%d). Expected at least %d values, found %d.",
-                                lineNumber, entityArgumentIndexes.length + 1, width));
+                                lineNumber, featureEntityArgumentIndexes.length + 1, width));
                     }
                 } else if (parts.length != width) {
                     throw new RuntimeException(String.format(
@@ -273,14 +286,21 @@ public abstract class SupportingModel {
                             lineNumber, width, parts.length));
                 }
 
+                String entityIdentifier = getAtomIdentifier(parts, featureEntityArgumentIndexes);
+                if (entityIndexMapping.containsKey(entityIdentifier)) {
+                    throw new RuntimeException(String.format(
+                            "Duplicate feature seen for %s on line %d in file: %s",
+                            this, lineNumber, path));
+                }
+
                 // Pull the features out of text.
                 float[] features = new float[numFeatures];
                 for (int i = 0; i < numFeatures; i++) {
-                    features[i] = Float.parseFloat(parts[i + entityArgumentIndexes.length]);
+                    features[i] = Float.parseFloat(parts[i + featureEntityArgumentIndexes.length]);
                 }
 
                 rawFeatures.add(features);
-                entityIndexMapping.put(getAtomIdentifier(parts, entityArgumentIndexes), entityIndexMapping.size());
+                entityIndexMapping.put(entityIdentifier, entityIndexMapping.size());
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse features file: " + path, ex);
@@ -423,6 +443,37 @@ public abstract class SupportingModel {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * Ensure that the argument indexes are always positive and in order.
+     */
+    private void checkArgumentIndexes(int[] indexes, String type) {
+        int previousValue = -1;
+
+        for (int i = 0; i < indexes.length; i++) {
+            int value = indexes[i];
+
+            if (value < 0) {
+                throw new IllegalArgumentException(String.format(
+                        "Found a negative %s argument index (%d) for %s.",
+                        type, value, this));
+            }
+
+            if (previousValue == value) {
+                throw new IllegalArgumentException(String.format(
+                        "Found duplicate %s argument indexes (%d) for %s.",
+                        type, value, this));
+            }
+
+            if (previousValue > value) {
+                throw new IllegalArgumentException(String.format(
+                        "Found out-of-order (order should be increasing) %s argument indexes (%d) for %s.",
+                        type, value, this));
+            }
+
+            previousValue = value;
+        }
     }
 
     protected static final class AtomIndexes {

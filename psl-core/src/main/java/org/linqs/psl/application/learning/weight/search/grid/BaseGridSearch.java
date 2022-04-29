@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             double objective = inspectLocation(weights);
 
             // Log this location.
-            objectives.put(currentLocation, new Double(objective));
+            objectives.put(currentLocation, Double.valueOf(objective));
 
             if (iteration == 0 || objective < bestObjective) {
                 bestObjective = objective;

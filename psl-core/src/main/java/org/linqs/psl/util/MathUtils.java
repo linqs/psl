@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,17 +174,11 @@ public final class MathUtils {
      * Scale n-dimensional double array to vector with the specified magnitude.
      */
     public static void toMagnitude(double[] vector, double magnitude) {
-        double norm = 0.0;
-
         if (magnitude <= 0.0) {
             throw new ArithmeticException("Cannot scale a vector to a non-positive magnitude.");
         }
 
-        for (int i = 0; i < vector.length; i++) {
-            norm += Math.pow(vector[i], 2);
-        }
-
-        norm = Math.sqrt(norm);
+        double norm = pNorm(vector, 2.0f);
         if (!((norm != 0.0) || (vector.length == 0))) {
             throw new ArithmeticException("Cannot scale a zero vector to a non-zero magnitude.");
         }
@@ -198,17 +192,11 @@ public final class MathUtils {
      * Scale n-dimensional float array to vector with the specified magnitude.
      */
     public static void toMagnitude(float[] vector, double magnitude) {
-        double norm = 0.0;
-
         if (magnitude <= 0.0) {
             throw new ArithmeticException("Cannot scale a vector to a non-positive magnitude.");
         }
 
-        for (int i = 0; i < vector.length; i++) {
-            norm += Math.pow(vector[i], 2);
-        }
-
-        norm = Math.sqrt(norm);
+        float norm = pNorm(vector, 2.0f);
         if (!((norm != 0.0) || (vector.length == 0))) {
             throw new ArithmeticException("Cannot scale a zero vector to a non-zero magnitude.");
         }
@@ -216,5 +204,59 @@ public final class MathUtils {
         for (int i = 0; i < vector.length; i++) {
             vector[i] = (float)(magnitude * (vector[i] / norm));
         }
+    }
+
+    /**
+     * Compute the p-norm of the provided vector.
+     */
+    public static float pNorm(float[] vector, float p) {
+        float norm = 0.0f;
+
+        if (p <= 0.0f) {
+            throw new ArithmeticException("The p-norm for p <= 0.0 is not defined.");
+        }
+
+        if (p == Float.POSITIVE_INFINITY) {
+            for (float v : vector) {
+                if (norm < Math.abs(v)) {
+                    norm = Math.abs(v);
+                }
+            }
+            return norm;
+        }
+
+        for (float v : vector) {
+            norm += Math.pow(v, p);
+        }
+        norm = (float)Math.pow(norm, 1.0f / p);
+
+        return norm;
+    }
+
+    /**
+     * Compute the p-norm of the provided vector.
+     */
+    public static double pNorm(double[] vector, double p) {
+        double norm = 0.0;
+
+        if (p <= 0.0) {
+            throw new ArithmeticException("The p-norm for p <= 0.0 is not defined.");
+        }
+
+        if (p == Double.POSITIVE_INFINITY) {
+            for (double v : vector) {
+                if (norm < Math.abs(v)) {
+                    norm = Math.abs(v);
+                }
+            }
+            return norm;
+        }
+
+        for (double v : vector) {
+            norm += Math.pow(v, p);
+        }
+        norm = Math.pow(norm, 1.0f / p);
+
+        return norm;
     }
 }

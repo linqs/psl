@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,16 @@
  */
 package org.linqs.psl.application.learning.weight.search;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.linqs.psl.config.Options;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.util.RandUtils;
 
 import org.junit.Test;
-import org.linqs.psl.config.Options;
-import org.linqs.psl.util.RandUtils;
 
 /**
  * Test weight sampler class, which samples weight configurations from various distributions.
  */
-public class WeightSamplerTest {
+public class WeightSamplerTest extends PSLBaseTest {
     /**
      * Test sampling weight configurations from a Dirichlet distribution.
      */

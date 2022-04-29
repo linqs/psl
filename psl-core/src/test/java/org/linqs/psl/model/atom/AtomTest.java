@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,9 @@
  */
 package org.linqs.psl.model.atom;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
-
-import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModel;
-import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.IntegerAttribute;
@@ -34,6 +28,7 @@ import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.Test;
 
@@ -43,7 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class AtomTest {
+public class AtomTest extends PSLBaseTest {
     /**
      * Make sure that we can to trivial (and numeric string parsing) type conversions.
      * This test does not include ConstantType.DeferredFunctionalUniqueID.
@@ -67,9 +62,9 @@ public class AtomTest {
         };
 
         // Make sure to only use term values that can actually be converted into the target types (ie ints).
-        Term termDouble = new DoubleAttribute(new Double(1));
-        Term termInteger = new IntegerAttribute(new Integer(2));
-        Term termLong = new LongAttribute(new Long(3));
+        Term termDouble = new DoubleAttribute(Double.valueOf(1.0));
+        Term termInteger = new IntegerAttribute(Integer.valueOf(2));
+        Term termLong = new LongAttribute(Long.valueOf(3l));
         Term termString = new StringAttribute("4");
         Term termUniqueIntID = new UniqueIntID(5);
         Term termUniqueStringID = new UniqueStringID("6");
@@ -495,5 +490,34 @@ public class AtomTest {
         assertNotEquals(atomCollision1, atomCollision2);
         assertNotEquals(atomCollision1, atomNoCollision);
         assertNotEquals(atomCollision2, atomNoCollision);
+    }
+
+    @Test
+    public void testBadTruthValues() {
+        Predicate singleInt = StandardPredicate.get("SingleInt", new ConstantType[]{ConstantType.Integer});
+
+        Constant[] args = new Constant[1];
+
+        float[] badValues = new float[]{
+            Float.NEGATIVE_INFINITY,
+            -Float.MAX_VALUE,
+            -1.0f,
+            -0.01f,
+            1.01f,
+            2.0f,
+            Float.MAX_VALUE,
+            Float.POSITIVE_INFINITY,
+        };
+
+        for (int i = 0; i < badValues.length; i++) {
+            args[0] = new IntegerAttribute(i);
+
+            try {
+                new ObservedAtom(singleInt, args, badValues[i]);
+                fail("IllegalArgumentException not thrown as expected on index " + i + ", value: " + badValues[i]);
+            } catch (IllegalArgumentException ex) {
+                // Expected
+            }
+        }
     }
 }

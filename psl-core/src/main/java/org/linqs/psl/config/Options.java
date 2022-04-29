@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -546,22 +546,22 @@ public class Options {
     );
 
     public static final Option ONLINE_HOST = new Option(
-            "inference.onlinehostname",
-            "127.0.0.1",
-            "The hostname for the online server."
+        "inference.onlinehostname",
+        "127.0.0.1",
+        "The hostname for the online server."
     );
 
     public static final Option ONLINE_PORT_NUMBER = new Option(
-            "inference.onlineportnumber",
-            56734,
-            "The port number for the online server."
+        "inference.onlineportnumber",
+        56734,
+        "The port number for the online server."
     );
 
     public static final Option ONLINE_READ_PARTITION = new Option(
-            "onlineatommanager.read",
-            -1,
-            "The partition to add new observations to."
-            + " If negative, the first read partition in the database will be used."
+        "onlineatommanager.read",
+        -1,
+        "The partition to add new observations to."
+        + " If negative, the first read partition in the database will be used."
     );
 
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
@@ -797,6 +797,22 @@ public class Options {
         + " ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
     );
 
+    public static final Option SGD_FIRST_ORDER_NORM = new Option(
+        "sgd.firstordernorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the first order optimality condition."
+        + " Default is the infinity-norm which is the absolute value of the maximum component of the gradient vector."
+        + " Note that the infinity-norm can be explicitly set with the string literal: 'Infinity'.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option SGD_FIRST_ORDER_THRESHOLD = new Option(
+        "sgd.firstorderthreshold",
+        0.01f,
+        "Stochastic gradient descent stops when the norm of the gradient is less than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option SGD_INVERSE_TIME_EXP = new Option(
         "sgd.inversescaleexp",
         1.0f,
@@ -994,6 +1010,29 @@ public class Options {
         }
 
         return options;
+    }
+
+    /**
+     * Clean all the known options.
+     * Mainly used for testing.
+     */
+    public static void clearAll() {
+        clearAll(false);
+    }
+
+    public static void clearAll(boolean force) {
+        try {
+            for (Option option : fetchOptions()) {
+                // Leave a carve-out for special options.
+                if (!force && option == PROJECT_VERSION) {
+                    continue;
+                }
+
+                option.clear();
+            }
+        } catch (IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @SuppressWarnings("unchecked")

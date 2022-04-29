@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl;
+package org.linqs.psl.test;
 
 import org.linqs.psl.model.predicate.model.SupportingModel;
 
@@ -24,8 +24,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class NeuralPSLTest {
-    public static final String RESOURCES_BASE_FILE = ".resources";
+public abstract class NeuralPSLTest extends PSLBaseTest {
     public static final String SAVED_MODELS_DIRNAME = "saved-models";
 
     public static final String MODELS_DIRNAME = "model";
@@ -37,11 +36,9 @@ public abstract class NeuralPSLTest {
 
     public static final String SIGN_MODEL_ID = "sign";
 
-    protected final String RESOURCE_DIR;
     protected final String SAVED_MODELS_DIR;
 
     public NeuralPSLTest() {
-        RESOURCE_DIR = (new File(this.getClass().getClassLoader().getResource(RESOURCES_BASE_FILE).getFile())).getParentFile().getAbsolutePath();
         SAVED_MODELS_DIR = Paths.get(RESOURCE_DIR, SAVED_MODELS_DIRNAME).toString();
     }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,14 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.Test;
 
-public class ADMMObjectiveTermTest {
+public class ADMMObjectiveTermTest extends PSLBaseTest {
     @Test
     public void testLinearConstraintTermMinimize() {
         // Problem 1: Constraint inactive at solution

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class TableStats {
 
     public void addColumnSelectivity(String column, double columnSelectivity) {
         column = column.toUpperCase();
-        selectivity.put(column, new Double(columnSelectivity));
+        selectivity.put(column, Double.valueOf(columnSelectivity));
     }
 
     public void addColumnHistogram(String column, SelectivityHistogram histogram) {

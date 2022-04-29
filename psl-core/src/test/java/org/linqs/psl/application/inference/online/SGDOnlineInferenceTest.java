@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,6 @@
  */
 package org.linqs.psl.application.inference.online;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.linqs.psl.OnlineTest;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.application.inference.online.messages.OnlineMessage;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Exit;
 import org.linqs.psl.application.inference.online.messages.actions.controls.Stop;
@@ -54,13 +49,20 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.OnlineTest;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.test.TestModel;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class SGDOnlineInferenceTest {
+public class SGDOnlineInferenceTest extends PSLBaseTest {
     private TestModel.ModelInformation modelInfo;
     private Database inferDB;
     private OnlineInferenceThread onlineInferenceThread;
@@ -99,9 +101,6 @@ public class SGDOnlineInferenceTest {
             modelInfo.dataStore.close();
             modelInfo = null;
         }
-
-        Options.SGD_LEARNING_RATE.clear();
-        Options.SGD_INVERSE_TIME_EXP.clear();
     }
 
     protected void stop() {
@@ -550,6 +549,53 @@ public class SGDOnlineInferenceTest {
         commands.add(new Exit());
 
         OnlineTest.assertAtomValues(commands, new double[] {0.0});
+    }
+
+    /**
+     * Test adding atoms to an empty model.
+     */
+    @Test
+    public void testAddingToEmptyModel() {
+        BlockingQueue<OnlineMessage> commands = new LinkedBlockingQueue<OnlineMessage>();
+
+        Rule niceRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Nice"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                0.5f, true);
+
+        Rule friendsRule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                ),
+                10.0f, true);
+
+        Rule negativePriorRule = new WeightedLogicalRule(
+                new Negation(
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                1.0f, true);
+
+        commands.add(new DeleteRule(negativePriorRule));
+        commands.add(new DeleteRule(friendsRule));
+        commands.add(new DeleteRule(niceRule));
+        commands.add(new Sync());
+        commands.add(new AddAtom("Read", StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}, 1.0f));
+        commands.add(new GetAtom(StandardPredicate.get("Person"), new Constant[]{new UniqueStringID("Connor")}));
+        commands.add(new Exit());
+
+        OnlineTest.assertAtomValues(commands, new double[] {1.0});
     }
 
     private class OnlineInferenceThread extends Thread {

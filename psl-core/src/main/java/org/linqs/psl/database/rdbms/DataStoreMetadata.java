@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class DataStoreMetadata {
         sql.add("  namespace VARCHAR(255),");
         sql.add("  keytype VARCHAR(255),");
         sql.add("  keyvalue VARCHAR(255),");
-        sql.add("  value VARCHAR(255),");
+        sql.add("  data VARCHAR(255),");
         sql.add("  PRIMARY KEY(namespace, keytype, keyvalue)");
         sql.add(")");
 
@@ -98,7 +98,7 @@ public class DataStoreMetadata {
         return false;
     }
 
-    private void addRow(String namespace, String type, String keyvalue, String val) {
+    private void addRow(String namespace, String type, String keyvalue, String value) {
         try (
             Connection connection = dataStore.getConnection();
             PreparedStatement statement = connection.prepareStatement("INSERT INTO " + METADATA_TABLENAME + " VALUES(?, ?, ?, ?)");
@@ -106,7 +106,7 @@ public class DataStoreMetadata {
             statement.setString(1, namespace);
             statement.setString(2, type);
             statement.setString(3, keyvalue);
-            statement.setString(4, val);
+            statement.setString(4, value);
             statement.execute();
         } catch (SQLException ex) {
             throw new RuntimeException("Error adding row to metadata table.", ex);
@@ -115,7 +115,7 @@ public class DataStoreMetadata {
 
     private String getValue(String namespace, String type, String keyvalue) {
         List<String> sql = new ArrayList<String>();
-        sql.add("SELECT value");
+        sql.add("SELECT data");
         sql.add("FROM " + METADATA_TABLENAME);
         sql.add("WHERE");
         sql.add("  namespace = ?");
@@ -175,14 +175,14 @@ public class DataStoreMetadata {
 
     public Map<String, String> getAllValuesByType(String namespace, String type) {
         List<String> sql = new ArrayList<String>();
-        sql.add("SELECT keyvalue, value");
+        sql.add("SELECT keyvalue, data");
         sql.add("FROM " + METADATA_TABLENAME);
         sql.add("WHERE");
         sql.add("  namespace = ?");
         sql.add("  AND keytype = ?");
 
         ResultSet resultSet = null;
-        Map<String, String> vals = new HashMap<String,String>();
+        Map<String, String> values = new HashMap<String,String>();
 
         try (
             Connection connection = dataStore.getConnection();
@@ -194,7 +194,7 @@ public class DataStoreMetadata {
 
             resultSet = statement.getResultSet();
             while (resultSet.next()) {
-                vals.put(resultSet.getString(1), resultSet.getString(2));
+                values.put(resultSet.getString(1), resultSet.getString(2));
             }
         } catch (SQLException ex) {
             throw new RuntimeException("Error retrieving metadata values", ex);
@@ -208,14 +208,14 @@ public class DataStoreMetadata {
             }
         }
 
-        return vals;
+        return values;
     }
 
     private Map<String, Integer> fetchPartitions() {
         Map<String, Integer> names = new HashMap<String, Integer>();
 
-        Map<String, String> vals = getAllValuesByType(PARTITION_NAMESPACE, NAME_KEY);
-        for (Map.Entry<String, String> entry : vals.entrySet()) {
+        Map<String, String> values = getAllValuesByType(PARTITION_NAMESPACE, NAME_KEY);
+        for (Map.Entry<String, String> entry : values.entrySet()) {
             names.put(entry.getKey(), Integer.parseInt(entry.getValue()));
         }
 

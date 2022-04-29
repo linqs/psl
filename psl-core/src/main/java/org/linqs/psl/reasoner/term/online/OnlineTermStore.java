@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -270,6 +270,10 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
         }
     }
 
+    private void joinIterationComplete() {
+        activeIterator = null;
+    }
+
     @Override
     protected StreamingIterator<T> streamingIterator() {
         activeIterator = super.streamingIterator();
@@ -286,7 +290,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
      * A thin wrapper around an Iterator to turn it into a StreamingIterator.
      * The internal iterator should call close() on itself when out of items.
      */
-    private static class StreamingJoinIterator<E extends ReasonerTerm> implements StreamingIterator<E> {
+    private class StreamingJoinIterator<E extends ReasonerTerm> implements StreamingIterator<E> {
         private Iterator<E> iterator;
 
         public StreamingJoinIterator(Iterator<E> iterator) {
@@ -295,7 +299,13 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         @Override
         public boolean hasNext() {
-            return iterator.hasNext();
+            boolean hasNext = iterator.hasNext();
+
+            if (!hasNext) {
+                close();
+            }
+
+            return hasNext;
         }
 
         @Override
@@ -310,6 +320,7 @@ public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingT
 
         @Override
         public void close() {
+            joinIterationComplete();
         }
     }
 }

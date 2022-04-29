@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
  */
 package org.linqs.psl.util;
 
-import static org.junit.Assert.assertNotEquals;
-
 import org.linqs.psl.config.Options;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.Test;
 
-public class VersionTest {
+public class VersionTest extends PSLBaseTest {
     /**
      * Just make sure we don't pick up the default.
      */

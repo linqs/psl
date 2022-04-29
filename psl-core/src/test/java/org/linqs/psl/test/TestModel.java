@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl;
+package org.linqs.psl.test;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -299,6 +299,9 @@ public class TestModel {
         public Partition targetPartition;
         public Partition truthPartition;
 
+        // Keep track of open models so we can close them.
+        private static List<ModelInformation> openModels = new ArrayList<ModelInformation>();
+
         public ModelInformation(
                 int id, DataStore dataStore, Model model,
                 Map<String, StandardPredicate> predicates,
@@ -310,6 +313,37 @@ public class TestModel {
             this.observationPartition = observationPartition;
             this.targetPartition = targetPartition;
             this.truthPartition = truthPartition;
+
+            openModels.add(this);
+        }
+
+        public void close() {
+            if (dataStore != null) {
+                for (Database database : dataStore.getOpenDatabases()) {
+                    database.close();
+                }
+
+                dataStore.close();
+                dataStore = null;
+            }
+
+            if (predicates != null) {
+                predicates.clear();
+                predicates = null;
+            }
+        }
+
+        public static void closeAll() {
+            for (ModelInformation model : openModels) {
+                model.close();
+            }
+
+            openModels.clear();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return (other != null && other == this);
         }
     }
 

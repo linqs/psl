@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.application.inference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
-import org.linqs.psl.TestModel;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -47,6 +43,8 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
 import org.junit.Test;
@@ -57,15 +55,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public abstract class InferenceTest {
+public abstract class InferenceTest extends PSLBaseTest {
     public static final int NUM_INFERENCE_RUNS = 10;
 
     protected abstract InferenceApplication getInference(List<Rule> rules, Database db);
-
-    @After
-    public void cleanup() {
-        Options.INFERENCE_INITIAL_VARIABLE_VALUE.clear();
-    }
 
     /**
      * A quick test that only checks to see if the inference method is running.

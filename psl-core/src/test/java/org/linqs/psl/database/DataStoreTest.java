@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
  * limitations under the License.
  */
 package org.linqs.psl.database;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -46,11 +42,13 @@ import org.linqs.psl.model.term.DoubleAttribute;
 import org.linqs.psl.model.term.StringAttribute;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -60,7 +58,21 @@ import java.util.Set;
 /**
  * Tests for classes that implement {@link DataStore}.
  */
-public abstract class DataStoreTest {
+public abstract class DataStoreTest extends PSLBaseTest {
+    public static final String DATA_DIRNAME = "data";
+
+    protected static final String[] GOOD_DATA_FILES = new String[]{
+        "binary_no_value.txt",
+        "binary_with_value.txt",
+    };
+
+    protected static final String[] BAD_DATA_FILES = new String[]{
+        "binary_bad_value.txt",
+        "binary_extra_arg.txt",
+        "binary_missing_arg.txt",
+        "binary_missing_value.txt",
+    };
+
     protected StandardPredicate p1;
     protected StandardPredicate p2;
     protected StandardPredicate p3;
@@ -665,7 +677,6 @@ public abstract class DataStoreTest {
         dbs.add(db1);
         dbs.add(db2);
 
-
         GroundAtom atom = db1.getAtom(p1, b, c);
         assertTrue(atom instanceof ObservedAtom);
 
@@ -974,5 +985,78 @@ public abstract class DataStoreTest {
         name = name + "_" + name;
         predicate = StandardPredicate.get(name, ConstantType.UniqueIntID, ConstantType.UniqueIntID);
         datastore.registerPredicate(predicate);
+    }
+
+    @Test
+    public void testBadTruthValues() {
+        if (datastore == null) {
+            return;
+        }
+
+        datastore.registerPredicate(p1);
+
+        UniqueIntID a = new UniqueIntID(0);
+        UniqueIntID b = new UniqueIntID(1);
+
+        Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
+
+        float[] badValues = new float[]{
+            Float.NEGATIVE_INFINITY,
+            -Float.MAX_VALUE,
+            -1.0f,
+            -0.01f,
+            1.01f,
+            2.0f,
+            Float.MAX_VALUE,
+            Float.POSITIVE_INFINITY,
+        };
+
+        for (int i = 0; i < badValues.length; i++) {
+            try {
+                inserter.insertValue(badValues[i], a, b);
+                fail("IllegalArgumentException not thrown as expected on index " + i + ", value: " + badValues[i]);
+            } catch (IllegalArgumentException ex) {
+                // Expected
+            }
+        }
+    }
+
+    @Test
+    public void testLoadFile() {
+        if (datastore == null) {
+            return;
+        }
+
+        datastore.registerPredicate(p1);
+
+        UniqueIntID a = new UniqueIntID(0);
+        UniqueIntID b = new UniqueIntID(1);
+
+        for (int i = 0; i < GOOD_DATA_FILES.length; i++) {
+            String filename = GOOD_DATA_FILES[i];
+
+            // Use a clean partition each time.
+            String partition = "" + i;
+            Inserter inserter = datastore.getInserter(p1, datastore.getPartition(partition));
+
+            String path = Paths.get(RESOURCE_DIR, DATA_DIRNAME, filename).toString();
+            inserter.loadDelimitedDataAutomatic(path);
+        }
+
+        for (int i = 0; i < BAD_DATA_FILES.length; i++) {
+            String filename = BAD_DATA_FILES[i];
+
+            // Use a clean partition each time.
+            String partition = "" + i + GOOD_DATA_FILES.length;
+            Inserter inserter = datastore.getInserter(p1, datastore.getPartition(partition));
+
+            String path = Paths.get(RESOURCE_DIR, DATA_DIRNAME, filename).toString();
+            try {
+                inserter.loadDelimitedDataAutomatic(path);
+                fail("Exception not thrown as expected on index " + i + ", filename: " + filename);
+            } catch (RuntimeException ex) {
+                // Expected
+            }
+        }
     }
 }
