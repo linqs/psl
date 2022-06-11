@@ -43,7 +43,7 @@ public abstract class Inserter {
     /**
      * Insert a single object using the default truth value.
      */
-    public void insert(Object... data) {
+    public void insert(Object[] data) {
         if (data == null || data.length == 0) {
             throw new IllegalArgumentException("Attempted to insert empty data.");
         }
@@ -54,19 +54,53 @@ public abstract class Inserter {
     }
 
     /**
+     * Insert a single object using the default truth value.
+     */
+    public void insert(List<Object> data) {
+        if (data == null || data.size() == 0) {
+            throw new IllegalArgumentException("Attempted to insert empty data.");
+        }
+
+        List<List<Object>> newData = new ArrayList<List<Object>>(1);
+        newData.add(data);
+        insertAll(newData);
+    }
+
+    /**
      * Insert a single object using the specified truth value.
      */
-    public void insertValue(double value, Object... data) {
+    public void insertValue(double value, Object[] data) {
         if (data == null || data.length == 0) {
             throw new IllegalArgumentException("Attempted to insert empty data.");
         }
 
-        if (value < 0 || value > 1) {
+        if (value < 0.0 || value > 1.0) {
             throw new IllegalArgumentException("Invalid truth value: " + value + ". Must be between 0 and 1 inclusive.");
         }
 
         List<List<Object>> newData = new ArrayList<List<Object>>(1);
         newData.add(Arrays.asList(data));
+
+        List<Double> newValue = new ArrayList<Double>(1);
+        newValue.add(value);
+
+        insertAllValues(newValue, newData);
+    }
+
+    /**
+     * Insert a single object using the specified truth value.
+     */
+    public void insertValue(double value, List<Object> data) {
+        if (data == null || data.size() == 0) {
+            throw new IllegalArgumentException("Attempted to insert empty data.");
+        }
+
+        if (value < 0.0 || value > 1.0) {
+            throw new IllegalArgumentException("Invalid truth value: " + value + ". Must be between 0 and 1 inclusive.");
+        }
+
+        List<List<Object>> newData = new ArrayList<List<Object>>(1);
+        newData.add(data);
 
         List<Double> newValue = new ArrayList<Double>(1);
         newValue.add(value);

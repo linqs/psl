@@ -22,6 +22,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
@@ -31,9 +32,17 @@ import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.parser.CommandLineLoader;
+import org.linqs.psl.parser.ModelLoader;
 
+import org.apache.log4j.PropertyConfigurator;
+
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -44,16 +53,32 @@ import java.util.Set;
  * Things like forced options and copied code (e.g. from the Launcher).
  */
 public final class GroundingAPI {
+    public static final String PARTITION_OBS = "observed";
+    public static final String PARTITION_UNOBS = "unobserved";
+
     // Static only.
     public GroundingAPI() {}
 
-    public static List<GroundRule> ground(List<Rule> rules, List<List<String>> observedData, List<List<String>> unobservedData) {
+    public static List<GroundRule> ground(List<String> predicateNames, List<Integer> predicateArities,
+            List<String> ruleStrings,
+            Map<String, List<List<String>>> observedData, Map<String, List<List<String>>> unobservedData) {
+        initLogger("ERROR");
+
+        assert(predicateNames.size() == predicateArities.size());
+
         DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, CommandLineLoader.DEFAULT_H2_DB_PATH, true));
+
+        registerPredicates(predicateNames, predicateArities, dataStore);
+
+        List<Rule> rules = new ArrayList<Rule>(ruleStrings.size());
+        for (String ruleString : ruleStrings) {
+            rules.add(ModelLoader.loadRule(ruleString));
+        }
 
         Set<StandardPredicate> closedPredicates = loadData(dataStore, observedData, unobservedData);
 
-        Partition targetPartition = dataStore.getPartition("targets");
-        Partition observationsPartition = dataStore.getPartition("observations");
+        Partition targetPartition = dataStore.getPartition(PARTITION_UNOBS);
+        Partition observationsPartition = dataStore.getPartition(PARTITION_OBS);
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
         AtomManager atomManager = new PersistedAtomManager(database);
@@ -64,14 +89,72 @@ public final class GroundingAPI {
         return (List<GroundRule>)groundRuleStore.getGroundRules();
     }
 
-    private static Set<StandardPredicate> loadData(DataStore dataStore,
-            List<List<String>> observedData, List<List<String>> unobservedData) {
-        // TEST
-        return null;
+    private static void registerPredicates(List<String> predicateNames, List<Integer> predicateArities, DataStore dataStore) {
+        for (int i = 0; i < predicateNames.size(); i++) {
+            ConstantType[] types = new ConstantType[predicateArities.get(i).intValue()];
+            for (int j = 0; j < types.length; j++) {
+                types[j] = ConstantType.UniqueStringID;
+            }
+
+            StandardPredicate predicate = StandardPredicate.get(predicateNames.get(i), types);
+            dataStore.registerPredicate(predicate);
+        }
     }
 
-    // TEST
-    public static void test() {
-        System.out.println("TEST");
+    private static Set<StandardPredicate> loadData(DataStore dataStore,
+            Map<String, List<List<String>>> observedData, Map<String, List<List<String>>> unobservedData) {
+        loadPartition(dataStore, PARTITION_OBS, observedData);
+        loadPartition(dataStore, PARTITION_UNOBS, unobservedData);
+
+        Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>();
+        for (String predicateName : observedData.keySet()) {
+            if (unobservedData.containsKey(predicateName)) {
+                continue;
+            }
+
+            closedPredicates.add(StandardPredicate.get(predicateName));
+        }
+
+        return closedPredicates;
+    }
+
+    private static void loadPartition(DataStore dataStore, String partitionName,
+            Map<String, List<List<String>>> data) {
+        Partition partition = dataStore.getPartition(partitionName);
+
+        for (String predicateName : data.keySet()) {
+            StandardPredicate predicate = StandardPredicate.get(predicateName);
+            Inserter inserter = dataStore.getInserter(predicate, partition);
+
+            List<Object> insertBuffer = new ArrayList<Object>(predicate.getArity());
+            for (int i = 0; i < predicate.getArity(); i++) {
+                insertBuffer.add(null);
+            }
+
+            for (List<String> row : data.get(predicateName)) {
+                for (int i = 0; i < predicate.getArity(); i++) {
+                    insertBuffer.set(i, row.get(i));
+                }
+
+                if (row.size() == predicate.getArity()) {
+                    inserter.insert(insertBuffer);
+                } else {
+                    double truthValue = Double.parseDouble(row.get(row.size() - 1));
+                    inserter.insertValue(truthValue, insertBuffer);
+                }
+            }
+        }
+    }
+
+    // Init a defualt logger with the given level.
+    public static void initLogger(String logLevel) {
+        Properties props = new Properties();
+
+        props.setProperty("log4j.rootLogger", String.format("%s, A1", logLevel));
+        props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
+        props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
+        props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
+
+        PropertyConfigurator.configure(props);
     }
 }
