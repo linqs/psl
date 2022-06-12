@@ -59,23 +59,25 @@ public final class GroundingAPI {
     // Static only.
     public GroundingAPI() {}
 
-    public static List<GroundRule> ground(List<String> predicateNames, List<Integer> predicateArities,
-            List<String> ruleStrings,
-            Map<String, List<List<String>>> observedData, Map<String, List<List<String>>> unobservedData) {
-        initLogger("ERROR");
+    public static List<GroundRule> ground(
+            String[] ruleStrings,
+            String[] predicateNames, int[] predicateArities,
+            String[][][] observedData, String[][][] unobservedData) {
+        initLogger("WARNING");
 
-        assert(predicateNames.size() == predicateArities.size());
+        assert(predicateNames.length == observedData.length);
+        assert(predicateNames.length == unobservedData.length);
 
         DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, CommandLineLoader.DEFAULT_H2_DB_PATH, true));
 
         registerPredicates(predicateNames, predicateArities, dataStore);
 
-        List<Rule> rules = new ArrayList<Rule>(ruleStrings.size());
+        List<Rule> rules = new ArrayList<Rule>(ruleStrings.length);
         for (String ruleString : ruleStrings) {
             rules.add(ModelLoader.loadRule(ruleString));
         }
 
-        Set<StandardPredicate> closedPredicates = loadData(dataStore, observedData, unobservedData);
+        Set<StandardPredicate> closedPredicates = loadData(dataStore, predicateNames, observedData, unobservedData);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_UNOBS);
         Partition observationsPartition = dataStore.getPartition(PARTITION_OBS);
@@ -89,41 +91,42 @@ public final class GroundingAPI {
         return (List<GroundRule>)groundRuleStore.getGroundRules();
     }
 
-    private static void registerPredicates(List<String> predicateNames, List<Integer> predicateArities, DataStore dataStore) {
-        for (int i = 0; i < predicateNames.size(); i++) {
-            ConstantType[] types = new ConstantType[predicateArities.get(i).intValue()];
+    private static void registerPredicates(String[] predicateNames, int[] predicateArities, DataStore dataStore) {
+        for (int i = 0; i < predicateNames.length; i++) {
+            ConstantType[] types = new ConstantType[predicateArities[i]];
             for (int j = 0; j < types.length; j++) {
                 types[j] = ConstantType.UniqueStringID;
             }
 
-            StandardPredicate predicate = StandardPredicate.get(predicateNames.get(i), types);
+            StandardPredicate predicate = StandardPredicate.get(predicateNames[i], types);
             dataStore.registerPredicate(predicate);
         }
     }
 
-    private static Set<StandardPredicate> loadData(DataStore dataStore,
-            Map<String, List<List<String>>> observedData, Map<String, List<List<String>>> unobservedData) {
-        loadPartition(dataStore, PARTITION_OBS, observedData);
-        loadPartition(dataStore, PARTITION_UNOBS, unobservedData);
+    private static Set<StandardPredicate> loadData(
+            DataStore dataStore, String[] predicateNames,
+            String[][][] observedData, String[][][] unobservedData) {
+        Set<StandardPredicate> observedPredicates = loadPartition(dataStore, PARTITION_OBS, predicateNames, observedData);
+        Set<StandardPredicate> unobservedPredicates = loadPartition(dataStore, PARTITION_UNOBS, predicateNames, unobservedData);
 
-        Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>();
-        for (String predicateName : observedData.keySet()) {
-            if (unobservedData.containsKey(predicateName)) {
+        observedPredicates.removeAll(unobservedPredicates);
+
+        return observedPredicates;
+    }
+
+    private static Set<StandardPredicate> loadPartition(DataStore dataStore, String partitionName,
+            String[] predicateNames, String[][][] data) {
+        Set<StandardPredicate> usedPredicates = new HashSet<StandardPredicate>(predicateNames.length);
+        Partition partition = dataStore.getPartition(partitionName);
+
+        for (int predicateIndex = 0; predicateIndex < predicateNames.length; predicateIndex++) {
+            if (data[predicateIndex].length == 0) {
                 continue;
             }
 
-            closedPredicates.add(StandardPredicate.get(predicateName));
-        }
+            StandardPredicate predicate = StandardPredicate.get(predicateNames[predicateIndex]);
+            usedPredicates.add(predicate);
 
-        return closedPredicates;
-    }
-
-    private static void loadPartition(DataStore dataStore, String partitionName,
-            Map<String, List<List<String>>> data) {
-        Partition partition = dataStore.getPartition(partitionName);
-
-        for (String predicateName : data.keySet()) {
-            StandardPredicate predicate = StandardPredicate.get(predicateName);
             Inserter inserter = dataStore.getInserter(predicate, partition);
 
             List<Object> insertBuffer = new ArrayList<Object>(predicate.getArity());
@@ -131,19 +134,21 @@ public final class GroundingAPI {
                 insertBuffer.add(null);
             }
 
-            for (List<String> row : data.get(predicateName)) {
+            for (String[] row : data[predicateIndex]) {
                 for (int i = 0; i < predicate.getArity(); i++) {
-                    insertBuffer.set(i, row.get(i));
+                    insertBuffer.set(i, row[i]);
                 }
 
-                if (row.size() == predicate.getArity()) {
+                if (row.length == predicate.getArity()) {
                     inserter.insert(insertBuffer);
                 } else {
-                    double truthValue = Double.parseDouble(row.get(row.size() - 1));
+                    double truthValue = Double.parseDouble(row[predicate.getArity()]);
                     inserter.insertValue(truthValue, insertBuffer);
                 }
             }
         }
+
+        return usedPredicates;
     }
 
     // Init a defualt logger with the given level.
