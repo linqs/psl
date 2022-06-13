@@ -43,7 +43,7 @@ public abstract class Inserter {
     /**
      * Insert a single object using the default truth value.
      */
-    public void insert(Object[] data) {
+    public void insert(Object... data) {
         if (data == null || data.length == 0) {
             throw new IllegalArgumentException("Attempted to insert empty data.");
         }
@@ -69,7 +69,7 @@ public abstract class Inserter {
     /**
      * Insert a single object using the specified truth value.
      */
-    public void insertValue(double value, Object[] data) {
+    public void insertValue(double value, Object... data) {
         if (data == null || data.length == 0) {
             throw new IllegalArgumentException("Attempted to insert empty data.");
         }

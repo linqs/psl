@@ -138,15 +138,11 @@ public final class GroundingAPI {
             usedPredicates.add(predicate);
 
             Inserter inserter = dataStore.getInserter(predicate, partition);
-
-            List<Object> insertBuffer = new ArrayList<Object>(predicate.getArity());
-            for (int i = 0; i < predicate.getArity(); i++) {
-                insertBuffer.add(null);
-            }
+            Object[] insertBuffer = new Object[predicate.getArity()];
 
             for (String[] row : data[predicateIndex]) {
                 for (int i = 0; i < predicate.getArity(); i++) {
-                    insertBuffer.set(i, row[i]);
+                    insertBuffer[i] = row[i];
                 }
 
                 if (row.length == predicate.getArity()) {
