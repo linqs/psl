@@ -96,7 +96,7 @@ public final class GroundingAPI {
 
         Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, observedData, unobservedData, atomManager);
 
-        long groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
+        Grounding.groundAll(rules, atomManager, groundRuleStore);
 
         return mapGroundRules(rules, atomMap, groundRuleStore);
     }
