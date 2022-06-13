@@ -30,15 +30,22 @@ import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.AbstractGroundArithmeticRule;
+import org.linqs.psl.model.rule.logical.AbstractGroundLogicalRule;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.parser.ModelLoader;
+import org.linqs.psl.util.StringUtils;
 
 import org.apache.log4j.PropertyConfigurator;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +66,7 @@ public final class GroundingAPI {
     // Static only.
     public GroundingAPI() {}
 
-    public static List<GroundRule> ground(
+    public static GroundRuleInfo[] ground(
             String[] ruleStrings,
             String[] predicateNames, int[] predicateArities,
             String[][][] observedData, String[][][] unobservedData) {
@@ -74,7 +81,8 @@ public final class GroundingAPI {
 
         List<Rule> rules = new ArrayList<Rule>(ruleStrings.length);
         for (String ruleString : ruleStrings) {
-            rules.add(ModelLoader.loadRule(ruleString));
+            Rule rule = ModelLoader.loadRule(ruleString);
+            rules.add(rule);
         }
 
         Set<StandardPredicate> closedPredicates = loadData(dataStore, predicateNames, observedData, unobservedData);
@@ -86,9 +94,11 @@ public final class GroundingAPI {
         AtomManager atomManager = new PersistedAtomManager(database);
         GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
 
+        Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, observedData, unobservedData, atomManager);
+
         long groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
 
-        return (List<GroundRule>)groundRuleStore.getGroundRules();
+        return mapGroundRules(rules, atomMap, groundRuleStore);
     }
 
     private static void registerPredicates(String[] predicateNames, int[] predicateArities, DataStore dataStore) {
@@ -151,6 +161,99 @@ public final class GroundingAPI {
         return usedPredicates;
     }
 
+    private static Map<GroundAtom, Integer> buildAtomMap(
+            String[] predicateNames,
+            String[][][] observedData, String[][][] unobservedData,
+            AtomManager atomManager) {
+        // Each atom gets mapped in a reversible way to an index.
+        // These indexes are contiguous, go through the predicates in-order, handle obs, and finally unobs.
+        int atomCount = atomManager.getCachedObsCount() + atomManager.getCachedRVACount();
+        Map<GroundAtom, Integer> atomMap = new HashMap<GroundAtom, Integer>(atomCount);
+
+        for (int predicateIndex = 0; predicateIndex < predicateNames.length; predicateIndex++) {
+            StandardPredicate predicate = StandardPredicate.get(predicateNames[predicateIndex]);
+            Constant[] arguments = new Constant[predicate.getArity()];
+
+            for (int rowIndex = 0; rowIndex < observedData[predicateIndex].length; rowIndex++) {
+                for (int i = 0; i < arguments.length; i++) {
+                    arguments[i] = new UniqueStringID(observedData[predicateIndex][rowIndex][i]);
+                }
+
+                GroundAtom atom = atomManager.getAtom(predicate, arguments);
+                atomMap.put(atom, atomMap.size());
+            }
+
+            for (int rowIndex = 0; rowIndex < unobservedData[predicateIndex].length; rowIndex++) {
+                for (int i = 0; i < arguments.length; i++) {
+                    arguments[i] = new UniqueStringID(unobservedData[predicateIndex][rowIndex][i]);
+                }
+
+                GroundAtom atom = atomManager.getAtom(predicate, arguments);
+                atomMap.put(atom, atomMap.size());
+            }
+        }
+
+        return atomMap;
+    }
+
+    private static GroundRuleInfo[] mapGroundRules(
+            List<Rule> rules,
+            Map<GroundAtom, Integer> atomMap,
+            GroundRuleStore groundRuleStore) {
+        GroundRuleInfo[] infos = new GroundRuleInfo[(int)groundRuleStore.size()];
+
+        int groundRuleCount = 0;
+        for (GroundRule rawGroundRule : groundRuleStore.getGroundRules()) {
+            if (rawGroundRule instanceof AbstractGroundLogicalRule) {
+                infos[groundRuleCount++] = mapLogicalGroundRule(
+                        rules.indexOf(rawGroundRule.getRule()), atomMap, (AbstractGroundLogicalRule)rawGroundRule);
+            } else {
+                infos[groundRuleCount++] = mapArithmeticGroundRule(
+                        rules.indexOf(rawGroundRule.getRule()), atomMap, (AbstractGroundArithmeticRule)rawGroundRule);
+            }
+        }
+
+        return infos;
+    }
+
+    private static GroundRuleInfo mapLogicalGroundRule(
+            int ruleIndex,
+            Map<GroundAtom, Integer> atomMap,
+            AbstractGroundLogicalRule groundRule) {
+        int atomIndex = 0;
+        float[] coefficients = new float[groundRule.size()];
+        int[] atoms = new int[groundRule.size()];
+
+        for (GroundAtom atom : groundRule.getPositiveAtoms()) {
+            coefficients[atomIndex] = 1.0f;
+            atoms[atomIndex] = atomMap.get(atom).intValue();
+            atomIndex++;
+        }
+
+        for (GroundAtom atom : groundRule.getNegativeAtoms()) {
+            coefficients[atomIndex] = -1.0f;
+            atoms[atomIndex] = atomMap.get(atom).intValue();
+            atomIndex++;
+        }
+
+        return new GroundRuleInfo(ruleIndex, "|", 0.0f, coefficients, atoms);
+    }
+
+    private static GroundRuleInfo mapArithmeticGroundRule(
+            int ruleIndex,
+            Map<GroundAtom, Integer> atomMap,
+            AbstractGroundArithmeticRule groundRule) {
+        GroundAtom[] rawAtoms = groundRule.getOrderedAtoms();
+        int[] atoms = new int[rawAtoms.length];
+
+        for (int i = 0; i < rawAtoms.length; i++) {
+            atoms[i] = atomMap.get(rawAtoms[i]).intValue();
+        }
+
+        return new GroundRuleInfo(ruleIndex, groundRule.getComparator().toString(), groundRule.getConstant(),
+                groundRule.getCoefficients(), atoms);
+    }
+
     // Init a defualt logger with the given level.
     public static void initLogger(String logLevel) {
         Properties props = new Properties();
@@ -161,5 +264,28 @@ public final class GroundingAPI {
         props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
 
         PropertyConfigurator.configure(props);
+    }
+
+    public static final class GroundRuleInfo {
+        public int ruleIndex;
+        public String operator;
+        public float constant;
+        public float[] coefficients;
+        public int[] atoms;
+
+        public GroundRuleInfo(int ruleIndex, String operator, float constant, float[] coefficients, int[] atoms) {
+            this.ruleIndex = ruleIndex;
+            this.operator = operator;
+            this.constant = constant;
+            this.coefficients = coefficients;
+            this.atoms = atoms;
+        }
+
+        public String toString() {
+            return String.format(
+                    "Rule: %d, Operator: %s, Constant: %f, coefficients: [%s], atoms: [%s].",
+                    ruleIndex, operator, constant,
+                    StringUtils.join(", ", coefficients), StringUtils.join(", ", atoms));
+        }
     }
 }
