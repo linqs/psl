@@ -97,8 +97,13 @@ public final class GroundingAPI {
         Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, observedData, unobservedData, atomManager);
 
         Grounding.groundAll(rules, atomManager, groundRuleStore);
+        GroundRuleInfo[] groundRules = mapGroundRules(rules, atomMap, groundRuleStore);
 
-        return mapGroundRules(rules, atomMap, groundRuleStore);
+        groundRuleStore.close();
+        database.close();
+        dataStore.close();
+
+        return groundRules;
     }
 
     private static void registerPredicates(String[] predicateNames, int[] predicateArities, DataStore dataStore) {
