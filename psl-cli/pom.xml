@@ -41,7 +41,7 @@
         </dependency>
         <dependency>
             <groupId>org.linqs</groupId>
-            <artifactId>psl-parser</artifactId>
+            <artifactId>psl-java</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
