@@ -19,9 +19,6 @@ package org.linqs.psl.config;
 
 /**
  * Additional options for the psl-neural module.
- *
- * When adding new options, remember to statically add them to Options
- * (see the static block near the end of this class).
  */
 public class NeuralOptions {
     public static final Option NEURAL_TF_BUNDLE_TAG = new Option(
@@ -61,11 +58,7 @@ public class NeuralOptions {
     );
 
     static {
-        Options.addOption(NEURAL_TF_BUNDLE_TAG);
-        Options.addOption(NEURAL_TF_FUNCTION_FIT);
-        Options.addOption(NEURAL_TF_FUNCTION_PREDICT);
-        Options.addOption(NEURAL_TF_TENSOR_INPUT);
-        Options.addOption(NEURAL_TF_TENSOR_OUTPUT);
+        Options.addClassOptions(NeuralOptions.class);
     }
 
     // Static only.

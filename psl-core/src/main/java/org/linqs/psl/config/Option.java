@@ -128,6 +128,10 @@ public class Option {
         return Config.getProperty(name);
     }
 
+    public boolean isSet() {
+        return Config.hasProperty(name);
+    }
+
     public Object getUnlogged() {
         return Config.getUnloggedProperty(name);
     }
@@ -201,7 +205,17 @@ public class Option {
         }
 
         if (defaultValue != null) {
-            json.put("default", defaultValue);
+            if (type == float.class && ((Float)defaultValue).floatValue() == Float.POSITIVE_INFINITY) {
+                json.put("default", "+Infinity");
+            } else if (type == float.class && ((Float)defaultValue).floatValue() == Float.NEGATIVE_INFINITY) {
+                json.put("default", "-Infinity");
+            } else if (type == double.class && ((Double)defaultValue).doubleValue() == Float.POSITIVE_INFINITY) {
+                json.put("default", "+Infinity");
+            } else if (type == double.class && ((Double)defaultValue).doubleValue() == Float.NEGATIVE_INFINITY) {
+                json.put("default", "-Infinity");
+            } else {
+                json.put("default", defaultValue);
+            }
         }
 
         if (description != null) {

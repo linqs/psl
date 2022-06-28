@@ -218,6 +218,10 @@ public class Config {
         return null;
     }
 
+    public static boolean hasProperty(String key) {
+        return config.containsKey(key);
+    }
+
     public static boolean getBoolean(String key, boolean defaultValue) {
         logAccess(key, defaultValue);
         return config.getBoolean(key, defaultValue);

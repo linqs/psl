@@ -43,7 +43,7 @@ import java.util.List;
 
 /**
  * The canonical place to keep all configuration options.
- * Options.fetchOptions() can be used to fetch all the options dynamically.
+ * Options.getOptions() can be used to fetch all the options dynamically.
  * The main() method will collect all the options and write them out to stdout as JSON.
  */
 public class Options {
@@ -980,22 +980,40 @@ public class Options {
         "The inference application used during weight learning."
     );
 
-    private static List<Option> additionalOptions = new ArrayList<Option>();
+    private static List<Option> options = new ArrayList<Option>();
+
+    static {
+        addClassOptions(Options.class);
+    }
 
     // Static only.
     private Options() {}
 
     public static void addOption(Option option) {
-        additionalOptions.add(option);
+        options.add(option);
+    }
+
+    public static void addClassOptions(Class targetClass) {
+        try {
+            for (Option option : fetchClassOptions(targetClass)) {
+                addOption(option);
+            }
+        } catch (IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static List<Option> getOptions() {
+        return options;
     }
 
     /**
-     * Reflexively parse the options from this class.
+     * Reflexively parse the options from a class.
      */
-    public static List<Option> fetchOptions() throws IllegalAccessException {
-        List<Option> options = new ArrayList<Option>();
+    public static List<Option> fetchClassOptions(Class targetClass) throws IllegalAccessException {
+        List<Option> classOptions = new ArrayList<Option>();
 
-        for (Field field : Options.class.getFields()) {
+        for (Field field : targetClass.getFields()) {
             // We only care about public static fields.
             if ((field.getModifiers() & (Modifier.PUBLIC | Modifier.STATIC)) == 0) {
                 continue;
@@ -1006,10 +1024,10 @@ public class Options {
                 continue;
             }
 
-            options.add((Option)field.get(null));
+            classOptions.add((Option)field.get(null));
         }
 
-        return options;
+        return classOptions;
     }
 
     /**
@@ -1021,29 +1039,20 @@ public class Options {
     }
 
     public static void clearAll(boolean force) {
-        try {
-            for (Option option : fetchOptions()) {
-                // Leave a carve-out for special options.
-                if (!force && option == PROJECT_VERSION) {
-                    continue;
-                }
-
-                option.clear();
+        for (Option option : getOptions()) {
+            // Leave a carve-out for special options.
+            if (!force && option == PROJECT_VERSION) {
+                continue;
             }
-        } catch (IllegalAccessException ex) {
-            throw new RuntimeException(ex);
+
+            option.clear();
         }
     }
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws IllegalAccessException {
         JSONArray json = new JSONArray();
-
-        for (Option option : fetchOptions()) {
-            json.put(option.toJSON());
-        }
-
-        for (Option option : additionalOptions) {
+        for (Option option : getOptions()) {
             json.put(option.toJSON());
         }
 
