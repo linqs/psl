@@ -21,6 +21,7 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -38,7 +39,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.parser.ModelLoader;
-import org.linqs.psl.parser.CommandLineLoader;
+import org.linqs.psl.runtime.Runtime;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
@@ -66,110 +67,11 @@ import java.util.Set;
  * Supports inference and supervised parameter learning.
  */
 public class Launcher {
-    public static final String MODEL_FILE_EXTENSION = ".psl";
-
-    // Reserved partition names.
-    public static final String PARTITION_NAME_OBSERVATIONS = "observations";
-    public static final String PARTITION_NAME_TARGET = "targets";
-    public static final String PARTITION_NAME_LABELS = "truth";
-
     private static final Logger log = LoggerFactory.getLogger(Launcher.class);
     private CommandLine parsedOptions;
 
     private Launcher(CommandLine givenOptions) {
         this.parsedOptions = givenOptions;
-    }
-
-    /**
-     * Set up the DataStore.
-     */
-    private DataStore initDataStore() {
-        String dbPath = CommandLineLoader.DEFAULT_H2_DB_PATH;
-        boolean useH2 = true;
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_H2_PATH)) {
-            dbPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_H2_PATH);
-        } else if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME)) {
-            dbPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME, CommandLineLoader.DEFAULT_POSTGRES_DB_NAME);
-            useH2 = false;
-        }
-
-        DatabaseDriver driver = null;
-        if (useH2) {
-            driver = new H2DatabaseDriver(Type.Disk, dbPath, true);
-        } else {
-            driver = new PostgreSQLDriver(dbPath, true);
-        }
-
-        return new RDBMSDataStore(driver);
-    }
-
-    private Set<StandardPredicate> loadData(DataStore dataStore) {
-        log.info("Loading data");
-
-        Set<StandardPredicate> closedPredicates;
-        try {
-            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_DATA);
-            closedPredicates = DataLoader.load(dataStore, path, parsedOptions.hasOption(CommandLineLoader.OPTION_INT_IDS));
-        } catch (ConfigurationException | FileNotFoundException ex) {
-            throw new RuntimeException("Failed to load data.", ex);
-        }
-
-        log.info("Data loading complete");
-
-        return closedPredicates;
-    }
-
-    /**
-     * Possible output the ground rules.
-     * @param path where to output the ground rules. Use stdout if null.
-     */
-    private void outputGroundRules(GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
-        // Some inference/learning application will not have ground rule stores (if they stream).
-        if (groundRuleStore == null) {
-            return;
-        }
-
-        PrintWriter out = new PrintWriter(System.out);
-        boolean closeOut = false;
-
-        if (path != null) {
-            out = new PrintWriter(FileUtils.getBufferedWriter(path));
-            closeOut = true;
-        }
-
-        // Write a header.
-        String header = StringUtils.join("\t", "Weight", "Squared?", "Rule");
-        if (includeSatisfaction) {
-            header = StringUtils.join("\t", header, "Satisfaction");
-        }
-        out.println(header);
-
-        for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
-            String row = "";
-            double satisfaction = 0.0;
-
-            if (groundRule instanceof WeightedGroundRule) {
-                WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
-                row = StringUtils.join("\t",
-                        "" + weightedGroundRule.getWeight(), "" + weightedGroundRule.isSquared(), groundRule.baseToString());
-                satisfaction = 1.0 - weightedGroundRule.getIncompatibility();
-            } else {
-                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
-                satisfaction = 1.0 - unweightedGroundRule.getInfeasibility();
-            }
-
-            if (includeSatisfaction) {
-                row = StringUtils.join("\t", row, "" + satisfaction);
-            }
-
-            out.println(row);
-        }
-
-        if (closeOut) {
-            out.close();
-        }
     }
 
     private void outputServerResponses(List<OnlineResponse> serverResponses) {
@@ -193,185 +95,6 @@ public class Launcher {
         }
     }
 
-    /**
-     * Run inference.
-     * The caller is responsible for closing the database.
-     */
-    private Database runInference(Model model, DataStore dataStore,
-            Set<StandardPredicate> closedPredicates, String inferenceName,
-            List<Evaluator> evaluators) {
-        log.info("Starting inference with class: {}", inferenceName);
-
-        // Create database.
-        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
-        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
-        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
-        Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
-        Database truthDatabase = null;
-
-        InferenceApplication inferenceApplication =
-                InferenceApplication.getInferenceApplication(inferenceName, model.getRules(), database);
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
-            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
-            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, false);
-        }
-
-        boolean commitAtoms = !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG);
-
-        // If we are going to evaluate during inference, we need to construct the truth database.
-        if (Options.REASONER_EVALUATE.getBoolean()) {
-            truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
-        }
-
-        inferenceApplication.inference(commitAtoms, false, evaluators, truthDatabase);
-
-        if (truthDatabase != null) {
-            truthDatabase.close();
-        }
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
-            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
-        }
-
-        log.info("Inference Complete");
-
-        // Output the results.
-        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR))) {
-            log.info("Writing inferred predicates to stdout.");
-            database.outputRandomVariableAtoms();
-        } else {
-            String outputDirectoryPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR);
-            log.info("Writing inferred predicates to directory: " + outputDirectoryPath);
-            database.outputRandomVariableAtoms(outputDirectoryPath);
-        }
-
-        return database;
-    }
-
-    private void learnWeights(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates, String wlaName) {
-        log.info("Starting weight learning with learner: " + wlaName);
-
-        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
-        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
-        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
-
-        Database randomVariableDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
-        Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
-
-        WeightLearningApplication learner = WeightLearningApplication.getWLA(wlaName, model.getRules(),
-                randomVariableDatabase, observedTruthDatabase);
-        learner.learn();
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
-            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
-            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, false);
-        }
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
-            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            outputGroundRules(learner.getInferenceApplication().getGroundRuleStore(), path, true);
-        }
-
-        learner.close();
-        randomVariableDatabase.close();
-        observedTruthDatabase.close();
-
-        log.info("Weight learning complete");
-
-        String modelFilename = parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL);
-
-        String learnedFilename;
-        int prefixPos = modelFilename.lastIndexOf(MODEL_FILE_EXTENSION);
-        if (prefixPos == -1) {
-            learnedFilename = modelFilename + MODEL_FILE_EXTENSION;
-        } else {
-            learnedFilename = modelFilename.substring(0, prefixPos) + "-learned" + MODEL_FILE_EXTENSION;
-        }
-        log.info("Writing learned model to {}", learnedFilename);
-
-        String outModel = model.asString();
-
-        // Remove excess parens.
-        outModel = outModel.replaceAll("\\( | \\)", "");
-
-        try (BufferedWriter learnedFileWriter = FileUtils.getBufferedWriter(learnedFilename)) {
-            learnedFileWriter.write(outModel);
-        } catch (IOException ex) {
-            log.error("Failed to write learned model:" + System.lineSeparator() + outModel);
-            throw new RuntimeException("Failed to write learned model to: " + learnedFilename, ex);
-        }
-    }
-
-    /**
-     * Run eval.
-     */
-    private void evaluation(DataStore dataStore, Database predictionDatabase, Set<StandardPredicate> closedPredicates,
-            List<Evaluator> evaluators) {
-        log.info("Starting evaluation.");
-
-        // Set of open predicates
-        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-        openPredicates.removeAll(closedPredicates);
-
-        // Create database.
-        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
-        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
-        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
-
-        boolean closePredictionDB = false;
-        if (predictionDatabase == null) {
-            closePredictionDB = true;
-            predictionDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
-        }
-
-        Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
-
-        for (Evaluator evaluator : evaluators) {
-            log.debug("Starting evaluation with class: {}.", evaluator.getClass());
-
-            for (StandardPredicate targetPredicate : openPredicates) {
-                // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
-                if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
-                    log.debug("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
-                    continue;
-                }
-
-                evaluator.compute(predictionDatabase, truthDatabase, targetPredicate, !closePredictionDB);
-                log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
-            }
-        }
-
-        if (closePredictionDB) {
-            predictionDatabase.close();
-        }
-        truthDatabase.close();
-
-        log.info("Evaluation complete.");
-    }
-
-    private Model loadModel() {
-        log.info("Loading model from {}", parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
-
-        Model model = null;
-
-        try (BufferedReader reader = FileUtils.getBufferedReader(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL))) {
-            model = ModelLoader.load(reader);
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to load model from file: " + parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL), ex);
-        }
-
-        log.debug("Model:");
-        for (Rule rule : model.getRules()) {
-            log.debug("   " + rule);
-        }
-
-        log.info("Model loading complete");
-
-        return model;
-    }
-
     private void runOnlineClient() {
         log.info("Starting OnlinePSL client.");
         List<OnlineResponse> serverResponses = OnlineActionInterface.run();
@@ -388,57 +111,102 @@ public class Launcher {
         }
     }
 
-    private void runPSL(Model model, DataStore dataStore, Set<StandardPredicate> closedPredicates) {
-        // Initialize evaluators.
-        List<Evaluator> evaluators = null;
+    /**
+     * Convert all compatible options to the PSL runtime.
+     */
+    private void convertRuntimeOptions() {
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
+            RuntimeOptions.INFERENCE.set(true);
+            RuntimeOptions.INFERENCE_METHOD.set(parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
+            RuntimeOptions.LEARN.set(true);
+            RuntimeOptions.LEARN_METHOD.set(parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN));
+        }
+
+        // HACK(eriq): Since the CLU currently only supports one mode (infer/learn) at a time,
+        // we will just set both modes when we see data/model files.
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_DATA)) {
+            RuntimeOptions.INFERENCE_DATA_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DATA));
+            RuntimeOptions.LEARN_DATA_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DATA));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL)) {
+            RuntimeOptions.INFERENCE_MODEL_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
+            RuntimeOptions.LEARN_MODEL_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_H2_PATH)) {
+            RuntimeOptions.DB_H2.set(true);
+            RuntimeOptions.DB_H2_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_H2_PATH));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME)) {
+            RuntimeOptions.DB_PG.set(true);
+            RuntimeOptions.DB_PG_NAME.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME));
+        }
+
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-            evaluators = new ArrayList<Evaluator>();
-            for (String evalClassName : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-                evaluators.add((Evaluator)Reflection.newObject(evalClassName));
+
+            List<String> evaluatorNames = new ArrayList<String>();
+            for (String evaluatorName : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
+                evaluatorNames.add(evaluatorName);
+            }
+
+            RuntimeOptions.INFERENCE_EVAL.set(StringUtils.join(",", evaluatorNames));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_INT_IDS)) {
+            RuntimeOptions.DB_INT_IDS.set(parsedOptions.hasOption(CommandLineLoader.OPTION_INT_IDS));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_LOG4J)) {
+            RuntimeOptions.LOG_OPTIONS.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_LOG4J));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR)) {
+            RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR));
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
+            RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES.set(true);
+
+            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
+            if (path != null) {
+                RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES_PATH.set(path);
             }
         }
 
-        // Inference
-        Database evalDB = null;
-        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
-            evalDB = runInference(model, dataStore, closedPredicates,
-                    parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA),
-                    evaluators);
-        } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
-            learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
-        } else {
-            throw new IllegalArgumentException("No valid operation provided.");
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
+            RuntimeOptions.INFERENCE_OUTPUT_SATISFACTIONS.set(true);
+
+            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
+            if (path != null) {
+                RuntimeOptions.INFERENCE_OUTPUT_SATISFACTIONS_PATH.set(path);
+            }
         }
 
-        // Evaluation
-        if (evaluators != null) {
-            evaluation(dataStore, evalDB, closedPredicates, evaluators);
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_PROPERTIES_FILE)) {
+            RuntimeOptions.PROPERTIES_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_PROPERTIES_FILE));
         }
 
-        if (evalDB != null) {
-            evalDB.close();
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG)) {
+            RuntimeOptions.INFERENCE_COMMIT.set(!parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG));
         }
     }
 
     private void run() {
-        log.info("Running PSL CLI Version {}", Version.getFull());
-
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
             runOnlineClient();
             return;
         }
 
-        DataStore dataStore = initDataStore();
+        convertRuntimeOptions();
+        Runtime runtime = new Runtime();
 
-        // Load data
-        Set<StandardPredicate> closedPredicates = loadData(dataStore);
-
-        // Load model
-        Model model = loadModel();
-
-        runPSL(model, dataStore, closedPredicates);
-
-        dataStore.close();
+        runtime.run();
     }
 
     private static boolean isCommandLineValid(CommandLine givenOptions) {

@@ -19,7 +19,6 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.online.OnlineServer;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.SystemUtils;
 

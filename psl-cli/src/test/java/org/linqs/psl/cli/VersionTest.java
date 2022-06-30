@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.cli;
 
-import org.linqs.psl.parser.CommandLineLoader;
 import org.junit.Test;
 
 public class VersionTest {

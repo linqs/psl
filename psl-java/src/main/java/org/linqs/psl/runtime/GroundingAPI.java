@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.java;
+package org.linqs.psl.runtime;
 
+import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -38,7 +39,6 @@ import org.linqs.psl.model.rule.logical.AbstractGroundLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.parser.CommandLineLoader;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.StringUtils;
 
@@ -58,6 +58,8 @@ import java.util.Set;
  * TODO(eriq): There is a crazy amount of improvements that can be made here,
  * we will just leave this comment instead of pointing out everything.
  * Things like forced options and copied code (e.g. from the Launcher).
+ *
+ * TODO(eriq): Implement this using the Runtime (add a grounding stage to the runtime).
  */
 public final class GroundingAPI {
     public static final String PARTITION_OBS = "observed";
@@ -75,7 +77,7 @@ public final class GroundingAPI {
         assert(predicateNames.length == observedData.length);
         assert(predicateNames.length == unobservedData.length);
 
-        DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, CommandLineLoader.DEFAULT_H2_DB_PATH, true));
+        DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, RuntimeOptions.DB_H2_PATH.defaultValue().toString(), true));
 
         registerPredicates(predicateNames, predicateArities, dataStore);
 

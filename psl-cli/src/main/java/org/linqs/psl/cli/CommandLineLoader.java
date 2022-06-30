@@ -15,14 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.parser;
+package org.linqs.psl.cli;
 
-import org.linqs.psl.application.inference.mpe.ADMMInference;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Config;
-import org.linqs.psl.evaluation.statistics.Evaluator;
-import org.linqs.psl.util.FileUtils;
-import org.linqs.psl.util.SystemUtils;
+import org.linqs.psl.config.RuntimeOptions;
+import org.linqs.psl.runtime.Runtime;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
@@ -32,11 +29,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.PropertyConfigurator;
 
-import java.io.IOException;
 import java.util.Comparator;
-import java.util.Properties;
 import java.util.Map;
 
 /**
@@ -77,11 +71,6 @@ public class CommandLineLoader {
     public static final String OPTION_VERSION = "v";
     public static final String OPTION_VERSION_LONG = "version";
 
-    public static final String DEFAULT_H2_DB_PATH = SystemUtils.getTempDir("cli");
-    public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
-    public static final String DEFAULT_IA = ADMMInference.class.getName();
-    public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
-
     private static Options options = setupOptions();
 
     private CommandLine parsedOptions;
@@ -97,7 +86,6 @@ public class CommandLineLoader {
             ex.printStackTrace(System.err);
         }
 
-        initLogger();
         initConfig();
     }
 
@@ -116,74 +104,9 @@ public class CommandLineLoader {
     }
 
     /**
-     * Initializes logging.
-     */
-    private void initLogger() {
-        Properties props = new Properties();
-
-        if (parsedOptions.hasOption(OPTION_LOG4J)) {
-            try {
-                props.load(FileUtils.getInputStreamReader(parsedOptions.getOptionValue(OPTION_LOG4J)));
-            } catch (IOException ex) {
-                throw new RuntimeException("Failed to read logger configuration from a file.", ex);
-            }
-        } else {
-            // Setup a default logger.
-            props.setProperty("log4j.rootLogger", "INFO, A1");
-            props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
-            props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
-            props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
-        }
-
-        // Load any options specified directly on the command line (override standing options).
-        for (Map.Entry<Object, Object> entry : parsedOptions.getOptionProperties("D").entrySet()) {
-            String key = entry.getKey().toString();
-
-            if (!key.startsWith("log4j.")) {
-                continue;
-            }
-
-            props.setProperty(key, entry.getValue().toString());
-        }
-
-        // Log4j is pretty picky about it's thresholds, so we will specially set one option.
-        if (props.containsKey("log4j.threshold")) {
-            props.setProperty("log4j.rootLogger", props.getProperty("log4j.threshold") + ", A1");
-        }
-
-        // Some deps use java.util.logging, so we will silence their loggers.
-        java.util.logging.Logger rootJavaLogger = java.util.logging.LogManager.getLogManager().getLogger("");
-        rootJavaLogger.setLevel(java.util.logging.Level.SEVERE);
-        for (java.util.logging.Handler handler : rootJavaLogger.getHandlers()) {
-            handler.setLevel(java.util.logging.Level.SEVERE);
-        }
-
-        PropertyConfigurator.configure(props);
-    }
-
-    /**
-     * Initialize log4j with a default logger.
-     * Only to be used with short CLI runs: --version or --help.
-     */
-    private static void initDefaultLogger() {
-        Properties props = new Properties();
-        props.setProperty("log4j.rootLogger", "INFO, A1");
-        props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
-        props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
-        props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
-        PropertyConfigurator.configure(props);
-    }
-
-    /**
      * Loads configuration.
      */
     private void initConfig() {
-        // Load a properties file that was specified on the command line.
-        if (parsedOptions.hasOption(OPTION_PROPERTIES_FILE)) {
-            String propertiesPath = parsedOptions.getOptionValue(OPTION_PROPERTIES_FILE);
-            Config.loadResource(propertiesPath);
-        }
-
         // Load any options specified directly on the command line (override standing options).
         for (Map.Entry<Object, Object> entry : parsedOptions.getOptionProperties("D").entrySet()) {
             String key = entry.getKey().toString();
@@ -198,7 +121,7 @@ public class CommandLineLoader {
                 .longOpt(OPERATION_INFER_LONG)
                 .desc("Run MAP inference." +
                         " You can optionally supply a name for an inference application" +
-                        " (defaults to " + DEFAULT_IA + ").")
+                        " (defaults to " + RuntimeOptions.INFERENCE_METHOD.defaultValue() + ").")
                 .hasArg()
                 .argName("inferenceMethod")
                 .optionalArg(true)
@@ -208,7 +131,7 @@ public class CommandLineLoader {
                 .longOpt(OPERATION_LEARN_LONG)
                 .desc("Run weight learning." +
                         " You can optionally supply a name for a weight learner" +
-                        " (defaults to " + DEFAULT_WLA + ").")
+                        " (defaults to " + RuntimeOptions.LEARN_METHOD.defaultValue() + ").")
                 .hasArg()
                 .argName("learner")
                 .optionalArg(true)
@@ -240,7 +163,7 @@ public class CommandLineLoader {
 
         newOptions.addOption(Option.builder()
                 .longOpt(OPTION_DB_H2_PATH)
-                .desc("Path for H2 database file (defaults to 'cli_<user name>@<host name>' ('" + DEFAULT_H2_DB_PATH + "'))." +
+                .desc("Path for H2 database file (defaults to 'cli_<user name>@<host name>' ('" + RuntimeOptions.DB_H2_PATH.defaultValue() + "'))." +
                         " Not compatible with the '--" + OPTION_DB_POSTGRESQL_NAME + "' option.")
                 .hasArg()
                 .argName("path")
@@ -248,7 +171,7 @@ public class CommandLineLoader {
 
         newOptions.addOption(Option.builder()
                 .longOpt(OPTION_DB_POSTGRESQL_NAME)
-                .desc("Name for the PostgreSQL database to use (defaults to " + DEFAULT_POSTGRES_DB_NAME + ")." +
+                .desc("Name for the PostgreSQL database to use (defaults to " + RuntimeOptions.DB_PG_NAME.defaultValue() + ")." +
                         " Not compatible with the '--" + OPTION_DB_H2_PATH + "' option." +
                         " Currently only local databases without credentials are supported.")
                 .hasArg()
@@ -258,7 +181,7 @@ public class CommandLineLoader {
 
         newOptions.addOption(Option.builder(OPTION_EVAL)
                 .longOpt(OPTION_EVAL_LONG)
-                .desc("Run the named evaluator (" + Evaluator.class.getName() + ") on any open predicate with a 'truth' partition." +
+                .desc("Run the named Evaluator on any open predicate with a 'truth' partition." +
                         " If multiple evaluators are specific, they will each be run.")
                 .hasArgs()
                 .argName("evaluator ...")
@@ -412,13 +335,13 @@ public class CommandLineLoader {
         }
 
         if (commandLineOptions.hasOption(OPTION_HELP)) {
-            initDefaultLogger();
+            Runtime.initDefaultLogger();
             getHelpFormatter().printHelp("psl", options, true);
             return commandLineOptions;
         }
 
         if (commandLineOptions.hasOption(OPTION_VERSION)) {
-            initDefaultLogger();
+            Runtime.initDefaultLogger();
             System.out.println("PSL Version " + Version.getFull());
             return commandLineOptions;
         }

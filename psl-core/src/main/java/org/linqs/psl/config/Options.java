@@ -994,12 +994,8 @@ public class Options {
     }
 
     public static void addClassOptions(Class targetClass) {
-        try {
-            for (Option option : fetchClassOptions(targetClass)) {
-                addOption(option);
-            }
-        } catch (IllegalAccessException ex) {
-            throw new RuntimeException(ex);
+        for (Option option : fetchClassOptions(targetClass)) {
+            addOption(option);
         }
     }
 
@@ -1010,21 +1006,25 @@ public class Options {
     /**
      * Reflexively parse the options from a class.
      */
-    public static List<Option> fetchClassOptions(Class targetClass) throws IllegalAccessException {
+    public static List<Option> fetchClassOptions(Class targetClass) {
         List<Option> classOptions = new ArrayList<Option>();
 
-        for (Field field : targetClass.getFields()) {
-            // We only care about public static fields.
-            if ((field.getModifiers() & (Modifier.PUBLIC | Modifier.STATIC)) == 0) {
-                continue;
-            }
+        try {
+            for (Field field : targetClass.getFields()) {
+                // We only care about public static fields.
+                if ((field.getModifiers() & (Modifier.PUBLIC | Modifier.STATIC)) == 0) {
+                    continue;
+                }
 
-            // We only want Option variables.
-            if (field.getType() != Option.class) {
-                continue;
-            }
+                // We only want Option variables.
+                if (field.getType() != Option.class) {
+                    continue;
+                }
 
-            classOptions.add((Option)field.get(null));
+                classOptions.add((Option)field.get(null));
+            }
+        } catch (IllegalAccessException ex) {
+            throw new RuntimeException(ex);
         }
 
         return classOptions;
@@ -1050,7 +1050,7 @@ public class Options {
     }
 
     @SuppressWarnings("unchecked")
-    public static void main(String[] args) throws IllegalAccessException {
+    public static void main(String[] args) {
         JSONArray json = new JSONArray();
         for (Option option : getOptions()) {
             json.put(option.toJSON());

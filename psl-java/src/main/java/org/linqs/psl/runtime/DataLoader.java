@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.cli;
+package org.linqs.psl.runtime;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Partition;
@@ -49,7 +49,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Parse CLI data files and load all the predicates and data.
+ * Parse PSL data files and load all the predicates and data.
  */
 public class DataLoader {
     public static final String KEY_PREDICATE = "predicates";

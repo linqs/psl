@@ -27,7 +27,6 @@ import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.parser.CommandLineLoader;
 
 import org.junit.Test;
 
