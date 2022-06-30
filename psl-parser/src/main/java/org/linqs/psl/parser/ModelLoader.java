@@ -503,7 +503,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             expression.coefficients.add(coefficient);
         }
 
-        // No the additional, non-atom coefficients.
+        // Note the additional, non-atom coefficients.
         Coefficient nonAtomCoefficient = null;
         if (lhs.nonAtomCoefficient != null) {
             nonAtomCoefficient = lhs.nonAtomCoefficient;
@@ -511,7 +511,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
         if (rhs.nonAtomCoefficient != null) {
             if (nonAtomCoefficient == null) {
-                nonAtomCoefficient = rhs.nonAtomCoefficient;
+                if (isAddition) {
+                    nonAtomCoefficient = rhs.nonAtomCoefficient;
+                } else {
+                    nonAtomCoefficient = new Multiply(new ConstantNumber(-1.0f), rhs.nonAtomCoefficient);
+                }
             } else {
                 if (isAddition) {
                     nonAtomCoefficient = new Add(nonAtomCoefficient, rhs.nonAtomCoefficient);
