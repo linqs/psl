@@ -90,11 +90,11 @@ public class TrainingMap {
      * @param truthDatabase the database containing matching ObservedAtoms
      */
     public TrainingMap(PersistedAtomManager targets, Database truthDatabase) {
-        Map<RandomVariableAtom, ObservedAtom> tempLabelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targets.getPersistedCount());
-        Map<ObservedAtom, ObservedAtom> tempObservedMap = new HashMap<ObservedAtom, ObservedAtom>();
-        List<RandomVariableAtom> tempLatentVariables = new ArrayList<RandomVariableAtom>();
-        List<ObservedAtom> tempMissingLabels = new ArrayList<ObservedAtom>();
-        List<ObservedAtom> tempMissingTargets = new ArrayList<ObservedAtom>();
+        labelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targets.getPersistedCount());
+        observedMap = new HashMap<ObservedAtom, ObservedAtom>();
+        latentVariables = new ArrayList<RandomVariableAtom>();
+        missingLabels = new ArrayList<ObservedAtom>();
+        missingTargets = new ArrayList<ObservedAtom>();
 
         Set<GroundAtom> seenTruthAtoms = new HashSet<GroundAtom>();
 
@@ -114,17 +114,17 @@ public class TrainingMap {
 
             if (targetAtom instanceof RandomVariableAtom) {
                 if (truthAtom == null) {
-                    tempLatentVariables.add((RandomVariableAtom)targetAtom);
+                    latentVariables.add((RandomVariableAtom)targetAtom);
                 } else {
                     seenTruthAtoms.add((ObservedAtom)truthAtom);
-                    tempLabelMap.put((RandomVariableAtom)targetAtom, (ObservedAtom)truthAtom);
+                    labelMap.put((RandomVariableAtom)targetAtom, (ObservedAtom)truthAtom);
                 }
             } else {
                 if (truthAtom == null) {
-                    tempMissingLabels.add((ObservedAtom)targetAtom);
+                    missingLabels.add((ObservedAtom)targetAtom);
                 } else {
                     seenTruthAtoms.add((ObservedAtom)truthAtom);
-                    tempObservedMap.put((ObservedAtom)targetAtom, (ObservedAtom)truthAtom);
+                    observedMap.put((ObservedAtom)targetAtom, (ObservedAtom)truthAtom);
                 }
             }
         }
@@ -141,15 +141,8 @@ public class TrainingMap {
                 throw new IllegalStateException("Un-persisted target atom: " + truthAtom);
             }
 
-            tempMissingTargets.add((ObservedAtom)truthAtom);
+            missingTargets.add((ObservedAtom)truthAtom);
         }
-
-        // Finalize the structures.
-        labelMap = Collections.unmodifiableMap(tempLabelMap);
-        observedMap = Collections.unmodifiableMap(tempObservedMap);
-        latentVariables = Collections.unmodifiableList(tempLatentVariables);
-        missingLabels = Collections.unmodifiableList(tempMissingLabels);
-        missingTargets = Collections.unmodifiableList(tempMissingTargets);
 
         if (missingTargets.size() > 0) {
             log.warn("Found {} missing targets (truth atoms without a matching target). Example: {}.",
@@ -161,35 +154,35 @@ public class TrainingMap {
      * Get the mapping of unobserved targets to truth atoms.
      */
     public Map<RandomVariableAtom, ObservedAtom> getLabelMap() {
-        return labelMap;
+        return Collections.unmodifiableMap(labelMap);
     }
 
     /**
      * Get the mapping of observed targets to truth atoms.
      */
     public Map<ObservedAtom, ObservedAtom> getObservedMap() {
-        return observedMap;
+        return Collections.unmodifiableMap(observedMap);
     }
 
     /**
      * Gets the latent variables (unobserved targets without a truth atom).
      */
     public List<RandomVariableAtom> getLatentVariables() {
-        return latentVariables;
+        return Collections.unmodifiableList(latentVariables);
     }
 
     /**
      * Gets observed targets that do not have an associated observed truth atom.
      */
     public List<ObservedAtom> getMissingLabels() {
-        return missingLabels;
+        return Collections.unmodifiableList(missingLabels);
     }
 
     /**
      * Gets observed truth atoms that do not have an associated target atom.
      */
     public List<ObservedAtom> getMissingTargets() {
-        return missingTargets;
+        return Collections.unmodifiableList(missingTargets);
     }
 
     /**
