@@ -186,6 +186,20 @@ public class Option implements Comparable<Option> {
     }
 
     @Override
+    public boolean equals(Object other) {
+        if (other == null || other.getClass() != this.getClass()) {
+            return false;
+        }
+
+        return this.name.equals(((Option)other).name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
+
+    @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
 
