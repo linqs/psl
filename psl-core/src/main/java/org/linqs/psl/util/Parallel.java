@@ -65,6 +65,10 @@ public final class Parallel {
     // Static only.
     private Parallel() {}
 
+    public synchronized static void close() {
+        shutdown();
+    }
+
     public synchronized static int getNumThreads() {
         if (numThreads == -1) {
             numThreads = Options.PARALLEL_NUM_THREADS.getInt();
@@ -304,7 +308,11 @@ public final class Parallel {
         workerQueue.clear();
     }
 
-     private static void shutdown() {
+    private static void shutdown() {
+        if (!initialized) {
+            return;
+        }
+
         cleanupWorkers();
 
         try {
@@ -313,11 +321,19 @@ public final class Parallel {
         } catch (InterruptedException ex) {
             // Do nothing, we are shutting down anyways.
         }
-
-        workerQueue = null;
-        allWorkers = null;
         pool = null;
-     }
+
+        threadObjects.clear();
+
+        workerQueue.clear();
+        workerQueue = null;
+
+        allWorkers.clear();
+        allWorkers = null;
+
+        numThreads = -1;
+        initialized = false;
+    }
 
     /**
      * Signal that a worker is done and ready for more work.
