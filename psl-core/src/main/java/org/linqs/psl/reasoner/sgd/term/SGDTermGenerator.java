@@ -28,8 +28,7 @@ import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Collection;
 
@@ -37,7 +36,7 @@ import java.util.Collection;
  * A TermGenerator for SGD objective terms.
  */
 public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> {
-    private static final Logger log = LoggerFactory.getLogger(SGDTermGenerator.class);
+    private static final Logger log = Logger.getLogger(SGDTermGenerator.class);
 
     public SGDTermGenerator() {
         this(true);

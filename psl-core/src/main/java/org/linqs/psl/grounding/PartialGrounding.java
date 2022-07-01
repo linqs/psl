@@ -40,8 +40,7 @@ import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.SetOperationQuery;
 import com.healthmarketscience.sqlbuilder.UnionQuery;
 import org.linqs.psl.util.IteratorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -54,7 +53,7 @@ import java.util.Set;
  * Static utilities for performing partial grounding.
  */
 public class PartialGrounding {
-    private static final Logger log = LoggerFactory.getLogger(PartialGrounding.class);
+    private static final Logger log = Logger.getLogger(PartialGrounding.class);
 
     // Static only.
     private PartialGrounding() {}

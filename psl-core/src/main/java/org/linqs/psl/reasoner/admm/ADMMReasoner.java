@@ -32,8 +32,7 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 import java.util.Set;
@@ -42,7 +41,7 @@ import java.util.Set;
  * Uses an ADMM optimization method to optimize its GroundRules.
  */
 public class ADMMReasoner extends Reasoner {
-    private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
+    private static final Logger log = Logger.getLogger(ADMMReasoner.class);
 
     private static final float LOWER_BOUND = 0.0f;
     private static final float UPPER_BOUND = 1.0f;

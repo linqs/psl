@@ -31,8 +31,7 @@ import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -43,7 +42,7 @@ import java.util.Set;
  * Uses a DCD optimization method to optimize its GroundRules.
  */
 public class DCDReasoner extends Reasoner {
-    private static final Logger log = LoggerFactory.getLogger(DCDReasoner.class);
+    private static final Logger log = Logger.getLogger(DCDReasoner.class);
 
     private int maxIterations;
 

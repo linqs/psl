@@ -27,8 +27,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -48,7 +47,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     public static final String DELIM = ":";
 
-    private static final Logger log = LoggerFactory.getLogger(WeightLearningApplication.class);
+    private static final Logger log = Logger.getLogger(WeightLearningApplication.class);
 
     protected Database rvDB;
     protected Database observedDB;

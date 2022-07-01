@@ -19,11 +19,10 @@ package org.linqs.psl.application.learning.weight.maxlikelihood;
 
 import org.linqs.psl.util.RandUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 public class SimplexSampler {
-    private Logger log = LoggerFactory.getLogger(SimplexSampler.class);
+    private Logger log = Logger.getLogger(SimplexSampler.class);
 
     /**
      * Samples a uniform point on the simplex of dimension d

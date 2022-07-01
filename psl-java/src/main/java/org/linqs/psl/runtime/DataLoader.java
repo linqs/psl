@@ -32,8 +32,7 @@ import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.configuration2.YAMLConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -69,7 +68,7 @@ public class DataLoader {
     public static final Set<String> TOP_LEVEL_PROPS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
             new String[]{KEY_PREDICATE, KEY_PARTITION_OBS, KEY_PARTITION_TARGETS, KEY_PARTITION_TRUTH})));
 
-    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
+    private static final Logger log = Logger.getLogger(DataLoader.class);
 
     public static Set<StandardPredicate> load(DataStore dataStore, String path, boolean useIntIds)
             throws ConfigurationException, FileNotFoundException {

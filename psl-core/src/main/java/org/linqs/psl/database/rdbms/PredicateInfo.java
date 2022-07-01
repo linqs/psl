@@ -34,8 +34,7 @@ import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -51,7 +50,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PredicateInfo {
-    private static final Logger log = LoggerFactory.getLogger(PredicateInfo.class);
+    private static final Logger log = Logger.getLogger(PredicateInfo.class);
 
     public static final String PREDICATE_TABLE_SUFFIX = "_PREDICATE";
     public static final String PARTITION_COLUMN_NAME = "partition_id";

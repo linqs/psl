@@ -25,8 +25,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +45,7 @@ import java.util.PriorityQueue;
  * All extending classes should ensure that values for RVAs are set before evaluators are computed.
  */
 public class Hyperband extends WeightLearningApplication {
-    private static final Logger log = LoggerFactory.getLogger(Hyperband.class);
+    private static final Logger log = Logger.getLogger(Hyperband.class);
 
     public static final double MIN_BUDGET_PROPORTION = 0.001;
     public static final int MIN_BRACKET_SIZE = 1;

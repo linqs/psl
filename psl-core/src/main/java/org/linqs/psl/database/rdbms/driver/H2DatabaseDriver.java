@@ -28,8 +28,7 @@ import org.linqs.psl.util.StringUtils;
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,7 +44,7 @@ public class H2DatabaseDriver implements DatabaseDriver {
         Disk, Memory
     }
 
-    private static final Logger log = LoggerFactory.getLogger(H2DatabaseDriver.class);
+    private static final Logger log = Logger.getLogger(H2DatabaseDriver.class);
 
     private final HikariDataSource dataSource;
 

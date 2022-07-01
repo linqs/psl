@@ -29,8 +29,7 @@ import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.IteratorUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
@@ -47,7 +46,7 @@ import java.util.Map;
  * The numPages class variable represents the number of active pages in OnlineTermStores.
  */
 public abstract class OnlineTermStore<T extends ReasonerTerm> extends StreamingTermStore<T> {
-    private static final Logger log = LoggerFactory.getLogger(OnlineTermStore.class);
+    private static final Logger log = Logger.getLogger(OnlineTermStore.class);
 
     protected List<Integer> activeTermPages;
     protected List<Integer> activeVolatilePages;

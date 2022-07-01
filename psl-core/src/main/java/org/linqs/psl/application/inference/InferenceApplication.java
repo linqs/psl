@@ -38,8 +38,7 @@ import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Reflection;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -56,7 +55,7 @@ import java.util.Set;
  * For example, inference may set the value of the random variables on construction.
  */
 public abstract class InferenceApplication implements ModelApplication {
-    private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
+    private static final Logger log = Logger.getLogger(InferenceApplication.class);
 
     protected List<Rule> rules;
     protected Database database;

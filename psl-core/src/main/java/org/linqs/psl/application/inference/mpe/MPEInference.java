@@ -24,8 +24,7 @@ import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 
@@ -41,7 +40,7 @@ import java.util.List;
  * (reasoners, term stores, etc) can be used via the InferenceApplication config options.
  */
 public class MPEInference extends InferenceApplication {
-    private static final Logger log = LoggerFactory.getLogger(MPEInference.class);
+    private static final Logger log = Logger.getLogger(MPEInference.class);
 
     public MPEInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         super(rules, db, relaxHardConstraints);

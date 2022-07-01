@@ -40,8 +40,7 @@ import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +53,7 @@ import java.util.Set;
  * Base class for all (first order, i.e., not ground) logical rules.
  */
 public abstract class AbstractLogicalRule extends AbstractRule {
-    private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
+    private static final Logger log = Logger.getLogger(AbstractLogicalRule.class);
 
     /**
      * A key to store per-rule threading grounding resource under.

@@ -23,8 +23,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 
@@ -35,7 +34,7 @@ import java.util.List;
  * of relying on it to be passed in (we have to ensure that the caller uses the same rules and DBs).
  */
 public class InitialWeightRankSearch extends RankSearch {
-    private static final Logger log = LoggerFactory.getLogger(InitialWeightRankSearch.class);
+    private static final Logger log = Logger.getLogger(InitialWeightRankSearch.class);
 
     /**
      * The weight lerning application that we will invoke at each location.

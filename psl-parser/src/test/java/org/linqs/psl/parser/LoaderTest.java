@@ -22,6 +22,7 @@ import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.Logger;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,6 +35,8 @@ public abstract class LoaderTest {
 
     @Before
     public void setup() {
+        Logger.setLevel("ERROR");
+
         dataStore = new RDBMSDataStore(new H2DatabaseDriver(H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
 
         singlePredicate = StandardPredicate.get("Single", ConstantType.UniqueStringID);

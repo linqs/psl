@@ -21,8 +21,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Map;
 
@@ -32,7 +31,7 @@ import java.util.Map;
  * Before a ModelPredicate can be used, loadModel() must be called.
  */
 public class ModelPredicate extends StandardPredicate {
-    private static final Logger log = LoggerFactory.getLogger(ModelPredicate.class);
+    private static final Logger log = Logger.getLogger(ModelPredicate.class);
 
     private static final String CONFIG_MIRROR = "mirror";
 

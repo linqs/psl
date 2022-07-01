@@ -22,8 +22,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 
@@ -32,7 +31,7 @@ import java.util.List;
  * See InitialWeightGridSearch for details.
  */
 public class InitialWeightRandomGridSearch extends RandomGridSearch {
-    private static final Logger log = LoggerFactory.getLogger(InitialWeightRandomGridSearch.class);
+    private static final Logger log = Logger.getLogger(InitialWeightRandomGridSearch.class);
 
     private WeightLearningApplication internalWLA;
 

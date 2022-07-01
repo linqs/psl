@@ -36,11 +36,6 @@
     <dependencies>
         <dependency>
             <groupId>org.linqs</groupId>
-            <artifactId>psl-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.linqs</groupId>
             <artifactId>psl-parser</artifactId>
             <version>${project.version}</version>
         </dependency>

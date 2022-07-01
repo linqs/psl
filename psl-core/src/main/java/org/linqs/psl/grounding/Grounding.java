@@ -31,8 +31,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.Parallel;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +42,7 @@ import java.util.Map;
  * Static utilities for common {@link Model}-grounding tasks.
  */
 public class Grounding {
-    private static final Logger log = LoggerFactory.getLogger(Grounding.class);
+    private static final Logger log = Logger.getLogger(Grounding.class);
 
     // Static only.
     private Grounding() {}

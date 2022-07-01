@@ -25,8 +25,7 @@ import org.linqs.psl.application.inference.online.messages.responses.OnlineRespo
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.predicate.Predicate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -41,7 +40,7 @@ import java.util.concurrent.CountDownLatch;
  * A client that communicates with an OnlineServer using OnlineMessages.
  */
 public class OnlineClient implements Runnable {
-    private static final Logger log = LoggerFactory.getLogger(OnlineClient.class);
+    private static final Logger log = Logger.getLogger(OnlineClient.class);
 
     private List<OnlineResponse> serverResponses;
     private BlockingQueue<OnlineMessage> actionQueue;

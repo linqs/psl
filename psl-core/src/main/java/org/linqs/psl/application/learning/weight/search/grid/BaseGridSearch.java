@@ -23,8 +23,7 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.MathUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +36,7 @@ import java.util.Map;
  * rather than through ADMM's configuration so you don't globally change the number of iterations.
  */
 public abstract class BaseGridSearch extends WeightLearningApplication {
-    private static final Logger log = LoggerFactory.getLogger(BaseGridSearch.class);
+    private static final Logger log = Logger.getLogger(BaseGridSearch.class);
 
     /**
      * The number of actual possible locations.

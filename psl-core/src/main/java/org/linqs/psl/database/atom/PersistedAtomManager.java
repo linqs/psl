@@ -30,8 +30,7 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.util.IteratorUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -49,7 +48,7 @@ import java.util.Set;
  * getAtom() is thread-safe.
  */
 public class PersistedAtomManager extends AtomManager {
-    private static final Logger log = LoggerFactory.getLogger(PersistedAtomManager.class);
+    private static final Logger log = Logger.getLogger(PersistedAtomManager.class);
 
     /**
      * If false, ignore any atoms that would otherwise throw a PersistedAccessException.

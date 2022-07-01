@@ -23,8 +23,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,7 +39,7 @@ import java.util.Set;
  * Variables are stored in an array along with their values.
  */
 public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements VariableTermStore<T, V> {
-    private static final Logger log = LoggerFactory.getLogger(MemoryVariableTermStore.class);
+    private static final Logger log = Logger.getLogger(MemoryVariableTermStore.class);
 
     // Keep an internal store to hold the terms while this class focuses on variables.
     private MemoryTermStore<T> store;

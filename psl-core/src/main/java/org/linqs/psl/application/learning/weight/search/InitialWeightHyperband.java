@@ -24,8 +24,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 
@@ -33,7 +32,7 @@ import java.util.List;
  * Hyperband, but the weights chosen are used as initial weights for further weight learning.
  */
 public class InitialWeightHyperband extends Hyperband {
-    private static final Logger log = LoggerFactory.getLogger(InitialWeightHyperband.class);
+    private static final Logger log = Logger.getLogger(InitialWeightHyperband.class);
 
     private VotedPerceptron internalWLA;
 

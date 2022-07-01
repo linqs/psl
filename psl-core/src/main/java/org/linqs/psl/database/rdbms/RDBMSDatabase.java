@@ -44,8 +44,7 @@ import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -68,7 +67,7 @@ import java.util.Set;
  * out connections and statements after we are done with them.
  */
 public class RDBMSDatabase extends Database {
-    private static final Logger log = LoggerFactory.getLogger(RDBMSDatabase.class);
+    private static final Logger log = Logger.getLogger(RDBMSDatabase.class);
 
     private static final float DEFAULT_UNOBSERVED_VALUE = 0.0f;
 

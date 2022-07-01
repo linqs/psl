@@ -41,15 +41,14 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.runtime.Runtime;
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.Reflection;
-import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -60,6 +59,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -67,7 +67,7 @@ import java.util.Set;
  * Supports inference and supervised parameter learning.
  */
 public class Launcher {
-    private static final Logger log = LoggerFactory.getLogger(Launcher.class);
+    private static final Logger log = Logger.getLogger(Launcher.class);
     private CommandLine parsedOptions;
 
     private Launcher(CommandLine givenOptions) {
@@ -149,21 +149,24 @@ public class Launcher {
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-
             List<String> evaluatorNames = new ArrayList<String>();
             for (String evaluatorName : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
                 evaluatorNames.add(evaluatorName);
             }
 
-            RuntimeOptions.INFERENCE_EVAL.set(StringUtils.join(",", evaluatorNames));
+            RuntimeOptions.INFERENCE_EVAL.set(ListUtils.join(",", evaluatorNames));
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_INT_IDS)) {
             RuntimeOptions.DB_INT_IDS.set(parsedOptions.hasOption(CommandLineLoader.OPTION_INT_IDS));
         }
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_LOG4J)) {
-            RuntimeOptions.LOG_OPTIONS.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_LOG4J));
+        // Look specially for the logging level.
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_PROPERTIES)) {
+            Properties props = parsedOptions.getOptionProperties(CommandLineLoader.OPTION_PROPERTIES);
+            if (props.containsKey("log4j.threshold")) {
+                RuntimeOptions.LOG_LEVEL.set(props.getProperty("log4j.threshold"));
+            }
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR)) {
@@ -198,13 +201,13 @@ public class Launcher {
     }
 
     private void run() {
+        convertRuntimeOptions();
+        Runtime runtime = new Runtime();
+
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
             runOnlineClient();
             return;
         }
-
-        convertRuntimeOptions();
-        Runtime runtime = new Runtime();
 
         runtime.run();
     }

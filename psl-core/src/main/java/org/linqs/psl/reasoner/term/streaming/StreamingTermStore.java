@@ -30,8 +30,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.FileUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
@@ -47,7 +46,7 @@ import java.util.Map;
  * Variables are kept in memory, but terms are kept on disk.
  */
 public abstract class StreamingTermStore<T extends ReasonerTerm> implements VariableTermStore<T, GroundAtom> {
-    private static final Logger log = LoggerFactory.getLogger(StreamingTermStore.class);
+    private static final Logger log = Logger.getLogger(StreamingTermStore.class);
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 

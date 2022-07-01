@@ -47,14 +47,13 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 import java.util.Set;
 
 public abstract class OnlineInference extends InferenceApplication {
-    private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
+    private static final Logger log = Logger.getLogger(OnlineInference.class);
 
     private OnlineServer server;
     private boolean modelUpdates;

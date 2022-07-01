@@ -20,8 +20,7 @@ package org.linqs.psl.model;
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.model.rule.Rule;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,7 +33,7 @@ import java.util.Set;
  * Encapsulates a set of {@link Rule Rules}.
  */
 public class Model {
-    private static final Logger log = LoggerFactory.getLogger(Model.class);
+    private static final Logger log = Logger.getLogger(Model.class);
 
     protected final List<Rule> rules;
 

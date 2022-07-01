@@ -26,8 +26,7 @@ import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,7 +49,7 @@ import java.util.Set;
  * Anything else is a miss.
  */
 public class CategoricalEvaluator extends Evaluator {
-    private static final Logger log = LoggerFactory.getLogger(CategoricalEvaluator.class);
+    private static final Logger log = Logger.getLogger(CategoricalEvaluator.class);
 
     public enum RepresentativeMetric {
         ACCURACY

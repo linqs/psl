@@ -32,8 +32,7 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 import java.util.Set;
@@ -47,7 +46,7 @@ import java.util.Set;
  * See LazyAtomManager for details on lazy atoms.
  */
 public class LazyMPEInference extends MPEInference {
-    private static final Logger log = LoggerFactory.getLogger(LazyMPEInference.class);
+    private static final Logger log = Logger.getLogger(LazyMPEInference.class);
 
     protected final int maxRounds;
 

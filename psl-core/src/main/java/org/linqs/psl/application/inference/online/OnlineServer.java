@@ -30,8 +30,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.SystemUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.EOFException;
 import java.io.File;
@@ -55,7 +54,7 @@ import java.util.concurrent.Semaphore;
  * A class for listening for new client connections, queueing actions from OnlineClients, and sending OnlineResponses.
  */
 public class OnlineServer {
-    private static final Logger log = LoggerFactory.getLogger(OnlineServer.class);
+    private static final Logger log = Logger.getLogger(OnlineServer.class);
 
     public static final String TEMP_FILE_DIR_PREFIX = "onlinePSLServer";
     public static final String TEMP_FILE_NAME = "onlinePSLServer.lock";

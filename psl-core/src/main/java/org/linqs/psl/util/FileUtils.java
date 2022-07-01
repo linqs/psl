@@ -17,8 +17,7 @@
  */
 package org.linqs.psl.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -36,7 +35,7 @@ import java.nio.file.Paths;
  * Utilities for interfacing with files and directories.
  */
 public class FileUtils {
-    private static final Logger log = LoggerFactory.getLogger(FileUtils.class);
+    private static final Logger log = Logger.getLogger(FileUtils.class);
 
     // Static only.
     private FileUtils() {}

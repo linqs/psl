@@ -178,12 +178,6 @@ public class RuntimeOptions {
         "The logging level."
     );
 
-    public static final Option LOG_OPTIONS = new Option(
-        "runtime.log.options",
-        null,
-        "A path for additional logging options."
-    );
-
     public static final Option PROPERTIES_PATH = new Option(
         "runtime.output.properties.path",
         null,

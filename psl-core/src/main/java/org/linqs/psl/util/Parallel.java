@@ -19,8 +19,7 @@ package org.linqs.psl.util;
 
 import org.linqs.psl.config.Options;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * Since the thread pool (and CPU) is shared, only one task may be run in parallel at a time.
  */
 public final class Parallel {
-    private static final Logger log = LoggerFactory.getLogger(Parallel.class);
+    private static final Logger log = Logger.getLogger(Parallel.class);
 
     private static boolean initialized = false;
 

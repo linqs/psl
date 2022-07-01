@@ -22,11 +22,11 @@ import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,7 +56,7 @@ import java.util.Set;
  * Missing targts will always log a warning.
  */
 public class TrainingMap {
-    private static final Logger log = LoggerFactory.getLogger(TrainingMap.class);
+    private static final Logger log = Logger.getLogger(TrainingMap.class);
 
     /**
      * The mapping between an RVA and its observed truth atom.
@@ -101,6 +101,10 @@ public class TrainingMap {
         prefetchTruthAtoms(truthDatabase);
 
         for (GroundAtom targetAtom : targets.getDatabase().getAllCachedAtoms()) {
+            if (targetAtom.getPredicate() instanceof FunctionalPredicate) {
+                continue;
+            }
+
             // Note that we do not want to query the database or create a non-existent atom.
             GroundAtom truthAtom = null;
             if (truthDatabase.hasCachedAtom((StandardPredicate)targetAtom.getPredicate(), targetAtom.getArguments())) {

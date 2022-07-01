@@ -25,8 +25,7 @@ import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Tensor;
 import org.tensorflow.ndarray.Shape;
@@ -43,7 +42,7 @@ import java.util.Map;
  * A supporting model that is back by a neural network.
  */
 public class NeuralModel extends SupportingModel {
-    private static final Logger log = LoggerFactory.getLogger(NeuralModel.class);
+    private static final Logger log = Logger.getLogger(NeuralModel.class);
 
     /**
      * The most recent output from the model.

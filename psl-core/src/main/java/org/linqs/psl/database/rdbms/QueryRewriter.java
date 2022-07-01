@@ -29,8 +29,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,7 +44,7 @@ import java.util.Set;
  * Note that this class will make heavy use of referential equality.
  */
 public class QueryRewriter {
-    private static final Logger log = LoggerFactory.getLogger(QueryRewriter.class);
+    private static final Logger log = Logger.getLogger(QueryRewriter.class);
 
     /**
      * The different methods for estimating the join cost.

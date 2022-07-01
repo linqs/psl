@@ -28,8 +28,7 @@ import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -54,7 +53,7 @@ public class RDBMSInserter extends Inserter {
      */
     public static final int DEFAULT_MULTIROW_COUNT = 25;
 
-    private static final Logger log = LoggerFactory.getLogger(RDBMSInserter.class);
+    private static final Logger log = Logger.getLogger(RDBMSInserter.class);
 
     private final RDBMSDataStore dataStore;
     private final PredicateInfo predicateInfo;

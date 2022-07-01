@@ -22,9 +22,9 @@ import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
-import org.apache.log4j.PropertyConfigurator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,6 +51,7 @@ public abstract class PSLBaseTest {
 
     @Before
     public void pslBaseSetup() {
+        disableLogger();
     }
 
     @After
@@ -63,20 +64,15 @@ public abstract class PSLBaseTest {
 
         // Clear all options.
         Options.clearAll();
+
+        disableLogger();
     }
 
     // General utils.
 
     // Init a defualt logger with the given level.
     protected void initLogger(String logLevel) {
-        Properties props = new Properties();
-
-        props.setProperty("log4j.rootLogger", String.format("%s, A1", logLevel));
-        props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
-        props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
-        props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
-
-        PropertyConfigurator.configure(props);
+        Logger.setLevel(logLevel);
     }
 
     // Init with the default logging level: DEBUG.

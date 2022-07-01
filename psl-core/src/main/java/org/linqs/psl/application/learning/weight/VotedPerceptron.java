@@ -28,8 +28,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.util.MathUtils;
 
 import org.linqs.psl.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +64,7 @@ import java.util.Map;
  * i.e. VotedPerceptron cannot stream.
  */
 public abstract class VotedPerceptron extends WeightLearningApplication {
-    private static final Logger log = LoggerFactory.getLogger(VotedPerceptron.class);
+    private static final Logger log = Logger.getLogger(VotedPerceptron.class);
 
     // Corresponds 1-1 with mutableRules.
     protected double[] observedIncompatibility;

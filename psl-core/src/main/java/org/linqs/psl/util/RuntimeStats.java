@@ -19,8 +19,7 @@ package org.linqs.psl.util;
 
 import org.linqs.psl.config.Options;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -32,7 +31,7 @@ import java.util.TimerTask;
  * Collections can also be started manually through the collect() method.
  */
 public final class RuntimeStats {
-    private static final Logger log = LoggerFactory.getLogger(RuntimeStats.class);
+    private static final Logger log = Logger.getLogger(RuntimeStats.class);
 
     private static MeanStats totalMemory = new MeanStats();
     private static MeanStats freeMemory = new MeanStats();

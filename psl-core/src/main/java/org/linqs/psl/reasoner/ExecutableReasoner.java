@@ -21,8 +21,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FileUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -39,7 +38,7 @@ import java.util.List;
  * Ground models are provided to the executable and results are read via temporary files.
  */
 public abstract class ExecutableReasoner extends Reasoner {
-    private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
+    private static final Logger log = Logger.getLogger(ExecutableReasoner.class);
 
     /**
      * The file that PSL will write for the reasoner.

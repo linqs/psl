@@ -22,8 +22,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,7 +35,7 @@ import java.util.Map;
  * A model that is used by a ModelPredicate.
  */
 public abstract class SupportingModel {
-    private static final Logger log = LoggerFactory.getLogger(SupportingModel.class);
+    private static final Logger log = Logger.getLogger(SupportingModel.class);
 
     public static final String DELIM = "\t";
 

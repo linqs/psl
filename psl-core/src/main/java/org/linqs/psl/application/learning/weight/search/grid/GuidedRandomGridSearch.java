@@ -24,8 +24,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +38,7 @@ import java.util.Set;
  * Randomly search a some locations and then look around those locations.
  */
 public class GuidedRandomGridSearch extends RandomGridSearch {
-    private static final Logger log = LoggerFactory.getLogger(GuidedRandomGridSearch.class);
+    private static final Logger log = Logger.getLogger(GuidedRandomGridSearch.class);
 
     private final int maxNumSeedLocations;
     private int numSeedLocations;

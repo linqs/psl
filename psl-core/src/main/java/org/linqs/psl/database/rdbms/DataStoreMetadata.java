@@ -20,8 +20,7 @@ package org.linqs.psl.database.rdbms;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.util.ListUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DataStoreMetadata {
-    private static final Logger log = LoggerFactory.getLogger(DataStoreMetadata.class);
+    private static final Logger log = Logger.getLogger(DataStoreMetadata.class);
 
     public static final String METADATA_TABLENAME = "pslmetadata";
     public static final String ANONYMOUS_PARTITION_PREFIX = "AnonymousPartition_";

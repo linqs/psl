@@ -17,8 +17,7 @@
  */
 package org.linqs.psl.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.nio.file.Paths;
 import java.net.InetAddress;
@@ -28,7 +27,7 @@ import java.net.UnknownHostException;
  * Utilities for interfacing with a system.
  */
 public class SystemUtils {
-    private static final Logger log = LoggerFactory.getLogger(SystemUtils.class);
+    private static final Logger log = Logger.getLogger(SystemUtils.class);
 
     // Static only.
     private SystemUtils() {}

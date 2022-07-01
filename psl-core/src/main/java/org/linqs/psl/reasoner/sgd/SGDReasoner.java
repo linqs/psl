@@ -33,8 +33,7 @@ import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -45,7 +44,7 @@ import java.util.Set;
  * Uses an SGD optimization method to optimize its GroundRules.
  */
 public class SGDReasoner extends Reasoner {
-    private static final Logger log = LoggerFactory.getLogger(SGDReasoner.class);
+    private static final Logger log = Logger.getLogger(SGDReasoner.class);
 
     private static final float EPSILON = 1e-8f;
 

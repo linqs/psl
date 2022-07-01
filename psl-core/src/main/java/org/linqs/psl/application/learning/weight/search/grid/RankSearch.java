@@ -25,8 +25,7 @@ import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.Iterator;
 import java.util.List;
@@ -35,7 +34,7 @@ import java.util.List;
  * A grid seach-like method that searchs over the possible rankings of rules.
  */
 public class RankSearch extends BaseGridSearch {
-    private static final Logger log = LoggerFactory.getLogger(RankSearch.class);
+    private static final Logger log = Logger.getLogger(RankSearch.class);
 
     /**
      * The delimiter to separate rule weights (and lication ids).

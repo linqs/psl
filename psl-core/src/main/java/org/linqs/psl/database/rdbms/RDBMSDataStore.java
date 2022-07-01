@@ -26,8 +26,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.Parallel;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -45,7 +44,7 @@ import java.util.Set;
  * It will connect to any RDBMS that has a supporting {@link DatabaseDriver} implementation.
  */
 public class RDBMSDataStore implements DataStore {
-    private static final Logger log = LoggerFactory.getLogger(RDBMSDataStore.class);
+    private static final Logger log = Logger.getLogger(RDBMSDataStore.class);
 
     private static final Set<RDBMSDataStore> openDataStores = new HashSet<RDBMSDataStore>();
 

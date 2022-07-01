@@ -335,13 +335,11 @@ public class CommandLineLoader {
         }
 
         if (commandLineOptions.hasOption(OPTION_HELP)) {
-            Runtime.initDefaultLogger();
             getHelpFormatter().printHelp("psl", options, true);
             return commandLineOptions;
         }
 
         if (commandLineOptions.hasOption(OPTION_VERSION)) {
-            Runtime.initDefaultLogger();
             System.out.println("PSL Version " + Version.getFull());
             return commandLineOptions;
         }

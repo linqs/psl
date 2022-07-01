@@ -23,8 +23,7 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.StringUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.List;
 
@@ -33,7 +32,7 @@ import java.util.List;
  * The weights searched over is set using configuration options.
  */
 public class GridSearch extends BaseGridSearch {
-    private static final Logger log = LoggerFactory.getLogger(GridSearch.class);
+    private static final Logger log = Logger.getLogger(GridSearch.class);
 
 
     protected final float[] possibleWeights;

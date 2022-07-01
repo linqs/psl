@@ -33,7 +33,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModelLoaderTest extends LoaderTest{
+public class ModelLoaderTest extends LoaderTest {
     @Test
     public void testBase() {
         String input =

@@ -51,8 +51,7 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.SelectQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +67,7 @@ import java.util.Set;
  * Full equality checks (when two rules are the equal, but not the same reference) are expensive.
  */
 public abstract class AbstractArithmeticRule extends AbstractRule {
-    private static final Logger log = LoggerFactory.getLogger(AbstractArithmeticRule.class);
+    private static final Logger log = Logger.getLogger(AbstractArithmeticRule.class);
 
     protected final ArithmeticRuleExpression expression;
     protected final Map<SummationVariable, Formula> filters;

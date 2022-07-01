@@ -33,8 +33,7 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,7 +45,7 @@ import java.util.Set;
  * A base term generator for terms that come from hyperplanes.
  */
 public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
-    private static final Logger log = LoggerFactory.getLogger(HyperplaneTermGenerator.class);
+    private static final Logger log = Logger.getLogger(HyperplaneTermGenerator.class);
 
     protected boolean invertNegativeWeight;
 

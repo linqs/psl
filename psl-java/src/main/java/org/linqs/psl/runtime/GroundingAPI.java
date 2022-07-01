@@ -40,9 +40,8 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.parser.ModelLoader;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
-
-import org.apache.log4j.PropertyConfigurator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,7 +71,7 @@ public final class GroundingAPI {
             String[] ruleStrings,
             String[] predicateNames, int[] predicateArities,
             String[][][] observedData, String[][][] unobservedData) {
-        initLogger("WARNING");
+        Logger.setLevel("WARN");
 
         assert(predicateNames.length == observedData.length);
         assert(predicateNames.length == unobservedData.length);
@@ -255,18 +254,6 @@ public final class GroundingAPI {
 
         return new GroundRuleInfo(ruleIndex, groundRule.getComparator().toString(), groundRule.getConstant(),
                 groundRule.getCoefficients(), atoms);
-    }
-
-    // Init a defualt logger with the given level.
-    public static void initLogger(String logLevel) {
-        Properties props = new Properties();
-
-        props.setProperty("log4j.rootLogger", String.format("%s, A1", logLevel));
-        props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
-        props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
-        props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
-
-        PropertyConfigurator.configure(props);
     }
 
     public static final class GroundRuleInfo {

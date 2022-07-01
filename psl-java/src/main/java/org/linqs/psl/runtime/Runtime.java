@@ -40,14 +40,13 @@ import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.log4j.PropertyConfigurator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -65,15 +64,11 @@ import java.util.Set;
  * Supports inference and supervised parameter learning.
  */
 public class Runtime {
-    private static final Logger log = LoggerFactory.getLogger(Runtime.class);
+    private static final Logger log = Logger.getLogger(Runtime.class);
 
     public static final String PARTITION_NAME_OBSERVATIONS = "observations";
     public static final String PARTITION_NAME_TARGET = "targets";
     public static final String PARTITION_NAME_LABELS = "truth";
-
-    static {
-        initDefaultLogger();
-    }
 
     /**
      * Create a new runtime with no additional arguments.
@@ -112,6 +107,8 @@ public class Runtime {
         if (RuntimeOptions.INFERENCE.getBoolean()) {
             runInference(model);
         }
+
+        cleanup();
     }
 
     private void checkConfig() {
@@ -170,6 +167,10 @@ public class Runtime {
         return true;
     }
 
+    private void cleanup() {
+        Parallel.close();
+    }
+
     private void evaluate(DataStore dataStore, Database targetDatabase, Database truthDatabase,
             Set<StandardPredicate> closedPredicates, List<Evaluator> evaluators) {
         // Set of open predicates
@@ -222,37 +223,9 @@ public class Runtime {
     }
 
     private void initLogger() {
-        Properties props = new Properties();
-
-        if (RuntimeOptions.LOG_OPTIONS.isSet()) {
-            // Read logging configuration from a file.
-            String path = RuntimeOptions.LOG_OPTIONS.getString();
-            try {
-                props.load(FileUtils.getInputStreamReader(path));
-            } catch (IOException ex) {
-                throw new RuntimeException("Failed to read logger configuration from path: " + path, ex);
-            }
-        } else {
-            // Setup a default logger.
-            props.setProperty("log4j.rootLogger", "INFO, A1");
-            props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
-            props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
-            props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
-        }
-
-        // Override the default logging threshold.
         if (RuntimeOptions.LOG_LEVEL.isSet()) {
-            props.setProperty("log4j.rootLogger", RuntimeOptions.LOG_LEVEL.getString() + ", A1");
+            Logger.setLevel(RuntimeOptions.LOG_LEVEL.getString());
         }
-
-        // Some deps use java.util.logging, so we will silence their loggers.
-        java.util.logging.Logger rootJavaLogger = java.util.logging.LogManager.getLogManager().getLogger("");
-        rootJavaLogger.setLevel(java.util.logging.Level.SEVERE);
-        for (java.util.logging.Handler handler : rootJavaLogger.getHandlers()) {
-            handler.setLevel(java.util.logging.Level.SEVERE);
-        }
-
-        PropertyConfigurator.configure(props);
     }
 
     private Set<StandardPredicate> loadDataFile(DataStore dataStore, String path) {
@@ -444,7 +417,7 @@ public class Runtime {
         }
 
         String outModelPath = RuntimeOptions.LEARN_OUTPUT_MODEL_PATH.getString();
-        if (outModelPath == null) {
+        if (outModelPath != null) {
             log.debug("Writing learned model to {}.", outModelPath);
 
             // Remove excess parens from the string model.
@@ -460,19 +433,6 @@ public class Runtime {
         }
 
         return model;
-    }
-
-    /**
-     * Initialize log4j with a default logger.
-     * This is only to be used until the actual config and logging infrastructure can be initialized.
-     */
-    public static void initDefaultLogger() {
-        Properties props = new Properties();
-        props.setProperty("log4j.rootLogger", "INFO, A1");
-        props.setProperty("log4j.appender.A1", "org.apache.log4j.ConsoleAppender");
-        props.setProperty("log4j.appender.A1.layout", "org.apache.log4j.PatternLayout");
-        props.setProperty("log4j.appender.A1.layout.ConversionPattern", "%-4r [%t] %-5p %c %x - %m%n");
-        PropertyConfigurator.configure(props);
     }
 
     public static void main(String[] args) {
