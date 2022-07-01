@@ -3,7 +3,7 @@ predicates:
   Likes/2: closed
   Lived/2: closed
   SimName:
-    - implementation: org.linqs.psl.cli.SimpleAcquaintancesTest$SimNameExternalFunction
+    - implementation: org.linqs.psl.runtime.SimpleAcquaintancesTest$SimNameExternalFunction
 
 observations:
   Knows : knows_obs.txt

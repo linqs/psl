@@ -15,14 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.cli;
+package org.linqs.psl.runtime;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
+import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
@@ -30,16 +32,14 @@ import org.linqs.psl.model.term.UniqueStringID;
 import org.junit.Test;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 
-public class SimpleAcquaintancesTest extends CLITest {
+public class SimpleAcquaintancesTest extends RuntimeTest {
     @Test
     public void testBase() {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
-        run(modelPath, dataPath);
+        runInference(modelPath, dataPath);
     }
 
     @Test
@@ -47,11 +47,9 @@ public class SimpleAcquaintancesTest extends CLITest {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
-        List<String> additionalArgs = Arrays.asList(
-            "--" + CommandLineLoader.OPTION_EVAL_LONG, ContinuousEvaluator.class.getName()
-        );
+        RuntimeOptions.INFERENCE_EVAL.set(ContinuousEvaluator.class.getName());
 
-        run(modelPath, dataPath, additionalArgs);
+        runInference(modelPath, dataPath);
     }
 
     @Test
@@ -59,13 +57,10 @@ public class SimpleAcquaintancesTest extends CLITest {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
 
-        List<String> additionalArgs = Arrays.asList(
-            "--" + CommandLineLoader.OPTION_EVAL_LONG,
-            ContinuousEvaluator.class.getName(),
-            DiscreteEvaluator.class.getName()
-        );
+        String evals = ContinuousEvaluator.class.getName() + "," + DiscreteEvaluator.class.getName();
+        RuntimeOptions.INFERENCE_EVAL.set(evals);
 
-        run(modelPath, dataPath);
+        runInference(modelPath, dataPath);
     }
 
     @Test
@@ -73,7 +68,7 @@ public class SimpleAcquaintancesTest extends CLITest {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_types.data").toString();
 
-        run(modelPath, dataPath);
+        runInference(modelPath, dataPath);
     }
 
     @Test
@@ -81,7 +76,7 @@ public class SimpleAcquaintancesTest extends CLITest {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances-mixed", "base.data").toString();
 
-        run(modelPath, dataPath);
+        runInference(modelPath, dataPath);
     }
 
     @Test
@@ -89,7 +84,7 @@ public class SimpleAcquaintancesTest extends CLITest {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_block.data").toString();
 
-        run(modelPath, dataPath);
+        runInference(modelPath, dataPath);
     }
 
     @Test
@@ -98,11 +93,32 @@ public class SimpleAcquaintancesTest extends CLITest {
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_undeclared_predicate.data").toString();
 
         try {
-            run(modelPath, dataPath);
+            runInference(modelPath, dataPath);
             fail("Error not thrown on non-existent predicate.");
         } catch (RuntimeException ex) {
             // Expected.
         }
+    }
+
+    @Test
+    public void testErrorDataInFunctional() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_data_in_functional.data").toString();
+
+        try {
+            runInference(modelPath, dataPath);
+            fail("Error not thrown on data in a functional predicate.");
+        } catch (RuntimeException ex) {
+            // Expected.
+        }
+    }
+
+    @Test
+    public void testFunctional() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances-functional.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_functional.data").toString();
+
+        runInference(modelPath, dataPath);
     }
 
     @Test
@@ -111,7 +127,7 @@ public class SimpleAcquaintancesTest extends CLITest {
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_bad_top_key.data").toString();
 
         try {
-            run(modelPath, dataPath);
+            runInference(modelPath, dataPath);
             fail("Error not thrown on bad top level key.");
         } catch (RuntimeException ex) {
             // Expected.
@@ -124,30 +140,31 @@ public class SimpleAcquaintancesTest extends CLITest {
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_obs_targets.data").toString();
 
         try {
-            run(modelPath, dataPath);
+            runInference(modelPath, dataPath);
             fail("Error not thrown on atoms that are observed and targets.");
         } catch (RuntimeException ex) {
             // Expected.
         }
     }
 
-    @Test
-    public void testOnlineBase() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "base-actions.txt").toString();
+    // Not an actual similarity.
+    public static class SimNameExternalFunction implements ExternalFunction {
+        @Override
+        public double getValue(ReadableDatabase db, Constant... args) {
+            String a = ((UniqueStringID)args[0]).getID();
+            String b = ((UniqueStringID)args[1]).getID();
 
-        String clientOutput = runOnline(modelPath, dataPath, actionPath);
-        assertTrue(clientOutput.contains("OnlinePSL inference stopped."));
-    }
+            return Math.abs(a.length() - b.length()) / (double)(Math.max(a.length(), b.length()));
+        }
 
-    @Test
-    public void testOnlinePredicateError() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "predicate-error-actions.txt").toString();
+        @Override
+        public int getArity() {
+            return 2;
+        }
 
-        String clientOutput = runOnline(modelPath, dataPath, actionPath);
-        assertTrue(clientOutput.contains("Error parsing command:"));
+        @Override
+        public ConstantType[] getArgumentTypes() {
+            return new ConstantType[] {ConstantType.UniqueStringID, ConstantType.UniqueStringID};
+        }
     }
 }
