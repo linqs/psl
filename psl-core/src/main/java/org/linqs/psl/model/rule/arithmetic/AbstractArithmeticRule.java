@@ -48,10 +48,10 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.SelectQuery;
-import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -17,9 +17,8 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
-import org.linqs.psl.util.RandUtils;
-
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.RandUtils;
 
 public class SimplexSampler {
     private Logger log = Logger.getLogger(SimplexSampler.class);

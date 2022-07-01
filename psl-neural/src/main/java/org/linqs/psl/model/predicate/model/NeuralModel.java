@@ -22,10 +22,10 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
-import org.linqs.psl.util.Logger;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Tensor;
 import org.tensorflow.ndarray.Shape;

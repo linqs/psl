@@ -29,9 +29,8 @@ import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.IteratorUtils;
-import org.linqs.psl.util.MathUtils;
-
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.Arrays;
 import java.util.Iterator;

@@ -24,11 +24,11 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
-import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

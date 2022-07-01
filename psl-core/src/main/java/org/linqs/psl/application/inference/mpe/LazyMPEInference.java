@@ -31,7 +31,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.List;

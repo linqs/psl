@@ -28,7 +28,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.IteratorUtils;
-
 import org.linqs.psl.util.Logger;
 
 import java.nio.ByteBuffer;

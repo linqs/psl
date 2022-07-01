@@ -25,10 +25,9 @@ import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
-
-import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;

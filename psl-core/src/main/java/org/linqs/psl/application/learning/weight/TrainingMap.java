@@ -25,7 +25,6 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;

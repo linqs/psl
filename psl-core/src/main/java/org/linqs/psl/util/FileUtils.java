@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.util;
 
-import org.linqs.psl.util.Logger;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;

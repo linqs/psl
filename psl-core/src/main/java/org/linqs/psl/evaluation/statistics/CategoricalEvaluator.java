@@ -22,11 +22,10 @@ import org.linqs.psl.config.Options;;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.StringUtils;
-
-import org.linqs.psl.util.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;

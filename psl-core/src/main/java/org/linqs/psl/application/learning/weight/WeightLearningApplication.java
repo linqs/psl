@@ -24,10 +24,9 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
-
-import org.linqs.psl.util.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

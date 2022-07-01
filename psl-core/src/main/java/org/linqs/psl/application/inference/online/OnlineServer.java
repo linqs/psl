@@ -28,9 +28,8 @@ import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.FileUtils;
-import org.linqs.psl.util.SystemUtils;
-
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.SystemUtils;
 
 import java.io.EOFException;
 import java.io.File;

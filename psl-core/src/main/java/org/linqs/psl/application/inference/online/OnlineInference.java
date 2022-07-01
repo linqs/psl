@@ -45,9 +45,8 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
-import org.linqs.psl.util.StringUtils;
-
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.StringUtils;
 
 import java.util.List;
 import java.util.Set;

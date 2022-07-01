@@ -20,9 +20,8 @@ package org.linqs.psl.model.predicate.model;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.util.FileUtils;
-import org.linqs.psl.util.StringUtils;
-
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;

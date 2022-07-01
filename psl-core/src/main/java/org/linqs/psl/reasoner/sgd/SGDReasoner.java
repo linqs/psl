@@ -30,10 +30,9 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.ArrayUtils;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
-
-import org.linqs.psl.util.Logger;
 
 import java.util.Arrays;
 import java.util.Iterator;

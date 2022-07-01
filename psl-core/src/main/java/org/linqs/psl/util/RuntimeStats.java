@@ -19,8 +19,6 @@ package org.linqs.psl.util;
 
 import org.linqs.psl.config.Options;
 
-import org.linqs.psl.util.Logger;
-
 import java.util.Timer;
 import java.util.TimerTask;
 

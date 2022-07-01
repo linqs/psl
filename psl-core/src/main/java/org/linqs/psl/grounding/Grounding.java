@@ -29,9 +29,8 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.util.Parallel;
-
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.Parallel;
 
 import java.util.ArrayList;
 import java.util.HashMap;

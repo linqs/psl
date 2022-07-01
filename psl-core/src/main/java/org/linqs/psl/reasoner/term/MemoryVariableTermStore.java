@@ -22,7 +22,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;

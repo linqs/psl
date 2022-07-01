@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.util;
 
-import org.linqs.psl.util.Logger;
-
 import java.nio.file.Paths;
 import java.net.InetAddress;
 import java.net.UnknownHostException;

@@ -19,7 +19,6 @@ package org.linqs.psl.database.rdbms;
 
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.util.ListUtils;
-
 import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;

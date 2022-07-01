@@ -20,7 +20,6 @@ package org.linqs.psl.reasoner;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FileUtils;
-
 import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;

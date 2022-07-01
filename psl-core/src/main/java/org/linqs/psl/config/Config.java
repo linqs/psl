@@ -18,6 +18,7 @@
 package org.linqs.psl.config;
 
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.RuntimeStats;
 
@@ -25,7 +26,6 @@ import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.DataConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.linqs.psl.util.Logger;
 
 import java.io.File;
 import java.io.IOException;

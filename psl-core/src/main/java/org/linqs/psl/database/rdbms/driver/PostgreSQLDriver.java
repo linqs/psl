@@ -23,8 +23,9 @@ import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.SelectivityHistogram;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
@@ -32,7 +33,6 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.json.JSONArray;
 import org.postgresql.PGConnection;
-import org.linqs.psl.util.Logger;
 
 import java.io.FileInputStream;
 import java.io.IOException;

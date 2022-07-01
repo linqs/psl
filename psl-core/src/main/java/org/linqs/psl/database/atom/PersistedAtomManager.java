@@ -29,7 +29,6 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.util.IteratorUtils;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.Collections;

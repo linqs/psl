@@ -35,12 +35,12 @@ import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Logger;
 
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.SetOperationQuery;
 import com.healthmarketscience.sqlbuilder.UnionQuery;
-import org.linqs.psl.util.IteratorUtils;
-import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.HashSet;

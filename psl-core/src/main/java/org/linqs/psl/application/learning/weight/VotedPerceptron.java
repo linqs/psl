@@ -25,10 +25,9 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.util.MathUtils;
-
-import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;

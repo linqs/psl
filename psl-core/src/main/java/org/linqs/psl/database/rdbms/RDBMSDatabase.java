@@ -41,10 +41,9 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
-
-import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -20,7 +20,6 @@ package org.linqs.psl.model.predicate.model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.Map;

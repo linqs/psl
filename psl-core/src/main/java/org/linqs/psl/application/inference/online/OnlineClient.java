@@ -24,7 +24,6 @@ import org.linqs.psl.application.inference.online.messages.actions.controls.Stop
 import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.predicate.Predicate;
-
 import org.linqs.psl.util.Logger;
 
 import java.io.EOFException;

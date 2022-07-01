@@ -28,7 +28,6 @@ import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.HashMap;

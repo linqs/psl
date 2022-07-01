@@ -21,14 +21,14 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

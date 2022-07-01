@@ -22,7 +22,6 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.reasoner.term.TermStore;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.List;

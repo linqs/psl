@@ -18,7 +18,6 @@
 package org.linqs.psl.database.loading;
 
 import org.linqs.psl.util.FileUtils;
-
 import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;

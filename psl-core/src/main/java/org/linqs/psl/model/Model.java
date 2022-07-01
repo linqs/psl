@@ -19,7 +19,6 @@ package org.linqs.psl.model;
 
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.model.rule.Rule;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.Collections;

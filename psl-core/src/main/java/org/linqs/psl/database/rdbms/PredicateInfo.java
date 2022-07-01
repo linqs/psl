@@ -23,6 +23,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Hash;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
@@ -34,7 +35,6 @@ import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
-import org.linqs.psl.util.Logger;
 
 import java.sql.Connection;
 import java.sql.SQLException;

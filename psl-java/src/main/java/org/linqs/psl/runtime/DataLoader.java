@@ -28,11 +28,11 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.configuration2.YAMLConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.linqs.psl.util.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;

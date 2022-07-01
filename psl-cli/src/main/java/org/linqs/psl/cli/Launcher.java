@@ -42,13 +42,13 @@ import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.runtime.Runtime;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

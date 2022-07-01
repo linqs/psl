@@ -22,10 +22,9 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
-
-import org.linqs.psl.util.Logger;
 
 import java.util.Iterator;
 import java.util.List;

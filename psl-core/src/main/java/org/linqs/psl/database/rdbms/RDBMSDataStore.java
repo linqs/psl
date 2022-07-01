@@ -24,9 +24,8 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.util.Parallel;
-
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.Parallel;
 
 import java.sql.Connection;
 import java.sql.SQLException;

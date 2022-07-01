@@ -29,7 +29,6 @@ import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.FileUtils;
-
 import org.linqs.psl.util.Logger;
 
 import java.nio.ByteBuffer;

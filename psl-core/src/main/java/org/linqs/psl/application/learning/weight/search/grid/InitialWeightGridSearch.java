@@ -21,7 +21,6 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
-
 import org.linqs.psl.util.Logger;
 
 import java.util.List;
