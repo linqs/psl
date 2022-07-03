@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeNotNull;
 
-import org.linqs.psl.TestModel;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
@@ -36,9 +35,13 @@ import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
@@ -46,6 +49,8 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +62,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public abstract class InferenceTest {
+public abstract class InferenceTest extends PSLBaseTest {
     public static final int NUM_INFERENCE_RUNS = 10;
 
     protected TestModel.ModelInformation info;
@@ -330,6 +335,42 @@ public abstract class InferenceTest {
             oldAvgObjective = avgObjective;
             oldInitialValue = initialValue;
         }
+    }
+
+    /**
+     * Test that inference applications find a nearly feasible solution with a simplex constraint.
+     */
+    @Test
+    public void testSimplexConstraints() {
+        TestModel.ModelInformation info = TestModel.getModel();
+
+        List<Coefficient> coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1.0f)));
+        List<SummationAtomOrAtom> atoms =  Arrays.asList(
+                (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Friends"),
+                new SummationVariableOrTerm[]{new SummationVariable("A"), new SummationVariable("B")}))
+        );;
+
+        // Add rule: Friends(+A, +B) = 1.0
+        info.model.addRule(new UnweightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1))
+        ));
+
+        // Create inference application.
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, new HashSet<StandardPredicate>(), info.observationPartition);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+        // Test the constraint is enforced by the inference application.
+        inference.inference();
+
+        float sum = 0.0f;
+        for (RandomVariableAtom cachedRandomVariableAtom : inferDB.getAllCachedRandomVariableAtoms()) {
+            sum += cachedRandomVariableAtom.getValue();
+        }
+
+        assertEquals(1.0f, sum, 0.1f);
+
+        inference.close();
+        inferDB.close();
     }
 
     /**

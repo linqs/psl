@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,6 @@
 package org.linqs.psl.util;
 
 import org.linqs.psl.config.Options;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * Since the thread pool (and CPU) is shared, only one task may be run in parallel at a time.
  */
 public final class Parallel {
-    private static final Logger log = LoggerFactory.getLogger(Parallel.class);
+    private static final Logger log = Logger.getLogger(Parallel.class);
 
     private static boolean initialized = false;
 
@@ -64,6 +61,10 @@ public final class Parallel {
 
     // Static only.
     private Parallel() {}
+
+    public synchronized static void close() {
+        shutdown();
+    }
 
     public synchronized static int getNumThreads() {
         if (numThreads == -1) {
@@ -395,7 +396,11 @@ public final class Parallel {
         workerQueue.clear();
     }
 
-     private static void shutdown() {
+    private static void shutdown() {
+        if (!initialized) {
+            return;
+        }
+
         cleanupWorkers();
 
         try {
@@ -404,11 +409,19 @@ public final class Parallel {
         } catch (InterruptedException ex) {
             // Do nothing, we are shutting down anyways.
         }
-
-        workerQueue = null;
-        allWorkers = null;
         pool = null;
-     }
+
+        threadObjects.clear();
+
+        workerQueue.clear();
+        workerQueue = null;
+
+        allWorkers.clear();
+        allWorkers = null;
+
+        numThreads = -1;
+        initialized = false;
+    }
 
     /**
      * Signal that a worker is done and ready for more work.

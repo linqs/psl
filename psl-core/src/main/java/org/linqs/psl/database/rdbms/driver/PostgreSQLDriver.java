@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,14 @@ import org.linqs.psl.database.rdbms.SelectivityHistogram;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.postgresql.PGConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,7 +55,7 @@ public class PostgreSQLDriver extends DatabaseDriver {
     private static final int MAX_STATS = 10000;
     private static final String ENCODING = "UTF-8";
 
-    private static final Logger log = LoggerFactory.getLogger(PostgreSQLDriver.class);
+    private static final Logger log = Logger.getLogger(PostgreSQLDriver.class);
 
     private final double statsPercentage;
 
@@ -117,6 +117,29 @@ public class PostgreSQLDriver extends DatabaseDriver {
         } finally {
             // Make sure to change the table's default partition value back (to nothing).
             dropColumnDefault(predicateInfo.tableName(), PredicateInfo.PARTITION_COLUMN_NAME);
+        }
+
+        // Check for any bad values that got inserted.
+        String query = String.format("SELECT COUNT(*) FROM %s WHERE %s < 0.0 OR %s > 1.0",
+                predicateInfo.tableName(),
+                PredicateInfo.VALUE_COLUMN_NAME,
+                PredicateInfo.VALUE_COLUMN_NAME);
+
+        try (
+            Connection connection = getConnection();
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet result = statement.executeQuery();
+        ) {
+            result.next();
+            int badValuesCount = result.getInt(1);
+
+            if (badValuesCount != 0) {
+                throw new IllegalArgumentException(String.format(
+                        "Found %d invalid truth value(s) for predicate %s (table '%s'). Values must be between 0 and 1 inclusive.",
+                        badValuesCount, predicateInfo.predicate().getName(), predicateInfo.tableName()));
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to check results of bulk copy on table: " + predicateInfo.tableName(), ex);
         }
     }
 

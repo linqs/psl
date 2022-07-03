@@ -1,7 +1,7 @@
 '''
 This file is part of the PSL software.
 Copyright 2011-2015 University of Maryland
-Copyright 2013-2021 The Regents of the University of California
+Copyright 2013-2022 The Regents of the University of California
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ class TestPredicate(PSLTest):
             [1, 2, 1.0],
         ])
 
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
     def test_add_frame(self):
         predicate = Predicate('Foo', closed = True, size = 2)
@@ -88,7 +88,7 @@ class TestPredicate(PSLTest):
             [1, 2, 1.0],
         ])
 
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
     def test_add_list(self):
         predicate = Predicate('Foo', closed = True, size = 2)
@@ -106,7 +106,7 @@ class TestPredicate(PSLTest):
             [1, 2, 1.0],
         ])
 
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
     def test_add_file(self):
         predicate = Predicate('1', closed = True, size = 2)
@@ -117,7 +117,7 @@ class TestPredicate(PSLTest):
             ['C', 'D', 1.0],
             ['1', '2', 1.0],
         ])
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
         predicate = Predicate('2', closed = True, size = 2)
         path = os.path.join(PSLTest.TEST_DATA_DIR, 'misc', 'binary_small.txt')
@@ -126,7 +126,7 @@ class TestPredicate(PSLTest):
             ['C', 'D', 1.0],
             ['1', '2', 1.0],
         ])
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
         predicate = Predicate('3', closed = True, size = 2)
         path = os.path.join(PSLTest.TEST_DATA_DIR, 'misc', 'binary_small.csv')
@@ -136,7 +136,7 @@ class TestPredicate(PSLTest):
             ['C', 'D', 1.0],
             ['1', '2', 1.0],
         ])
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
         predicate = Predicate('4', closed = True, size = 2)
         path = os.path.join(PSLTest.TEST_DATA_DIR, 'misc', 'binary_small_truth.txt')
@@ -146,7 +146,7 @@ class TestPredicate(PSLTest):
             ['C', 'D', 0.5],
             ['1', '2', 1.0],
         ])
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
     def test_add_wrong_number_of_cols(self):
         # Too few.
@@ -180,4 +180,4 @@ class TestPredicate(PSLTest):
             ['"3  "', '\'   4   \'', 1.0],
             ['\'\'5\'\'', '""6""', 1.0],
         ])
-        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected)
+        pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,21 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression;
 
-import static org.junit.Assert.assertEquals;
-
-import org.linqs.psl.TestModel;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.test.TestModel;
 
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class ArithmeticRuleExpressionTest {
+public class ArithmeticRuleExpressionTest extends PSLBaseTest {
     @Test
     public void testHash() {
         TestModel.ModelInformation model = TestModel.getModel();

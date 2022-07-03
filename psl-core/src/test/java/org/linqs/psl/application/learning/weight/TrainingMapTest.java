@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -33,6 +31,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
+import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.util.IteratorUtils;
 
 import org.junit.After;
@@ -49,7 +48,7 @@ import java.util.Set;
 /**
  * Test training maps, which create the mapping between RVAs and their observed truth values.
  */
-public class TrainingMapTest {
+public class TrainingMapTest extends PSLBaseTest {
     private DataStore dataStore;
     private StandardPredicate predicate;
     private TrainingMap trainingMap;

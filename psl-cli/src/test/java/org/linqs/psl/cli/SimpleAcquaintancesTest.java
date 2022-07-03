@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,15 @@
  */
 package org.linqs.psl.cli;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
-import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.parser.CommandLineLoader;
 
 import org.junit.Test;
 
@@ -107,27 +106,6 @@ public class SimpleAcquaintancesTest extends CLITest {
     }
 
     @Test
-    public void testErrorDataInFunctional() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_data_in_functional.data").toString();
-
-        try {
-            run(modelPath, dataPath);
-            fail("Error not thrown on data in a functional predicate.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testFunctional() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances-functional.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_functional.data").toString();
-
-        run(modelPath, dataPath);
-    }
-
-    @Test
     public void testErrorBadTopLevelKey() {
         String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
         String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_bad_top_key.data").toString();
@@ -153,24 +131,23 @@ public class SimpleAcquaintancesTest extends CLITest {
         }
     }
 
-    // Not an actual similarity.
-    public static class SimNameExternalFunction implements ExternalFunction {
-        @Override
-        public double getValue(ReadableDatabase db, Constant... args) {
-            String a = ((UniqueStringID)args[0]).getID();
-            String b = ((UniqueStringID)args[1]).getID();
+    @Test
+    public void testOnlineBase() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "base-actions.txt").toString();
 
-            return Math.abs(a.length() - b.length()) / (double)(Math.max(a.length(), b.length()));
-        }
+        String clientOutput = runOnline(modelPath, dataPath, actionPath);
+        assertTrue(clientOutput.contains("OnlinePSL inference stopped."));
+    }
 
-        @Override
-        public int getArity() {
-            return 2;
-        }
+    @Test
+    public void testOnlinePredicateError() {
+        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
+        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "predicate-error-actions.txt").toString();
 
-        @Override
-        public ConstantType[] getArgumentTypes() {
-            return new ConstantType[] {ConstantType.UniqueStringID, ConstantType.UniqueStringID};
-        }
+        String clientOutput = runOnline(modelPath, dataPath, actionPath);
+        assertTrue(clientOutput.contains("Error parsing command:"));
     }
 }

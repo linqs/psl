@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,6 @@
  */
 package org.linqs.psl.database.atom;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import org.junit.Test;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -30,12 +24,15 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.UniqueStringID;
-import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.test.TestModel;
+
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class PersistedAtomManagerTest {
+public class PersistedAtomManagerTest extends PSLBaseTest {
     /**
      * Base test to see if the PAM gets populated and can get atoms.
      */
@@ -50,11 +47,11 @@ public class PersistedAtomManagerTest {
 
         GroundAtom atom = atomManager.getAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new UniqueStringID("Bob"));
         assertTrue(atom instanceof RandomVariableAtom);
-        assertEquals(atom.getValue(), 1.0, MathUtils.EPSILON);
+        assertEquals(atom.getValue(), 1.0);
 
         atom = atomManager.getAtom(info.predicates.get("Nice"), new UniqueStringID("Alice"));
         assertTrue(atom instanceof ObservedAtom);
-        assertEquals(atom.getValue(), 0.9, MathUtils.EPSILON);
+        assertEquals(atom.getValue(), 0.9);
 
         database.close();
     }

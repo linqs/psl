@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Hash;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.BinaryCondition;
@@ -34,8 +35,6 @@ import com.healthmarketscience.sqlbuilder.InCondition;
 import com.healthmarketscience.sqlbuilder.QueryPreparer;
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.UpdateQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -51,14 +50,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PredicateInfo {
-    private static final Logger log = LoggerFactory.getLogger(PredicateInfo.class);
+    private static final Logger log = Logger.getLogger(PredicateInfo.class);
 
     public static final String PREDICATE_TABLE_SUFFIX = "_PREDICATE";
     public static final String PARTITION_COLUMN_NAME = "partition_id";
-    public static final String VALUE_COLUMN_NAME = "value";
+    public static final String VALUE_COLUMN_NAME = "truth_value";
 
     // Postgres has a compile-time limit set on identifiers (64 including null).
-    public static final int MAX_TABLE_NAME_LENGTH = 63;
+    // The longest identifier we will see is an index on a UniqueStringID column (assume max of two digits):
+    // "IX_<table name>_UniqueStringID_99"
+    public static final int MAX_TABLE_NAME_LENGTH = 63 - "IX__UniqueStringID_99".length();
 
     // Prefix any hashed table names with this.
     // Most DBMS don't like starting an identifier with a number, so prefix an alpha to be safe.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,8 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +35,7 @@ import java.util.Map;
  * rather than through ADMM's configuration so you don't globally change the number of iterations.
  */
 public abstract class BaseGridSearch extends WeightLearningApplication {
-    private static final Logger log = LoggerFactory.getLogger(BaseGridSearch.class);
+    private static final Logger log = Logger.getLogger(BaseGridSearch.class);
 
     /**
      * The number of actual possible locations.
@@ -123,7 +121,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             double objective = inspectLocation(weights);
 
             // Log this location.
-            objectives.put(currentLocation, new Double(objective));
+            objectives.put(currentLocation, Double.valueOf(objective));
 
             if (iteration == 0 || objective < bestObjective) {
                 bestObjective = objective;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.linqs.psl.model.term.Term;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ import java.util.Map;
  * Instead, they are constructed via the appropriate gegetthod in each subclass.
  */
 public abstract class Predicate implements Serializable {
-    private static Map<String, Predicate> predicates = new HashMap<String, Predicate>();
+    private static final Map<String, Predicate> predicates = new HashMap<String, Predicate>();
 
     private final String name;
     private final ConstantType[] types;
@@ -115,10 +116,6 @@ public abstract class Predicate implements Serializable {
         return builder.toString();
     }
 
-    public static Predicate get(String name)  {
-        return predicates.get(name.toUpperCase());
-    }
-
     @Override
     public int hashCode() {
         return hashcode;
@@ -137,6 +134,18 @@ public abstract class Predicate implements Serializable {
         Predicate other = (Predicate)oth;
 
         return hashCode() == other.hashCode() && name.equals(other.name) && Arrays.deepEquals(types, other.types);
+    }
+
+    public static void registerPredicate(Predicate predicate) {
+        predicates.put(predicate.getName(), predicate);
+    }
+
+    public static Predicate get(String name)  {
+        return predicates.get(name.toUpperCase());
+    }
+
+    public static Collection<Predicate> getAll() {
+        return predicates.values();
     }
 
     /**

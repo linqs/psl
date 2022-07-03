@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,6 @@
  */
 package org.linqs.psl.model.rule;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.linqs.psl.PSLTest;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -60,6 +54,11 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.test.PSLBaseTest;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +67,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class RuleStringTest {
+public class RuleStringTest extends PSLBaseTest {
     private DataStore dataStore;
     private Database database;
     private Partition obsPartition;
@@ -194,7 +193,7 @@ public class RuleStringTest {
             "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Squared
         rule = new WeightedLogicalRule(logicalBaseRule, 10.0f, true);
@@ -205,7 +204,7 @@ public class RuleStringTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Not Squared
         rule = new WeightedLogicalRule(logicalBaseRule, 10.0f, false);
@@ -216,7 +215,7 @@ public class RuleStringTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test
@@ -236,7 +235,7 @@ public class RuleStringTest {
             "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') = 1.0 ."
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Squared
         rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0f, true);
@@ -251,7 +250,7 @@ public class RuleStringTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0 ^2"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
 
         // Weighted, Not Squared
         rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0f, false);
@@ -266,7 +265,7 @@ public class RuleStringTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0"
         );
         rule.groundAll(manager, store);
-        PSLTest.compareGroundRules(expected, rule, store);
+        compareGroundRules(expected, rule, store);
     }
 
     @Test

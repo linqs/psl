@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,9 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +44,7 @@ import java.util.PriorityQueue;
  * All extending classes should ensure that values for RVAs are set before evaluators are computed.
  */
 public class Hyperband extends WeightLearningApplication {
-    private static final Logger log = LoggerFactory.getLogger(Hyperband.class);
+    private static final Logger log = Logger.getLogger(Hyperband.class);
 
     public static final double MIN_BUDGET_PROPORTION = 0.001;
     public static final int MIN_BRACKET_SIZE = 1;

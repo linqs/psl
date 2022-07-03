@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public interface Rule extends Serializable {
     public void getCoreAtoms(Set<Atom> result);
 
     /**
-     * Does this rule support rewriting the grounding formual.
+     * Does this rule support rewriting the grounding formula.
      * Rules that do can take advantage of some more advanced grounding techniques.
      * However, they will have to supply their grounding queries as a Formula
      * instead of a raw query.
@@ -99,8 +99,22 @@ public interface Rule extends Serializable {
 
     /**
      * Split this rule into multiple rules.
-     * The net effect of all the rules should be the same
-     * as the pre-split rule.
+     * The net effect of all the rules should be the same as the pre-split rule.
      */
     public List<Rule> split();
+
+    /**
+     * Check if this rule instance is registered.
+     */
+    public boolean isRegistered();
+
+    /**
+     * Ensure that the rule instance is registered.
+     */
+    public void ensureRegistration();
+
+    /**
+     * Ensure that the rule instance is not registered.
+     */
+    public void unregister();
 }

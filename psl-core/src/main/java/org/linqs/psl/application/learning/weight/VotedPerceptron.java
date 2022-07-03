@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,9 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
-
 import org.linqs.psl.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +63,7 @@ import java.util.Map;
  * i.e. VotedPerceptron cannot stream.
  */
 public abstract class VotedPerceptron extends WeightLearningApplication {
-    private static final Logger log = LoggerFactory.getLogger(VotedPerceptron.class);
+    private static final Logger log = Logger.getLogger(VotedPerceptron.class);
 
     // Corresponds 1-1 with mutableRules.
     protected double[] observedIncompatibility;

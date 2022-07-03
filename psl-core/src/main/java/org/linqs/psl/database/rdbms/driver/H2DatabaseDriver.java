@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,9 @@ import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,7 +38,7 @@ public class H2DatabaseDriver extends DatabaseDriver {
         Disk, Memory
     }
 
-    private static final Logger log = LoggerFactory.getLogger(H2DatabaseDriver.class);
+    private static final Logger log = Logger.getLogger(H2DatabaseDriver.class);
 
     /**
      * Constructor for the H2 database driver.

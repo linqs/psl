@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,11 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.RandUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SimplexSampler {
-    private Logger log = LoggerFactory.getLogger(SimplexSampler.class);
+    private Logger log = Logger.getLogger(SimplexSampler.class);
 
     /**
      * Samples a uniform point on the simplex of dimension d

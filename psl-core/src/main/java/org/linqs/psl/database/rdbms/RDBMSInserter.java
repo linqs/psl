@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,11 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.util.ListUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 
 import com.healthmarketscience.sqlbuilder.CustomSql;
 import com.healthmarketscience.sqlbuilder.InsertQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -54,7 +53,7 @@ public class RDBMSInserter extends Inserter {
      */
     public static final int DEFAULT_MULTIROW_COUNT = 25;
 
-    private static final Logger log = LoggerFactory.getLogger(RDBMSInserter.class);
+    private static final Logger log = Logger.getLogger(RDBMSInserter.class);
 
     private final RDBMSDataStore dataStore;
     private final PredicateInfo predicateInfo;
@@ -149,7 +148,7 @@ public class RDBMSInserter extends Inserter {
 
             if (row.size() != predicateInfo.argumentColumns().size()) {
                 throw new IllegalArgumentException(
-                    String.format("Data on row %d length does not match for %s: Expecting: %d, Got: %d",
+                    String.format("Data on row %d length does not match for partition %s: Expecting: %d, Got: %d",
                     rowIndex, partition.getName(), predicateInfo.argumentColumns().size(), row.size()));
             }
         }

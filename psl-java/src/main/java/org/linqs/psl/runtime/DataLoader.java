@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.cli;
+package org.linqs.psl.runtime;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Partition;
@@ -28,12 +28,11 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Reflection;
 
 import org.apache.commons.configuration2.YAMLConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,7 +48,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Parse CLI data files and load all the predicates and data.
+ * Parse PSL data files and load all the predicates and data.
  */
 public class DataLoader {
     public static final String KEY_PREDICATE = "predicates";
@@ -69,7 +68,7 @@ public class DataLoader {
     public static final Set<String> TOP_LEVEL_PROPS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
             new String[]{KEY_PREDICATE, KEY_PARTITION_OBS, KEY_PARTITION_TARGETS, KEY_PARTITION_TRUTH})));
 
-    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
+    private static final Logger log = Logger.getLogger(DataLoader.class);
 
     public static Set<StandardPredicate> load(DataStore dataStore, String path, boolean useIntIds)
             throws ConfigurationException, FileNotFoundException {

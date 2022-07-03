@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,6 +194,31 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
         ModelLoader visitor = new ModelLoader();
         return visitor.visitProgram(program, parser);
+    }
+
+    public static Atom loadAtom(String input) {
+        return loadAtom(new StringReader(input));
+    }
+
+    public static Atom loadAtom(Reader input) {
+        PSLParser parser = null;
+        try {
+            parser = getParser(input);
+        } catch (IOException ex) {
+            // Cancel the lex and rethrow.
+            throw new RuntimeException("Failed to lex atom.", ex);
+        }
+
+        AtomContext atomContext = null;
+        try {
+            atomContext = parser.atom();
+        } catch (ParseCancellationException ex) {
+            // Cancel the parse and rethrow the cause.
+            throw (RuntimeException)ex.getCause();
+        }
+
+        ModelLoader visitor = new ModelLoader();
+        return visitor.visitAtom(atomContext);
     }
 
     /**
@@ -478,7 +503,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             expression.coefficients.add(coefficient);
         }
 
-        // No the additional, non-atom coefficients.
+        // Note the additional, non-atom coefficients.
         Coefficient nonAtomCoefficient = null;
         if (lhs.nonAtomCoefficient != null) {
             nonAtomCoefficient = lhs.nonAtomCoefficient;
@@ -486,7 +511,11 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
         if (rhs.nonAtomCoefficient != null) {
             if (nonAtomCoefficient == null) {
-                nonAtomCoefficient = rhs.nonAtomCoefficient;
+                if (isAddition) {
+                    nonAtomCoefficient = rhs.nonAtomCoefficient;
+                } else {
+                    nonAtomCoefficient = new Multiply(new ConstantNumber(-1.0f), rhs.nonAtomCoefficient);
+                }
             } else {
                 if (isAddition) {
                     nonAtomCoefficient = new Add(nonAtomCoefficient, rhs.nonAtomCoefficient);
@@ -592,7 +621,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             }
         }
 
-        // If we have any summation variables, then we have a SummationAtom, otherwise we have a QueryAtom.
+        // If we have any summation variables, then we have a SummationAtom, otherwise we have a GetAtom.
         boolean isSummation = false;
         for (SummationVariableOrTerm arg : args) {
             if (arg instanceof SummationVariable) {

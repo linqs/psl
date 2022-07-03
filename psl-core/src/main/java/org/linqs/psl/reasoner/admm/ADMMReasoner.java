@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,9 @@ import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
@@ -42,7 +40,7 @@ import java.util.Set;
  * Uses an ADMM optimization method to optimize its GroundRules.
  */
 public class ADMMReasoner extends Reasoner {
-    private static final Logger log = LoggerFactory.getLogger(ADMMReasoner.class);
+    private static final Logger log = Logger.getLogger(ADMMReasoner.class);
 
     private static final float LOWER_BOUND = 0.0f;
     private static final float UPPER_BOUND = 1.0f;

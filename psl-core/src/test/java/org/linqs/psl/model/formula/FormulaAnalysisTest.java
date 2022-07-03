@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,23 +17,20 @@
  */
 package org.linqs.psl.model.formula;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.test.TestModel;
+import org.linqs.psl.util.ListUtils;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModel;
-import org.linqs.psl.model.atom.QueryAtom;
-import org.linqs.psl.model.term.Variable;
-import org.linqs.psl.util.ListUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class FormulaAnalysisTest {
+public class FormulaAnalysisTest extends PSLBaseTest {
     private TestModel.ModelInformation model;
 
     @Before
@@ -322,6 +319,6 @@ public class FormulaAnalysisTest {
             actual[i] = ListUtils.join(" | ", clauses);
         }
 
-        PSLTest.assertStringsEquals(expected, actual, true);
+        assertStringsEquals(expected, actual, true);
     }
 }

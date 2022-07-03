@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import org.linqs.psl.PSLTest;
-import org.linqs.psl.TestModel;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
@@ -36,6 +31,8 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
+import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.MathUtils;
 
 import org.junit.After;
@@ -56,7 +53,7 @@ import java.util.Set;
  * TODO(eriq): We have to disable some tests because they give different weights.
  *  But some are legitimately different. We need more robust cases.
  */
-public abstract class WeightLearningTest {
+public abstract class WeightLearningTest extends PSLBaseTest {
     public static final String RULE_PRIOR = "prior";
     public static final String RULE_NICE = "nice";
     public static final String RULE_SYMMETRY = "symmetry";
@@ -86,7 +83,7 @@ public abstract class WeightLearningTest {
 
     @After
     public void cleanup() {
-        PSLTest.disableLogger();
+        disableLogger();
 
         weightLearningTrainDB.close();
         weightLearningTrainDB = null;

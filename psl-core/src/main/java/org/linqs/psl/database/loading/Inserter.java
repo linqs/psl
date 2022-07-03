@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@
 package org.linqs.psl.database.loading;
 
 import org.linqs.psl.util.FileUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,7 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public abstract class Inserter {
-    private static final Logger log = LoggerFactory.getLogger(Inserter.class);
+    private static final Logger log = Logger.getLogger(Inserter.class);
 
     public static final String DEFAULT_DELIMITER = "\t";
 
@@ -54,6 +52,19 @@ public abstract class Inserter {
     }
 
     /**
+     * Insert a single object using the default truth value.
+     */
+    public void insert(List<Object> data) {
+        if (data == null || data.size() == 0) {
+            throw new IllegalArgumentException("Attempted to insert empty data.");
+        }
+
+        List<List<Object>> newData = new ArrayList<List<Object>>(1);
+        newData.add(data);
+        insertAll(newData);
+    }
+
+    /**
      * Insert a single object using the specified truth value.
      */
     public void insertValue(double value, Object... data) {
@@ -61,12 +72,33 @@ public abstract class Inserter {
             throw new IllegalArgumentException("Attempted to insert empty data.");
         }
 
-        if (value < 0 || value > 1) {
+        if (value < 0.0 || value > 1.0) {
             throw new IllegalArgumentException("Invalid truth value: " + value + ". Must be between 0 and 1 inclusive.");
         }
 
         List<List<Object>> newData = new ArrayList<List<Object>>(1);
         newData.add(Arrays.asList(data));
+
+        List<Double> newValue = new ArrayList<Double>(1);
+        newValue.add(value);
+
+        insertAllValues(newValue, newData);
+    }
+
+    /**
+     * Insert a single object using the specified truth value.
+     */
+    public void insertValue(double value, List<Object> data) {
+        if (data == null || data.size() == 0) {
+            throw new IllegalArgumentException("Attempted to insert empty data.");
+        }
+
+        if (value < 0.0 || value > 1.0) {
+            throw new IllegalArgumentException("Invalid truth value: " + value + ". Must be between 0 and 1 inclusive.");
+        }
+
+        List<List<Object>> newData = new ArrayList<List<Object>>(1);
+        newData.add(data);
 
         List<Double> newValue = new ArrayList<Double>(1);
         newValue.add(value);

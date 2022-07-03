@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.json.JSONObject;
  * Calls to the get methods will in-turn call into the Config option with the correct name and default value.
  * If flags are set (such as FLAG_POSITIVE), they will be checked when a value is retrieved (via a get method).
  */
-public class Option {
+public class Option implements Comparable<Option> {
     public static final int FLAG_NON_NEGATIVE = (1 << 0);  // >= 0
     public static final int FLAG_POSITIVE = (1 << 1);  // > 0
     public static final int FLAG_LT_ONE = (1 << 2);  // < 1
@@ -128,6 +128,10 @@ public class Option {
         return Config.getProperty(name);
     }
 
+    public boolean isSet() {
+        return Config.hasProperty(name);
+    }
+
     public Object getUnlogged() {
         return Config.getUnloggedProperty(name);
     }
@@ -172,6 +176,63 @@ public class Option {
         return Config.getNewObject(name, ((String)defaultValue));
     }
 
+    @Override
+    public int compareTo(Option other) {
+        if (other == null) {
+            return -1;
+        }
+
+        return this.name().compareTo(other.name());
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null || other.getClass() != this.getClass()) {
+            return false;
+        }
+
+        return this.name.equals(((Option)other).name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(name);
+
+        boolean hasType = (type != null);
+        boolean hasDefault = (defaultValue != null);
+
+        if (hasType || hasDefault) {
+            builder.append("(");
+
+            if (hasType) {
+                builder.append("Type: " + type.getName().toString());
+            }
+
+            if (hasType && hasDefault) {
+                builder.append(", ");
+            }
+
+            if (hasDefault) {
+                builder.append("Default Value: " + defaultValue.toString());
+            }
+
+            builder.append(")");
+        }
+
+        if (description != null) {
+            builder.append(" - " + description);
+        }
+
+        return builder.toString();
+    }
+
     private void checkNumericFlags(double value, String displayValue) {
         if ((flags & FLAG_NON_NEGATIVE) != 0 && value < 0) {
             throw new IllegalArgumentException("Property " + name + " must be non-negative, found value: " + displayValue);
@@ -201,7 +262,17 @@ public class Option {
         }
 
         if (defaultValue != null) {
-            json.put("default", defaultValue);
+            if (type == float.class && ((Float)defaultValue).floatValue() == Float.POSITIVE_INFINITY) {
+                json.put("default", "+Infinity");
+            } else if (type == float.class && ((Float)defaultValue).floatValue() == Float.NEGATIVE_INFINITY) {
+                json.put("default", "-Infinity");
+            } else if (type == double.class && ((Double)defaultValue).doubleValue() == Float.POSITIVE_INFINITY) {
+                json.put("default", "+Infinity");
+            } else if (type == double.class && ((Double)defaultValue).doubleValue() == Float.NEGATIVE_INFINITY) {
+                json.put("default", "-Infinity");
+            } else {
+                json.put("default", defaultValue);
+            }
         }
 
         if (description != null) {
@@ -209,10 +280,5 @@ public class Option {
         }
 
         return json;
-    }
-
-    @Override
-    public String toString() {
-        return toJSON().toString();
     }
 }

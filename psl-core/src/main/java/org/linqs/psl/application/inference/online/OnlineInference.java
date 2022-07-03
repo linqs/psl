@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,15 @@ import org.linqs.psl.application.inference.online.messages.actions.controls.Sync
 import org.linqs.psl.application.inference.online.messages.actions.controls.WriteInferredPredicates;
 import org.linqs.psl.application.inference.online.messages.actions.model.AddAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.DeleteAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.GetAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.ObserveAtom;
-import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
 import org.linqs.psl.application.inference.online.messages.actions.model.UpdateObservation;
+import org.linqs.psl.application.inference.online.messages.actions.template.ActivateRule;
+import org.linqs.psl.application.inference.online.messages.actions.template.AddRule;
+import org.linqs.psl.application.inference.online.messages.actions.template.DeactivateRule;
+import org.linqs.psl.application.inference.online.messages.actions.template.DeleteRule;
 import org.linqs.psl.application.inference.online.messages.responses.ActionStatus;
-import org.linqs.psl.application.inference.online.messages.responses.QueryAtomResponse;
+import org.linqs.psl.application.inference.online.messages.responses.GetAtomResponse;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.OnlineAtomManager;
@@ -41,16 +45,14 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.online.OnlineTermStore;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
 
 public abstract class OnlineInference extends InferenceApplication {
-    private static final Logger log = LoggerFactory.getLogger(OnlineInference.class);
+    private static final Logger log = Logger.getLogger(OnlineInference.class);
 
     private OnlineServer server;
     private boolean modelUpdates;
@@ -107,7 +109,7 @@ public abstract class OnlineInference extends InferenceApplication {
     }
 
     private void startServer() {
-        server = new OnlineServer();
+        server = new OnlineServer(rules);
         server.start();
     }
 
@@ -124,8 +126,16 @@ public abstract class OnlineInference extends InferenceApplication {
             response = doObserveAtom((ObserveAtom)action);
         } else if (action.getClass() == UpdateObservation.class) {
             response = doUpdateObservation((UpdateObservation)action);
-        } else if (action.getClass() == QueryAtom.class) {
-            response = doQueryAtom((QueryAtom)action);
+        } else if (action.getClass() == GetAtom.class) {
+            response = doGetAtom((GetAtom)action);
+        } else if (action.getClass() == ActivateRule.class) {
+            response = doActivateRule((ActivateRule)action);
+        } else if (action.getClass() == AddRule.class) {
+            response = doAddRule((AddRule)action);
+        } else if (action.getClass() == DeactivateRule.class) {
+            response = doDeactivateRule((DeactivateRule)action);
+        } else if (action.getClass() == DeleteRule.class) {
+            response = doDeleteRule((DeleteRule)action);
         } else if (action.getClass() == WriteInferredPredicates.class) {
             response = doWriteInferredPredicates((WriteInferredPredicates)action);
         } else if (action.getClass() == Sync.class) {
@@ -143,7 +153,7 @@ public abstract class OnlineInference extends InferenceApplication {
         GroundAtom atom = null;
 
         if (atomManager.getDatabase().hasAtom(action.getPredicate(), action.getArguments())) {
-            deleteAtom(action.getPredicate(), action.getArguments());
+            atom = deleteAtom(action.getPredicate(), action.getArguments());
             ((OnlineTermStore)termStore).deleteLocalVariable(atom);
         }
 
@@ -217,9 +227,9 @@ public abstract class OnlineInference extends InferenceApplication {
         return String.format("Updated atom: %s: %f => %f", atom, oldAtomValue, atom.getValue());
     }
 
-    protected String doQueryAtom(QueryAtom action) {
+    protected String doGetAtom(GetAtom action) {
         if (!((OnlineAtomManager)atomManager).hasAtom(action.getPredicate(), action.getArguments())) {
-            server.onActionExecution(action, new QueryAtomResponse(action, -1.0));
+            server.onActionExecution(action, new GetAtomResponse(action, -1.0));
 
             return String.format("Atom: %s(%s) not found.",
                     action.getPredicate(), StringUtils.join(", ", action.getArguments()));
@@ -228,10 +238,56 @@ public abstract class OnlineInference extends InferenceApplication {
         optimize();
 
         double atomValue = atomManager.getAtom(action.getPredicate(), action.getArguments()).getValue();
-        server.onActionExecution(action, new QueryAtomResponse(action, atomValue));
+        server.onActionExecution(action, new GetAtomResponse(action, atomValue));
 
         return String.format("Atom: %s(%s) found. Returned to client.",
                 action.getPredicate(), StringUtils.join(", ", action.getArguments()));
+    }
+
+    protected String doActivateRule(ActivateRule action) {
+        if (action.isNewRule()) {
+            return String.format("Rule: %s does not exist in model.", action.getRule());
+        }
+
+        ((OnlineTermStore)termStore).activateRule(action.getRule());
+
+        modelUpdates = true;
+        return String.format("Activated rule: %s", action.getRule());
+    }
+
+    protected String doAddRule(AddRule action) {
+        if (!action.isNewRule()) {
+            return String.format("Rule: %s already exists in model.", action.getRule());
+        }
+
+        ((OnlineTermStore)termStore).addRule(action.getRule());
+
+        modelUpdates = true;
+        return String.format("Added rule: %s", action.getRule());
+    }
+
+    protected String doDeactivateRule(DeactivateRule action) {
+        if (action.isNewRule()) {
+            return String.format("Rule: %s does not exist in model.", action.getRule());
+        }
+
+        ((OnlineTermStore)termStore).deactivateRule(action.getRule());
+
+        modelUpdates = true;
+        return String.format("Deactivated rule: %s", action.getRule());
+    }
+
+    protected String doDeleteRule(DeleteRule action) {
+        if (action.isNewRule()) {
+            return String.format("Rule: %s does not exist in model.", action.getRule());
+        }
+
+        ((OnlineTermStore)termStore).deleteRule(action.getRule());
+
+        action.getRule().unregister();
+
+        modelUpdates = true;
+        return String.format("Deleted rule: %s", action.getRule());
     }
 
     protected String doWriteInferredPredicates(WriteInferredPredicates action) {

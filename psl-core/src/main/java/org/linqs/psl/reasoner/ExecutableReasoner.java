@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ package org.linqs.psl.reasoner;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FileUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -39,7 +37,7 @@ import java.util.List;
  * Ground models are provided to the executable and results are read via temporary files.
  */
 public abstract class ExecutableReasoner extends Reasoner {
-    private static final Logger log = LoggerFactory.getLogger(ExecutableReasoner.class);
+    private static final Logger log = Logger.getLogger(ExecutableReasoner.class);
 
     /**
      * The file that PSL will write for the reasoner.

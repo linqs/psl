@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,9 @@ import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Reflection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -56,7 +54,7 @@ import java.util.Set;
  * For example, inference may set the value of the random variables on construction.
  */
 public abstract class InferenceApplication implements ModelApplication {
-    private static final Logger log = LoggerFactory.getLogger(InferenceApplication.class);
+    private static final Logger log = Logger.getLogger(InferenceApplication.class);
 
     protected List<Rule> rules;
     protected Database database;
@@ -106,13 +104,6 @@ public abstract class InferenceApplication implements ModelApplication {
 
         initializeAtoms();
 
-        reasoner = createReasoner();
-        termGenerator = createTermGenerator();
-        termStore = createTermStore();
-        groundRuleStore = createGroundRuleStore();
-
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
-
         if (normalizeWeights) {
             normalizeWeights();
         }
@@ -120,6 +111,13 @@ public abstract class InferenceApplication implements ModelApplication {
         if (relaxHardConstraints) {
             relaxHardConstraints();
         }
+
+        reasoner = createReasoner();
+        termGenerator = createTermGenerator();
+        termStore = createTermStore();
+        groundRuleStore = createGroundRuleStore();
+
+        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
 
         completeInitialize();
     }
@@ -208,7 +206,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         TrainingMap trainingMap = null;
         Set<StandardPredicate> evaluationPredicates = null;
-        if (truthDatabase != null) {
+        if (truthDatabase != null && evaluators.size() > 0) {
             trainingMap = new TrainingMap(atomManager, truthDatabase);
             evaluationPredicates = new HashSet<StandardPredicate>();
 

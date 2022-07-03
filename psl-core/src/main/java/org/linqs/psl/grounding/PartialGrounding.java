@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,12 @@ import org.linqs.psl.model.rule.logical.AbstractLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Logger;
 
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.healthmarketscience.sqlbuilder.SetOperationQuery;
 import com.healthmarketscience.sqlbuilder.UnionQuery;
-import org.linqs.psl.util.IteratorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -54,7 +53,7 @@ import java.util.Set;
  * Static utilities for performing partial grounding.
  */
 public class PartialGrounding {
-    private static final Logger log = LoggerFactory.getLogger(PartialGrounding.class);
+    private static final Logger log = Logger.getLogger(PartialGrounding.class);
 
     // Static only.
     private PartialGrounding() {}

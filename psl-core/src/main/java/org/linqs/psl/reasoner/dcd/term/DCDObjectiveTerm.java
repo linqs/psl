@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,7 @@ public class DCDObjectiveTerm implements StreamingTerm {
     @Override
     public void writeFixedValues(ByteBuffer fixedBuffer) {
         fixedBuffer.put((byte)(squared ? 1 : 0));
-        fixedBuffer.putInt(System.identityHashCode(rule));
+        fixedBuffer.putInt(rule.hashCode());
         fixedBuffer.putFloat(constant);
         fixedBuffer.putFloat(qii);
         fixedBuffer.putFloat(c);

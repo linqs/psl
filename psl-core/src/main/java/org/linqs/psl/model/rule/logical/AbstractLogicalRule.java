@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,12 +37,10 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.util.HashCode;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,7 +53,7 @@ import java.util.Set;
  * Base class for all (first order, i.e., not ground) logical rules.
  */
 public abstract class AbstractLogicalRule extends AbstractRule {
-    private static final Logger log = LoggerFactory.getLogger(AbstractLogicalRule.class);
+    private static final Logger log = Logger.getLogger(AbstractLogicalRule.class);
 
     /**
      * A key to store per-rule threading grounding resource under.
@@ -64,10 +62,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     protected Formula formula;
     protected final DNFClause negatedDNF;
-    private int hash;
 
-    public AbstractLogicalRule(Formula formula, String name) {
-        super(name);
+    protected AbstractLogicalRule(Formula formula, String name) {
+        this.name = name;
 
         this.formula = formula;
         groundingResourcesKey = AbstractLogicalRule.class.getName() + ";" + formula + ";GroundingResources";
@@ -103,7 +100,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         }
 
         // Build up the hash code from positive and negative literals.
-        hash = HashCode.DEFAULT_INITIAL_NUMBER;
+        int hash = HashCode.DEFAULT_INITIAL_NUMBER;
 
         for (Atom atom : negatedDNF.getPosLiterals()) {
             hash = HashCode.build(hash, atom);
@@ -112,6 +109,10 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         for (Atom atom : negatedDNF.getNegLiterals()) {
             hash = HashCode.build(hash, atom);
         }
+
+        this.hashcode = hash;
+
+        ensureRegistration();
     }
 
     public Formula getFormula() {
@@ -196,11 +197,6 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
-    public int hashCode() {
-        return hash;
-    }
-
-    @Override
     public boolean equals(Object other) {
         if (this == other) {
             return true;
@@ -212,7 +208,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
         AbstractLogicalRule otherRule = (AbstractLogicalRule)other;
 
-        if (this.hash != otherRule.hash) {
+        if (this.hashCode() != otherRule.hashCode()) {
             return false;
         }
 

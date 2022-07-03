@@ -1,7 +1,7 @@
 /**
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
 
+    protected long termCount;
+
     protected int currentPage;
     protected int nextCachedTermIndex;
 
@@ -77,6 +79,8 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         this.termBuffer = termBuffer;
         this.volatileBuffer = volatileBuffer;
+
+        termCount = 0l;
 
         nextCachedTermIndex = 0;
 
@@ -131,6 +135,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
             throw new IllegalStateException("Called next() when hasNext() == false (or before the first hasNext() call).");
         }
 
+        termCount++;
         T term = nextTerm;
         nextTerm = null;
 
@@ -244,7 +249,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         // the term cache is now invalid.
         termCache.clear();
 
-        parentStore.cacheIterationComplete();
+        parentStore.cacheIterationComplete(termCount);
     }
 
     /**

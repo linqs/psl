@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,21 @@
  */
 package org.linqs.psl.application.inference.online.messages.responses;
 
-import org.linqs.psl.application.inference.online.messages.actions.model.QueryAtom;
+import org.linqs.psl.application.inference.online.messages.actions.model.GetAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.StringUtils;
 
-public class QueryAtomResponse extends OnlineResponse {
+public class GetAtomResponse extends OnlineResponse {
     private double atomValue;
     private StandardPredicate predicate;
     private Constant[] arguments;
 
-    public QueryAtomResponse(QueryAtom queryAtomAction, double atomValue) {
-        super(queryAtomAction.getIdentifier());
+    public GetAtomResponse(GetAtom getAtomAction, double atomValue) {
+        super(getAtomAction.getIdentifier());
         this.atomValue = atomValue;
-        this.predicate = queryAtomAction.getPredicate();
-        this.arguments = queryAtomAction.getArguments();
+        this.predicate = getAtomAction.getPredicate();
+        this.arguments = getAtomAction.getArguments();
     }
 
     public double getAtomValue() {
@@ -49,7 +49,7 @@ public class QueryAtomResponse extends OnlineResponse {
     @Override
     public String toString() {
         return String.format(
-                "Query\t%s\t%s\t%s\t%f",
+                "GetAtom\t%s\t%s\t%s\t%f",
                 onlineActionID,
                 predicate.getName(),
                 StringUtils.join("\t", arguments),

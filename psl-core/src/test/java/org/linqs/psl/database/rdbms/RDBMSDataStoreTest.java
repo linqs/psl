@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@
  */
 package org.linqs.psl.database.rdbms;
 
-import static org.junit.Assert.assertEquals;
-
 import org.linqs.psl.database.DataStoreTest;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
-import org.linqs.psl.util.MathUtils;
 
 import org.junit.Test;
 
@@ -53,18 +50,30 @@ public abstract class RDBMSDataStoreTest extends DataStoreTest {
 
         TableStats stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p1));
         assertEquals(stats.getCount(), COUNT);
-        assertEquals(stats.getSelectivity("UNIQUEINTID_0"), 1.0 / 1.0, MathUtils.EPSILON);
+        assertEquals(stats.getSelectivity("UNIQUEINTID_0"), 1.0 / 1.0);
         assertEquals(stats.getCardinality("UNIQUEINTID_0"), COUNT / 1);
-        assertEquals(stats.getSelectivity("UNIQUEINTID_1"), 1.0 / 2.0, MathUtils.EPSILON);
+        assertEquals(stats.getSelectivity("UNIQUEINTID_1"), 1.0 / 2.0);
         assertEquals(stats.getCardinality("UNIQUEINTID_1"), COUNT / 2);
 
         stats = driver.getTableStats(((RDBMSDataStore)datastore).getPredicateInfo(p2));
         assertEquals(stats.getCount(), COUNT);
-        assertEquals(stats.getSelectivity("STRING_0"), 1.0 / 1.0, MathUtils.EPSILON);
+        assertEquals(stats.getSelectivity("STRING_0"), 1.0 / 1.0);
         assertEquals(stats.getCardinality("STRING_0"), COUNT / 1);
-        assertEquals(stats.getSelectivity("STRING_1"), 1.0 / 4.0, MathUtils.EPSILON);
+        assertEquals(stats.getSelectivity("STRING_1"), 1.0 / 4.0);
         assertEquals(stats.getCardinality("STRING_1"), COUNT / 4);
     }
 
    // TODO(eriq): Add a test that estimates join sizes with histograms.
+
+    @Test
+    public void testLongPredicateName() {
+        if (datastore == null) {
+            return;
+        }
+
+        super.testLongPredicateName();
+
+        // Indexing the database will also check the length of index names.
+        ((RDBMSDataStore)datastore).indexPredicates();
+    }
 }

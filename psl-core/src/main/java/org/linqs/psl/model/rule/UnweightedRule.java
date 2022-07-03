@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,5 +24,10 @@ import org.linqs.psl.model.atom.GroundAtom;
  * which constrain the values that {@link GroundAtom GroundAtoms} can take.
  */
 public interface UnweightedRule extends Rule {
+    /**
+     * Relax the unweighted rule instance by creating a weighted rule that instantiates
+     * potentials which act as penalty terms in the inference objective.
+     * This method must unregister the unweighted rule before constructing the new weighted rule.
+     */
     public WeightedRule relax(float weight, boolean squared);
 }

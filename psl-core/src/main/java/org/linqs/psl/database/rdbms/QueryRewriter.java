@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.linqs.psl.util.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,7 +43,7 @@ import java.util.Set;
  * Note that this class will make heavy use of referential equality.
  */
 public class QueryRewriter {
-    private static final Logger log = LoggerFactory.getLogger(QueryRewriter.class);
+    private static final Logger log = Logger.getLogger(QueryRewriter.class);
 
     /**
      * The different methods for estimating the join cost.

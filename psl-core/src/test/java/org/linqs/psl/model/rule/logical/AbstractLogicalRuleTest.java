@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,6 @@
  */
 package org.linqs.psl.model.rule.logical;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import org.linqs.psl.PSLTest;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
@@ -35,6 +29,7 @@ import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -44,7 +39,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class AbstractLogicalRuleTest {
+public class AbstractLogicalRuleTest extends PSLBaseTest {
     private DataStore dataStore;
     private Database database;
 
@@ -92,7 +87,7 @@ public class AbstractLogicalRuleTest {
             true
         );
 
-        PSLTest.assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
+        assertRule(rule, "1.0: ( SINGLECLOSED(A) & DOUBLECLOSED(A, B) ) >> SINGLEOPENED(B) ^2");
     }
 
     @Test

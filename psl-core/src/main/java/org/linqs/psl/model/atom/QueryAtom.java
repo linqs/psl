@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * An Atom that can be used in a query, but does not have a truth value.
  *
- * Arguments to a QueryAtom can be a mix of Variables and Constants.
+ * Arguments to a GetAtom can be a mix of Variables and Constants.
  * In other words, they are not necessarily ground
  * and can be used for matching GroundAtoms in a query.
  */
@@ -42,9 +42,9 @@ public class QueryAtom extends Atom {
     }
 
     /**
-     * Have this QueryAtom assume new values.
+     * Have this GetAtom assume new values.
      * Do not use unless you really know what you are doing.
-     * Typical usage would just create a new QueryAtom.
+     * Typical usage would just create a new GetAtom.
      */
     public void assume(Predicate predicate, Term... args) {
         init(false, false, predicate, args);

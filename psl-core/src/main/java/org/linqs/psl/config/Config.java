@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 package org.linqs.psl.config;
 
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.RuntimeStats;
 
@@ -25,10 +26,6 @@ import org.apache.commons.configuration2.BaseConfiguration;
 import org.apache.commons.configuration2.DataConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.log4j.helpers.Loader;
-import org.apache.log4j.helpers.OptionConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +60,7 @@ public class Config {
 
     public static final String CLASS_LIST_KEY = "classlist.classes";
 
-    private static final Logger log = LoggerFactory.getLogger(Config.class);
+    private static final Logger log = Logger.getLogger(Config.class);
 
     private static DataConfiguration config = null;
 
@@ -96,7 +93,7 @@ public class Config {
         }
 
         // Load the configuration file directly if the path exists.
-        String path = OptionConverter.getSystemProperty(PSL_CONFIG, PSL_CONFIG_DEFAULT);
+        String path = System.getProperty(PSL_CONFIG, PSL_CONFIG_DEFAULT);
         if (FileUtils.isFile(path)) {
             loadResource(path);
             return;
@@ -216,6 +213,10 @@ public class Config {
         }
 
         return null;
+    }
+
+    public static boolean hasProperty(String key) {
+        return config.containsKey(key);
     }
 
     public static boolean getBoolean(String key, boolean defaultValue) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import java.util.List;
 
 /**
  * The canonical place to keep all configuration options.
- * Options.fetchOptions() can be used to fetch all the options dynamically.
+ * Options.getOptions() can be used to fetch all the options dynamically.
  * The main() method will collect all the options and write them out to stdout as JSON.
  */
 public class Options {
@@ -447,7 +447,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
-        true,
+        false,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
     );
 
@@ -565,22 +565,22 @@ public class Options {
     );
 
     public static final Option ONLINE_HOST = new Option(
-            "inference.onlinehostname",
-            "127.0.0.1",
-            "The hostname for the online server."
+        "inference.onlinehostname",
+        "127.0.0.1",
+        "The hostname for the online server."
     );
 
     public static final Option ONLINE_PORT_NUMBER = new Option(
-            "inference.onlineportnumber",
-            56734,
-            "The port number for the online server."
+        "inference.onlineportnumber",
+        56734,
+        "The port number for the online server."
     );
 
     public static final Option ONLINE_READ_PARTITION = new Option(
-            "onlineatommanager.read",
-            -1,
-            "The partition to add new observations to."
-            + " If negative, the first read partition in the database will be used."
+        "onlineatommanager.read",
+        -1,
+        "The partition to add new observations to."
+        + " If negative, the first read partition in the database will be used."
     );
 
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
@@ -816,6 +816,22 @@ public class Options {
         + " ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
     );
 
+    public static final Option SGD_FIRST_ORDER_NORM = new Option(
+        "sgd.firstordernorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the first order optimality condition."
+        + " Default is the infinity-norm which is the absolute value of the maximum component of the gradient vector."
+        + " Note that the infinity-norm can be explicitly set with the string literal: 'Infinity'.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option SGD_FIRST_ORDER_THRESHOLD = new Option(
+        "sgd.firstorderthreshold",
+        0.01f,
+        "Stochastic gradient descent stops when the norm of the gradient is less than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option SGD_INVERSE_TIME_EXP = new Option(
         "sgd.inversescaleexp",
         1.0f,
@@ -983,47 +999,79 @@ public class Options {
         "The inference application used during weight learning."
     );
 
-    private static List<Option> additionalOptions = new ArrayList<Option>();
+    private static List<Option> options = new ArrayList<Option>();
+
+    static {
+        addClassOptions(Options.class);
+    }
 
     // Static only.
     private Options() {}
 
     public static void addOption(Option option) {
-        additionalOptions.add(option);
+        options.add(option);
     }
 
-    /**
-     * Reflexively parse the options from this class.
-     */
-    public static List<Option> fetchOptions() throws IllegalAccessException {
-        List<Option> options = new ArrayList<Option>();
-
-        for (Field field : Options.class.getFields()) {
-            // We only care about public static fields.
-            if ((field.getModifiers() & (Modifier.PUBLIC | Modifier.STATIC)) == 0) {
-                continue;
-            }
-
-            // We only want Option variables.
-            if (field.getType() != Option.class) {
-                continue;
-            }
-
-            options.add((Option)field.get(null));
+    public static void addClassOptions(Class targetClass) {
+        for (Option option : fetchClassOptions(targetClass)) {
+            addOption(option);
         }
+    }
 
+    public static List<Option> getOptions() {
         return options;
     }
 
-    @SuppressWarnings("unchecked")
-    public static void main(String[] args) throws IllegalAccessException {
-        JSONArray json = new JSONArray();
+    /**
+     * Reflexively parse the options from a class.
+     */
+    public static List<Option> fetchClassOptions(Class targetClass) {
+        List<Option> classOptions = new ArrayList<Option>();
 
-        for (Option option : fetchOptions()) {
-            json.put(option.toJSON());
+        try {
+            for (Field field : targetClass.getFields()) {
+                // We only care about public static fields.
+                if ((field.getModifiers() & (Modifier.PUBLIC | Modifier.STATIC)) == 0) {
+                    continue;
+                }
+
+                // We only want Option variables.
+                if (field.getType() != Option.class) {
+                    continue;
+                }
+
+                classOptions.add((Option)field.get(null));
+            }
+        } catch (IllegalAccessException ex) {
+            throw new RuntimeException(ex);
         }
 
-        for (Option option : additionalOptions) {
+        return classOptions;
+    }
+
+    /**
+     * Clean all the known options.
+     * Mainly used for testing.
+     */
+    public static void clearAll() {
+        clearAll(false);
+    }
+
+    public static void clearAll(boolean force) {
+        for (Option option : getOptions()) {
+            // Leave a carve-out for special options.
+            if (!force && option == PROJECT_VERSION) {
+                continue;
+            }
+
+            option.clear();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        JSONArray json = new JSONArray();
+        for (Option option : getOptions()) {
             json.put(option.toJSON());
         }
 

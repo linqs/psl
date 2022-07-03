@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.linqs.psl.model.rule.Rule;
 
 /**
  * Deactivate an existing rule in the model.
+ * Deactivated rules are still partially grounded if atoms are added.
  * String format: DeactivateRule <rule>
  */
 public class DeactivateRule extends TemplateAction {

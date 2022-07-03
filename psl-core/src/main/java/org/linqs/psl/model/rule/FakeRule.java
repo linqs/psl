@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2022 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * All instances of fake rules have the same default hashcode: 0.
+ * Two fake rules are equal if they have the same squared variable value.
+ */
 public class FakeRule extends AbstractRule implements WeightedRule {
     protected float weight;
     protected boolean squared;
 
     public FakeRule(float weight, boolean squared) {
-        super("fake", false);
+        super("fake", 0);
 
         this.weight = weight;
         this.squared = squared;
@@ -100,11 +104,6 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public int hashCode() {
-        throw new UnsupportedOperationException("FakeRules should not be stored in hashing structures.");
-    }
-
-    @Override
     public boolean equals(Object other) {
         if (this == other) {
             return true;
@@ -119,6 +118,6 @@ public class FakeRule extends AbstractRule implements WeightedRule {
             return false;
         }
 
-        return super.equals(other);
+        return true;
     }
 }
