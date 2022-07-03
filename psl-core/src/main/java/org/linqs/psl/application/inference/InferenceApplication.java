@@ -200,7 +200,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         TrainingMap trainingMap = null;
         Set<StandardPredicate> evaluationPredicates = null;
-        if (truthDatabase != null) {
+        if (truthDatabase != null && evaluators.size() > 0) {
             trainingMap = new TrainingMap(atomManager, truthDatabase);
             evaluationPredicates = new HashSet<StandardPredicate>();
 
