@@ -197,19 +197,30 @@ public class DCDObjectiveTerm implements StreamingTerm {
 
     @Override
     public String toString() {
+        return toString(null);
+    }
+
+    public String toString(float[] variableValues) {
         // weight * [max(coeffs^T * x - constant, 0.0)]^2
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(rule.getWeight() * c);
+        builder.append("" + rule.getWeight() + " * " + c);
         builder.append(" * max(0.0, ");
 
         for (int i = 0; i < size; i++) {
             builder.append("(");
             builder.append(coefficients[i]);
-            builder.append(" * ");
-            builder.append(variableIndexes[i]);
-            builder.append(")");
+
+            if (variableValues == null) {
+                builder.append(" * <index:");
+                builder.append(variableIndexes[i]);
+                builder.append(">)");
+            } else {
+                builder.append(" * ");
+                builder.append(variableValues[variableIndexes[i]]);
+                builder.append(")");
+            }
 
             if (i != size - 1) {
                 builder.append(" + ");

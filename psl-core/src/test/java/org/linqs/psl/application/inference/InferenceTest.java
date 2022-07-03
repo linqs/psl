@@ -342,13 +342,11 @@ public abstract class InferenceTest extends PSLBaseTest {
      */
     @Test
     public void testSimplexConstraints() {
-        TestModel.ModelInformation info = TestModel.getModel();
-
         List<Coefficient> coefficients = Arrays.asList((Coefficient)(new ConstantNumber(1.0f)));
         List<SummationAtomOrAtom> atoms =  Arrays.asList(
                 (SummationAtomOrAtom)(new SummationAtom(info.predicates.get("Friends"),
                 new SummationVariableOrTerm[]{new SummationVariable("A"), new SummationVariable("B")}))
-        );;
+        );
 
         // Add rule: Friends(+A, +B) = 1.0
         info.model.addRule(new UnweightedArithmeticRule(

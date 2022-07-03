@@ -336,18 +336,18 @@ public class SGDOnlineInferenceTest extends PSLBaseTest {
         Rule friendsRule = new WeightedLogicalRule(
                 new Implication(
                         new Conjunction(
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("X")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("X"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("X"), new Variable("Y"))
                         ),
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("Y"), new Variable("X"))
                 ),
                 10.0f, true);
 
         Rule negativePriorRule = new WeightedLogicalRule(
                 new Negation(
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("I"), new Variable("J"))
                 ),
                 1.0f, true);
 
@@ -458,18 +458,18 @@ public class SGDOnlineInferenceTest extends PSLBaseTest {
         Rule friendsRule = new WeightedLogicalRule(
                 new Implication(
                         new Conjunction(
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("X")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("X"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("X"), new Variable("Y"))
                         ),
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("Y"), new Variable("X"))
                 ),
                 10.0f, true);
 
         Rule negativePriorRule = new WeightedLogicalRule(
                 new Negation(
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("I"), new Variable("J"))
                 ),
                 1.0f, true);
 
@@ -509,18 +509,18 @@ public class SGDOnlineInferenceTest extends PSLBaseTest {
         Rule friendsRule = new WeightedLogicalRule(
                 new Implication(
                         new Conjunction(
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("X")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("X"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("X"), new Variable("Y"))
                         ),
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("Y"), new Variable("X"))
                 ),
                 10.0f, true);
 
         Rule negativePriorRule = new WeightedLogicalRule(
                 new Negation(
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("I"), new Variable("J"))
                 ),
                 1.0f, true);
 
@@ -572,18 +572,18 @@ public class SGDOnlineInferenceTest extends PSLBaseTest {
         Rule friendsRule = new WeightedLogicalRule(
                 new Implication(
                         new Conjunction(
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("A")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B")),
-                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("X")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Person"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("X"), new Variable("Y")),
+                                new org.linqs.psl.model.atom.QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("X"), new Variable("Y"))
                         ),
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("B"), new Variable("A"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("Y"), new Variable("X"))
                 ),
                 10.0f, true);
 
         Rule negativePriorRule = new WeightedLogicalRule(
                 new Negation(
-                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("A"), new Variable("B"))
+                        new org.linqs.psl.model.atom.QueryAtom(StandardPredicate.get("Friends"), new Variable("I"), new Variable("J"))
                 ),
                 1.0f, true);
 
