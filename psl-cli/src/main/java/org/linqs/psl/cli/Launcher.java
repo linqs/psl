@@ -115,14 +115,31 @@ public class Launcher {
      * Convert all compatible options to the PSL runtime.
      */
     private void convertRuntimeOptions() {
+        boolean hasInference = false;
+        boolean hasLearn = false;
+
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
+            hasInference = true;
             RuntimeOptions.INFERENCE.set(true);
-            RuntimeOptions.INFERENCE_METHOD.set(parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER));
+
+            String method = parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER);
+            if (method != null) {
+                RuntimeOptions.INFERENCE_METHOD.set(method);
+            }
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
+            hasLearn = true;
             RuntimeOptions.LEARN.set(true);
-            RuntimeOptions.LEARN_METHOD.set(parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN));
+
+            String method = parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN);
+            if (method != null) {
+                RuntimeOptions.LEARN_METHOD.set(method);
+            }
+        }
+
+        if (!hasInference && !hasLearn) {
+            RuntimeOptions.INFERENCE.set(true);
         }
 
         // HACK(eriq): Since the CLU currently only supports one mode (infer/learn) at a time,
@@ -201,14 +218,13 @@ public class Launcher {
     }
 
     private void run() {
-        convertRuntimeOptions();
-        Runtime runtime = new Runtime();
-
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
             runOnlineClient();
             return;
         }
 
+        convertRuntimeOptions();
+        Runtime runtime = new Runtime();
         runtime.run();
     }
 

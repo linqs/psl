@@ -19,6 +19,9 @@ package org.linqs.psl.config;
 
 import org.json.JSONObject;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * A container for configuration options.
  * This is the preferred way to interface with configuration options compiled into the code.
@@ -30,6 +33,8 @@ public class Option implements Comparable<Option> {
     public static final int FLAG_POSITIVE = (1 << 1);  // > 0
     public static final int FLAG_LT_ONE = (1 << 2);  // < 1
     public static final int FLAG_LTE_ONE = (1 << 3);  // <= 1
+
+    private static Set<String> seenNames = new HashSet<String>();
 
     private String name;
     private Object defaultValue;
@@ -83,6 +88,11 @@ public class Option implements Comparable<Option> {
         this.description = description;
         this.type = type;
         this.flags = flags;
+
+        if (seenNames.contains(name)) {
+            throw new RuntimeException("Option with name '" + name + "' already seen.");
+        }
+        seenNames.add(name);
     }
 
     public String name() {

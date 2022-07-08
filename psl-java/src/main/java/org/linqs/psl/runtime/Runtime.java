@@ -116,7 +116,7 @@ public class Runtime {
         boolean hasInference = RuntimeOptions.INFERENCE.getBoolean();
 
         if (!hasInference && !hasLearn) {
-            throw new IllegalStateException("Neither inference nor learning were specified.");
+            throw new IllegalStateException("Neither inference nor learning was specified.");
         }
 
         if (hasLearn && !RuntimeOptions.LEARN_DATA_PATH.isSet()) {

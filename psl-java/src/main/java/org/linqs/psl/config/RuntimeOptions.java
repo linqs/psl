@@ -155,7 +155,7 @@ public class RuntimeOptions {
     );
 
     public static final Option LEARN_METHOD = new Option(
-        "runtime.learn",
+        "runtime.learn.method",
         MaxLikelihoodMPE.class.getName(),
         "Use the specified WeightLearningApplication when running learning."
     );
