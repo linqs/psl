@@ -18,8 +18,11 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.online.OnlineServer;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.SystemUtils;
 
 import org.junit.After;
@@ -64,12 +67,16 @@ public abstract class CLITest {
     @Before
     public void setUp() {
         (new File(outDir)).mkdirs();
+        Options.clearAll();
     }
 
     @After
     public void tearDown() {
         (new File(outDir)).delete();
+        Logger.setLevel("OFF");
         Predicate.clearForTesting();
+        AbstractRule.unregisterAllRulesForTesting();
+        Options.clearAll();
     }
 
     public void run(String modelPath, String dataPath) {

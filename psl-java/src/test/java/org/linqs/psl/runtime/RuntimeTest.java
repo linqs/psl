@@ -20,6 +20,8 @@ package org.linqs.psl.runtime;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.util.Logger;
 
 import org.junit.After;
 import org.junit.Before;
@@ -58,7 +60,9 @@ public abstract class RuntimeTest {
     @After
     public void tearDown() {
         (new File(outDir)).delete();
+        Logger.setLevel("OFF");
         Predicate.clearForTesting();
+        AbstractRule.unregisterAllRulesForTesting();
         Options.clearAll();
     }
 
