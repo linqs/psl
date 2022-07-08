@@ -142,7 +142,7 @@ public class Launcher {
             RuntimeOptions.INFERENCE.set(true);
         }
 
-        // HACK(eriq): Since the CLU currently only supports one mode (infer/learn) at a time,
+        // HACK(eriq): Since the CLI currently only supports one mode (infer/learn) at a time,
         // we will just set both modes when we see data/model files.
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_DATA)) {
@@ -151,8 +151,12 @@ public class Launcher {
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL)) {
-            RuntimeOptions.INFERENCE_MODEL_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
-            RuntimeOptions.LEARN_MODEL_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL));
+            String modelPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL);
+
+            RuntimeOptions.INFERENCE_MODEL_PATH.set(modelPath);
+            RuntimeOptions.LEARN_MODEL_PATH.set(modelPath);
+
+            RuntimeOptions.LEARN_OUTPUT_MODEL_PATH.set(modelPath.replaceFirst("\\.psl$", "-learned.psl"));
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_H2_PATH)) {
