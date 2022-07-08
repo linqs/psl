@@ -88,20 +88,20 @@ function deployDocs() {
 function main() {
     if [[ $# -ne 0 ]]; then
         echo "USAGE: $0"
-        echo "   LINQS_DEPLOY_TOKEN and GITHUB_REF must be supplied as env variables."
+        echo "   LINQS_DEPLOY_TOKEN, GITHUB_REPOSITORY, and GITHUB_REF must be supplied as env variables."
         exit 1
     fi
 
     trap exit SIGINT
     set -e
 
-    if ! verifyCIState "${GITHUB_REF}" ; then
+    if ! verifyCIState "${GITHUB_REPOSITORY}" "${GITHUB_REF}" ; then
         echo "Skipping docs deploy."
         return 0
     fi
 
     buildDocs
-    deployDocs "${GITHUB_REPOSITORY}" "${GITHUB_REF}"
+    deployDocs "${GITHUB_REF}"
 }
 
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"
