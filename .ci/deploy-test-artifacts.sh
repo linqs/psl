@@ -24,9 +24,9 @@ function verifyCIState() {
         returnValue=$((returnValue | (1 << shift++)))
     fi
 
-    # Test deployment should only happen on a push to develop.
-    if [[ ! "${gitref}" == 'refs/heads/develop' ]]; then
-        echo "Git ref does not point to develop: '${gitref}'."
+    # Test deployment should only happen on a push to main.
+    if [[ ! "${gitref}" == 'refs/heads/main' ]]; then
+        echo "Git ref does not point to main: '${gitref}'."
         returnValue=$((returnValue | (1 << shift++)))
     fi
 

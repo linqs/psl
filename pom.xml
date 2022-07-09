@@ -52,7 +52,7 @@
     <scm>
         <connection>scm:git:git://github.com/linqs/psl.git</connection>
         <developerConnection>scm:git:ssh://github.com:linqs/psl.git</developerConnection>
-        <url>http://github.com/linqs/psl/tree/master</url>
+        <url>http://github.com/linqs/psl/tree/main</url>
     </scm>
 
     <modules>
