@@ -167,33 +167,54 @@ public class DataLoader {
     private static Set<StandardPredicate> parsePredicates(YAMLConfiguration yaml, boolean useIntIds, DataStore dataStore, String relativeDir) {
         Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>();
 
-        boolean foundPredicate = false;
+        // Because of how values are iterated over, collect all the predicate properties first, and then parse the predicates.
+        Map<String, List<Object>> predicateProperties = new HashMap<String, List<Object>>();
+
         Iterator<String> keyIterator = yaml.getKeys(KEY_PREDICATE);
         while (keyIterator.hasNext()) {
-            foundPredicate = true;
-
             String key = keyIterator.next();
+            String predicateName = key.replaceFirst("^" + KEY_PREDICATE + ".", "");
             Object rawValue = yaml.getProperty(key);
 
-            String predicateName = key.replaceFirst("^" + KEY_PREDICATE + ".", "");
+            // If there is a period, this indicates that this is actually a subkey (e.g. Predicate/2.types).
+            if (predicateName.contains(".")) {
+                String[] parts = predicateName.split("\\.");
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException("Unknown key structure: '" + key + "'.");
+                }
 
-            List<Object> values = null;
-            if (rawValue instanceof String) {
-                values = new ArrayList<Object>();
-                values.add((String)rawValue);
-            } else if (rawValue instanceof List) {
-                @SuppressWarnings("unchecked")
-                List<Object> ignoreCompilerWarning = (List<Object>)rawValue;
-                values = ignoreCompilerWarning;
+                predicateName = parts[0];
+                String subKey = parts[1];
+
+                if (!predicateProperties.containsKey(predicateName)) {
+                    predicateProperties.put(predicateName, new ArrayList<Object>());
+                }
+
+                Map<String, Object> subKeyMap = new HashMap<String, Object>();
+                subKeyMap.put(subKey, rawValue);
+
+                predicateProperties.get(predicateName).add(subKeyMap);
             } else {
-                throw new IllegalStateException(String.format("Predicate, %s, has an unknown value type: %s.", predicateName, rawValue.getClass().getName()));
-            }
+                if (!predicateProperties.containsKey(predicateName)) {
+                    predicateProperties.put(predicateName, new ArrayList<Object>());
+                }
 
-            parsePredicate(predicateName, values, useIntIds, dataStore, closedPredicates, relativeDir);
+                if (rawValue instanceof String) {
+                    predicateProperties.get(predicateName).add(yaml.getProperty(key));
+                } else if (rawValue instanceof List) {
+                    for (Object value : (List)rawValue) {
+                        predicateProperties.get(predicateName).add(value);
+                    }
+                }
+            }
         }
 
-        if (!foundPredicate) {
+        if (predicateProperties.size() == 0) {
             throw new IllegalStateException(String.format("Found no predicates. Predicates must be defined under the '%s' key.", KEY_PREDICATE));
+        }
+
+        for (Map.Entry<String, List<Object>> entry : predicateProperties.entrySet()) {
+            parsePredicate(entry.getKey(), entry.getValue(), useIntIds, dataStore, closedPredicates, relativeDir);
         }
 
         return closedPredicates;
