@@ -20,6 +20,7 @@ package org.linqs.psl.database.rdbms.driver;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
@@ -40,27 +41,57 @@ public class H2DatabaseDriver extends DatabaseDriver {
 
     private static final Logger log = Logger.getLogger(H2DatabaseDriver.class);
 
+    public static final int LOCK_TIMEOUT_MS = 5 * 60 * 1000;
+
     /**
      * Constructor for the H2 database driver.
      * @param dbType Type of database, either Disk or Memory.
      * @param path Path to database on disk, or name if type is Memory.
      * @param clearDatabase Whether to perform a DROP ALL on the database after connecting.
      */
-    public H2DatabaseDriver(Type dbType, String path, boolean clearDatabase) {
-        super("org.h2.Driver", buildConnectionString(dbType, path), clearDatabase);
+    public H2DatabaseDriver(Type dbType, String path, boolean clear) {
+        super("org.h2.Driver", buildConnectionString(dbType, path), checkClearDatabase(dbType, path, clear));
 
         log.debug("Connected to H2 database: " + path);
     }
 
     private static String buildConnectionString(Type dbType, String path) {
+        String connectionString = "jdbc:h2";
+
         switch (dbType) {
             case Disk:
-                return "jdbc:h2:" + path;
+                connectionString += ":" + path;
+                break;
             case Memory:
-                return "jdbc:h2:mem:" + path;
+                connectionString += ":mem:" + path;
+                break;
             default:
                 throw new IllegalArgumentException("Unknown database type: " + dbType);
         }
+
+        connectionString += ";LOCK_TIMEOUT=" + LOCK_TIMEOUT_MS;
+
+        return connectionString;
+    }
+
+    /**
+     * H2 has some additional issues with clearing databases, it is easier just to remove the files.
+     */
+    private static boolean checkClearDatabase(Type dbType, String path, boolean clear) {
+        if (!clear) {
+            return false;
+        }
+
+        if (dbType == Type.Memory) {
+            return true;
+        }
+
+        // Manually delete the main database and possible trace database.
+        FileUtils.delete(path + ".mv.db");
+        FileUtils.delete(path + ".trace.db");
+
+        // The database has already been cleared, but we will still pass back a true.
+        return true;
     }
 
     @Override
