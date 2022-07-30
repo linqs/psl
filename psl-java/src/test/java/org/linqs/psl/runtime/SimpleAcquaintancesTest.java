@@ -147,6 +147,14 @@ public class SimpleAcquaintancesTest extends RuntimeTest {
         }
     }
 
+    @Test
+    public void testUnaryDataFile() {
+        String modelPath = Paths.get(baseModelsDir, "unary.psl").toString();
+        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_unary.data").toString();
+
+        runInference(modelPath, dataPath);
+    }
+
     // Not an actual similarity.
     public static class SimNameExternalFunction implements ExternalFunction {
         @Override

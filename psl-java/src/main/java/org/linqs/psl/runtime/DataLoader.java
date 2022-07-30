@@ -259,11 +259,17 @@ public class DataLoader {
                     Object rawValue = propEntry.getValue();
 
                     if (key.equals(PROPERTY_TYPES)) {
-                        @SuppressWarnings("unchecked")
-                        List<String> rawTypes = (List<String>)(rawValue);
+                        if (rawValue instanceof String) {
+                            types.add(ConstantType.valueOf((String)rawValue));
+                        } else if (rawValue instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            List<String> rawTypes = (List<String>)(rawValue);
 
-                        for (String rawType : rawTypes) {
-                            types.add(ConstantType.valueOf(rawType));
+                            for (String rawType : rawTypes) {
+                                types.add(ConstantType.valueOf(rawType));
+                            }
+                        } else {
+                            throw new IllegalArgumentException(String.format("Predicate, %s, has an unknown type representation (expecting string or list).", name));
                         }
 
                         if (arity != -1 && arity != types.size()) {

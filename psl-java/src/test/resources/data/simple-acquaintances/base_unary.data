@@ -1,0 +1,21 @@
+predicates:
+  A/1:
+   - open
+  B/1:
+   - open
+   - types:
+      - UniqueStringID
+  C:
+   - open
+   - types:
+      - UniqueStringID
+  D/1:
+   - open
+  E/1:
+   - open
+   - types:
+      - UniqueStringID
+  F:
+   - open
+   - types:
+      - UniqueStringID
