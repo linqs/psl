@@ -67,14 +67,17 @@ public final class GroundingAPI {
     // Static only.
     public GroundingAPI() {}
 
+    /**
+     * Compute ground rules for an external process.
+     * |atoms| is formatted as: [[atom id, relation index, value], ...].
+     */
     public static GroundRuleInfo[] ground(
             String[] ruleStrings,
             String[] predicateNames, int[] predicateArities,
-            String[][][] observedData, String[][][] unobservedData) {
+            String[][] atoms, String[][] atomArguments) {
         Logger.setLevel("WARN");
 
-        assert(predicateNames.length == observedData.length);
-        assert(predicateNames.length == unobservedData.length);
+        assert(predicateNames.length == predicateArities.length);
 
         DataStore dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Disk, RuntimeOptions.DB_H2_PATH.defaultValue().toString(), true));
 
@@ -86,7 +89,7 @@ public final class GroundingAPI {
             rules.add(rule);
         }
 
-        Set<StandardPredicate> closedPredicates = loadData(dataStore, predicateNames, observedData, unobservedData);
+        Set<StandardPredicate> closedPredicates = loadData(dataStore, predicateNames, atoms, atomArguments);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_UNOBS);
         Partition observationsPartition = dataStore.getPartition(PARTITION_OBS);
@@ -95,7 +98,7 @@ public final class GroundingAPI {
         AtomManager atomManager = new PersistedAtomManager(database);
         GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
 
-        Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, observedData, unobservedData, atomManager);
+        Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, atoms, atomArguments, atomManager);
 
         Grounding.groundAll(rules, atomManager, groundRuleStore);
         GroundRuleInfo[] groundRules = mapGroundRules(rules, atomMap, groundRuleStore);
@@ -121,51 +124,54 @@ public final class GroundingAPI {
 
     private static Set<StandardPredicate> loadData(
             DataStore dataStore, String[] predicateNames,
-            String[][][] observedData, String[][][] unobservedData) {
-        Set<StandardPredicate> observedPredicates = loadPartition(dataStore, PARTITION_OBS, predicateNames, observedData);
-        Set<StandardPredicate> unobservedPredicates = loadPartition(dataStore, PARTITION_UNOBS, predicateNames, unobservedData);
+            String[][] atoms, String[][] atomArguments) {
+        Set<StandardPredicate> observedPredicates = new HashSet<StandardPredicate>(predicateNames.length);
 
-        observedPredicates.removeAll(unobservedPredicates);
+        for (int predicateIndex = 0; predicateIndex < predicateNames.length; predicateIndex++) {
+            StandardPredicate predicate = StandardPredicate.get(predicateNames[predicateIndex]);
+            boolean isObserved = true;
+
+            Object[] insertBuffer = new Object[predicate.getArity()];
+
+            Inserter obsInserter = dataStore.getInserter(predicate, dataStore.getPartition(PARTITION_OBS));
+            Inserter unobsInserter = dataStore.getInserter(predicate, dataStore.getPartition(PARTITION_UNOBS));
+
+            for (int atomIndex = 0; atomIndex < atoms.length; atomIndex++) {
+                if (predicateIndex != Integer.parseInt(atoms[atomIndex][1])) {
+                    continue;
+                }
+
+                int id = Integer.parseInt(atoms[atomIndex][0]);
+
+                Double value = null;
+                if (atoms[atomIndex][2].length() > 0) {
+                    value = Double.parseDouble(atoms[atomIndex][2]);
+                }
+
+                for (int i = 0; i < predicate.getArity(); i++) {
+                    insertBuffer[i] = atomArguments[atomIndex][i];
+                }
+
+                // Observed atoms all hae values.
+                if (value == null) {
+                    isObserved = false;
+                    unobsInserter.insert(insertBuffer);
+                } else {
+                    obsInserter.insertValue(value, insertBuffer);
+                }
+            }
+
+            if (isObserved) {
+                observedPredicates.add(predicate);
+            }
+        }
 
         return observedPredicates;
     }
 
-    private static Set<StandardPredicate> loadPartition(DataStore dataStore, String partitionName,
-            String[] predicateNames, String[][][] data) {
-        Set<StandardPredicate> usedPredicates = new HashSet<StandardPredicate>(predicateNames.length);
-        Partition partition = dataStore.getPartition(partitionName);
-
-        for (int predicateIndex = 0; predicateIndex < predicateNames.length; predicateIndex++) {
-            if (data[predicateIndex].length == 0) {
-                continue;
-            }
-
-            StandardPredicate predicate = StandardPredicate.get(predicateNames[predicateIndex]);
-            usedPredicates.add(predicate);
-
-            Inserter inserter = dataStore.getInserter(predicate, partition);
-            Object[] insertBuffer = new Object[predicate.getArity()];
-
-            for (String[] row : data[predicateIndex]) {
-                for (int i = 0; i < predicate.getArity(); i++) {
-                    insertBuffer[i] = row[i];
-                }
-
-                if (row.length == predicate.getArity()) {
-                    inserter.insert(insertBuffer);
-                } else {
-                    double truthValue = Double.parseDouble(row[predicate.getArity()]);
-                    inserter.insertValue(truthValue, insertBuffer);
-                }
-            }
-        }
-
-        return usedPredicates;
-    }
-
     private static Map<GroundAtom, Integer> buildAtomMap(
             String[] predicateNames,
-            String[][][] observedData, String[][][] unobservedData,
+            String[][] atoms, String[][] atomArguments,
             AtomManager atomManager) {
         // Each atom gets mapped in a reversible way to an index.
         // These indexes are contiguous, go through the predicates in-order, handle obs, and finally unobs.
@@ -176,22 +182,20 @@ public final class GroundingAPI {
             StandardPredicate predicate = StandardPredicate.get(predicateNames[predicateIndex]);
             Constant[] arguments = new Constant[predicate.getArity()];
 
-            for (int rowIndex = 0; rowIndex < observedData[predicateIndex].length; rowIndex++) {
+            for (int atomIndex = 0; atomIndex < atoms.length; atomIndex++) {
+                if (predicateIndex != Integer.parseInt(atoms[atomIndex][1])) {
+                    continue;
+                }
+
+                int id = Integer.parseInt(atoms[atomIndex][0]);
+
+
                 for (int i = 0; i < arguments.length; i++) {
-                    arguments[i] = new UniqueStringID(observedData[predicateIndex][rowIndex][i]);
+                    arguments[i] = new UniqueStringID(atomArguments[atomIndex][i]);
                 }
 
                 GroundAtom atom = atomManager.getAtom(predicate, arguments);
-                atomMap.put(atom, atomMap.size());
-            }
-
-            for (int rowIndex = 0; rowIndex < unobservedData[predicateIndex].length; rowIndex++) {
-                for (int i = 0; i < arguments.length; i++) {
-                    arguments[i] = new UniqueStringID(unobservedData[predicateIndex][rowIndex][i]);
-                }
-
-                GroundAtom atom = atomManager.getAtom(predicate, arguments);
-                atomMap.put(atom, atomMap.size());
+                atomMap.put(atom, Integer.valueOf(id));
             }
         }
 
