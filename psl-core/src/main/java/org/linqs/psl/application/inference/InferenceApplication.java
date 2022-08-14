@@ -159,6 +159,10 @@ public abstract class InferenceApplication implements ModelApplication {
 
         log.info("Grounding complete.");
 
+        if (skipInference) {
+            return;
+        }
+
         log.debug("Initializing objective terms for {} ground rules.", groundCount);
         @SuppressWarnings("unchecked")
         long termCount = termGenerator.generateTerms(groundRuleStore, termStore);
