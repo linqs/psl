@@ -19,10 +19,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.linqs</groupId>
-    <artifactId>psl-java</artifactId>
-    <name>psl-java</name>
+    <artifactId>psl-runtime</artifactId>
+    <name>psl-runtime</name>
     <packaging>jar</packaging>
-    <description>The Java interface module of the PSL software from the LINQS research group.</description>
+    <description>The PSL Runtime provided as an executable uber jar.</description>
     <parent>
         <groupId>org.linqs</groupId>
         <artifactId>psl</artifactId>
@@ -36,13 +36,33 @@
     <dependencies>
         <dependency>
             <groupId>org.linqs</groupId>
-            <artifactId>psl-parser</artifactId>
+            <artifactId>psl-java</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>1.26</version>
-        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.3</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.linqs.psl.runtime.Runtime</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
