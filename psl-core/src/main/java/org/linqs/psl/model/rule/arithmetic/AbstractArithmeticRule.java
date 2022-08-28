@@ -21,6 +21,7 @@ import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.grounding.GroundRuleStore;
@@ -741,13 +742,16 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
         Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 
+        String queryString = null;
+
         // If there are only summation atoms in this rule, then only get one result from the database.
         // The rule will be fully grounded, so we won't use any variable replacements.
         if (projectionMap.size() == 0) {
-            query.setFetchNext(1);
-        }
+            queryString = ((RDBMSDataStore)database.getDataStore()).getDriver().setLimit(query, 1);
+        } else
+            queryString = query.validate().toString();
 
-        return new RawQuery(query.validate().toString(),  projectionMap, variableTypes);
+        return new RawQuery(queryString,  projectionMap, variableTypes);
     }
 
     private GroundingResources prepSummationGroundingResources(RDBMSDatabase database) {

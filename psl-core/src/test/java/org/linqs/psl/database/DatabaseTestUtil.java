@@ -20,6 +20,7 @@ package org.linqs.psl.database;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
+import org.linqs.psl.database.rdbms.driver.SQLiteDriver;
 import org.linqs.psl.util.RandUtils;
 
 import java.io.File;
@@ -72,11 +73,22 @@ public class DatabaseTestUtil {
         }
     }
 
+    public static DatabaseDriver getSQLiteDriver() {
+        return getSQLiteDriver(true, false);
+    }
+
+    public static DatabaseDriver getSQLiteDriver(boolean clear, boolean persisted) {
+        return new SQLiteDriver(!persisted, DB_BASE_PATH, DB_NAME, clear);
+    }
+
     public static void cleanH2Driver() {
         (new File(DB_BASE_PATH + ".h2.db")).delete();
         (new File(DB_BASE_PATH + ".trace.db")).delete();
     }
 
     public static void cleanPostgresDriver() {
+    }
+
+    public static void cleanSQLiteDriver() {
     }
 }

@@ -23,6 +23,7 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.CreateTableQuery;
+import com.healthmarketscience.sqlbuilder.SelectQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
@@ -144,6 +145,14 @@ public abstract class DatabaseDriver {
      * Is generally called after insertion and indexing.
      */
     public abstract void updateDBStats();
+
+    /**
+     * Take in a select query and return a select query string that limits the number of results to the specified amount.
+     */
+    public String setLimit(SelectQuery query, int count) {
+        query.setFetchNext(count);
+        return query.validate().toString();
+    }
 
     public boolean canExplain() {
         return false;
