@@ -30,6 +30,7 @@ import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
+import org.linqs.psl.database.rdbms.driver.SQLiteDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
@@ -134,10 +135,6 @@ public class Runtime {
         if (hasInference && !RuntimeOptions.INFERENCE_DATA_PATH.isSet()) {
             throw new IllegalStateException("No infernece data specified.");
         }
-
-        if (!RuntimeOptions.DB_H2.getBoolean() && !RuntimeOptions.DB_PG.getBoolean()) {
-            throw new IllegalStateException("No database type selected.");
-        }
     }
 
     private boolean checkHelp() {
@@ -205,18 +202,28 @@ public class Runtime {
 
     private DataStore initDataStore() {
         DatabaseDriver driver = null;
+        String path = null;
 
-        if (RuntimeOptions.DB_PG.getBoolean()) {
-            String name = RuntimeOptions.DB_PG_NAME.getString();
-            driver = new PostgreSQLDriver(name, true);
-        } else {
-            String path = RuntimeOptions.DB_H2_PATH.getString();
-            H2DatabaseDriver.Type type = H2DatabaseDriver.Type.Disk;
-            if (RuntimeOptions.DB_H2_INMEMORY.getBoolean()) {
-                type = H2DatabaseDriver.Type.Memory;
-            }
+        switch (DatabaseType.valueOf(RuntimeOptions.DB_TYPE.getString())) {
+            case H2:
+                path = RuntimeOptions.DB_H2_PATH.getString();
+                H2DatabaseDriver.Type type = H2DatabaseDriver.Type.Disk;
+                if (RuntimeOptions.DB_H2_INMEMORY.getBoolean()) {
+                    type = H2DatabaseDriver.Type.Memory;
+                }
 
-            driver = new H2DatabaseDriver(type, path, true);
+                driver = new H2DatabaseDriver(type, path, true);
+                break;
+            case Postgres:
+                driver = new PostgreSQLDriver(RuntimeOptions.DB_PG_NAME.getString(), true);
+                break;
+            case SQLite:
+                path = RuntimeOptions.DB_SQLITE_PATH.getString();
+                boolean inMemory = RuntimeOptions.DB_SQLITE_INMEMORY.getBoolean();
+                driver = new SQLiteDriver(inMemory, path, true);
+                break;
+            default:
+                throw new IllegalStateException("Unknown database type: " + RuntimeOptions.DB_TYPE.getString());
         }
 
         return new RDBMSDataStore(driver);
@@ -438,5 +445,11 @@ public class Runtime {
     public static void main(String[] args) {
         Runtime runtime = new Runtime(args);
         runtime.run();
+    }
+
+    public static enum DatabaseType {
+        H2,
+        Postgres,
+        SQLite,
     }
 }

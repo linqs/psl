@@ -194,12 +194,26 @@ public class RDBMSDataStore implements DataStore {
             return;
         }
 
-        // Index in parallel.
         log.debug("Indexing predicates.");
-        Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
-            @Override
-            public void work(long index, PredicateInfo predicateInfo) {
-                log.trace("Indexing " + predicateInfo.predicate());
+
+        if (dbDriver.canConcurrentWrite()) {
+            // Index in parallel.
+            Parallel.foreach(toIndex, new Parallel.Worker<PredicateInfo>() {
+                @Override
+                public void work(long index, PredicateInfo predicateInfo) {
+                    log.trace("Parallel Indexing " + predicateInfo.predicate());
+
+                    try (Connection connection = getConnection()) {
+                        predicateInfo.index(connection, dbDriver);
+                    } catch (SQLException ex) {
+                        throw new RuntimeException("Unable to index predicate: " + predicateInfo.predicate(), ex);
+                    }
+                }
+            });
+        } else {
+            // Index in serial.
+            for (PredicateInfo predicateInfo : toIndex) {
+                log.trace("Serial Indexing " + predicateInfo.predicate());
 
                 try (Connection connection = getConnection()) {
                     predicateInfo.index(connection, dbDriver);
@@ -207,7 +221,7 @@ public class RDBMSDataStore implements DataStore {
                     throw new RuntimeException("Unable to index predicate: " + predicateInfo.predicate(), ex);
                 }
             }
-        });
+        }
 
         // Ensure that DB stats are up-to-date.
         dbDriver.updateDBStats();

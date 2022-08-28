@@ -19,6 +19,7 @@ package org.linqs.psl.config;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.runtime.Runtime;
 
 import org.linqs.psl.util.SystemUtils;
 
@@ -26,13 +27,6 @@ import org.linqs.psl.util.SystemUtils;
  * Additional options for the PSL runtime.
  */
 public class RuntimeOptions {
-    public static final Option DB_H2 = new Option(
-        "runtime.db.h2",
-        true,
-        "Use an H2 database."
-        + " Overwritten when using a PostgreSQL database."
-    );
-
     public static final Option DB_H2_PATH = new Option(
         "runtime.db.h2.path",
         SystemUtils.getTempDir("psl_h2"),
@@ -51,18 +45,29 @@ public class RuntimeOptions {
         "Assume all unique identifiers are integers (UniqueIntID) instead of strings (UniqueStringID)."
     );
 
-    public static final Option DB_PG = new Option(
-        "runtime.db.pg",
-        false,
-        "Use a PostgreSQL database."
-        + " Overrides any H2 database."
-    );
-
     public static final Option DB_PG_NAME = new Option(
         "runtime.db.pg.name",
         "psl",
         "Name for the PostgreSQL database."
         + " Not compatible with H2 options."
+    );
+
+    public static final Option DB_SQLITE_PATH = new Option(
+        "runtime.db.sqlite.path",
+        SystemUtils.getTempDir("psl_sqlite"),
+        "Path for SQLite database file."
+    );
+
+    public static final Option DB_SQLITE_INMEMORY = new Option(
+        "runtime.db.sqlite.inmemory",
+        true,
+        "Whether to put the SQLite database in memory (true) or on disk (false)."
+    );
+
+    public static final Option DB_TYPE = new Option(
+        "runtime.db.type",
+        Runtime.DatabaseType.H2.toString(),
+        "The type of database to use. See Runtime.DatabaseType."
     );
 
     public static final Option HELP = new Option(

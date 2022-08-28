@@ -33,18 +33,29 @@ import java.util.List;
 public class SQLiteDriver extends DatabaseDriver {
     private static final Logger log = Logger.getLogger(SQLiteDriver.class);
 
+    private boolean inMemory;
+
     /**
      * Construct a SQLite connection.
      * The database name is not used in the connection or maintenance of the database, only to identify it in logging.
      */
-    public SQLiteDriver(boolean inMemory, String path, String databaseName, boolean clearDatabase) {
-        this(formatConnectionString(inMemory, path), databaseName, clearDatabase);
+    public SQLiteDriver(boolean inMemory, String path, boolean clearDatabase) {
+        this(formatConnectionString(inMemory, path), clearDatabase);
+
+        if (inMemory) {
+            log.debug("Using in-memory database.");
+        } else {
+            log.debug("Using on-disk database: " + path);
+        }
     }
 
-    public SQLiteDriver(String connectionString, String databaseName, boolean clearDatabase) {
+    public SQLiteDriver(String connectionString, boolean clearDatabase) {
         super("org.sqlite.JDBC", connectionString, clearDatabase);
+        log.debug("Connected to SQLite database.");
 
-        log.debug("Connected to SQLite database: " + databaseName);
+        if (connectionString.contains(":memory:")) {
+            inMemory = true;
+        }
     }
 
     @Override
@@ -124,5 +135,10 @@ public class SQLiteDriver extends DatabaseDriver {
     public String setLimit(SelectQuery query, int count) {
         String queryString = query.validate().toString();
         return queryString + " LIMIT " + count;
+    }
+
+    @Override
+    public boolean canConcurrentWrite() {
+        return inMemory;
     }
 }

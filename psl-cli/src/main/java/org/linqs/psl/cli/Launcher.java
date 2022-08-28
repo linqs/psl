@@ -160,12 +160,12 @@ public class Launcher {
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_H2_PATH)) {
-            RuntimeOptions.DB_H2.set(true);
+            RuntimeOptions.DB_TYPE.set(Runtime.DatabaseType.H2.toString());
             RuntimeOptions.DB_H2_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_H2_PATH));
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME)) {
-            RuntimeOptions.DB_PG.set(true);
+            RuntimeOptions.DB_TYPE.set(Runtime.DatabaseType.Postgres.toString());
             RuntimeOptions.DB_PG_NAME.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME));
         }
 

@@ -158,6 +158,10 @@ public abstract class DatabaseDriver {
         return false;
     }
 
+    public boolean canConcurrentWrite() {
+        return true;
+    }
+
     /**
      * Get query planing statistics for the given select statement.
      */
