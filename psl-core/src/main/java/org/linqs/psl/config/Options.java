@@ -20,7 +20,6 @@ package org.linqs.psl.config;
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
-import org.linqs.psl.database.rdbms.QueryRewriter;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
@@ -640,13 +639,6 @@ public class Options {
         "The Postgres port to connect to (when not explicitly specified)."
     );
 
-    public static final Option POSTGRES_STATS_PERCENTAGE = new Option(
-        "postgres.statspercentage",
-        0.25,
-        "The percentage of possible effort to have Postgres spend on statistics collection.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
     public static final Option POSTGRES_USER = new Option(
         "postgres.user",
         "",
@@ -657,24 +649,6 @@ public class Options {
         "project.version",
         "UNKNOWN",
         "The current version of PSL."
-    );
-
-    public static final Option QR_ALLOWED_STEP_INCREASE = new Option(
-        "queryrewriter.allowedsteocostincrease",
-        1.5,
-        "How much we allow the query cost (number of rows) to increase at each step."
-    );
-
-    public static final Option QR_ALLOWED_TOTAL_INCREASE = new Option(
-        "queryrewriter.allowedtotalcostincrease",
-        2.0,
-        "How much we allow the query cost (number of rows) to for new plans."
-    );
-
-    public static final Option QR_COST_ESTIMATOR = new Option(
-        "queryrewriter.costestimator",
-        QueryRewriter.CostEstimator.HISTOGRAM.toString(),
-        "The method to use when estimating join size."
     );
 
     public static final Option RANDOM_SEED = new Option(

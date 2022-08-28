@@ -74,8 +74,6 @@ public class PredicateInfo {
     private boolean indexed;
     private int count;
 
-    private TableStats tableStats;
-
     public PredicateInfo(Predicate predicate) {
         assert(predicate != null);
 
@@ -90,7 +88,6 @@ public class PredicateInfo {
         cachedSQL = new HashMap<String, String>();
         this.indexed = false;
         count = -1;
-        tableStats = null;
     }
 
     public List<String> argumentColumns() {
@@ -107,15 +104,6 @@ public class PredicateInfo {
 
     public boolean indexed() {
         return indexed;
-    }
-
-    public synchronized TableStats getTableStats(DatabaseDriver dbDriver) {
-        if (tableStats != null) {
-            return tableStats;
-        }
-
-        tableStats = dbDriver.getTableStats(this);
-        return tableStats;
     }
 
     public void setupTable(Connection connection, DatabaseDriver dbDriver) {

@@ -206,9 +206,6 @@ public class RDBMSDataStore implements DataStore {
                 } catch (SQLException ex) {
                     throw new RuntimeException("Unable to index predicate: " + predicateInfo.predicate(), ex);
                 }
-
-                // Ensure that table stats are up-to-date.
-                dbDriver.updateTableStats(predicateInfo);
             }
         });
 

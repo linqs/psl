@@ -17,20 +17,12 @@
  */
 package org.linqs.psl.database.rdbms.driver;
 
-import org.linqs.psl.database.rdbms.PredicateInfo;
-import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,17 +91,6 @@ public class H2DatabaseDriver extends DatabaseDriver {
         executeUpdate("DROP ALL OBJECTS");
     }
 
-    private void executeUpdate(String sql) {
-        try (
-            Connection connection = getConnection();
-            Statement stmt = connection.createStatement();
-        ) {
-            stmt.executeUpdate(sql);
-        } catch (SQLException ex) {
-            throw new RuntimeException("Failed to execute a general update: [" + sql + "].", ex);
-        }
-    }
-
     @Override
     public String getTypeName(ConstantType type) {
         switch (type) {
@@ -155,54 +136,7 @@ public class H2DatabaseDriver extends DatabaseDriver {
     }
 
     @Override
-    public String getStringAggregate(String columnName, String delimiter, boolean distinct) {
-        if (delimiter.contains("'")) {
-            throw new IllegalArgumentException("Delimiter (" + delimiter + ") may not contain a single quote.");
-        }
-
-        return String.format("GROUP_CONCAT(DISTINCT CAST(%s AS TEXT) SEPARATOR '%s')",
-                columnName, delimiter);
-    }
-
-    @Override
-    public TableStats getTableStats(PredicateInfo predicate) {
-        List<String> sql = new ArrayList<String>();
-        sql.add("SELECT");
-        sql.add("    UPPER(COLUMN_NAME) AS col,");
-        sql.add("    (SELECT COUNT(*) FROM " + predicate.tableName() + ") AS tableCount,");
-        sql.add("    SELECTIVITY / 100.0 AS selectivity");
-        sql.add("FROM INFORMATION_SCHEMA.COLUMNS");
-        sql.add("WHERE");
-        sql.add("    UPPER(TABLE_NAME) = '" + predicate.tableName().toUpperCase() + "'");
-        sql.add("    AND UPPER(COLUMN_NAME) NOT IN ('PARTITION_ID', 'VALUE')");
-
-        TableStats stats = null;
-
-        try (
-            Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(ListUtils.join(System.lineSeparator(), sql));
-            ResultSet result = statement.executeQuery();
-        ) {
-            while (result.next()) {
-                if (stats == null) {
-                    stats = new TableStats(result.getInt(2));
-                }
-
-                stats.addColumnSelectivity(result.getString(1), result.getDouble(3));
-            }
-        } catch (SQLException ex) {
-            throw new RuntimeException("Failed to get stats from table: " + predicate.tableName(), ex);
-        }
-
-        return stats;
-    }
-
-    @Override
     public void updateDBStats() {
         executeUpdate("ANALYZE");
-    }
-
-    @Override
-    public void updateTableStats(PredicateInfo predicate) {
     }
 }

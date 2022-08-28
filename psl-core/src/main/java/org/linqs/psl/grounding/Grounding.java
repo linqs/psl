@@ -23,7 +23,6 @@ import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.grounding.collective.CandidateQuery;
 import org.linqs.psl.grounding.collective.Containment;
@@ -126,8 +125,8 @@ public class Grounding {
 
         final CandidateGeneration candidateGeneration;
         if (!(database instanceof RDBMSDatabase)
-                || !(((RDBMSDataStore)database.getDataStore()).getDriver() instanceof PostgreSQLDriver)) {
-            log.warn("Cannot generate query candidates without a PostgreSQL database, grounding will be suboptimal.");
+                || !((RDBMSDataStore)database.getDataStore()).getDriver().canExplain()) {
+            log.warn("Cannot generate query candidates without a EXPLAIN capabilities, grounding will be suboptimal.");
             candidateGeneration = null;
         } else {
             candidateGeneration = new CandidateGeneration();

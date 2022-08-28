@@ -19,7 +19,6 @@ package org.linqs.psl.database.rdbms.driver;
 
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.rdbms.PredicateInfo;
-import org.linqs.psl.database.rdbms.TableStats;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Parallel;
 
@@ -31,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * An abstract class  for a specific RDBMS backend.
@@ -140,34 +140,31 @@ public abstract class DatabaseDriver {
     public abstract String getUpsert(String tableName, String[] columns, String[] keyColumns);
 
     /**
-     * Get a string aggregating expression (one that
-     * would appear in the SELECT clause of a grouping query.
-     * Postgres uses STRING_AGG and H2 use GROUP_CONCAT.
-     */
-    public abstract String getStringAggregate(String columnName, String delimiter, boolean distinct);
-
-    /**
-     * Get some statistics for a table.
-     */
-    public abstract TableStats getTableStats(PredicateInfo predicate);
-
-    /**
      * Make sure that all the database-level stats are up-to-date.
      * Is generally called after insertion and indexing.
      */
     public abstract void updateDBStats();
 
-    /**
-     * Make sure that all the table statistics are up-to-date.
-     * Is generally called after insertion and indexing.
-     */
-    public abstract void updateTableStats(PredicateInfo predicate);
+    public boolean canExplain() {
+        return false;
+    }
 
     /**
      * Get query planing statistics for the given select statement.
      */
     public ExplainResult explain(String queryString) {
         throw new UnsupportedOperationException(this.getClass() + " does not support EXPLAIN.");
+    }
+
+    protected void executeUpdate(String sql) {
+        try (
+            Connection connection = getConnection();
+            Statement stmt = connection.createStatement();
+        ) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Failed to execute a general update: [" + sql + "].", ex);
+        }
     }
 
     public static class ExplainResult {
