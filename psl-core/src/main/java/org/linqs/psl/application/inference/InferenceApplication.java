@@ -158,6 +158,7 @@ public abstract class InferenceApplication implements ModelApplication {
         atomManager.queryDBForClosedAtoms(oldValue);
 
         log.info("Grounding complete.");
+        log.debug("Generated {} ground rules.", groundCount);
 
         if (skipInference) {
             return;
