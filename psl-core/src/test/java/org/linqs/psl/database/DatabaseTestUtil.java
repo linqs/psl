@@ -78,7 +78,7 @@ public class DatabaseTestUtil {
     }
 
     public static DatabaseDriver getSQLiteDriver(boolean clear, boolean persisted) {
-        return new SQLiteDriver(!persisted, DB_BASE_PATH, DB_NAME, clear);
+        return new SQLiteDriver(!persisted, DB_BASE_PATH, clear);
     }
 
     public static void cleanH2Driver() {
