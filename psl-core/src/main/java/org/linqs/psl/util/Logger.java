@@ -101,7 +101,7 @@ public class Logger {
         LoggerContext context = (LoggerContext)LogManager.getContext(false);
         Configuration config = context.getConfiguration();
         LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-        loggerConfig.setLevel(Level.getLevel(level));
+        loggerConfig.setLevel(Level.getLevel(level.toUpperCase()));
         context.updateLoggers();
     }
 }
