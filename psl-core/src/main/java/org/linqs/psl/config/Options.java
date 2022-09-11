@@ -146,26 +146,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option DCD_C = new Option(
-        "dcd.C",
-        10.0f,
-        null,
-        Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option DCD_MAX_ITER = new Option(
-        "dcd.maxiterations",
-        200,
-        "The maximum number of iterations of DCD to perform in a round of inference.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option DCD_TRUNCATE_EVERY_STEP = new Option(
-        "dcd.truncateeverystep",
-        false,
-        null
-    );
-
     public static final Option EVAL_DISCRETE_REPRESENTATIVE = new Option(
         "discreteevaluator.representative",
         DiscreteEvaluator.RepresentativeMetric.F1.toString(),
