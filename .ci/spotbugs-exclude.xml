@@ -13,12 +13,6 @@
     </Match>
 
     <Match>
-        <!-- Note that the reports we want to ignore occur in anynonymous classes, so we need a regex. -->
-        <Class name="~org.linqs.psl.application.learning.weight.maxlikelihood.MaxPiecewisePseudoLikelihood\$\d+" />
-        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE" />
-    </Match>
-
-    <Match>
         <Class name="org.linqs.psl.application.learning.weight.search.bayesian.SquaredExpKernel" />
         <Method name="kernel" />
         <Bug pattern="RV_RETURN_VALUE_IGNORED_INFERRED" />

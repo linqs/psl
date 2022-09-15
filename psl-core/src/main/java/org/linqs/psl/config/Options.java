@@ -476,13 +476,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_MPPLE_NUM_SAMPLES = new Option(
-        "maxpiecewisepseudolikelihood.numsamples",
-        100,
-        "The number of samples MPPLE will use to approximate expectations.",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option MEMORY_TS_INITIAL_SIZE = new Option(
         "memorytermstore.initialsize",
         10000l,
