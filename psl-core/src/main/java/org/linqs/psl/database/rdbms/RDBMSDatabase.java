@@ -664,8 +664,9 @@ public class RDBMSDatabase extends Database {
 
     /**
      * An iterator that will execute a query and stream back the results.
+     * If the iterator is not run to exhaustion, then it MUST BE closed to prevent database resource leakage.
      */
-    private class RDBMSQueryResultIterator implements Iterator<Constant[]> {
+    private class RDBMSQueryResultIterator implements Iterator<Constant[]>, AutoCloseable {
         private String queryString;
         private int[] orderedIndexes;
         private ConstantType[] orderedTypes;

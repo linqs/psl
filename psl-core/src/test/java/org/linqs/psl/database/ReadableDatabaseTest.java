@@ -156,14 +156,15 @@ public class ReadableDatabaseTest extends PSLBaseTest {
             @Override
             public void doWork(ReadableDatabase db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Friends");
-                QueryResultIterable results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")));
-                assertNotNull(results);
+                try (QueryResultIterable results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")))) {
+                    assertNotNull(results);
 
-                int count = 0;
-                for (Constant[] row : results) {
-                    count++;
+                    int count = 0;
+                    for (Constant[] row : results) {
+                        count++;
+                    }
+                    assertEquals(4, count);
                 }
-                assertEquals(4, count);
             }
         };
         testHelper(function, "executeGroundingQuery");

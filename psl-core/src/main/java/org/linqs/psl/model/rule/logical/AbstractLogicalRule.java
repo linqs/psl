@@ -125,8 +125,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     @Override
     public long groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        QueryResultIterable queryResults = atomManager.executeGroundingQuery(negatedDNF.getQueryFormula());
-        return groundAll(queryResults, atomManager, groundRuleStore);
+        try (QueryResultIterable queryResults = atomManager.executeGroundingQuery(negatedDNF.getQueryFormula())) {
+            return groundAll(queryResults, atomManager, groundRuleStore);
+        }
     }
 
     @Override

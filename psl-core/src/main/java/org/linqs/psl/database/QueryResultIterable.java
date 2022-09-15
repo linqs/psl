@@ -22,7 +22,7 @@ import org.linqs.psl.model.term.Variable;
 
 import java.util.Map;
 
-public interface QueryResultIterable extends Iterable<Constant[]> {
+public interface QueryResultIterable extends Iterable<Constant[]>, AutoCloseable {
     /**
      * Get the mapping between variables and their index in the results.
      */

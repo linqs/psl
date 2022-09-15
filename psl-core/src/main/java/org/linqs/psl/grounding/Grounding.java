@@ -173,31 +173,34 @@ public class Grounding {
         // We do not want to throw too early because the ground rule may turn out to be trivial in the end.
         boolean oldAccessExceptionState = atomManager.enableAccessExceptions(false);
 
+        Parallel.RunTimings timings = null;
+        long groundCount = -1;
+
         // Run the query.
-        QueryResultIterable queryResults = atomManager.executeGroundingQuery(candidate.getFormula());
+        try (QueryResultIterable queryResults = atomManager.executeGroundingQuery(candidate.getFormula())) {
+            // Build a per-rule variable mapping.
+            Map<Rule, Map<Variable, Integer>> variableMaps = new HashMap<Rule, Map<Variable, Integer>>();
+            Map<Variable, Integer> baseVariableMap = queryResults.getVariableMap();
 
-        // Build a per-rule variable mapping.
-        Map<Rule, Map<Variable, Integer>> variableMaps = new HashMap<Rule, Map<Variable, Integer>>();
-        Map<Variable, Integer> baseVariableMap = queryResults.getVariableMap();
+            for (Rule rule : rules) {
+                if (rule == candidate.getBaseRule()) {
+                    variableMaps.put(rule, baseVariableMap);
+                } else {
+                    Map<Variable, Integer> variableMap = new HashMap<Variable, Integer>();
+                    Map<Variable, Variable> containmentMapping = candidate.getVariableMapping(rule);
 
-        for (Rule rule : rules) {
-            if (rule == candidate.getBaseRule()) {
-                variableMaps.put(rule, baseVariableMap);
-            } else {
-                Map<Variable, Integer> variableMap = new HashMap<Variable, Integer>();
-                Map<Variable, Variable> containmentMapping = candidate.getVariableMapping(rule);
+                    for (Map.Entry<Variable, Integer> baseVariabelMapEntry : baseVariableMap.entrySet()) {
+                        variableMap.put(containmentMapping.get(baseVariabelMapEntry.getKey()), baseVariabelMapEntry.getValue());
+                    }
 
-                for (Map.Entry<Variable, Integer> baseVariabelMapEntry : baseVariableMap.entrySet()) {
-                    variableMap.put(containmentMapping.get(baseVariabelMapEntry.getKey()), baseVariabelMapEntry.getValue());
+                    variableMaps.put(rule, variableMap);
                 }
-
-                variableMaps.put(rule, variableMap);
             }
-        }
 
-        long initialCount = groundRuleStore.size();
-        Parallel.RunTimings timings = Parallel.foreachBatch(queryResults, batchSize, new GroundWorker(atomManager, groundRuleStore, variableMaps, rules));
-        long groundCount = groundRuleStore.size() - initialCount;
+            long initialCount = groundRuleStore.size();
+            timings = Parallel.foreachBatch(queryResults, batchSize, new GroundWorker(atomManager, groundRuleStore, variableMaps, rules));
+            groundCount = groundRuleStore.size() - initialCount;
+        }
 
         atomManager.enableAccessExceptions(oldAccessExceptionState);
 

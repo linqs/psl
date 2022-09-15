@@ -324,11 +324,12 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     private long groundAllNonSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
         GroundingResources resources = getGroundingResources(expression);
 
-        ResultList results = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false));
-        Map<Variable, Integer> variableMap = results.getVariableMap();
+        try (ResultList results = atomManager.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false))) {
+            Map<Variable, Integer> variableMap = results.getVariableMap();
 
-        for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
-            groundSingleNonSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
+                groundSingleNonSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            }
         }
 
         long count = resources.groundRules.size();
@@ -411,11 +412,12 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
         RawQuery rawQuery = getSummationRawQuery(database);
 
-        ResultList results = database.executeQuery(rawQuery);
-        Map<Variable, Integer> variableMap = results.getVariableMap();
+        try (ResultList results = database.executeQuery(rawQuery)) {
+            Map<Variable, Integer> variableMap = results.getVariableMap();
 
-        for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
-            groundSingleSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
+                groundSingleSummationRule(results.get(groundingIndex), variableMap, atomManager, resources);
+            }
         }
 
         long count = resources.groundRules.size();
@@ -919,6 +921,10 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
                     break;
                 }
             }
+        }
+
+        for (ResultList results : summationConstants.values()) {
+            results.close();
         }
     }
 

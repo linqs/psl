@@ -40,7 +40,7 @@ import java.sql.Statement;
 public abstract class DatabaseDriver {
     private static final Logger log = LoggerFactory.getLogger(DatabaseDriver.class);
 
-    protected final HikariDataSource dataSource;
+    protected HikariDataSource dataSource;
 
     public DatabaseDriver(String driverClass, String connectionString, boolean clearDatabase) {
         // Load the driver class.
@@ -67,7 +67,10 @@ public abstract class DatabaseDriver {
      * Close out any outstanding connections and cleanup.
      */
     public void close() {
-        dataSource.close();
+        if (dataSource != null) {
+            dataSource.close();
+            dataSource = null;
+        }
     }
 
     /**

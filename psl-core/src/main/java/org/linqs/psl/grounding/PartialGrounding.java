@@ -125,22 +125,23 @@ public class PartialGrounding {
         }
 
         Formula formula = rule.getRewritableGroundingFormula();
-        QueryResultIterable groundingResults = getPartialGroundingResults(formula, partialPredicates, db);
-        if (groundingResults == null) {
-            return;
-        }
+        try (QueryResultIterable groundingResults = getPartialGroundingResults(formula, partialPredicates, db)) {
+            if (groundingResults == null) {
+                return;
+            }
 
-        log.trace(String.format("Simple partial grounding on rule: [%s], formula: [%s]", rule, formula));
+            log.trace(String.format("Simple partial grounding on rule: [%s], formula: [%s]", rule, formula));
 
-        Iterator<Constant[]> groundingResultsIterator = groundingResults.iterator();
-        List<GroundRule> groundRules = new ArrayList<GroundRule>();
-        while (groundingResultsIterator.hasNext()){
-            Constant[] constants = groundingResultsIterator.next();
-            groundRules.clear();
-            rule.ground(constants, groundingResults.getVariableMap(), atomManager, groundRules);
-            for (GroundRule groundRule : groundRules) {
-                if (groundRule != null) {
-                    groundRuleStore.addGroundRule(groundRule);
+            Iterator<Constant[]> groundingResultsIterator = groundingResults.iterator();
+            List<GroundRule> groundRules = new ArrayList<GroundRule>();
+            while (groundingResultsIterator.hasNext()){
+                Constant[] constants = groundingResultsIterator.next();
+                groundRules.clear();
+                rule.ground(constants, groundingResults.getVariableMap(), atomManager, groundRules);
+                for (GroundRule groundRule : groundRules) {
+                    if (groundRule != null) {
+                        groundRuleStore.addGroundRule(groundRule);
+                    }
                 }
             }
         }
