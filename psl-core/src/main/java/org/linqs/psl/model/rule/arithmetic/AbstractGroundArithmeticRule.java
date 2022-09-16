@@ -103,12 +103,6 @@ public abstract class AbstractGroundArithmeticRule implements GroundRule {
     }
 
     @Override
-    public List<GroundRule> negate() {
-        // TODO(eriq)
-        throw new UnsupportedOperationException("Negating arithmetic rules not yet supported.");
-    }
-
-    @Override
     public String baseToString() {
         StringBuilder sb = new StringBuilder();
 

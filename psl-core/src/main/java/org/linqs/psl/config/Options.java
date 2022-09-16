@@ -381,12 +381,6 @@ public class Options {
         "The weight for deter rules."
     );
 
-    public static final Option HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS = new Option(
-        "hyperplanetermgenerator.invertnegativeweights",
-        false,
-        "If true, then invert negative weight rules into their positive weight counterparts."
-    );
-
     public static final Option INFERENCE_GRS = new Option(
         "inference.groundrulestore",
         MemoryGroundRuleStore.class.getName(),

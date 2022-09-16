@@ -82,12 +82,4 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     public String toString() {
         return "" + getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
     }
-
-    @Override
-    protected GroundRule instantiateNegatedGroundRule(
-            Formula disjunction, List<GroundAtom> positiveAtoms,
-            List<GroundAtom> negativeAtoms, String name) {
-        WeightedLogicalRule newRule = new WeightedLogicalRule(rule.getFormula(), -1.0f * ((WeightedLogicalRule)rule).getWeight(), isSquared(), name);
-        return new WeightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms);
-    }
 }

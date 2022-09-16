@@ -36,11 +36,6 @@ public class FakeGroundRule implements WeightedGroundRule {
     }
 
     @Override
-    public List<GroundRule> negate() {
-        return null;
-    }
-
-    @Override
     public WeightedRule getRule() {
         return rule;
     }

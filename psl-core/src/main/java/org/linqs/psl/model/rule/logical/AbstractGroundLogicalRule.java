@@ -128,93 +128,6 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
         return posLiterals.size() + negLiterals.size();
     }
 
-    /**
-     * Negating logical rules (a disjunction) will generate multiple other rules.
-     * !(A v B) = A! ^ !B
-     * The conjunction will incur the same penalty as these disjunctions: [!A v !B, A v !B, !A v B].
-     * We this will generate 2^n - 1 ground rules where n is the number of atoms in the rule.
-     */
-    @Override
-    public List<GroundRule> negate() {
-        int numAtoms = size();
-        List<GroundRule> negatedRules = new ArrayList<GroundRule>((int)Math.pow(2, numAtoms) - 1);
-
-        List<GroundAtom> positiveAtoms = new ArrayList<GroundAtom>(numAtoms);
-        List<GroundAtom> negativeAtoms = new ArrayList<GroundAtom>(numAtoms);
-        Formula[] disjunction = new Formula[numAtoms];
-
-        // To generate the correct ground rules, we just need to take all the atoms and
-        // do a power set over them, where membership in the set means negation
-        // (but remember that we may be negating a negation).
-        // The all negation case (full set membership) is ignored.
-        for (boolean[] subset : IteratorUtils.powerset(numAtoms)) {
-            // Skip when all atoms are negated.
-            // Unless there is only one atom, then do the opposite and skip the positive case.
-            boolean skip = true;
-
-            if (numAtoms == 1) {
-                skip = !subset[0];
-            } else {
-                for (boolean negated : subset) {
-                    if (!negated) {
-                        skip = false;
-                        break;
-                    }
-                }
-            }
-
-            if (skip) {
-                continue;
-            }
-
-            String name = String.format("%s -- Negated (%s)", rule.getName(), Arrays.toString(subset));
-
-            positiveAtoms.clear();
-            negativeAtoms.clear();
-
-            int subsetIndex = 0;
-
-            for (GroundAtom atom : posLiterals) {
-                if (subset[subsetIndex]) {
-                    negativeAtoms.add(atom);
-                    disjunction[subsetIndex] = new Negation(atom);
-                } else {
-                    positiveAtoms.add(atom);
-                    disjunction[subsetIndex] = atom;
-                }
-
-                subsetIndex++;
-            }
-
-            for (GroundAtom atom : negLiterals) {
-                if (subset[subsetIndex]) {
-                    positiveAtoms.add(atom);
-                    disjunction[subsetIndex] = atom;
-                } else {
-                    negativeAtoms.add(atom);
-                    disjunction[subsetIndex] = new Negation(atom);
-                }
-
-                subsetIndex++;
-            }
-
-            Formula formula = null;
-            if (disjunction.length > 1) {
-                formula = new Disjunction(disjunction);
-            } else {
-                formula = disjunction[0];
-            }
-
-            negatedRules.add(instantiateNegatedGroundRule(formula, positiveAtoms, negativeAtoms, name));
-        }
-
-        return negatedRules;
-    }
-
-    protected abstract GroundRule instantiateNegatedGroundRule(
-            Formula disjunction, List<GroundAtom> positiveAtoms,
-            List<GroundAtom> negativeAtoms, String name);
-
     @Override
     public boolean equals(Object other) {
         if (other == this) {
@@ -243,7 +156,7 @@ public abstract class AbstractGroundLogicalRule implements GroundRule {
 
     @Override
     public String baseToString() {
-        // Negate the clause again to show clause to maximize truth of.
+        // Negate the clause again to show the positive clause.
         Formula[] literals = new Formula[posLiterals.size() + negLiterals.size()];
         int i;
 

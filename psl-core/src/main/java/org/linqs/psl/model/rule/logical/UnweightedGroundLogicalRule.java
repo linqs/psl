@@ -61,12 +61,4 @@ public class UnweightedGroundLogicalRule extends AbstractGroundLogicalRule
     public String toString() {
         return super.toString() + " .";
     }
-
-    @Override
-    protected GroundRule instantiateNegatedGroundRule(
-            Formula disjunction, List<GroundAtom> positiveAtoms,
-            List<GroundAtom> negativeAtoms, String name) {
-        UnweightedLogicalRule newRule = new UnweightedLogicalRule(rule.getFormula(), name);
-        return new UnweightedGroundLogicalRule(newRule, positiveAtoms, negativeAtoms);
-    }
 }

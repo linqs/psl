@@ -46,8 +46,6 @@ import java.util.Set;
 public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements TermGenerator<T, V> {
     private static final Logger log = Logger.getLogger(HyperplaneTermGenerator.class);
 
-    protected boolean invertNegativeWeight;
-
     protected boolean addDeterTerms;
     protected boolean collectiveDeter;
     protected float deterWeight;
@@ -57,7 +55,6 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
 
     public HyperplaneTermGenerator(boolean mergeConstants) {
         this.mergeConstants = mergeConstants;
-        invertNegativeWeight = Options.HYPERPLANE_TG_INVERT_NEGATIVE_WEIGHTS.getBoolean();
 
         addDeterTerms = Options.HYPERPLANE_TG_ADD_DETER.getBoolean();
         collectiveDeter = Options.HYPERPLANE_TG_DETER_COLLECTIVE.getBoolean();
@@ -75,12 +72,6 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
         for (GroundRule rule : ruleStore.getGroundRules()) {
             if (rule instanceof WeightedGroundRule) {
                 rules.add((WeightedRule)rule.getRule());
-            }
-        }
-
-        for (WeightedRule rule : rules) {
-            if (rule.getWeight() < 0.0) {
-                log.warn("Found a rule with a negative weight, but config says not to invert it... skipping: " + rule);
             }
         }
 
@@ -112,37 +103,14 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             newTerms.clear();
             newHyperplane.clear();
 
-            boolean negativeWeight =
-                    rule instanceof WeightedGroundRule
-                    && ((WeightedGroundRule)rule).getWeight() < 0.0;
+            createTerm(rule, termStore, newTerms, newHyperplane);
 
-            if (negativeWeight) {
-                // Skip
-                if (!invertNegativeWeight) {
-                    return;
-                }
-
-                // Negate (weight and expression) rules that have a negative weight.
-                for (GroundRule negatedRule : rule.negate()) {
-                    createTerm(negatedRule, termStore, newTerms, newHyperplane);
-
-                    for (T term : newTerms) {
-                        termStore.add(rule, term, newHyperplane.get(0));
-                    }
-
-                    newTerms.clear();
-                    newHyperplane.clear();
-                }
-            } else {
-                createTerm(rule, termStore, newTerms, newHyperplane);
-
-                for (T term : newTerms) {
-                    termStore.add(rule, term, newHyperplane.get(0));
-                }
-
-                newTerms.clear();
-                newHyperplane.clear();
+            for (T term : newTerms) {
+                termStore.add(rule, term, newHyperplane.get(0));
             }
+
+            newTerms.clear();
+            newHyperplane.clear();
         }
     }
 

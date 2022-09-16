@@ -41,11 +41,6 @@ public interface GroundRule {
     public Set<GroundAtom> getAtoms();
 
     /**
-     * Negate this ground rule and get the corresponding ground rule(s).
-     */
-    public List<GroundRule> negate();
-
-    /**
      * Get a to string for the base of the rule without weight or square.
      */
     public String baseToString();
