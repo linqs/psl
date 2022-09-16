@@ -68,13 +68,6 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
         long initialSize = termStore.size();
         termStore.ensureCapacity(initialSize + ruleStore.size());
 
-        Set<WeightedRule> rules = new HashSet<WeightedRule>();
-        for (GroundRule rule : ruleStore.getGroundRules()) {
-            if (rule instanceof WeightedGroundRule) {
-                rules.add((WeightedRule)rule.getRule());
-            }
-        }
-
         Parallel.foreach(ruleStore.getGroundRules(), new GeneratorWorker(termStore));
 
         return termStore.size() - initialSize;
