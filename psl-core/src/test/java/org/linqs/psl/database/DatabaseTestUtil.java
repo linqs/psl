@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.database;
 
+import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
@@ -30,6 +31,20 @@ public class DatabaseTestUtil {
     private static final String PERSISTED_DB_SUFFIX = String.format("%012d", RandUtils.nextInt());
     private static final String DB_NAME = "psltest";
     private static final String DB_BASE_PATH = Paths.get(System.getProperty("java.io.tmpdir"), DB_NAME + "_" + PERSISTED_DB_SUFFIX).toString();
+
+    /**
+     * Get the default driver for tests.
+     */
+    public static DatabaseDriver getDatabaseDriver() {
+        return getSQLiteDriver();
+    }
+
+    /**
+     * Get the default data store for tests.
+     */
+    public static DataStore getDataStore() {
+        return new RDBMSDataStore(getDatabaseDriver());
+    }
 
     public static DatabaseDriver getH2Driver() {
         return getH2Driver(true, false);

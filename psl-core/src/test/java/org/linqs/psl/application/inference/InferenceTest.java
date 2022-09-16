@@ -91,7 +91,7 @@ public abstract class InferenceTest extends PSLBaseTest {
     }
 
     protected DatabaseDriver getDatabaseDriver() {
-        return DatabaseTestUtil.getH2Driver();
+        return DatabaseTestUtil.getDatabaseDriver();
     }
 
     /**

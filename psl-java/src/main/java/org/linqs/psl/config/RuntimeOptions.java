@@ -66,8 +66,8 @@ public class RuntimeOptions {
 
     public static final Option DB_TYPE = new Option(
         "runtime.db.type",
-        Runtime.DatabaseType.H2.toString(),
-        "The type of database to use. See Runtime.DatabaseType."
+        Runtime.DatabaseType.SQLite.toString(),
+        "The type of database to use. See the Runtime.DatabaseType enum."
     );
 
     public static final Option HELP = new Option(

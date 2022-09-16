@@ -120,10 +120,10 @@ public class SQLiteDriver extends DatabaseDriver {
 
     private static String formatConnectionString(boolean inMemory, String path) {
         if (inMemory) {
-            return "jdbc:sqlite:file::memory:?cache=shared";
+            return "jdbc:sqlite:file::memory:?cache=shared&read_uncommitted=true";
         }
 
-        return String.format("jdbc:sqlite:%s", path);
+        return String.format("jdbc:sqlite:%s?read_uncommitted=true", path);
     }
 
     @Override

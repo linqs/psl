@@ -18,9 +18,7 @@
 package org.linqs.psl.model.rule;
 
 import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -60,7 +58,7 @@ public class RuleEqualityTest extends PSLBaseTest {
 
     @Before
     public void setup() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+        dataStore = DatabaseTestUtil.getDataStore();
 
         // Predicates
         singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);

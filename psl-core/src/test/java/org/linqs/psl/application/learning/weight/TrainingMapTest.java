@@ -19,11 +19,10 @@ package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -62,8 +61,7 @@ public class TrainingMapTest extends PSLBaseTest {
      */
     @Before
     public void setUp() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-                H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
+        dataStore = DatabaseTestUtil.getDataStore();
 
         predicate = StandardPredicate.get(
                 "TrainingMapTestPredicate",

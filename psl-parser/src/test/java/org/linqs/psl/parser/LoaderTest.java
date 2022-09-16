@@ -19,7 +19,7 @@ package org.linqs.psl.parser;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
+import org.linqs.psl.database.rdbms.driver.SQLiteDriver;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.Logger;
@@ -37,7 +37,7 @@ public abstract class LoaderTest {
     public void setup() {
         Logger.setLevel("ERROR");
 
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
+        dataStore = new RDBMSDataStore(new SQLiteDriver(true, this.getClass().getName(), true));
 
         singlePredicate = StandardPredicate.get("Single", ConstantType.UniqueStringID);
         dataStore.registerPredicate(singlePredicate);

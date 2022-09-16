@@ -19,36 +19,27 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.atom.SimpleAtomManager;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.UnweightedLogicalRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
@@ -60,9 +51,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -83,7 +72,7 @@ public class RuleStringTest extends PSLBaseTest {
 
     @Before
     public void setup() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+        dataStore = DatabaseTestUtil.getDataStore();
 
         // Predicates
         singlePredicate = StandardPredicate.get("SinglePredicate", ConstantType.UniqueStringID);

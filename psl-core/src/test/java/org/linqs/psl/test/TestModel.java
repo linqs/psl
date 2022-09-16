@@ -24,8 +24,6 @@ import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -94,7 +92,7 @@ public class TestModel {
      * Same as getModel(), but if specified all people have a nice truth value of 1.0.
      */
     public static ModelInformation getModel(boolean nicePeople) {
-        return getModel(nicePeople, DatabaseTestUtil.getH2Driver());
+        return getModel(nicePeople, DatabaseTestUtil.getDatabaseDriver());
     }
 
     public static ModelInformation getModel(boolean nicePeople, DatabaseDriver driver) {

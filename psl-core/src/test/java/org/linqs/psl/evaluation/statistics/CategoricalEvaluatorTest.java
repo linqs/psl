@@ -20,11 +20,10 @@ package org.linqs.psl.evaluation.statistics;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -41,8 +40,7 @@ public class CategoricalEvaluatorTest extends EvaluatorTest<CategoricalEvaluator
     @Before
     @Override
     public void setUp() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(
-                H2DatabaseDriver.Type.Memory, this.getClass().getName(), true));
+        dataStore = DatabaseTestUtil.getDataStore();
 
         predicate = StandardPredicate.get(
                 "CategoricalEvaulatorTestPredicate",

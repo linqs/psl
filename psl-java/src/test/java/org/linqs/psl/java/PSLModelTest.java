@@ -22,8 +22,7 @@ import static org.junit.Assert.fail;
 
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.database.rdbms.driver.SQLiteDriver;
 import org.linqs.psl.java.PSLModel;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.test.PSLTest;
@@ -37,7 +36,7 @@ public class PSLModelTest {
 
     @Before
     public void setup() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+        dataStore = new RDBMSDataStore(new SQLiteDriver(true, this.getClass().getName(), true));
 
         model = new PSLModel(dataStore);
 

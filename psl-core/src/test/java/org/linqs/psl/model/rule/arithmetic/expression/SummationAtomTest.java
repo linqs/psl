@@ -18,9 +18,7 @@
 package org.linqs.psl.model.rule.arithmetic.expression;
 
 import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
+import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
@@ -40,7 +38,7 @@ public class SummationAtomTest extends PSLBaseTest {
 
     @Before
     public void setup() {
-        dataStore = new RDBMSDataStore(new H2DatabaseDriver(Type.Memory, this.getClass().getName(), true));
+        dataStore = DatabaseTestUtil.getDataStore();
 
         singlePredicate = StandardPredicate.get("SingleClosed", ConstantType.UniqueStringID);
         dataStore.registerPredicate(singlePredicate);
