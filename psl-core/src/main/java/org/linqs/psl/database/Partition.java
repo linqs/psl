@@ -19,7 +19,7 @@ package org.linqs.psl.database;
 
 public class Partition {
     /**
-     * When grounding with lazy atoms, we will initially set their partition
+     * When doing partial grounding, we will initially set their partition
      * value to this so that we can tell them apart.
      * Afterwards, they will be reset to the correct value (the write partition
      * of the database).

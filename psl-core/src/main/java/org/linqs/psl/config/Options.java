@@ -418,27 +418,6 @@ public class Options {
         "The internal weight learning application (WLA) to use (should be a VotedPerceptron)."
     );
 
-    public static final Option LAM_ACTIVATION_THRESHOLD = new Option(
-        "lazyatommanager.activation",
-        0.01,
-        "The minimum value an atom must take for it to be activated.",
-        Option.FLAG_POSITIVE | Option.FLAG_LTE_ONE
-    );
-
-    public static final Option WLA_LMLE_MAX_ROUNDS = new Option(
-        "lazymaxlikelihoodmpe.maxgrowrounds",
-        100,
-        "The maximum number of rounds of lazy growing.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option LAZY_INFERENCE_MAX_ROUNDS = new Option(
-        "lazympeinference.maxrounds",
-        100,
-        "The maximum number of rounds of lazy inference.",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option MEMORY_TS_INITIAL_SIZE = new Option(
         "memorytermstore.initialsize",
         10000l,
