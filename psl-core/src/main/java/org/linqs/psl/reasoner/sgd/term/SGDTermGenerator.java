@@ -19,9 +19,7 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
@@ -54,29 +52,8 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
         VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
-
         newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane));
-        if (!addDeterTerms) {
-            return 1;
-        }
-
-        Rule rawRule = groundRule.getRule();
-        if (rawRule == null || !(rawRule instanceof AbstractArithmeticRule)) {
-            return 1;
-        }
-
-        AbstractArithmeticRule rule = (AbstractArithmeticRule)rawRule;
-        if (!rule.getExpression().looksLikeFunctionalConstraint()) {
-            return 1;
-        }
-
-        if (collectiveDeter) {
-            newTerms.add(SGDObjectiveTerm.createDeterTerm(termStore, hyperplane, deterWeight, deterEpsilon));
-            return 2;
-        }
-
-        // TODO(eriq): Implement SGD independent deter terms.
-        throw new UnsupportedOperationException("Independent SGD deter terms are not yet supported.");
+        return 1;
     }
 
     @Override
