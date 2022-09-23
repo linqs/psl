@@ -20,7 +20,6 @@ package org.linqs.psl.cli;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.model.term.Constant;

@@ -20,7 +20,6 @@ package org.linqs.psl.database.rdbms;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.mpe.MPEInference;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -162,7 +161,7 @@ public class Formula2SQLTest extends PSLBaseTest {
             return args;
         }
 
-        public synchronized double getValue(ReadableDatabase db, Constant... args) {
+        public synchronized double getValue(Database db, Constant... args) {
             callCount++;
             return 1;
         }

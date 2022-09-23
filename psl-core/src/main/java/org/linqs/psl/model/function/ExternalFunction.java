@@ -17,12 +17,12 @@
  */
 package org.linqs.psl.model.function;
 
-import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
 public interface ExternalFunction {
-    public double getValue(ReadableDatabase db, Constant... args);
+    public double getValue(Database db, Constant... args);
 
     public int getArity();
 

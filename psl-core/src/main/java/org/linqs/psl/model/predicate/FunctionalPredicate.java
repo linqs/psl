@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.model.predicate;
 
-import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
@@ -40,5 +40,5 @@ public abstract class FunctionalPredicate extends Predicate {
      * @param args the arguments for which the truth value will be computed
      * @return the computed truth value
      */
-    public abstract double computeValue(ReadableDatabase db, Constant... args);
+    public abstract double computeValue(Database db, Constant... args);
 }

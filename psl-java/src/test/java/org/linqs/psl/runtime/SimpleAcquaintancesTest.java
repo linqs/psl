@@ -20,7 +20,7 @@ package org.linqs.psl.runtime;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
@@ -158,7 +158,7 @@ public class SimpleAcquaintancesTest extends RuntimeTest {
     // Not an actual similarity.
     public static class SimNameExternalFunction implements ExternalFunction {
         @Override
-        public double getValue(ReadableDatabase db, Constant... args) {
+        public double getValue(Database db, Constant... args) {
             String a = ((UniqueStringID)args[0]).getID();
             String b = ((UniqueStringID)args[1]).getID();
 

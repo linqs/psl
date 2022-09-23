@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.model.predicate;
 
-import org.linqs.psl.database.ReadableDatabase;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.term.Constant;
 
@@ -33,7 +33,7 @@ public class ExternalFunctionalPredicate extends FunctionalPredicate {
     }
 
     @Override
-    public double computeValue(ReadableDatabase db, Constant... args) {
+    public double computeValue(Database db, Constant... args) {
         return extFun.getValue(db, args);
     }
 

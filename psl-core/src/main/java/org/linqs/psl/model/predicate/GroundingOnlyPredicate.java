@@ -18,7 +18,6 @@
 package org.linqs.psl.model.predicate;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -91,7 +90,7 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
-        public double computeValue(ReadableDatabase db, Constant... args) {
+        public double computeValue(Database db, Constant... args) {
             checkArguments(getName(), args);
             return computeValue(args[0], args[1]);
         }
@@ -110,7 +109,7 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
-        public double computeValue(ReadableDatabase db, Constant... args) {
+        public double computeValue(Database db, Constant... args) {
             checkArguments(getName(), args);
             return computeValue(args[0], args[1]);
         }
@@ -130,7 +129,7 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
-        public double computeValue(ReadableDatabase db, Constant... args) {
+        public double computeValue(Database db, Constant... args) {
             checkArguments(getName(), args);
             return computeValue(args[0], args[1]);
         }

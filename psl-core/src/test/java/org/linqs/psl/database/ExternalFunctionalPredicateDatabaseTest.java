@@ -20,7 +20,6 @@ package org.linqs.psl.database;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.inference.mpe.MPEInference;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -50,12 +49,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
 
-public class ReadableDatabaseTest extends PSLBaseTest {
+public class ExternalFunctionalPredicateDatabaseTest extends PSLBaseTest {
     @Test
     public void testGetAtom() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
                 assertNotNull(db.getAtom(predicate, arg));
             }
@@ -67,7 +66,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testHasAtom() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg){
+            public void doWork(Database db, Constant arg){
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
                 assertTrue(db.hasAtom(predicate, arg));
             }
@@ -79,7 +78,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testCountAllGroundAtoms() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
                 assertEquals(5, db.countAllGroundAtoms(predicate));
             }
@@ -91,7 +90,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testCountAllGroundRandomVariableAtoms() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
                 assertEquals(20, db.countAllGroundRandomVariableAtoms(predicate));
             }
@@ -103,7 +102,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testGetAllGroundAtoms() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
                 assertEquals(5, db.getAllGroundAtoms(predicate).size());
             }
@@ -115,7 +114,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testGetAllGroundRandomVariableAtoms() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
                 assertEquals(20, db.getAllGroundRandomVariableAtoms(predicate).size());
             }
@@ -127,7 +126,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testGetAllGroundObservedAtoms() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
                 assertEquals(5, db.getAllGroundObservedAtoms(predicate).size());
             }
@@ -139,7 +138,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testExecuteQuery() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Friends");
                 DatabaseQuery query = new DatabaseQuery(new QueryAtom(predicate, arg, new Variable("A")));
                 ResultList results = db.executeQuery(query);
@@ -154,7 +153,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testExecuteGroundingQuery() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Friends");
                 try (QueryResultIterable results = db.executeGroundingQuery(new QueryAtom(predicate, arg, new Variable("A")))) {
                     assertNotNull(results);
@@ -174,7 +173,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     public void testIsClosed() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
-            public void doWork(ReadableDatabase db, Constant arg) {
+            public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
                 assertFalse(db.isClosed(predicate));
             }
@@ -183,7 +182,7 @@ public class ReadableDatabaseTest extends PSLBaseTest {
     }
 
     /**
-     * Helper function for testing the ReadableDatabase interface functions.
+     * Helper function for testing the Database interface functions.
      */
     private void testHelper(DatabaseFunction function, String name) {
         TestModel.ModelInformation info = TestModel.getModel();
@@ -230,11 +229,11 @@ public class ReadableDatabaseTest extends PSLBaseTest {
         }
 
         @Override
-        public double getValue(ReadableDatabase db, Constant... args) {
+        public double getValue(Database db, Constant... args) {
             doWork(db, args[0]);
             return 1.0;
         }
 
-        public abstract void doWork(ReadableDatabase db, Constant arg);
+        public abstract void doWork(Database db, Constant arg);
     }
 }

@@ -20,7 +20,6 @@ package org.linqs.psl.database;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ReadableDatabase;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.PredicateInfo;
@@ -113,7 +112,7 @@ public abstract class DataStoreTest extends PSLBaseTest {
 
         functionalPredicate1 = ExternalFunctionalPredicate.get("FP1", new ExternalFunction() {
             @Override
-            public double getValue(ReadableDatabase db, Constant... args) {
+            public double getValue(Database db, Constant... args) {
                 double a = ((DoubleAttribute) args[0]).getValue();
                 double b = ((DoubleAttribute) args[1]).getValue();
 
