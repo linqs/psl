@@ -18,10 +18,9 @@
 package org.linqs.psl.grounding.collective;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.rdbms.Formula2SQL;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Conjunction;
@@ -89,7 +88,7 @@ public class CandidateGeneration {
      * Generate viable query candidates to minimize the execution time while trading off query size.
      * Get the top n results.
      */
-    public void generateCandidates(Rule rule, RDBMSDatabase database,
+    public void generateCandidates(Rule rule, Database database,
             int maxResults, Collection<CandidateQuery> results) {
         SearchFringe fringe = createFringe();
         List<CandidateQuery> candidates = search(fringe, rule, database);
@@ -104,7 +103,7 @@ public class CandidateGeneration {
     /**
      * Search through the candidates (limited by the budget).
      */
-    private List<CandidateQuery> search(SearchFringe fringe, Rule rule, RDBMSDatabase database) {
+    private List<CandidateQuery> search(SearchFringe fringe, Rule rule, Database database) {
         fringe.clear();
 
         // Once validated, we know that the formula is a conjunction or single atom.
@@ -209,7 +208,7 @@ public class CandidateGeneration {
      * Search specifically knowing that the formula is only a single atom.
      * This can indicate a prior or other type of simple rule that can be augmented with special handling.
      */
-    private List<CandidateQuery> singleAtomSearch(Rule rule, Formula baseFormula, RDBMSDatabase database) {
+    private List<CandidateQuery> singleAtomSearch(Rule rule, Formula baseFormula, Database database) {
         assert(baseFormula instanceof Atom);
 
         List<CandidateQuery> candidates = new ArrayList<CandidateQuery>(2);
@@ -299,7 +298,7 @@ public class CandidateGeneration {
                 numAtoms, optimisticCost, pessimisticCost);
     }
 
-    private boolean explainNode(CandidateSearchNode node, RDBMSDatabase database) {
+    private boolean explainNode(CandidateSearchNode node, Database database) {
         DatabaseDriver.ExplainResult result = null;
         boolean usedExpain = false;
 
@@ -308,7 +307,7 @@ public class CandidateGeneration {
             result = explains.get(formulaString);
         } else {
             String sql = Formula2SQL.getQuery(node.formula, database, false);
-            result = ((RDBMSDataStore)database.getDataStore()).getDriver().explain(sql);
+            result = database.getDataStore().explain(sql);
             explains.put(formulaString, result);
             usedExpain = true;
         }

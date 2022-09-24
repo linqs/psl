@@ -22,7 +22,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
-import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
@@ -187,7 +186,6 @@ public class PartialGrounding {
             throw new IllegalArgumentException();
         }
 
-        RDBMSDatabase relationalDB = ((RDBMSDatabase)db);
         List<SelectQuery> queries = new ArrayList<SelectQuery>();
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Map<Variable, Integer> projectionMap = null;
@@ -226,7 +224,7 @@ public class PartialGrounding {
                 continue;
             }
 
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), relationalDB, false, partialTargetAtoms);
+            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), db, false, partialTargetAtoms);
             queries.add(sqler.getQuery(formula));
 
             if (projectionMap == null) {
@@ -240,6 +238,6 @@ public class PartialGrounding {
 
         // This falls back to a normal SELECT when there is only one.
         UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION_ALL, queries.toArray(new SelectQuery[0]));
-        return relationalDB.executeQueryIterator(new RawQuery(union.validate().toString(), projectionMap, varTypes));
+        return db.executeQueryIterator(new RawQuery(union.validate().toString(), projectionMap, varTypes));
     }
 }

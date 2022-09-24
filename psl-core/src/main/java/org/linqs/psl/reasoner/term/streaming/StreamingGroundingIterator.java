@@ -19,7 +19,6 @@ package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -259,7 +258,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
      * but just set the queryIterable/queryResults to null if this rule cannot be grounded.
      */
     protected void startGroundingQuery() {
-        queryIterable = ((RDBMSDatabase)atomManager.getDatabase()).executeQueryIterator(rules.get(currentRule).getGroundingQuery(atomManager));
+        queryIterable = atomManager.getDatabase().executeQueryIterator(rules.get(currentRule).getGroundingQuery(atomManager));
         queryResults = queryIterable.iterator();
     }
 

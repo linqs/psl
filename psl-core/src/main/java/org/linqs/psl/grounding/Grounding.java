@@ -21,8 +21,6 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.grounding.collective.CandidateQuery;
 import org.linqs.psl.grounding.collective.Containment;
@@ -123,16 +121,8 @@ public class Grounding {
     private static Set<CandidateQuery> genCandidates(List<Rule> collectiveRules, Database database) {
         Set<CandidateQuery> candidates = Collections.synchronizedSet(new HashSet<CandidateQuery>());
 
-        final CandidateGeneration candidateGeneration;
-        if (!(database instanceof RDBMSDatabase)
-                || !((RDBMSDataStore)database.getDataStore()).getDriver().canExplain()) {
-            log.warn("Cannot generate query candidates without a EXPLAIN capabilities, grounding will be suboptimal.");
-            candidateGeneration = null;
-        } else {
-            candidateGeneration = new CandidateGeneration();
-        }
-
-        if (candidateGeneration == null) {
+        if (!database.getDataStore().canExplain()) {
+            log.warn("Cannot generate query candidates without EXPLAIN capabilities, grounding will be suboptimal.");
             for (Rule rule : collectiveRules) {
                 candidates.add(new CandidateQuery(rule, rule.getRewritableGroundingFormula(), 0.0));
             }
@@ -140,9 +130,10 @@ public class Grounding {
             return candidates;
         }
 
+        final CandidateGeneration candidateGeneration = new CandidateGeneration();
         final int candiatesPerRule = Options.GROUNDING_COLLECTIVE_CANDIDATE_COUNT.getInt();
 
-        final RDBMSDatabase finalDatabase = (RDBMSDatabase)database;
+        final Database finalDatabase = database;
         final Set<CandidateQuery> finalCandidates = candidates;
 
         log.debug("Generating candidates.");

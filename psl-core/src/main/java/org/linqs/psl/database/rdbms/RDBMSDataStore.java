@@ -27,6 +27,8 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
 
+import com.healthmarketscience.sqlbuilder.SelectQuery;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -337,6 +339,11 @@ public class RDBMSDataStore implements DataStore {
         return metadata.getAllPartitions();
     }
 
+    @Override
+    public String setLimit(SelectQuery query, int count) {
+        return dbDriver.setLimit(query, count);
+    }
+
     public int getPredicateRowCount(StandardPredicate predicate) {
         try (Connection connection = getConnection()) {
             return predicates.get(predicate).getCount(connection);
@@ -353,13 +360,21 @@ public class RDBMSDataStore implements DataStore {
         return dbDriver.getConnection();
     }
 
+    @Override
+    public boolean canExplain() {
+        return dbDriver.canExplain();
+    }
+
+    @Override
+    public DatabaseDriver.ExplainResult explain(String sql) {
+        return dbDriver.explain(sql);
+    }
+
     public static Set<RDBMSDataStore> getOpenDataStores() {
         return Collections.unmodifiableSet(openDataStores);
     }
 
-    /**
-     * Helper method for getting a predicate handle
-     */
+    @Override
     public synchronized PredicateInfo getPredicateInfo(Predicate predicate) {
         PredicateInfo info = predicates.get(predicate);
         if (info == null) {

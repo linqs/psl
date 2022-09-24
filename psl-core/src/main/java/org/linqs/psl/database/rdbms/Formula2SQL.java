@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.database.rdbms;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Conjunction;
@@ -51,7 +52,7 @@ public class Formula2SQL {
     private static final String TABLE_ALIAS_PREFIX = "T";
 
     private final Set<Variable> projection;
-    private final RDBMSDatabase database;
+    private final Database database;
 
     /**
      * Maps a variable to the first column (table alias and column) that we see it in.
@@ -85,7 +86,7 @@ public class Formula2SQL {
      * as the column alias). If not set, all columns (*) will be retutned.
      * @param database the database to query over. The read and write partitions will be picked up from here.
      */
-    public Formula2SQL(Set<Variable> projection, RDBMSDatabase database) {
+    public Formula2SQL(Set<Variable> projection, Database database) {
         this(projection, database, true);
     }
 
@@ -94,7 +95,7 @@ public class Formula2SQL {
      * @param isDistinct true if you want to enforce unique results (DISTINCT), false otherwise.
      *  Warning: this can be a costly operation.
      */
-    public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct) {
+    public Formula2SQL(Set<Variable> projection, Database database, boolean isDistinct) {
         this(projection, database, isDistinct, null);
     }
 
@@ -105,7 +106,7 @@ public class Formula2SQL {
      * and these atoms will be exclusively drawn from the special partitions.
      * We will do a DIRECT REFERENCE comparison against atoms in the formula to check for this specific one.
      */
-    public Formula2SQL(Set<Variable> projection, RDBMSDatabase database, boolean isDistinct, List<Atom> partialTargets) {
+    public Formula2SQL(Set<Variable> projection, Database database, boolean isDistinct, List<Atom> partialTargets) {
         this.projection = projection;
         this.database = database;
         this.partialTargets = partialTargets;
@@ -221,7 +222,7 @@ public class Formula2SQL {
 
         // Each standard atom brings a new table join.
         assert(atom.getPredicate() instanceof StandardPredicate);
-        PredicateInfo predicateInfo = ((RDBMSDataStore)database.getDataStore()).getPredicateInfo(atom.getPredicate());
+        PredicateInfo predicateInfo = database.getDataStore().getPredicateInfo(atom.getPredicate());
 
         String tableAlias = String.format("%s_%03d", TABLE_ALIAS_PREFIX, tableCounter);
         tableAliases.put(atom, tableAlias);
@@ -311,7 +312,7 @@ public class Formula2SQL {
     /**
      * A static shortcut for when only the SQL string is required.
      */
-    public static String getQuery(Formula formula, RDBMSDatabase database, boolean isDistinct) {
+    public static String getQuery(Formula formula, Database database, boolean isDistinct) {
         VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
         Set<Variable> projection = new HashSet<Variable>(varTypes.getVariables());
 

@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
@@ -43,15 +41,15 @@ public class RawQuery {
      */
     private VariableTypeMap variableTypes;
 
-    public RawQuery(RDBMSDatabase database, Formula formula) {
+    public RawQuery(Database database, Formula formula) {
         this(database, formula, false);
     }
 
-    public RawQuery(RDBMSDatabase database, Formula formula, boolean isDistinct) {
+    public RawQuery(Database database, Formula formula, boolean isDistinct) {
         this(database, new DatabaseQuery(formula, isDistinct));
     }
 
-    public RawQuery(RDBMSDatabase database, DatabaseQuery query) {
+    public RawQuery(Database database, DatabaseQuery query) {
         Formula formula = query.getFormula();
 
         VariableTypeMap variableTypes = formula.collectVariables(new VariableTypeMap());

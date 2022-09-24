@@ -17,13 +17,12 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.rdbms.Formula2SQL;
-import org.linqs.psl.database.rdbms.RDBMSDataStore;
-import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -247,15 +246,10 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
     @Override
     public RawQuery getGroundingQuery(AtomManager atomManager) {
-        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
-            throw new IllegalArgumentException("Can only ground arithmetic rules with a relational database.");
-        }
-        RDBMSDatabase database = ((RDBMSDatabase)atomManager.getDatabase());
-
         if (!hasSummation()) {
-            return new RawQuery(database, expression.getQueryFormula());
+            return new RawQuery(atomManager.getDatabase(), expression.getQueryFormula());
         } else {
-            return getSummationRawQuery(database);
+            return getSummationRawQuery(atomManager.getDatabase());
         }
     }
 
@@ -285,12 +279,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
     private void groundForSummation(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager,
             List<GroundRule> results) {
-        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
-            throw new IllegalArgumentException("Can only ground summation arithmetic rules with a relational database.");
-        }
-        RDBMSDatabase database = ((RDBMSDatabase)atomManager.getDatabase());
-
-        GroundingResources resources = prepSummationGroundingResources(database);
+        GroundingResources resources = prepSummationGroundingResources(atomManager.getDatabase());
 
         // Bail if there are no groundings.
         if (resources.flatExpression == null) {
@@ -398,11 +387,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      * Ground by first expanding summation atoms into normal ones and then calling the non-summation grounding.
      */
     private long groundAllSummationRule(AtomManager atomManager, GroundRuleStore groundRuleStore) {
-        if (!(atomManager.getDatabase() instanceof RDBMSDatabase)) {
-            throw new IllegalArgumentException("Can only ground summation arithmetic rules with a relational database.");
-        }
-        RDBMSDatabase database = ((RDBMSDatabase)atomManager.getDatabase());
-
+        Database database = atomManager.getDatabase();
         GroundingResources resources = prepSummationGroundingResources(database);
 
         // Bail if there are no groundings.
@@ -727,7 +712,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     /**
      * Get a raw query that represents the grounding query for a rule with summations.
      */
-    private RawQuery getSummationRawQuery(RDBMSDatabase database) {
+    private RawQuery getSummationRawQuery(Database database) {
         // For the actual query, just use the normal expression.
         // We can't use the flat expression, since the flat summation will guarentee no results in most cases.
         // But, we can just ground normally and ignore the summation variables to get the variable replacments.
@@ -749,14 +734,14 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         // If there are only summation atoms in this rule, then only get one result from the database.
         // The rule will be fully grounded, so we won't use any variable replacements.
         if (projectionMap.size() == 0) {
-            queryString = ((RDBMSDataStore)database.getDataStore()).getDriver().setLimit(query, 1);
+            queryString = database.getDataStore().setLimit(query, 1);
         } else
             queryString = query.validate().toString();
 
         return new RawQuery(queryString,  projectionMap, variableTypes);
     }
 
-    private GroundingResources prepSummationGroundingResources(RDBMSDatabase database) {
+    private GroundingResources prepSummationGroundingResources(Database database) {
         GroundingResources resources = getGroundingResources(null);
         if (resources.summationDataLoaded) {
             return resources;
@@ -820,7 +805,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      * Query the database for the possible replacements for summation variables.
      */
     private Map<SummationVariable, ResultList> fetchSummationConstants(
-            Map<SummationVariable, SummationAtom> summationMapping, RDBMSDatabase database) {
+            Map<SummationVariable, SummationAtom> summationMapping, Database database) {
         Map<SummationVariable, ResultList> summationConstants = new HashMap<SummationVariable, ResultList>();
 
         for (Map.Entry<SummationVariable, SummationAtom> entry : summationMapping.entrySet()) {
@@ -835,7 +820,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
      * Take the context expression and flatten out any summation atoms into non-summation atoms by expanding the summation variables.
      * The three output lists will all be the same size and indexes will match up.
      */
-    private void flattenAtoms(RDBMSDatabase database,
+    private void flattenAtoms(Database database,
             List<SummationAtomOrAtom> flatAtoms,
             List<Coefficient> flatCoefficients,
             List<SummationVariable[]> flatSummationVariables) {
@@ -928,7 +913,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         }
     }
 
-    private ResultList fetchSummationValues(RDBMSDatabase database, SummationVariable variable, SummationAtom atom) {
+    private ResultList fetchSummationValues(Database database, SummationVariable variable, SummationAtom atom) {
         QueryAtom queryAtom = atom.getQueryAtom();
 
         VariableTypeMap variableTypes = new VariableTypeMap();

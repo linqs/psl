@@ -17,10 +17,14 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
+import org.linqs.psl.database.rdbms.PredicateInfo;
+import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+
+import com.healthmarketscience.sqlbuilder.SelectQuery;
 
 import java.util.Set;
 
@@ -126,6 +130,26 @@ public interface DataStore {
      * @return new, unused partition
      */
     public Partition getNewPartition();
+
+    /**
+     * Return a query string that represents the given query with the number of results limited to the specified amount.
+     */
+    public String setLimit(SelectQuery query, int count);
+
+    /**
+     * Helper method for getting a predicate handle
+     */
+    public PredicateInfo getPredicateInfo(Predicate predicate);
+
+    /**
+     * Check if this data store can get query plans.
+     */
+    public boolean canExplain();
+
+    /**
+     * Get query plan information for the given query.
+     */
+    public DatabaseDriver.ExplainResult explain(String sql);
 
     /**
      * Releases all resources and locks obtained by this DataStore.
