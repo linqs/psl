@@ -21,7 +21,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
 /**
- * An atom that is not managed by an AtomManager (and thus may have more than one global instantiation).
+ * An atom that is not managed by an AtomStore (and thus may have more than one global instantiation).
  * Note that we only allow observed atoms to be unmanaged.
  * UnmanagedAtoms should be very rare.
  */

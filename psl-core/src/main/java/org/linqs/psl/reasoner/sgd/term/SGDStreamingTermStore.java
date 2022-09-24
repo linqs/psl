@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
@@ -31,14 +31,14 @@ import java.util.List;
  * So interrupting the iteration can cause the term count to be incorrect.
  */
 public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
-    public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager, SGDTermGenerator termGenerator) {
-        super(rules, atomManager, termGenerator);
+    public SGDStreamingTermStore(List<Rule> rules, Database database, SGDTermGenerator termGenerator) {
+        super(rules, database, termGenerator);
     }
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
         return new SGDStreamingGroundingIterator(
-                this, rules, atomManager, termGenerator,
+                this, rules, database, termGenerator,
                 termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
     }
 

@@ -18,7 +18,6 @@
 package org.linqs.psl.application.learning.weight;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -85,11 +84,11 @@ public class TrainingMap {
     /**
      * Initializes the training map of RandomVariableAtoms ObservedAtoms.
      *
-     * @param targets the atom manager containing the RandomVariableAtoms (any other atom types are ignored)
+     * @param targetDatabase the database containing the RandomVariableAtoms (any other atom types are ignored)
      * @param truthDatabase the database containing matching ObservedAtoms
      */
-    public TrainingMap(PersistedAtomManager targets, Database truthDatabase) {
-        labelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targets.getPersistedCount());
+    public TrainingMap(Database targetDatabase, Database truthDatabase) {
+        labelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targetDatabase.getAtomStore().size());
         observedMap = new HashMap<ObservedAtom, ObservedAtom>();
         latentVariables = new ArrayList<RandomVariableAtom>();
         missingLabels = new ArrayList<ObservedAtom>();
@@ -97,17 +96,15 @@ public class TrainingMap {
 
         Set<GroundAtom> seenTruthAtoms = new HashSet<GroundAtom>();
 
-        prefetchTruthAtoms(truthDatabase);
-
-        for (GroundAtom targetAtom : targets.getDatabase().getAllCachedAtoms()) {
+        for (GroundAtom targetAtom : targetDatabase.getAtomStore()) {
             if (targetAtom.getPredicate() instanceof FunctionalPredicate) {
                 continue;
             }
 
             // Note that we do not want to query the database or create a non-existent atom.
             GroundAtom truthAtom = null;
-            if (truthDatabase.hasCachedAtom((StandardPredicate)targetAtom.getPredicate(), targetAtom.getArguments())) {
-                truthAtom = truthDatabase.getAtom((StandardPredicate)targetAtom.getPredicate(), false, false, -1.0, targetAtom.getArguments());
+            if (truthDatabase.getAtomStore().hasAtom(targetAtom.getPredicate(), targetAtom.getArguments())) {
+                truthAtom = truthDatabase.getAtomStore().getAtom(targetAtom.getPredicate(), false, false, -1.0, targetAtom.getArguments());
             }
 
             // Skip any truth atom that is not observed.
@@ -132,12 +129,12 @@ public class TrainingMap {
             }
         }
 
-        for (GroundAtom truthAtom : truthDatabase.getAllCachedAtoms()) {
+        for (GroundAtom truthAtom : truthDatabase.getAtomStore()) {
             if (!(truthAtom instanceof ObservedAtom) || seenTruthAtoms.contains(truthAtom)) {
                 continue;
             }
 
-            boolean hasAtom = targets.getDatabase().hasAtom((StandardPredicate)truthAtom.getPredicate(), truthAtom.getArguments());
+            boolean hasAtom = targetDatabase.getAtomStore().hasAtom(truthAtom.getPredicate(), truthAtom.getArguments());
             if (hasAtom) {
                 // This shouldn't be possible (since we already iterated through the target atoms).
                 // This means that the target is not cached.
@@ -267,14 +264,5 @@ public class TrainingMap {
                 latentVariables.size(),
                 missingLabels.size(),
                 missingTargets.size());
-    }
-
-    /**
-     * Load all the truth atoms into the database's cache.
-     */
-    private void prefetchTruthAtoms(Database truthDatabase) {
-        for (StandardPredicate predicate : truthDatabase.getDataStore().getRegisteredPredicates()) {
-            truthDatabase.getAllGroundAtoms(predicate);
-        }
     }
 }

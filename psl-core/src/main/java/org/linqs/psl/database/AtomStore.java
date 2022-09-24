@@ -97,6 +97,15 @@ public class AtomStore implements Iterable<GroundAtom> {
         return atoms[index];
     }
 
+    public float getAtomValue(int index) {
+        return atomValues[index];
+    }
+
+    /**
+     * Lookup the atom and get it.
+     * Returns null if the atom does not exist.
+     * Will honor the closed-world assumption and return unmanaged atoms.
+     */
     public GroundAtom getAtom(QueryAtom query) {
         Integer index = lookup.get(query);
         if (index == null) {
@@ -110,6 +119,24 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     public GroundAtom getAtom(Predicate predicate, Term... args) {
         return getAtom(getQuery(predicate, args));
+    }
+
+    /**
+     * Lookup the atom and get it's index.
+     * Returns -1 if the atom does not exist.
+     * Will ignore closed-world atoms.
+     */
+    public int getAtomIndex(QueryAtom query) {
+        Integer index = lookup.get(query);
+        if (index == null) {
+            return -1;
+        }
+
+        return index.intValue();
+    }
+
+    public int getAtomIndex(Predicate predicate, Term... args) {
+        return getAtomIndex(getQuery(predicate, args));
     }
 
     /**
@@ -147,6 +174,10 @@ public class AtomStore implements Iterable<GroundAtom> {
     @Override
     public Iterator<GroundAtom> iterator() {
         return Arrays.asList(atoms).sublist(0, numAtoms);
+    }
+
+    public Iterable<RandomVariableAtom> getRandomVariableAtoms() {
+        return IteratorUtils.newIterable(IteratorUtils.filterClass(this, RandomVariableAtom.class));
     }
 
     public void addAtom(GroundAtom atom) {

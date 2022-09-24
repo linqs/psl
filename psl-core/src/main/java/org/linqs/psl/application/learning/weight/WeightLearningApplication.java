@@ -138,7 +138,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
             return;
         }
 
-        TrainingMap trainingMap = new TrainingMap(inference.getAtomManager(), observedDB);
+        TrainingMap trainingMap = new TrainingMap(inference.getDatabase(), observedDB);
         initGroundModel(inference, trainingMap);
     }
 

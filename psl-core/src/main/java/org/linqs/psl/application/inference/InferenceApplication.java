@@ -21,7 +21,6 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -48,7 +47,7 @@ import java.util.Set;
 
 /**
  * All the tools necessary to perform inference.
- * An inference application owns the ground atoms (Database/AtomManager), ground rules (GroundRuleStore), the terms (TermStore),
+ * An inference application owns the ground atoms (Database/AtomStore), ground rules (GroundRuleStore), the terms (TermStore),
  * how terms are generated (TermGenerator), and how inference is actually performed (Reasoner).
  * As such, the inference application is the top level authority for these items and methods.
  * For example, inference may set the value of the random variables on construction.
@@ -70,7 +69,6 @@ public abstract class InferenceApplication implements ModelApplication {
     protected GroundRuleStore groundRuleStore;
     protected TermStore termStore;
     protected TermGenerator termGenerator;
-    protected PersistedAtomManager atomManager;
 
     private boolean atomsCommitted;
 
@@ -98,10 +96,6 @@ public abstract class InferenceApplication implements ModelApplication {
      * This will call into the abstract method completeInitialize().
      */
     protected void initialize() {
-        log.debug("Creating persisted atom manager.");
-        atomManager = createAtomManager(database);
-        log.debug("Atom manager initialization complete.");
-
         initializeAtoms();
 
         if (normalizeWeights) {
@@ -117,13 +111,7 @@ public abstract class InferenceApplication implements ModelApplication {
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
 
-        termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
-
         completeInitialize();
-    }
-
-    protected PersistedAtomManager createAtomManager(Database database) {
-        return new PersistedAtomManager(database, false, initialValue);
     }
 
     protected GroundRuleStore createGroundRuleStore() {
@@ -145,18 +133,11 @@ public abstract class InferenceApplication implements ModelApplication {
     /**
      * Complete the initialization process.
      * Most of the infrastructure will have been constructed.
-     * The child is responsible for constructing the AtomManager
-     * and populating the ground rule store.
+     * The child is responsible for populating the ground rule store.
      */
     protected void completeInitialize() {
         log.info("Grounding out model.");
-
-        // In this configuration, we know that the PAM pre-caches all the atoms (even ones from closed predicates).
-        // So, we can avoid hitting the database when we do not see them in the cache.
-        boolean oldValue = atomManager.queryDBForClosedAtoms(false);
-        long groundCount = Grounding.groundAll(rules, atomManager, groundRuleStore);
-        atomManager.queryDBForClosedAtoms(oldValue);
-
+        long groundCount = Grounding.groundAll(rules, database, groundRuleStore);
         log.info("Grounding complete.");
         log.debug("Generated {} ground rules.", groundCount);
 
@@ -212,16 +193,13 @@ public abstract class InferenceApplication implements ModelApplication {
         TrainingMap trainingMap = null;
         Set<StandardPredicate> evaluationPredicates = null;
         if (truthDatabase != null && evaluators.size() > 0) {
-            trainingMap = new TrainingMap(atomManager, truthDatabase);
+            trainingMap = new TrainingMap(database, truthDatabase);
             evaluationPredicates = new HashSet<StandardPredicate>();
 
             for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
-                // TODO(eriq): Use the AtomStore.
-                /* TEST
-                if (truthDatabase.countAllGroundAtoms(predicate) > 0) {
+                if (truthDatabase.getAtomStore().size() > 0) {
                     evaluationPredicates.add(predicate);
                 }
-                */
             }
         }
 
@@ -259,8 +237,8 @@ public abstract class InferenceApplication implements ModelApplication {
         return termStore;
     }
 
-    public PersistedAtomManager getAtomManager() {
-        return atomManager;
+    public Database getDatabase() {
+        return database;
     }
 
     /**
@@ -274,7 +252,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * Set all the random variable atoms to the initial value for this inference application.
      */
     public void initializeAtoms() {
-        for (RandomVariableAtom atom : atomManager.getDatabase().getAllCachedRandomVariableAtoms()) {
+        for (RandomVariableAtom atom : database().getAtomStore().getRandomVariableAtoms()) {
             atom.setValue(initialValue.getVariableValue(atom));
         }
     }
@@ -288,7 +266,7 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         log.info("Writing results to Database.");
-        atomManager.commitPersistedAtoms();
+        database.getAtomStore().commit();
         log.info("Results committed to database.");
 
         atomsCommitted = true;

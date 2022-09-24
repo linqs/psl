@@ -20,7 +20,6 @@ package org.linqs.psl.grounding;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -106,25 +105,24 @@ public class PartialGrounding {
      * Will drop all the ground rules originating from this rule and reground.
      */
     public static void partialComplexGround(AbstractArithmeticRule rule, GroundRuleStore groundRuleStore,
-                                            AtomManager atomManager) {
+                                            Database database) {
         log.trace(String.format("Complex partial grounding on rule [%s]", rule));
 
         // Remove all existing ground rules.
         groundRuleStore.removeGroundRules(rule);
 
         // Reground.
-        rule.groundAll(atomManager, groundRuleStore);
+        rule.groundAll(database, groundRuleStore);
     }
 
     public static void partialSimpleGround(Rule rule, Set<StandardPredicate> partialPredicates,
-                                           GroundRuleStore groundRuleStore, AtomManager atomManager) {
-        Database db = atomManager.getDatabase();
+                                           GroundRuleStore groundRuleStore, Database database) {
         if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
 
         Formula formula = rule.getRewritableGroundingFormula();
-        try (QueryResultIterable groundingResults = getPartialGroundingResults(formula, partialPredicates, db)) {
+        try (QueryResultIterable groundingResults = getPartialGroundingResults(formula, partialPredicates, database)) {
             if (groundingResults == null) {
                 return;
             }
@@ -136,7 +134,7 @@ public class PartialGrounding {
             while (groundingResultsIterator.hasNext()){
                 Constant[] constants = groundingResultsIterator.next();
                 groundRules.clear();
-                rule.ground(constants, groundingResults.getVariableMap(), atomManager, groundRules);
+                rule.ground(constants, groundingResults.getVariableMap(), database, groundRules);
                 for (GroundRule groundRule : groundRules) {
                     if (groundRule != null) {
                         groundRuleStore.addGroundRule(groundRule);
@@ -160,28 +158,28 @@ public class PartialGrounding {
         return partialTargetAtoms;
     }
 
-    public static QueryResultIterable getPartialGroundingResults(Rule rule, Set<StandardPredicate> partialPredicates, Database db) {
+    public static QueryResultIterable getPartialGroundingResults(Rule rule, Set<StandardPredicate> partialPredicates, Database database) {
         if (!rule.supportsGroundingQueryRewriting()) {
             throw new UnsupportedOperationException("Rule requires full regrounding: " + rule);
         }
 
         Formula formula = rule.getRewritableGroundingFormula();
-        return getPartialGroundingResults(formula, partialPredicates, db);
+        return getPartialGroundingResults(formula, partialPredicates, database);
     }
 
     private static QueryResultIterable getPartialGroundingResults(Formula formula, Set<StandardPredicate> partialPredicates,
-                                                                  Database db) {
+                                                                  Database database) {
         List<Atom> partialTargetAtoms = getPartialTargetAtoms(formula, partialPredicates);
 
         if (partialTargetAtoms.size() == 0) {
             return null;
         } else {
             // Do the grounding query for this rule.
-            return partialGroundingIterable(formula, partialTargetAtoms, db);
+            return partialGroundingIterable(formula, partialTargetAtoms, database);
         }
     }
 
-    private static QueryResultIterable partialGroundingIterable(Formula formula, List<Atom> allPartialTargetAtoms, Database db) {
+    private static QueryResultIterable partialGroundingIterable(Formula formula, List<Atom> allPartialTargetAtoms, Database database) {
         if (allPartialTargetAtoms.size() == 0) {
             throw new IllegalArgumentException();
         }
@@ -224,7 +222,7 @@ public class PartialGrounding {
                 continue;
             }
 
-            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), db, false, partialTargetAtoms);
+            Formula2SQL sqler = new Formula2SQL(varTypes.getVariables(), database, false, partialTargetAtoms);
             queries.add(sqler.getQuery(formula));
 
             if (projectionMap == null) {
@@ -238,6 +236,6 @@ public class PartialGrounding {
 
         // This falls back to a normal SELECT when there is only one.
         UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION_ALL, queries.toArray(new SelectQuery[0]));
-        return db.executeQueryIterator(new RawQuery(union.validate().toString(), projectionMap, varTypes));
+        return database.executeQueryIterator(new RawQuery(union.validate().toString(), projectionMap, varTypes));
     }
 }

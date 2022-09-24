@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.model.rule;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.RawQuery;
-import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Formula;
@@ -38,14 +38,12 @@ import java.util.Set;
  */
 public interface Rule extends Serializable {
     /**
-     * Adds all GroundRules to a GroundRuleStore using the AtomManager
+     * Adds all GroundRules to a GroundRuleStore using the Database
      * to instantiate ground atoms.
      *
-     * @param atomManager AtomManager on which to base the grounding
-     * @param groundRuleStore store for new GroundRules
      * @return the number of ground rules generated.
      */
-    public long groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore);
+    public long groundAll(Database database, GroundRuleStore groundRuleStore);
 
     public boolean isWeighted();
 
@@ -83,13 +81,13 @@ public interface Rule extends Serializable {
      * Get the formula that we can use for grounding.
      * Should throw if supportsIndividualGrounding() == false.
      */
-    public RawQuery getGroundingQuery(AtomManager atomManager);
+    public RawQuery getGroundingQuery(Database database);
 
     /**
      * Get the formula that we can use for grounding.
      * Should throw if supportsIndividualGrounding() == false.
      */
-    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results);
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, Database database, List<GroundRule> results);
 
     /**
      * Check if this rule needs to be broken up into multiple rules.

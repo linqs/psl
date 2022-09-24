@@ -20,7 +20,6 @@ package org.linqs.psl.evaluation.statistics;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.UnmanagedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -130,18 +129,10 @@ public abstract class Evaluator {
 
     /**
      * A convenience call for those who don't want to create a training map directly.
-     * If the random variable database is already fully cached
-     * (ie a PAM has already been used on it (like if it has been used in inference))
-     * then don't rebuild the cache.
      */
-    public void compute(Database rvDB, Database truthDB, StandardPredicate predicate, boolean rvDBCached) {
-        PersistedAtomManager atomManager = new PersistedAtomManager(rvDB, rvDBCached);
-        TrainingMap map = new TrainingMap(atomManager, truthDB);
-        compute(map, predicate);
-    }
-
     public void compute(Database rvDB, Database truthDB, StandardPredicate predicate) {
-        compute(rvDB, truthDB, predicate, false);
+        TrainingMap map = new TrainingMap(rvDB, truthDB);
+        compute(map, predicate);
     }
 
     /**

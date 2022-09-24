@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.model.rule;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.RawQuery;
-import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Formula;
@@ -65,7 +65,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public long groundAll(AtomManager atomManager, GroundRuleStore groundRuleStore) {
+    public long groundAll(Database database, GroundRuleStore groundRuleStore) {
         return 0;
     }
 
@@ -94,12 +94,12 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public RawQuery getGroundingQuery(AtomManager atomManager) {
+    public RawQuery getGroundingQuery(Database database) {
         return null;
     }
 
     @Override
-    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, AtomManager atomManager, List<GroundRule> results) {
+    public void ground(Constant[] constants, Map<Variable, Integer> variableMap, Database database, List<GroundRule> results) {
         // Pass.
     }
 

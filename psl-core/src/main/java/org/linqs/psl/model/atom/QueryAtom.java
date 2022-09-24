@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.model.atom;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ResultList;
-import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -50,8 +50,8 @@ public class QueryAtom extends Atom {
         init(false, false, predicate, args);
     }
 
-    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex) {
-        return ground(atomManager, res, resultIndex, new Constant[arguments.length], -1.0);
+    public GroundAtom ground(Database database, ResultList res, int resultIndex) {
+        return ground(database, res, resultIndex, new Constant[arguments.length], -1.0);
     }
 
     /**
@@ -59,11 +59,11 @@ public class QueryAtom extends Atom {
      * The buffer cannot be held as member datum or statically for thread-safety.
      * It is up to the caller to make sure the buffer is only used on this thread.
      */
-    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs, double trivialValue) {
-        return ground(atomManager, res, resultIndex, newArgs, trivialValue, false);
+    public GroundAtom ground(Database database, ResultList res, int resultIndex, Constant[] newArgs, float trivialValue) {
+        return ground(database, res, resultIndex, newArgs, trivialValue, false);
     }
 
-    public GroundAtom ground(AtomManager atomManager, ResultList res, int resultIndex, Constant[] newArgs, double trivialValue, boolean checkDBCache) {
+    public GroundAtom ground(Database database, ResultList res, int resultIndex, Constant[] newArgs, float trivialValue, boolean checkDBCache) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
@@ -74,24 +74,18 @@ public class QueryAtom extends Atom {
             }
         }
 
-        if (checkDBCache) {
-            if (!atomManager.getDatabase().hasCachedAtom((StandardPredicate)predicate, newArgs)) {
-                return null;
-            }
-        }
-
-        return atomManager.getAtom(trivialValue, predicate, newArgs);
+        return fetchAtom(predicate, newArgs);
     }
 
-    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap) {
-        return ground(atomManager, queryResults, projectionMap, new Constant[arguments.length], -1.0);
+    public GroundAtom ground(Database database, Constant[] queryResults, Map<Variable, Integer> projectionMap) {
+        return ground(Database, queryResults, projectionMap, new Constant[arguments.length], -1.0);
     }
 
-    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, double trivialValue) {
-        return ground(atomManager, queryResults, projectionMap, newArgs, trivialValue, false);
+    public GroundAtom ground(Database database, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, float trivialValue) {
+        return ground(Database, queryResults, projectionMap, newArgs, trivialValue, false);
     }
 
-    public GroundAtom ground(AtomManager atomManager, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, double trivialValue, boolean checkDBCache) {
+    public GroundAtom ground(Database database, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, float trivialValue, boolean checkDBCache) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = queryResults[projectionMap.get((Variable)arguments[i]).intValue()];
@@ -102,13 +96,7 @@ public class QueryAtom extends Atom {
             }
         }
 
-        if (checkDBCache) {
-            if (!atomManager.getDatabase().hasCachedAtom((StandardPredicate)predicate, newArgs)) {
-                return null;
-            }
-        }
-
-        return atomManager.getAtom(trivialValue, predicate, newArgs);
+        return fetchAtom(predicate, newArgs);
     }
 
     public VariableTypeMap collectVariables(VariableTypeMap varMap) {
@@ -120,5 +108,34 @@ public class QueryAtom extends Atom {
         }
 
         return varMap;
+    }
+
+    private GroundAtom fetchAtom(Predicate predicate, Constant[] args) {
+        AtomStore atomStore = database.getAtomStore();
+        int atomIndex = atomStore.getAtomIndex(predicate, args);
+
+        if (atomIndex == -1) {
+            // The atom does not exist (may be a closed-world atom).
+            if (checkDBCache) {
+                // We are not looking for closed-world atoms.
+                return null;
+            }
+
+            // Before making a closed-world atom, check for trivality.
+            if (MathUtils.equals(trivialValue, 0.0f)) {
+                return null;
+            }
+
+            return atomStore.getAtom(predicate, args);
+        }
+
+        // The atom exists in the store.
+
+        // Check for triviality first.
+        if (MathUtils.equals(trivialValue, atomStore.getAtomValue(atomIndex))) {
+            return null;
+        }
+
+        return atomStore.getAtom(atomIndex);
     }
 }

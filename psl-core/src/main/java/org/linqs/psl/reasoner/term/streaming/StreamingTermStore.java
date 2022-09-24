@@ -18,7 +18,7 @@
 package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -50,7 +50,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
     protected List<Rule> rules;
-    protected AtomManager atomManager;
+    protected Database database;
 
     // Keep track of variable indexes.
     protected Map<GroundAtom, Integer> variables;
@@ -119,7 +119,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      */
     protected int[] shuffleMap;
 
-    public StreamingTermStore(List<Rule> rules, AtomManager atomManager,
+    public StreamingTermStore(List<Rule> rules, Database database,
             HyperplaneTermGenerator<T, GroundAtom> termGenerator) {
         pageSize = Options.STREAMING_TS_PAGE_SIZE.getInt();
         pageDir = Options.STREAMING_TS_PAGE_LOCATION.getString();
@@ -138,7 +138,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
             throw new IllegalArgumentException("Found no valid rules for a streaming term store.");
         }
 
-        this.atomManager = atomManager;
+        this.database = database;
         this.termGenerator = termGenerator;
 
         ensureVariableCapacity(estimateVariableCapacity());
@@ -276,7 +276,7 @@ public abstract class StreamingTermStore<T extends ReasonerTerm> implements Vari
      * Estimate how many total variables this term store will need to track.
      */
     protected int estimateVariableCapacity() {
-        return atomManager.getCachedRVACount();
+        return database.getAtomStore().size();
     }
 
     public void ensureVariableCapacity(int capacity) {

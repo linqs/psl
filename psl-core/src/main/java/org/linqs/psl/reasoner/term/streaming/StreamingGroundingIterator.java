@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -44,7 +44,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
 
     protected StreamingTermStore<T> parentStore;
     protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
-    protected AtomManager atomManager;
+    protected Database database;
 
     protected List<Rule> rules;
     protected int currentRule;
@@ -78,22 +78,22 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
 
     public StreamingGroundingIterator(
             StreamingTermStore<T> parentStore, List<Rule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
+            Database database, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
-        this(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, 0);
+        this(parentStore, rules, database, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, 0);
     }
 
     public StreamingGroundingIterator(
             StreamingTermStore<T> parentStore, List<Rule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
+            Database database, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize, int nextPage) {
         this.parentStore = parentStore;
         this.termGenerator = termGenerator;
-        this.atomManager = atomManager;
+        this.database = database;
 
         this.rules = rules;
         currentRule = -1;
@@ -226,7 +226,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
         // Check if there are any more results pending from the query.
         while (queryResults != null && queryResults.hasNext()) {
             Constant[] tuple = queryResults.next();
-            rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), atomManager, pendingGroundRules);
+            rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), database, pendingGroundRules);
 
             while (pendingGroundRules.size() > 0) {
                 GroundRule groundRule = pendingGroundRules.remove(pendingGroundRules.size() - 1);
@@ -258,7 +258,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
      * but just set the queryIterable/queryResults to null if this rule cannot be grounded.
      */
     protected void startGroundingQuery() {
-        queryIterable = atomManager.getDatabase().executeQueryIterator(rules.get(currentRule).getGroundingQuery(atomManager));
+        queryIterable = database.executeQueryIterator(rules.get(currentRule).getGroundingQuery(database));
         queryResults = queryIterable.iterator();
     }
 

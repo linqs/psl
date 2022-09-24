@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
@@ -32,11 +32,11 @@ import java.util.List;
 public class SGDStreamingGroundingIterator extends StreamingGroundingIterator<SGDObjectiveTerm> {
     public SGDStreamingGroundingIterator(
             SGDStreamingTermStore parentStore, List<Rule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
+            Database database, HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> termGenerator,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize, int numPages) {
-        super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer,
+        super(parentStore, rules, database, termGenerator, termCache, termPool, termBuffer, volatileBuffer,
                 pageSize, numPages);
     }
 }
