@@ -84,6 +84,13 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option ATOM_STORE_OVERALLOCATION_FACTOR = new Option(
+        "atomstore.overallocation",
+        0.20,
+        "The degreee of overallocation for atom storage. 0.0 means no overallocation.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option BOOLEAN_MAXWALKSAT_MAX_FLIPS = new Option(
         "booleanmaxwalksat.maxflips",
         50000,
