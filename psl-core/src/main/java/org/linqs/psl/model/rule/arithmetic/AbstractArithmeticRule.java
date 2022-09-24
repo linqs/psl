@@ -20,10 +20,10 @@ package org.linqs.psl.model.rule.arithmetic;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.atom.AtomManager;
+import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -412,7 +412,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
         RawQuery rawQuery = getSummationRawQuery(database);
 
-        try (ResultList results = database.executeQuery(rawQuery)) {
+        try (ResultList results = database.executeSQL(rawQuery)) {
             Map<Variable, Integer> variableMap = results.getVariableMap();
 
             for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
@@ -942,7 +942,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
         SelectQuery query = sqler.getQuery(queryAtom);
         Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 
-        return database.executeQuery(projectionMap, variableTypes, query.validate().toString());
+        return database.executeSQL(new RawQuery(query.validate().toString(), projectionMap, variableTypes));
     }
 
     private GroundingResources getGroundingResources(ArithmeticRuleExpression expression) {

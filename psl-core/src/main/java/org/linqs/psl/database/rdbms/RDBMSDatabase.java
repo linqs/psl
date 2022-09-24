@@ -21,13 +21,12 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
-import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -42,8 +41,6 @@ import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.StringUtils;
 
 import java.sql.Connection;
@@ -51,7 +48,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,108 +65,28 @@ import java.util.Set;
 public class RDBMSDatabase extends Database {
     private static final Logger log = Logger.getLogger(RDBMSDatabase.class);
 
-    private static final float DEFAULT_UNOBSERVED_VALUE = 0.0f;
-
-    private static final String THREAD_QUERY_ATOM_KEY = RDBMSDatabase.class.getName() + "::" + QueryAtom.class.getName();
-
-    /**
-     * Predicates that, for the purpose of this database, are closed.
-     */
-    private final Set<Predicate> closedPredicates;
-
     private int fetchSize;
 
     public RDBMSDatabase(RDBMSDataStore parent,
             Partition write, Partition[] read,
             Set<StandardPredicate> closed) {
-        super(parent, write, read);
-
+        super(parent, write, read, closed);
         fetchSize = Options.RDBMS_FETCH_SIZE.getInt();
-
-        this.closedPredicates = new HashSet<Predicate>();
-        if (closed != null) {
-            this.closedPredicates.addAll(closed);
-        }
-
         this.closed = false;
     }
 
     @Override
-    public GroundAtom getAtom(Predicate predicate, Constant... arguments) {
+    public void close() {
         if (closed) {
-            throw new IllegalStateException("Cannot query atom from closed database.");
+            throw new IllegalStateException("Cannot close database after it has been closed.");
         }
 
-        /*
-         * First, check cache to see if the atom exists.
-         * Yes, return atom.
-         * No, continue.
-         *
-         * Next, query database for atom.
-         * What partition is it in?
-         * Read?
-         *     - Then instantiate as a persisted ObservedAtom
-         * Write?
-         *     - Is the predicate closed?
-         *         - Yes, instantiate as ObservedAtom.
-         *         - No, instantiate as RandomVariableAtom.
-         * None?
-         *     - Is the predicate standard?
-         *         - Yes, is the predicate closed?
-         *             - Yes, instantiate as ObservedAtom
-         *             - No, instantiate as RandomVariableAtom
-         *         - No, instantiate as ObservedAtom.
-         *     - Is the predicate functional?
-         *         - Yes, call the function and instantiate as an ObservedAtom.
-         *         - No, unknown state.
-         */
-        if (predicate instanceof StandardPredicate) {
-            return getAtom((StandardPredicate)predicate, arguments);
-        } else if (predicate instanceof FunctionalPredicate) {
-            return getAtom((FunctionalPredicate)predicate, arguments);
-        } else {
-            throw new IllegalStateException("Unknown predicate type: " + predicate.getClass().toString());
-        }
+        ((RDBMSDataStore)parentDataStore).releasePartitions(this);
+        closed = true;
     }
 
     @Override
-    public boolean deleteAtom(GroundAtom atom) {
-        return deleteAtom(atom, Arrays.asList(writeID));
-    }
-
-    public boolean deleteAtomAllPartitions(GroundAtom atom) {
-        return deleteAtom(atom, allPartitionIDs);
-    }
-
-    public boolean deleteAtom(GroundAtom atom, List<Integer> partitions) {
-        QueryAtom queryAtom = new QueryAtom(atom.getPredicate(), atom.getArguments());
-        if (cache.getCachedAtom(queryAtom) != null) {
-            cache.removeCachedAtom(queryAtom);
-        }
-
-        try (
-            Connection connection = getConnection();
-            PreparedStatement statement = getAtomDelete(connection,
-                    ((RDBMSDataStore)parentDataStore).getPredicateInfo(atom.getPredicate()),
-                    atom.getArguments(), partitions);
-        ) {
-            if (statement.executeUpdate() > 0) {
-                return true;
-            }
-
-            return false;
-        } catch (SQLException ex) {
-            throw new RuntimeException("Error deleting atom: " + atom, ex);
-        }
-    }
-
-    @Override
-    public void commit(Iterable<RandomVariableAtom> atoms) {
-        commit(atoms, writeID);
-    }
-
-    @Override
-    public void commit(Iterable<? extends GroundAtom> atoms, int partitionId) {
+    public void commit(Iterable<? extends GroundAtom> atoms) {
         if (closed) {
             throw new IllegalStateException("Cannot commit on a closed database.");
         }
@@ -195,7 +111,7 @@ public class RDBMSDatabase extends Database {
                     // Set all the upsert params.
                     for (GroundAtom atom : entry.getValue()) {
                         // Partition
-                        statement.setInt(1, partitionId);
+                        statement.setShort(1, atom.getPartition());
 
                         // Value
                         statement.setDouble(2, atom.getValue());
@@ -231,25 +147,6 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public void moveToWritePartition(StandardPredicate predicate, int oldPartitionId) {
-        moveToPartition(predicate, oldPartitionId, writeID);
-    }
-
-    @Override
-    public void moveToPartition(StandardPredicate predicate, int oldPartitionId, int newPartitionId) {
-        PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
-
-        try (
-            Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createPartitionMoveStatement(connection, oldPartitionId, newPartitionId);
-        ) {
-            statement.executeUpdate();
-        } catch (SQLException ex) {
-            throw new RuntimeException("Error moving partitions for: " + predicate, ex);
-        }
-    }
-
-    @Override
     public QueryResultIterable executeGroundingQuery(Formula formula) {
         return executeQueryIterator(formula, false);
     }
@@ -259,51 +156,20 @@ public class RDBMSDatabase extends Database {
         return executeQuery(query.getFormula(), query.getDistinct(), query.getIgnoreVariables());
     }
 
-    private ResultList executeQuery(Formula formula, boolean isDistinct, Set<Variable> ignoreVariables) {
-        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-        Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
-
-        projectTo.removeAll(ignoreVariables);
-
-        // Construct query from formula
-        Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
-        String queryString = sqler.getSQL(formula);
-        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
-
-        return executeQuery(projectionMap, varTypes, queryString);
-    }
-
-    private QueryResultIterable executeQueryIterator(Formula formula, boolean isDistinct) {
-        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
-        Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
-
-        // Construct query from formula
-        Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
-        String queryString = sqler.getSQL(formula);
-        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
-
-        return executeQueryIterator(projectionMap, varTypes, queryString);
-    }
-
-    public ResultList executeQuery(RawQuery rawQuery) {
-        return executeQuery(rawQuery.getProjectionMap(), rawQuery.getVariableTypes(), rawQuery.getSQL());
-    }
-
+    @Override
     public QueryResultIterable executeQueryIterator(RawQuery rawQuery) {
         return executeQueryIterator(rawQuery.getProjectionMap(), rawQuery.getVariableTypes(), rawQuery.getSQL());
     }
 
-    /**
-     * A more general form for executeQuery().
-     * @param projectionMap a mapping of each variable we want returned to the
-     *  order it appears in the select statement.
-     * @param varTypes the types for each variable in the projection.
-     * @param queryString the SQL query.
-     */
-    public ResultList executeQuery(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, String queryString) {
+    @Override
+    public ResultList executeSQL(RawQuery rawQuery) {
         if (closed) {
             throw new IllegalStateException("Cannot perform query on database that was closed.");
         }
+
+        Map<Variable, Integer> projectionMap = rawQuery.getProjectionMap();
+        VariableTypeMap varTypes = rawQuery.getVariableTypes();
+        String queryString = rawQuery.getSQL();
 
         int[] orderedIndexes = new int[projectionMap.size()];
         ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
@@ -319,238 +185,22 @@ public class RDBMSDatabase extends Database {
         return results;
     }
 
-    /**
-     * Note that the constants are in the order specified by the projection map.
-     */
-    public QueryResultIterable executeQueryIterator(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, String queryString) {
-        if (closed) {
-            throw new IllegalStateException("Cannot perform query on database that was closed.");
-        }
-
-        int[] orderedIndexes = new int[projectionMap.size()];
-        ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
-        initQueryResults(projectionMap, varTypes, orderedIndexes, orderedTypes);
-
-        return executeQueryIterator(queryString, projectionMap, orderedIndexes, orderedTypes);
-    }
-
-    public QueryResultIterable executeQueryIterator(String queryString, Map<Variable, Integer> projectionMap, int[] orderedIndexes, ConstantType[] orderedTypes) {
-        if (closed) {
-            throw new IllegalStateException("Cannot perform query on database that was closed.");
-        }
-
-        log.trace(queryString);
-
-        return new RDBMSQueryResultIterable(queryString, projectionMap, orderedIndexes, orderedTypes);
-    }
-
-    private RDBMSResultList initQueryResults(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, int[] orderedIndexes, ConstantType[] orderedTypes) {
-        RDBMSResultList results = new RDBMSResultList(projectionMap.size());
-        for (Map.Entry<Variable, Integer> projection : projectionMap.entrySet()) {
-            results.setVariable(projection.getKey(), projection.getValue().intValue());
-        }
-
-        for (Map.Entry<Variable, Integer> entry : results.getVariableMap().entrySet()) {
-            Variable variable = entry.getKey();
-            int index = entry.getValue().intValue();
-
-            orderedIndexes[index] = projectionMap.get(variable);
-            orderedTypes[index] = varTypes.getType(variable);
-        }
-
-        return results;
-    }
-
     @Override
-    public boolean isClosed(StandardPredicate predicate) {
-        return closedPredicates.contains(predicate);
-    }
+    public int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
+        PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
-    private Connection getConnection() {
-        return ((RDBMSDataStore)parentDataStore).getConnection();
-    }
-
-    @Override
-    public void close() {
-        if (closed) {
-            throw new IllegalStateException("Cannot close database after it has been closed.");
-        }
-
-        ((RDBMSDataStore)parentDataStore).releasePartitions(this);
-        closed = true;
-    }
-
-    private PreparedStatement getAtomQuery(Connection connection, PredicateInfo predicate, Constant[] arguments) {
-        PreparedStatement statement = predicate.createQueryStatement(connection, allPartitionIDs);
-
-        try {
-            for (int i = 0; i < arguments.length; i++) {
-                setAtomArgument(statement, arguments[i], i + 1);
-            }
-        } catch (SQLException ex) {
-            throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
-        }
-
-        return statement;
-    }
-
-    private PreparedStatement getAtomUpsert(Connection connection, PredicateInfo predicate) {
-        return predicate.createUpsertStatement(connection, ((RDBMSDataStore)parentDataStore).getDriver());
-    }
-
-    private PreparedStatement getAtomDelete(Connection connection, PredicateInfo predicate, Term[] arguments, List<Integer> partitions) {
-        PreparedStatement statement = predicate.createDeleteStatement(connection, partitions);
-
-        try {
-            for (int i = 0; i < arguments.length; i++) {
-                setAtomArgument(statement, arguments[i], i + 1);
-            }
-        } catch (SQLException ex) {
-            throw new RuntimeException("Failed to set prepared statement atom arguments for " + predicate.predicate() + ".");
-        }
-
-        return statement;
-    }
-
-    /**
-     * Given a ResultSet, column name, and ConstantType,
-     * get the value as a Constant from the results.
-     * columnIndex should be 0-indexed (even though jdbc uses 1-index).
-     */
-    private Constant extractConstantFromResult(ResultSet results, int columnIndex, ConstantType type) {
-        try {
-            switch (type) {
-                case Double:
-                    return new DoubleAttribute(results.getDouble(columnIndex + 1));
-                case Integer:
-                    return new IntegerAttribute(results.getInt(columnIndex + 1));
-                case String:
-                    return new StringAttribute(results.getString(columnIndex + 1));
-                case Long:
-                    return new LongAttribute(results.getLong(columnIndex + 1));
-                case UniqueIntID:
-                    return new UniqueIntID(results.getInt(columnIndex + 1));
-                case UniqueStringID:
-                    return new UniqueStringID(results.getString(columnIndex + 1));
-                default:
-                    throw new IllegalArgumentException("Unknown argument type: " + type);
-            }
-        } catch (SQLException ex) {
-            throw new RuntimeException("Error extracting constant from ResultSet.", ex);
-        }
-    }
-
-    /**
-     * Extract a single ground atom from a ResultSet.
-     * The ResultSet MUST already be primed (next() should have been already called.
-     * Will throw if there is no next().
-     */
-    private GroundAtom extractGroundAtomFromResult(ResultSet resultSet, StandardPredicate predicate, Constant[] arguments)
-            throws SQLException {
-        float value = resultSet.getFloat(PredicateInfo.VALUE_COLUMN_NAME);
-        if (resultSet.wasNull()) {
-            value = Float.NaN;
-        } else if (value < 0.0f || value > 1.0f) {
-            throw new IllegalArgumentException(String.format(
-                    "Attempt to instantiate an atom with a truth value outside of [0, 1]. Value: %f, Predicate: %s, Arguments: [%s].",
-                    value, predicate, StringUtils.join(", ", arguments)));
-        }
-
-        int partition = resultSet.getInt(PredicateInfo.PARTITION_COLUMN_NAME);
-        if (partition == writeID) {
-            // Found in the write partition
-            if (isClosed((StandardPredicate)predicate)) {
-                // Predicate is closed, instantiate as ObservedAtom
-                return cache.instantiateObservedAtom(predicate, arguments, value);
-            }
-
-            // Predicate is open, instantiate as RandomVariableAtom
-            return cache.instantiateRandomVariableAtom((StandardPredicate)predicate, arguments, value);
-        }
-
-        // Must be in a read partition, instantiate as ObservedAtom
-        return cache.instantiateObservedAtom(predicate, arguments, value);
-    }
-
-    private GroundAtom getAtom(StandardPredicate predicate, Constant... arguments) {
-        return getAtom(predicate, true, true, -1.0, arguments);
-    }
-
-    @Override
-    public GroundAtom getAtom(StandardPredicate predicate,
-            boolean create, boolean queryDBForClosedAtoms, double trivialValue,
-            Constant... arguments) {
-        // Only allocate one QueryAtom per thread.
-        QueryAtom queryAtom = null;
-        if (!Parallel.hasThreadObject(THREAD_QUERY_ATOM_KEY)) {
-            queryAtom = new QueryAtom(predicate, arguments);
-            Parallel.putThreadObject(THREAD_QUERY_ATOM_KEY, queryAtom);
-        } else {
-            queryAtom = (QueryAtom)(Parallel.getThreadObject(THREAD_QUERY_ATOM_KEY));
-            queryAtom.assume(predicate, arguments);
-        }
-
-        GroundAtom result = cache.getCachedAtom(queryAtom);
-        if (result != null) {
-            return result;
-        }
-
-        if (create && !queryDBForClosedAtoms && isClosed(predicate)) {
-            if (MathUtils.equals(trivialValue, DEFAULT_UNOBSERVED_VALUE)) {
-                return null;
-            }
-
-            return cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
-        }
-
-        return fetchAtom(predicate, create, arguments);
-    }
-
-    /**
-     * Get an atom from the database and put it in the cache.
-     */
-    private GroundAtom fetchAtom(StandardPredicate predicate, boolean create, Constant... arguments) {
-        // Ensure this database has this predicate.
-        ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
-
-        GroundAtom result = queryDBForAtom(predicate, arguments);
-
-        if (result != null || !create) {
-            return result;
-        }
-
-        if (isClosed(predicate)) {
-            result = cache.instantiateObservedAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
-        } else {
-            result = cache.instantiateRandomVariableAtom(predicate, arguments, DEFAULT_UNOBSERVED_VALUE);
-        }
-
-        return result;
-    }
-
-    /**
-     * Get a ground atom from the database.
-     * Return null if one is not found.
-     */
-    private GroundAtom queryDBForAtom(StandardPredicate predicate, Constant[] arguments) {
         try (
-            Connection conn = getConnection();
-            PreparedStatement statement = getAtomQuery(conn, ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate), arguments);
-            ResultSet resultSet = statement.executeQuery();
+            Connection connection = getConnection();
+            PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
+            ResultSet results = statement.executeQuery();
         ) {
-            if (!resultSet.next()) {
-                return null;
+            if (!results.next()) {
+                throw new RuntimeException("No results from a COUNT(*)");
             }
 
-            GroundAtom result = extractGroundAtomFromResult(resultSet, predicate, arguments);
-
-            if (resultSet.next()) {
-                throw new IllegalStateException("Cannot have duplicate atoms, or atoms in multiple partitions in a single database");
-            }
-
-            return result;
+            return results.getInt(1);
         } catch (SQLException ex) {
-            throw new RuntimeException("Error querying DB for atom.", ex);
+            throw new RuntimeException("Error fetching all ground atoms for: " + predicate, ex);
         }
     }
 
@@ -583,34 +233,142 @@ public class RDBMSDatabase extends Database {
         return atoms;
     }
 
-    @Override
-    public int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
-        PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
+    private ResultList executeQuery(Formula formula, boolean isDistinct, Set<Variable> ignoreVariables) {
+        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+        Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
 
-        try (
-            Connection connection = getConnection();
-            PreparedStatement statement = predicateInfo.createCountAllStatement(connection, partitions);
-            ResultSet results = statement.executeQuery();
-        ) {
-            if (!results.next()) {
-                throw new RuntimeException("No results from a COUNT(*)");
+        projectTo.removeAll(ignoreVariables);
+
+        // Construct query from formula
+        Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
+        String queryString = sqler.getSQL(formula);
+        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
+
+        return executeQuery(projectionMap, varTypes, queryString);
+    }
+
+    private QueryResultIterable executeQueryIterator(Formula formula, boolean isDistinct) {
+        VariableTypeMap varTypes = formula.collectVariables(new VariableTypeMap());
+        Set<Variable> projectTo = new HashSet<Variable>(varTypes.getVariables());
+
+        // Construct query from formula
+        Formula2SQL sqler = new Formula2SQL(projectTo, this, isDistinct);
+        String queryString = sqler.getSQL(formula);
+        Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
+
+        return executeQueryIterator(projectionMap, varTypes, queryString);
+    }
+
+    /**
+     * Note that the constants are in the order specified by the projection map.
+     */
+    private QueryResultIterable executeQueryIterator(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, String queryString) {
+        if (closed) {
+            throw new IllegalStateException("Cannot perform query on database that was closed.");
+        }
+
+        int[] orderedIndexes = new int[projectionMap.size()];
+        ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
+        initQueryResults(projectionMap, varTypes, orderedIndexes, orderedTypes);
+
+        return executeQueryIterator(queryString, projectionMap, orderedIndexes, orderedTypes);
+    }
+
+    private QueryResultIterable executeQueryIterator(String queryString, Map<Variable, Integer> projectionMap, int[] orderedIndexes, ConstantType[] orderedTypes) {
+        if (closed) {
+            throw new IllegalStateException("Cannot perform query on database that was closed.");
+        }
+
+        log.trace(queryString);
+
+        return new RDBMSQueryResultIterable(queryString, projectionMap, orderedIndexes, orderedTypes);
+    }
+
+    /**
+     * Given a ResultSet, column name, and ConstantType,
+     * get the value as a Constant from the results.
+     * columnIndex should be 0-indexed (even though jdbc uses 1-index).
+     */
+    private Constant extractConstantFromResult(ResultSet results, int columnIndex, ConstantType type) {
+        try {
+            switch (type) {
+                case Double:
+                    return new DoubleAttribute(results.getDouble(columnIndex + 1));
+                case Integer:
+                    return new IntegerAttribute(results.getInt(columnIndex + 1));
+                case String:
+                    return new StringAttribute(results.getString(columnIndex + 1));
+                case Long:
+                    return new LongAttribute(results.getLong(columnIndex + 1));
+                case UniqueIntID:
+                    return new UniqueIntID(results.getInt(columnIndex + 1));
+                case UniqueStringID:
+                    return new UniqueStringID(results.getString(columnIndex + 1));
+                default:
+                    throw new IllegalArgumentException("Unknown argument type: " + type);
             }
-
-            return results.getInt(1);
         } catch (SQLException ex) {
-            throw new RuntimeException("Error fetching all ground atoms for: " + predicate, ex);
+            throw new RuntimeException("Error extracting constant from ResultSet.", ex);
         }
     }
 
-    private GroundAtom getAtom(FunctionalPredicate predicate, Constant... arguments) {
-        QueryAtom queryAtom = new QueryAtom(predicate, arguments);
-        GroundAtom result = cache.getCachedAtom(queryAtom);
-        if (result != null) {
-            return result;
+    // TEST TODO(eriq): This method changes with the AtomStore.
+
+    /**
+     * Extract and instantiate a single ground atom from a ResultSet.
+     * The ResultSet MUST already be primed (next() should have been already called).
+     * Will throw if there is no next().
+     */
+    private GroundAtom extractGroundAtomFromResult(ResultSet resultSet, StandardPredicate predicate, Constant[] arguments)
+            throws SQLException {
+        float value = resultSet.getFloat(PredicateInfo.VALUE_COLUMN_NAME);
+        if (resultSet.wasNull()) {
+            value = Float.NaN;
+        } else if (value < 0.0f || value > 1.0f) {
+            throw new IllegalArgumentException(String.format(
+                    "Attempt to instantiate an atom with a truth value outside of [0, 1]. Value: %f, Predicate: %s, Arguments: [%s].",
+                    value, predicate, StringUtils.join(", ", arguments)));
         }
 
-        float value = (float)predicate.computeValue(this, arguments);
+        int partition = resultSet.getInt(PredicateInfo.PARTITION_COLUMN_NAME);
+        if (partition == writeID) {
+            // Found in the write partition
+            if (isClosed((StandardPredicate)predicate)) {
+                // Predicate is closed, instantiate as ObservedAtom
+                return cache.instantiateObservedAtom(predicate, arguments, value);
+            }
+
+            // Predicate is open, instantiate as RandomVariableAtom
+            return cache.instantiateRandomVariableAtom((StandardPredicate)predicate, arguments, value);
+        }
+
+        // Must be in a read partition, instantiate as ObservedAtom
         return cache.instantiateObservedAtom(predicate, arguments, value);
+    }
+
+    private PreparedStatement getAtomUpsert(Connection connection, PredicateInfo predicate) {
+        return predicate.createUpsertStatement(connection, ((RDBMSDataStore)parentDataStore).getDriver());
+    }
+
+    private Connection getConnection() {
+        return ((RDBMSDataStore)parentDataStore).getConnection();
+    }
+
+    private RDBMSResultList initQueryResults(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, int[] orderedIndexes, ConstantType[] orderedTypes) {
+        RDBMSResultList results = new RDBMSResultList(projectionMap.size());
+        for (Map.Entry<Variable, Integer> projection : projectionMap.entrySet()) {
+            results.setVariable(projection.getKey(), projection.getValue().intValue());
+        }
+
+        for (Map.Entry<Variable, Integer> entry : results.getVariableMap().entrySet()) {
+            Variable variable = entry.getKey();
+            int index = entry.getValue().intValue();
+
+            orderedIndexes[index] = projectionMap.get(variable);
+            orderedTypes[index] = varTypes.getType(variable);
+        }
+
+        return results;
     }
 
     /**

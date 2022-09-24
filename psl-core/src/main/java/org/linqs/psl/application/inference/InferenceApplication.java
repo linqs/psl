@@ -216,9 +216,12 @@ public abstract class InferenceApplication implements ModelApplication {
             evaluationPredicates = new HashSet<StandardPredicate>();
 
             for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
+                // TODO(eriq): Use the AtomStore.
+                /* TEST
                 if (truthDatabase.countAllGroundAtoms(predicate) > 0) {
                     evaluationPredicates.add(predicate);
                 }
+                */
             }
         }
 

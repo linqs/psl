@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.model.rule;
 
+import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.rdbms.RawQuery;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Formula;

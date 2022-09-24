@@ -25,10 +25,15 @@ public class Partition {
      * of the database).
      * Note that no valid partition is actually allowed to have negative values.
      */
-    public static final int SPECIAL_WRITE_ID = -1;
-    public static final int SPECIAL_READ_ID = -2;
+    public static final short SPECIAL_WRITE_ID = -1;
+    public static final short SPECIAL_READ_ID = -2;
 
-    private final int id;
+    /**
+     * Special partition for unmanaged atoms.
+     */
+    public static final short SPECIAL_UNMANAGED = -99;
+
+    private final short id;
     private final String name;
 
     /**
@@ -36,14 +41,14 @@ public class Partition {
      *
      * @param id non-negative identifier
      */
-    public Partition(int id, String name) {
+    public Partition(short id, String name) {
         assert(id >= 0);
 
         this.id = id;
         this.name = name;
     }
 
-    public int getID() {
+    public short getID() {
         return id;
     }
 

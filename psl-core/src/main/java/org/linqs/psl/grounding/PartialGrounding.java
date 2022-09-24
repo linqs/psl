@@ -240,6 +240,6 @@ public class PartialGrounding {
 
         // This falls back to a normal SELECT when there is only one.
         UnionQuery union = new UnionQuery(SetOperationQuery.Type.UNION_ALL, queries.toArray(new SelectQuery[0]));
-        return relationalDB.executeQueryIterator(projectionMap, varTypes, union.validate().toString());
+        return relationalDB.executeQueryIterator(new RawQuery(union.validate().toString(), projectionMap, varTypes));
     }
 }

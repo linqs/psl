@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.database.rdbms;
+package org.linqs.psl.database;
 
 import org.linqs.psl.database.DatabaseQuery;
+import org.linqs.psl.database.rdbms.RDBMSDatabase;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;

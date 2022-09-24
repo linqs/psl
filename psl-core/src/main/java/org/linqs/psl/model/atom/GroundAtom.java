@@ -31,8 +31,9 @@ import org.linqs.psl.util.StringUtils;
  */
 public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm, ReasonerLocalVariable {
     protected float value;
+    protected short partition;
 
-    protected GroundAtom(Predicate predicate, Constant[] args, float value) {
+    protected GroundAtom(Predicate predicate, Constant[] args, float value, short partition) {
         super(predicate, args);
 
         if (value < 0.0f || value > 1.0f) {
@@ -41,6 +42,8 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
                     value, predicate, StringUtils.join(", ", args)));
         }
         this.value = value;
+
+        this.partition = partition;
     }
 
     @Override
@@ -54,6 +57,10 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
     @Override
     public float getValue() {
         return value;
+    }
+
+    public short getPartition() {
+        return partition;
     }
 
     @Override
