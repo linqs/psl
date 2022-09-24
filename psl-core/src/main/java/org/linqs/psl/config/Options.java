@@ -478,25 +478,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option ONLINE_HOST = new Option(
-        "inference.onlinehostname",
-        "127.0.0.1",
-        "The hostname for the online server."
-    );
-
-    public static final Option ONLINE_PORT_NUMBER = new Option(
-        "inference.onlineportnumber",
-        56734,
-        "The port number for the online server."
-    );
-
-    public static final Option ONLINE_READ_PARTITION = new Option(
-        "onlineatommanager.read",
-        -1,
-        "The partition to add new observations to."
-        + " If negative, the first read partition in the database will be used."
-    );
-
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
         "pairedduallearner.admmsteps",
         1,

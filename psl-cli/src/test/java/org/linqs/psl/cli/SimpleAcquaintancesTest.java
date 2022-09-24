@@ -129,24 +129,4 @@ public class SimpleAcquaintancesTest extends CLITest {
             // Expected.
         }
     }
-
-    @Test
-    public void testOnlineBase() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "base-actions.txt").toString();
-
-        String clientOutput = runOnline(modelPath, dataPath, actionPath);
-        assertTrue(clientOutput.contains("OnlinePSL inference stopped."));
-    }
-
-    @Test
-    public void testOnlinePredicateError() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-        String actionPath = Paths.get(baseOnlineActionsDir, "simple-acquaintances", "predicate-error-actions.txt").toString();
-
-        String clientOutput = runOnline(modelPath, dataPath, actionPath);
-        assertTrue(clientOutput.contains("Error parsing command:"));
-    }
 }
