@@ -189,7 +189,7 @@ public abstract class Database {
     /**
      * Returns whether a StandardPredicate is closed in this Database.
      */
-    public boolean isClosed(StandardPredicate predicate) {
+    public boolean isClosed(Predicate predicate) {
         return closedPredicates.contains(predicate);
     }
 

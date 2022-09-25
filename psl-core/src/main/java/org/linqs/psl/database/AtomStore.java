@@ -103,18 +103,22 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     /**
      * Lookup the atom and get it.
-     * Returns null if the atom does not exist.
-     * Will honor the closed-world assumption and return unmanaged atoms.
+     * A GroundAtom will always be returned, but it may be unmanaged (not persisted in this store).
      */
     public GroundAtom getAtom(QueryAtom query) {
         Integer index = lookup.get(query);
-        if (index == null) {
-            return null;
-
-            // TODO(eriq): Closed-world and PAM exceptions.
+        if (index != null) {
+            return atoms[index.intValue()];
         }
 
-        return atoms[index.intValue()];
+        // The atom does not exist.
+        // This is either a closed-world atom, or a PAM exception.
+
+        if ((query.getPredicate() instanceof FunctionalPredicate) || database.isClosed(query.getPredicate())) {
+            return new UnmanagedObservedAtom(query.getPredicate(), query.getArguments());
+        }
+
+        return new UnmanagedRandomVariableAtom(query.getPredicate(), query.getArguments());
     }
 
     public GroundAtom getAtom(Predicate predicate, Term... args) {

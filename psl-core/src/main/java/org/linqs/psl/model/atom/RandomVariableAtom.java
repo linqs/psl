@@ -21,28 +21,9 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 
 /**
- * A {@link GroundAtom} with a truth value which can be modified.
- * <p>
- * A GroundAtom is instantiated as a RandomVariableAtom is BOTH of the following
- * conditions are met:
- * <ul>
- *  <li>it has a {@link StandardPredicate} that is open in the Atom's Database</li>
- *  <li>it is not persisted in one of its Database's read-only Partitions</li>
- * </ul>
+ * A GroundAtom with a truth value which can be modified.
  */
 public class RandomVariableAtom extends GroundAtom {
-    /**
-     * Whether this atom is backed by a DataStore.
-     */
-    private boolean isPersisted;
-
-    /**
-     * Whether this atom is in violation of an AtomManager's access policy.
-     * Typically an AtomManager (like the PersistedAtomManager) would just throw an exception,
-     * but exceptions may have been disabled for performance reasons.
-     */
-    private boolean isAccessException;
-
     /**
      * An RVA that mirrors this one during optimization.
      */
@@ -53,8 +34,6 @@ public class RandomVariableAtom extends GroundAtom {
      */
     public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value) {
         super(predicate, args, value);
-        isPersisted = false;
-        isAccessException = false;
         mirror = null;
     }
 
@@ -73,22 +52,6 @@ public class RandomVariableAtom extends GroundAtom {
      */
     public void setValue(float value) {
         this.value = value;
-    }
-
-    public void setPersisted(boolean isPersisted) {
-        this.isPersisted = isPersisted;
-    }
-
-    public boolean getPersisted() {
-        return isPersisted;
-    }
-
-    public void setAccessException(boolean isAccessException) {
-        this.isAccessException = isAccessException;
-    }
-
-    public boolean getAccessException() {
-        return isAccessException;
     }
 
     public RandomVariableAtom getMirror() {

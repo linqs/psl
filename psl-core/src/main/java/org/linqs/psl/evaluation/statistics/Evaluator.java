@@ -21,7 +21,7 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.UnmanagedAtom;
+import org.linqs.psl.model.atom.UnmanagedObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
 
@@ -139,7 +139,7 @@ public abstract class Evaluator {
      * Get the full mapping of target atoms to truth atoms.
      * What constitutes a full mapping depends on includeObserved and closeTruth.
      *
-     * Note that certain configurations may result in truth results being returned that include an UnmanagedAtom
+     * Note that certain configurations may result in truth results being returned that include an UnmanagedObservedAtom
      * (atoms that are not managed by an atom manager).
      * This is not an inherently bad or erroneous situation, the caller should just be concious of this.
      */
@@ -160,7 +160,7 @@ public abstract class Evaluator {
             Iterable<Map.Entry<GroundAtom, GroundAtom>> latentMap =
                 IteratorUtils.map(latentAtoms, new IteratorUtils.MapFunction<GroundAtom, Map.Entry<GroundAtom, GroundAtom>>() {
                     @Override public Map.Entry<GroundAtom, GroundAtom> map(GroundAtom atom) {
-                        GroundAtom truthAtom = new UnmanagedAtom(atom.getPredicate(), atom.getArguments(), 0.0f);
+                        GroundAtom truthAtom = new UnmanagedObservedAtom(atom.getPredicate(), atom.getArguments(), 0.0f);
                         return new AbstractMap.SimpleEntry<GroundAtom, GroundAtom>(atom, truthAtom);
                     }
                 });

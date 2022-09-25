@@ -21,12 +21,11 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
 /**
- * An atom that is not managed by an AtomStore (and thus may have more than one global instantiation).
- * Note that we only allow observed atoms to be unmanaged.
- * UnmanagedAtoms should be very rare.
+ * An observed atom that is not managed by an AtomStore (and thus may have more than one global instantiation).
+ * This may have been created by a closed-world assumption.
  */
-public final class UnmanagedAtom extends ObservedAtom {
-    public UnmanagedAtom(Predicate predicate, Constant[] args, float value) {
+public final class UnmanagedObservedAtom extends ObservedAtom {
+    public UnmanagedObservedAtom(Predicate predicate, Constant[] args, float value) {
         super(predicate, args, value);
     }
 

@@ -515,12 +515,12 @@ public class Options {
     );
 
     public static final Option PAM_THROW_ACCESS_EXCEPTION = new Option(
-        "persistedatommanager.throwaccessexception",
+        "pam.throw",
         true,
-        "Whether or not to throw an exception on illegal access."
+        "Whether or not to throw an exception on illegal access to target atoms."
         + " Note that in most cases, this indicates incorrectly formed data."
         + " This should only be set to false when the user understands why these"
-        + " exceptions are thrown in the first place and the grounding implications of"
+        + " exceptions are thrown and the grounding implications of"
         + " not having the atom initially in the database."
     );
 
