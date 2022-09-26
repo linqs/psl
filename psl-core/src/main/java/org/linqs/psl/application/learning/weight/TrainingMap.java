@@ -21,6 +21,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.UnmanagedObservedAtom;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
@@ -104,23 +105,23 @@ public class TrainingMap {
             // Note that we do not want to query the database or create a non-existent atom.
             GroundAtom truthAtom = null;
             if (truthDatabase.getAtomStore().hasAtom(targetAtom.getPredicate(), targetAtom.getArguments())) {
-                truthAtom = truthDatabase.getAtomStore().getAtom(targetAtom.getPredicate(), false, false, -1.0, targetAtom.getArguments());
+                truthAtom = truthDatabase.getAtomStore().getAtom(targetAtom.getPredicate(), targetAtom.getArguments());
             }
 
             // Skip any truth atom that is not observed.
-            if (truthAtom != null && !(truthAtom instanceof ObservedAtom)) {
+            if (truthAtom instanceof RandomVariableAtom) {
                 continue;
             }
 
             if (targetAtom instanceof RandomVariableAtom) {
-                if (truthAtom == null) {
+                if (truthAtom instanceof UnmanagedObservedAtom) {
                     latentVariables.add((RandomVariableAtom)targetAtom);
                 } else {
                     seenTruthAtoms.add((ObservedAtom)truthAtom);
                     labelMap.put((RandomVariableAtom)targetAtom, (ObservedAtom)truthAtom);
                 }
             } else {
-                if (truthAtom == null) {
+                if (truthAtom instanceof UnmanagedObservedAtom) {
                     missingLabels.add((ObservedAtom)targetAtom);
                 } else {
                     seenTruthAtoms.add((ObservedAtom)truthAtom);

@@ -23,8 +23,12 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.UnmanagedObservedAtom;
+import org.linqs.psl.model.atom.UnmanagedRandomVariableAtom;
+import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Parallel;
@@ -114,14 +118,25 @@ public class AtomStore implements Iterable<GroundAtom> {
         // The atom does not exist.
         // This is either a closed-world atom, or a PAM exception.
 
-        if ((query.getPredicate() instanceof FunctionalPredicate) || database.isClosed(query.getPredicate())) {
-            return new UnmanagedObservedAtom(query.getPredicate(), query.getArguments());
+        Term[] queryArguments = query.getArguments();
+        Constant[] arguments = new Constant[queryArguments.length];
+
+        for (int i = 0; i < arguments.length; i++) {
+            if (!(queryArguments[i] instanceof Constant)) {
+                throw new RuntimeException("Attempted to get an atom using variables (instead of constants): " + query);
+            }
+
+            arguments[i] = (Constant)queryArguments[i];
         }
 
-        return new UnmanagedRandomVariableAtom(query.getPredicate(), query.getArguments());
+        if ((query.getPredicate() instanceof FunctionalPredicate) || database.isClosed(query.getPredicate())) {
+            return new UnmanagedObservedAtom(query.getPredicate(), arguments, 0.0f);
+        }
+
+        return new UnmanagedRandomVariableAtom((StandardPredicate)query.getPredicate(), arguments, 0.0f);
     }
 
-    public GroundAtom getAtom(Predicate predicate, Term... args) {
+    public GroundAtom getAtom(Predicate predicate, Constant... args) {
         return getAtom(getQuery(predicate, args));
     }
 
@@ -139,7 +154,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         return index.intValue();
     }
 
-    public int getAtomIndex(Predicate predicate, Term... args) {
+    public int getAtomIndex(Predicate predicate, Constant... args) {
         return getAtomIndex(getQuery(predicate, args));
     }
 
@@ -151,7 +166,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         return (index != null);
     }
 
-    public boolean hasAtom(Predicate predicate, Term... args) {
+    public boolean hasAtom(Predicate predicate, Constant... args) {
         return hasAtom(getQuery(predicate, args));
     }
 
@@ -177,11 +192,20 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     @Override
     public Iterator<GroundAtom> iterator() {
-        return Arrays.asList(atoms).sublist(0, numAtoms);
+        return Arrays.asList(atoms).subList(0, numAtoms).iterator();
     }
 
     public Iterable<RandomVariableAtom> getRandomVariableAtoms() {
-        return IteratorUtils.newIterable(IteratorUtils.filterClass(this, RandomVariableAtom.class));
+        return IteratorUtils.filterClass(this, RandomVariableAtom.class);
+    }
+
+    public Iterable<RandomVariableAtom> getRandomVariableAtoms(Predicate predicate) {
+        return IteratorUtils.filter(IteratorUtils.filterClass(this, RandomVariableAtom.class), new IteratorUtils.FilterFunction<RandomVariableAtom>() {
+            @Override
+            public boolean keep(RandomVariableAtom atom) {
+                return atom.getPredicate().equals(predicate);
+            }
+        });
     }
 
     public void addAtom(GroundAtom atom) {
@@ -191,7 +215,7 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
-        lookup.put(atom.getQueryAtom(), numAtoms);
+        lookup.put(new QueryAtom(atom.getPredicate(), atom.getArguments()), numAtoms);
 
         numAtoms++;
     }
@@ -210,7 +234,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     /**
      * Get a threadsafe query buffer.
      */
-    private QueryAtom getQuery(Predicate predicate, Term... args) {
+    private QueryAtom getQuery(Predicate predicate, Constant... args) {
         QueryAtom query = null;
 
         if (!Parallel.hasThreadObject(threadKey)) {
@@ -247,11 +271,16 @@ public class AtomStore implements Iterable<GroundAtom> {
         if (seenMirrorAtoms) {
             int oldNumAtoms = numAtoms;
             for (int i = 0; i < oldNumAtoms; i++) {
-                if (atoms[i].getPredicate().getMirror() == null) {
+                if (!(atoms[i] instanceof RandomVariableAtom)) {
                     continue;
                 }
 
-                RandomVariableAtom mirrorAtom = new RandomVariableAtom(atoms[i].getPredicate().getMirror(), atoms[i].getArguments(), atoms[i].getValue());
+                StandardPredicate basePredicate = (StandardPredicate)atoms[i].getPredicate();
+                if (basePredicate.getMirror() == null) {
+                    continue;
+                }
+
+                RandomVariableAtom mirrorAtom = new RandomVariableAtom(basePredicate.getMirror(), atoms[i].getArguments(), atoms[i].getValue(), atoms[i].getPartition());
                 addAtom(mirrorAtom);
 
                 mirrorAtom.setMirror((RandomVariableAtom)atoms[i]);

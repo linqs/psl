@@ -36,8 +36,8 @@ public class ObservedAtom extends GroundAtom {
     /**
      * Instantiation of GroundAtoms should typically be left to the Database so it can maintain a cache.
      */
-    public ObservedAtom(Predicate predicate, Constant[] args, float value) {
-        super(predicate, args, value);
+    public ObservedAtom(Predicate predicate, Constant[] args, float value, short partition) {
+        super(predicate, args, value, partition);
     }
 
     /**

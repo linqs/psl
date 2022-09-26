@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.atom;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.model.predicate.Predicate;
@@ -26,6 +27,7 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.Map;
 
@@ -51,7 +53,7 @@ public class QueryAtom extends Atom {
     }
 
     public GroundAtom ground(Database database, ResultList res, int resultIndex) {
-        return ground(database, res, resultIndex, new Constant[arguments.length], -1.0);
+        return ground(database, res, resultIndex, new Constant[arguments.length], -1.0f);
     }
 
     /**
@@ -63,7 +65,7 @@ public class QueryAtom extends Atom {
         return ground(database, res, resultIndex, newArgs, trivialValue, false);
     }
 
-    public GroundAtom ground(Database database, ResultList res, int resultIndex, Constant[] newArgs, float trivialValue, boolean checkDBCache) {
+    public GroundAtom ground(Database database, ResultList res, int resultIndex, Constant[] newArgs, float trivialValue, boolean ignoreUnmanagedAtoms) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = res.get(resultIndex, (Variable)arguments[i]);
@@ -74,18 +76,18 @@ public class QueryAtom extends Atom {
             }
         }
 
-        return fetchAtom(predicate, newArgs);
+        return fetchAtom(database, predicate, newArgs, trivialValue, ignoreUnmanagedAtoms);
     }
 
     public GroundAtom ground(Database database, Constant[] queryResults, Map<Variable, Integer> projectionMap) {
-        return ground(Database, queryResults, projectionMap, new Constant[arguments.length], -1.0);
+        return ground(database, queryResults, projectionMap, new Constant[arguments.length], -1.0f);
     }
 
     public GroundAtom ground(Database database, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, float trivialValue) {
-        return ground(Database, queryResults, projectionMap, newArgs, trivialValue, false);
+        return ground(database, queryResults, projectionMap, newArgs, trivialValue, false);
     }
 
-    public GroundAtom ground(Database database, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, float trivialValue, boolean checkDBCache) {
+    public GroundAtom ground(Database database, Constant[] queryResults, Map<Variable, Integer> projectionMap, Constant[] newArgs, float trivialValue, boolean ignoreUnmanagedAtoms) {
         for (int i = 0; i < arguments.length; i++) {
             if (arguments[i] instanceof Variable) {
                 newArgs[i] = queryResults[projectionMap.get((Variable)arguments[i]).intValue()];
@@ -96,7 +98,7 @@ public class QueryAtom extends Atom {
             }
         }
 
-        return fetchAtom(predicate, newArgs);
+        return fetchAtom(database, predicate, newArgs, trivialValue, ignoreUnmanagedAtoms);
     }
 
     public VariableTypeMap collectVariables(VariableTypeMap varMap) {
@@ -110,13 +112,13 @@ public class QueryAtom extends Atom {
         return varMap;
     }
 
-    private GroundAtom fetchAtom(Predicate predicate, Constant[] args) {
+    private GroundAtom fetchAtom(Database database, Predicate predicate, Constant[] args, float trivialValue, boolean ignoreUnmanagedAtoms) {
         AtomStore atomStore = database.getAtomStore();
         int atomIndex = atomStore.getAtomIndex(predicate, args);
 
         if (atomIndex == -1) {
             // The atom does not exist (may be a closed-world atom).
-            if (checkDBCache) {
+            if (ignoreUnmanagedAtoms) {
                 // We are not looking for closed-world atoms.
                 return null;
             }

@@ -19,6 +19,7 @@ package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseQuery;
+import org.linqs.psl.database.PersistedAtomManagementException;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.rdbms.Formula2SQL;
@@ -27,6 +28,7 @@ import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.UnmanagedRandomVariableAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -346,7 +348,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             }
 
             GroundAtom groundAtom = resources.queryAtoms.get(atomIndex).ground(
-                    database, queryRow, variableMap, resources.argumentBuffer[atomIndex], -1.0);
+                    database, queryRow, variableMap, resources.argumentBuffer[atomIndex], -1.0f);
             if (groundAtom == null) {
                 return;
             }
@@ -435,7 +437,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
             // Check the DB cache for summation atoms.
             GroundAtom groundAtom = resources.queryAtoms.get(atomIndex).ground(
-                    database, queryRow, variableMap, resources.argumentBuffer[atomIndex], -1.0, checkDatabase);
+                    database, queryRow, variableMap, resources.argumentBuffer[atomIndex], -1.0f, checkDatabase);
 
             // This atom does not exist in the DB cache, skip it.
             // Non-summation atoms will throw an access exception in this case.

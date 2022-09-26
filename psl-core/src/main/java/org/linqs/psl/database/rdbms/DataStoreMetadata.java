@@ -41,8 +41,8 @@ public class DataStoreMetadata {
     public static final String NAME_KEY = "name";
 
     private RDBMSDataStore dataStore;
-    private Map<String, Integer> partitions;
-    private int nextPartition;
+    private Map<String, Short> partitions;
+    private short nextPartition;
 
     public DataStoreMetadata(RDBMSDataStore dataStore) {
         this.dataStore = dataStore;
@@ -50,9 +50,9 @@ public class DataStoreMetadata {
         partitions = fetchPartitions();
 
         nextPartition = 1;
-        for (Integer partition : partitions.values()) {
-            if (partition.intValue() >= nextPartition) {
-                nextPartition = partition.intValue() + 1;
+        for (Short partition : partitions.values()) {
+            if (partition.shortValue() >= nextPartition) {
+                nextPartition = (short)(partition.shortValue() + 1);
             }
         }
     }
@@ -209,18 +209,18 @@ public class DataStoreMetadata {
         return values;
     }
 
-    private Map<String, Integer> fetchPartitions() {
-        Map<String, Integer> names = new HashMap<String, Integer>();
+    private Map<String, Short> fetchPartitions() {
+        Map<String, Short> names = new HashMap<String, Short>();
 
         Map<String, String> values = getAllValuesByType(PARTITION_NAMESPACE, NAME_KEY);
         for (Map.Entry<String, String> entry : values.entrySet()) {
-            names.put(entry.getKey(), Integer.parseInt(entry.getValue()));
+            names.put(entry.getKey(), Short.parseShort(entry.getValue()));
         }
 
         return names;
     }
 
-    private Partition addPartition(int id, String name) {
+    private Partition addPartition(short id, String name) {
         addRow(PARTITION_NAMESPACE, NAME_KEY, name, "" + id);
         return new Partition(id, name);
     }
@@ -229,7 +229,7 @@ public class DataStoreMetadata {
         String idString = getValue(PARTITION_NAMESPACE, NAME_KEY, name);
 
         if (idString != null) {
-            return new Partition(Integer.parseInt(idString), name);
+            return new Partition(Short.parseShort(idString), name);
         } else {
             return addPartition(nextPartition++, name);
         }
@@ -243,7 +243,7 @@ public class DataStoreMetadata {
         Set<Partition> partitions = new HashSet<Partition>();
 
         for (Map.Entry<String, String> entry : getAllValuesByType(PARTITION_NAMESPACE, NAME_KEY).entrySet()) {
-            partitions.add(new Partition(Integer.parseInt(entry.getValue()), entry.getKey()));
+            partitions.add(new Partition(Short.parseShort(entry.getValue()), entry.getKey()));
         }
 
         return partitions;

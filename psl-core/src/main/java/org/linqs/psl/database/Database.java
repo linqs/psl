@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.database.atom.AtomCache;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
@@ -33,6 +32,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -70,11 +70,6 @@ public abstract class Database {
 
     protected final List<Short> allPartitionIDs;
 
-    /**
-     * The atom cache for this database.
-     */
-    protected final AtomCache cache;
-
     protected AtomStore atomStore;
 
     /**
@@ -93,24 +88,35 @@ public abstract class Database {
         }
 
         this.readPartitions = Arrays.asList(read);
-        this.readIDs = new ArrayList<Integer>(read.length);
+        this.readIDs = new ArrayList<Short>(read.length);
         for (int i = 0; i < read.length; i++) {
-            this.readIDs.add(read[i].getID());
+            this.readIDs.add(Short.valueOf(read[i].getID()));
         }
 
-        if (readIDs.contains(Integer.valueOf(writeID))) {
-            readIDs.remove(Integer.valueOf(writeID));
+        if (readIDs.contains(Short.valueOf(writeID))) {
+            readIDs.remove(Short.valueOf(writeID));
         }
 
-        allPartitionIDs = new ArrayList<Integer>(readIDs.size() + 1);
+        allPartitionIDs = new ArrayList<Short>(readIDs.size() + 1);
         allPartitionIDs.addAll(readIDs);
         allPartitionIDs.add(writeID);
 
-        this.cache = new AtomCache(this);
         atomStore = null;
     }
 
-    public abstract void close();
+    public void close() {
+        if (closed) {
+            return;
+        }
+
+        if (atomStore != null) {
+            atomStore.close();
+            atomStore = null;
+        }
+
+        parentDataStore.releasePartitions(this);
+        closed = true;
+    }
 
     /**
      * Commit the specified atoms to the database.
@@ -141,15 +147,16 @@ public abstract class Database {
      * By "ground", we mean that it exists in the database.
      * This will not leverage the closed world assumption for any atoms.
      */
-    public abstract int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
+    public abstract int countAllGroundAtoms(StandardPredicate predicate, List<Short> partitions);
 
     /**
      * Fetch all the ground atoms for a predicate.
      * By "ground", we mean that it exists in the database.
      * This will not leverage the closed world assumption for any atoms.
+     * Atoms returned by this method need to be managed.
      * Callers should heavily favor using an AtomStore over this method.
      */
-    public abstract List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions);
+    public abstract List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Short> partitions);
 
     public int countAllGroundAtoms(StandardPredicate predicate) {
         return countAllGroundAtoms(predicate, allPartitionIDs);
@@ -165,10 +172,6 @@ public abstract class Database {
         }
 
         return atomStore;
-    }
-
-    public AtomCache getCache() {
-        return cache;
     }
 
     /**
@@ -198,7 +201,7 @@ public abstract class Database {
      */
     public void outputRandomVariableAtoms() {
         for (StandardPredicate openPredicate : parentDataStore.getRegisteredPredicates()) {
-            for (GroundAtom atom : getAllGroundRandomVariableAtoms(openPredicate)) {
+            for (GroundAtom atom : getAtomStore().getRandomVariableAtoms(openPredicate)) {
                 System.out.println(atom.toString() + " = " + atom.getValue());
             }
         }
@@ -216,15 +219,17 @@ public abstract class Database {
                 continue;
             }
 
-            List<RandomVariableAtom> atoms = getAllGroundRandomVariableAtoms(predicate);
-            if (atoms.size() == 0) {
+            Iterator<RandomVariableAtom> atoms = getAtomStore().getRandomVariableAtoms(predicate).iterator();
+            if (!atoms.hasNext()) {
                 continue;
             }
 
             File outputFile = new File(outputDirectory, predicate.getName() + ".txt");
             try (BufferedWriter bufferedPredWriter = FileUtils.getBufferedWriter(outputFile)) {
                 StringBuilder row = new StringBuilder();
-                for (GroundAtom atom : atoms) {
+                while (atoms.hasNext()) {
+                    GroundAtom atom = atoms.next();
+
                     row.setLength(0);
 
                     for (Constant term : atom.getArguments()) {

@@ -151,6 +151,8 @@ public interface DataStore {
      */
     public DatabaseDriver.ExplainResult explain(String sql);
 
+    public void releasePartitions(Database db);
+
     /**
      * Releases all resources and locks obtained by this DataStore.
      *

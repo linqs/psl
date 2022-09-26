@@ -32,8 +32,8 @@ public class RandomVariableAtom extends GroundAtom {
     /**
      * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
      */
-    public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value) {
-        super(predicate, args, value);
+    public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value, short partition) {
+        super(predicate, args, value, partition);
         mirror = null;
     }
 

@@ -73,7 +73,7 @@ public class Formula2SQL {
      */
     private final Map<Variable, Integer> projectionMap;
 
-    private final List<Integer> partitions;
+    private final List<Short> partitions;
     private final List<Atom> partialTargets;
 
     private int tableCounter;
@@ -129,7 +129,7 @@ public class Formula2SQL {
         }
 
         // Query all of the read (and the write) partition(s) belonging to the database.
-        partitions = new ArrayList<Integer>(database.getReadPartitions().size() + 1);
+        partitions = new ArrayList<Short>(database.getReadPartitions().size() + 1);
         for (Partition partition : database.getReadPartitions()) {
             partitions.add(partition.getID());
         }

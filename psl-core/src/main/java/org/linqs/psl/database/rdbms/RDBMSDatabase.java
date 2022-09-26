@@ -25,6 +25,7 @@ import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
@@ -73,16 +74,6 @@ public class RDBMSDatabase extends Database {
         super(parent, write, read, closed);
         fetchSize = Options.RDBMS_FETCH_SIZE.getInt();
         this.closed = false;
-    }
-
-    @Override
-    public void close() {
-        if (closed) {
-            throw new IllegalStateException("Cannot close database after it has been closed.");
-        }
-
-        ((RDBMSDataStore)parentDataStore).releasePartitions(this);
-        closed = true;
     }
 
     @Override
@@ -186,7 +177,7 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public int countAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
+    public int countAllGroundAtoms(StandardPredicate predicate, List<Short> partitions) {
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
         try (
@@ -205,7 +196,7 @@ public class RDBMSDatabase extends Database {
     }
 
     @Override
-    public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Integer> partitions) {
+    public List<GroundAtom> getAllGroundAtoms(StandardPredicate predicate, List<Short> partitions) {
         List<GroundAtom> atoms = new ArrayList<GroundAtom>();
         PredicateInfo predicateInfo = ((RDBMSDataStore)parentDataStore).getPredicateInfo(predicate);
 
@@ -245,6 +236,22 @@ public class RDBMSDatabase extends Database {
         Map<Variable, Integer> projectionMap = sqler.getProjectionMap();
 
         return executeQuery(projectionMap, varTypes, queryString);
+    }
+
+    private ResultList executeQuery(Map<Variable, Integer> projectionMap, VariableTypeMap varTypes, String queryString) {
+        if (closed) {
+            throw new IllegalStateException("Cannot perform query on database that was closed.");
+        }
+
+        int[] orderedIndexes = new int[projectionMap.size()];
+        ConstantType[] orderedTypes = new ConstantType[projectionMap.size()];
+
+        RDBMSResultList results = initQueryResults(projectionMap, varTypes, orderedIndexes, orderedTypes);
+        for (Constant[] row : executeQueryIterator(queryString, projectionMap, orderedIndexes, orderedTypes)) {
+            results.addResult(row);
+        }
+
+        return results;
     }
 
     private QueryResultIterable executeQueryIterator(Formula formula, boolean isDistinct) {
@@ -312,8 +319,6 @@ public class RDBMSDatabase extends Database {
         }
     }
 
-    // TEST TODO(eriq): This method changes with the AtomStore.
-
     /**
      * Extract and instantiate a single ground atom from a ResultSet.
      * The ResultSet MUST already be primed (next() should have been already called).
@@ -330,20 +335,20 @@ public class RDBMSDatabase extends Database {
                     value, predicate, StringUtils.join(", ", arguments)));
         }
 
-        int partition = resultSet.getInt(PredicateInfo.PARTITION_COLUMN_NAME);
+        short partition = resultSet.getShort(PredicateInfo.PARTITION_COLUMN_NAME);
         if (partition == writeID) {
             // Found in the write partition
             if (isClosed((StandardPredicate)predicate)) {
                 // Predicate is closed, instantiate as ObservedAtom
-                return cache.instantiateObservedAtom(predicate, arguments, value);
+                return new ObservedAtom(predicate, arguments, value, partition);
             }
 
             // Predicate is open, instantiate as RandomVariableAtom
-            return cache.instantiateRandomVariableAtom((StandardPredicate)predicate, arguments, value);
+            return new RandomVariableAtom((StandardPredicate)predicate, arguments, value, partition);
         }
 
         // Must be in a read partition, instantiate as ObservedAtom
-        return cache.instantiateObservedAtom(predicate, arguments, value);
+        return new ObservedAtom(predicate, arguments, value, partition);
     }
 
     private PreparedStatement getAtomUpsert(Connection connection, PredicateInfo predicate) {

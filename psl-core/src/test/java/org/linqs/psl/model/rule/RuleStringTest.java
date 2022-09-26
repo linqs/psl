@@ -22,8 +22,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -167,7 +165,6 @@ public class RuleStringTest extends PSLBaseTest {
     @Test
     public void testGroundLogicalRuleString() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -181,7 +178,7 @@ public class RuleStringTest extends PSLBaseTest {
             "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) .",
             "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Weighted, Squared
@@ -192,7 +189,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) ^2",
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Weighted, Not Squared
@@ -203,14 +200,13 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') )",
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
     @Test
     public void testGroundArithmeticRuleString() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new SimpleAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -223,7 +219,7 @@ public class RuleStringTest extends PSLBaseTest {
             "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') + 1.0 * DOUBLEPREDICATE('Bob', 'Alice') = 1.0 .",
             "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') = 1.0 ."
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Weighted, Squared
@@ -238,7 +234,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') <= 1.0 ^2",
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Weighted, Not Squared
@@ -253,7 +249,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') <= 1.0",
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 

@@ -20,7 +20,6 @@ package org.linqs.psl.model.rule.arithmetic;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
-import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -425,11 +424,10 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        SimpleAtomManager atomManager = new SimpleAtomManager(database);
         GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
 
         try {
-            rule.groundAll(atomManager, groundRuleStore);
+            rule.groundAll(database, groundRuleStore);
             fail("IllegalArgumentException not thrown when trying to ground an open predicate in the filter.");
         } catch (IllegalArgumentException ex) {
             // Exception is expected.

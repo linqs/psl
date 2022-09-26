@@ -19,6 +19,7 @@ package org.linqs.psl.database;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 
@@ -64,7 +65,7 @@ public class PersistedAtomManagementException extends RuntimeException {
         warnOnIllegalAccess = !throwOnIllegalAccess;
     }
 
-    public void report(Collection<GroundAtom> atoms, Rule rule) {
+    public static void report(Collection<GroundAtom> atoms, Rule rule) {
         RuntimeException exception = new PersistedAtomManagementException(atoms, rule);
 
         if (throwOnIllegalAccess) {

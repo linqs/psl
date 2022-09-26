@@ -17,7 +17,8 @@
  */
 package org.linqs.psl.model.atom;
 
-import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.database.Partition;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 
 /**
@@ -26,8 +27,8 @@ import org.linqs.psl.model.term.Constant;
  * UnmanagedRandomVariableAtoms should be very rare.
  */
 public final class UnmanagedRandomVariableAtom extends RandomVariableAtom {
-    public UnmanagedRandomVariableAtom(Predicate predicate, Constant[] args, float value) {
-        super(predicate, args, value);
+    public UnmanagedRandomVariableAtom(StandardPredicate predicate, Constant[] args, float value) {
+        super(predicate, args, value, Partition.SPECIAL_UNMANAGED_ID);
     }
 
     @Override

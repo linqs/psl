@@ -18,9 +18,6 @@
 package org.linqs.psl.model.rule;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.PersistedAtomManager;
-import org.linqs.psl.database.atom.SimpleAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
@@ -125,8 +122,6 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     public void testLogicalBase() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        // Use a simple atom manager so we don't throw a PAM exception.
-        AtomManager manager = new SimpleAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -172,7 +167,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Derek') ) | FRIENDS('Eugene', 'Derek') ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -185,8 +180,6 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     public void testLogicalGroundingOnlyPredicates() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        // Use a simple atom manager so we don't throw a PAM exception.
-        AtomManager manager = new SimpleAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -212,7 +205,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Derek') ) | ~( NICE('Derek') ) | FRIENDS('Derek', 'Derek') ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Nice(A) & Nice(B) & (A != B) -> Friends(A, B)
@@ -251,7 +244,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Charlie') ) | FRIENDS('Eugene', 'Charlie') ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Derek') ) | FRIENDS('Eugene', 'Derek') ) ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Nice(A) & Nice(B) & (A % B) -> Friends(A, B)
@@ -280,7 +273,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Eugene') ) | FRIENDS('Charlie', 'Eugene') ) ^2",
             "1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -289,7 +282,6 @@ public class GroundRuleTest extends PSLBaseTest {
         initModel(true, true);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -325,7 +317,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Derek') + 1.0 * ('Derek' == 'Derek') + -1.0 * FRIENDS('Derek', 'Derek') <= 0.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * ('Eugene' == 'Eugene') + -1.0 * FRIENDS('Eugene', 'Eugene') <= 0.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Ensure that the grounding only predicate is not contributing to the value (incompatibility) of the rule.
@@ -378,7 +370,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Charlie') + 1.0 * ('Eugene' != 'Charlie') + -1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * ('Eugene' != 'Derek') + -1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Nice(A) + Nice(B) + (A % B) <= Friends(A, B)
@@ -415,14 +407,13 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') + 1.0 * ('Charlie' % 'Eugene') + -1.0 * FRIENDS('Charlie', 'Eugene') <= 0.0 ^2",
             "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') + 1.0 * ('Derek' % 'Eugene') + -1.0 * FRIENDS('Derek', 'Eugene') <= 0.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
     @Test
     public void testArithmeticBase() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -475,7 +466,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
             // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // 1.0: Nice(A) + Nice(B) <= 1 ^2
@@ -524,7 +515,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') <= 1.0 ^2"
             // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') <= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // 1.0: Nice(A) + -1 * Nice(B) = 0 ^2
@@ -600,7 +591,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
             // "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -610,7 +601,6 @@ public class GroundRuleTest extends PSLBaseTest {
     // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
     public void testSelectBaseNice() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -647,7 +637,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Now negate the select.
@@ -665,7 +655,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         // There will be no results because ground rules with no subs in the selects do not ground.
         expected = new ArrayList<String>();
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store, false);
     }
 
@@ -678,7 +668,6 @@ public class GroundRuleTest extends PSLBaseTest {
         initModel(false);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -715,7 +704,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Now negate the select.
@@ -739,7 +728,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
             "1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store, false);
     }
 
@@ -762,7 +751,6 @@ public class GroundRuleTest extends PSLBaseTest {
         database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -808,7 +796,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * PERSON('Derek') + 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Derek') >= 1.0 ^2",
             "1.0: 1.0 * PERSON('Eugene') + 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Now change the select to a disjunction.
@@ -831,7 +819,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         try {
-            rule.groundAll(manager, store);
+            rule.groundAll(database, store);
             fail("Attempting to ground a disjunction without a split did not throw.");
         } catch (IllegalStateException ex) {
             // Expected
@@ -842,7 +830,6 @@ public class GroundRuleTest extends PSLBaseTest {
     // |B| * Friends(A, +B) >= 1
     public void testSummationNoSelect() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -877,7 +864,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -890,7 +877,6 @@ public class GroundRuleTest extends PSLBaseTest {
         initModel(false);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -927,7 +913,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Add a select on A.
@@ -953,7 +939,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Add a select on B.
@@ -979,7 +965,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -995,7 +981,6 @@ public class GroundRuleTest extends PSLBaseTest {
         initModel(false);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1037,7 +1022,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "16.0 * FRIENDS('Eugene', 'Alice') + 16.0 * FRIENDS('Eugene', 'Bob') + 16.0 * FRIENDS('Eugene', 'Charlie') + 16.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // |B|
@@ -1063,7 +1048,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "16.0 * FRIENDS('Eugene', 'Alice') + 16.0 * FRIENDS('Eugene', 'Bob') + 16.0 * FRIENDS('Eugene', 'Charlie') + 16.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // |A| + |B|
@@ -1089,7 +1074,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "32.0 * FRIENDS('Eugene', 'Alice') + 32.0 * FRIENDS('Eugene', 'Bob') + 32.0 * FRIENDS('Eugene', 'Charlie') + 32.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // |A| - |B|
@@ -1115,7 +1100,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "0.0 * FRIENDS('Eugene', 'Alice') + 0.0 * FRIENDS('Eugene', 'Bob') + 0.0 * FRIENDS('Eugene', 'Charlie') + 0.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // |A| * |B|
@@ -1141,7 +1126,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "256.0 * FRIENDS('Eugene', 'Alice') + 256.0 * FRIENDS('Eugene', 'Bob') + 256.0 * FRIENDS('Eugene', 'Charlie') + 256.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // |A| / |B|
@@ -1167,7 +1152,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -1189,7 +1174,6 @@ public class GroundRuleTest extends PSLBaseTest {
         database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1258,7 +1242,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Add the additional clause to the select.
@@ -1312,7 +1296,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -1341,7 +1325,6 @@ public class GroundRuleTest extends PSLBaseTest {
         initModel(false);
 
         GroundRuleStore store;
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1430,7 +1413,7 @@ public class GroundRuleTest extends PSLBaseTest {
                     true
             );
 
-            rule.groundAll(manager, store);
+            rule.groundAll(database, store);
             compareGroundRules(expected, rule, store);
         }
     }
@@ -1443,7 +1426,6 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     public void testArithmeticDivdeByZero() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<Coefficient> coefficients;
@@ -1480,7 +1462,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         try {
-            rule.groundAll(manager, store);
+            rule.groundAll(database, store);
             fail("Divide by zero did not throw an ArithmeticException.");
         } catch (ArithmeticException ex) {
             // Expected
@@ -1490,7 +1472,6 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     public void testArithmeticNegativePrior() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1535,7 +1516,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
             "1.0: 1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         // No need for order with one atom.
         compareGroundRules(expected, rule, store, false);
     }
@@ -1548,7 +1529,6 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     public void testVariablesInHead() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1586,7 +1566,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Charlie') ) ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Derek') ) ) ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -1596,7 +1576,6 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     public void testArithmeticSingleTrivials() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1620,7 +1599,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // All trivial.
@@ -1640,7 +1619,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // All trivial.
@@ -1660,7 +1639,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // All trivial.
@@ -1680,7 +1659,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -1693,7 +1672,6 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     public void testSelectWithoutAtoms() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
         List<String> expected;
@@ -1728,7 +1706,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Derek', 'Alice') >= 1.0 ^2",
             "1.0: 1.0 * FRIENDS('Eugene', 'Alice') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Now swap the equality to not equals.
@@ -1761,7 +1739,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
             "1.0: 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
 
         // Now use another variable in the equality check.
@@ -1790,7 +1768,7 @@ public class GroundRuleTest extends PSLBaseTest {
         expected = Arrays.asList(
             "1.0: 1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(manager, store);
+        rule.groundAll(database, store);
         compareGroundRules(expected, rule, store);
     }
 
@@ -1800,7 +1778,6 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     public void testLogicalAccessEcception() {
         GroundRuleStore store = new MemoryGroundRuleStore();
-        AtomManager manager = new PersistedAtomManager(database);
 
         Rule rule;
 
@@ -1818,7 +1795,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         try {
-            rule.groundAll(manager, store);
+            rule.groundAll(database, store);
             fail("PAM exception not thrown for a logcial rule.");
         } catch (Exception ex) {
             // Expected

@@ -243,7 +243,7 @@ public abstract class InferenceTest extends PSLBaseTest {
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
         float preInferenceTotalValue = 0.0f;
-        for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
+        for (RandomVariableAtom atom : inferDB.getAtomStore().getRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
 
@@ -258,7 +258,7 @@ public abstract class InferenceTest extends PSLBaseTest {
         // Create a new instance of a database with an empty cache.
         inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         float postInferenceTotalValue = 0.0f;
-        for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
+        for (RandomVariableAtom atom : inferDB.getAtomStore().getRandomVariableAtoms(info.predicates.get("Friends"))) {
             postInferenceTotalValue += atom.getValue();
         }
 
@@ -276,7 +276,7 @@ public abstract class InferenceTest extends PSLBaseTest {
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
 
         float preInferenceTotalValue = 0.0f;
-        for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
+        for (RandomVariableAtom atom : inferDB.getAtomStore().getRandomVariableAtoms(info.predicates.get("Friends"))) {
             preInferenceTotalValue += atom.getValue();
         }
 
@@ -291,7 +291,7 @@ public abstract class InferenceTest extends PSLBaseTest {
         // Create a new instance of a database with an empty cache.
         inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         float postInferenceTotalValue = 0.0f;
-        for (RandomVariableAtom atom : inferDB.getAllGroundRandomVariableAtoms(info.predicates.get("Friends"))) {
+        for (RandomVariableAtom atom : inferDB.getAtomStore().getRandomVariableAtoms(info.predicates.get("Friends"))) {
             postInferenceTotalValue += atom.getValue();
         }
 
@@ -361,8 +361,8 @@ public abstract class InferenceTest extends PSLBaseTest {
         inference.inference();
 
         float sum = 0.0f;
-        for (RandomVariableAtom cachedRandomVariableAtom : inferDB.getAllCachedRandomVariableAtoms()) {
-            sum += cachedRandomVariableAtom.getValue();
+        for (RandomVariableAtom atom : inferDB.getAtomStore().getRandomVariableAtoms()) {
+            sum += atom.getValue();
         }
 
         assertEquals(1.0f, sum, 0.1f);

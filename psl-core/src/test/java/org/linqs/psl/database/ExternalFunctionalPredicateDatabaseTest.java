@@ -56,7 +56,7 @@ public class ExternalFunctionalPredicateDatabaseTest extends PSLBaseTest {
             @Override
             public void doWork(Database db, Constant arg) {
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-                assertNotNull(db.getAtom(predicate, arg));
+                assertNotNull(db.getAtomStore().getAtom(predicate, arg));
             }
         };
         testHelper(function, "getAtom");
@@ -68,7 +68,7 @@ public class ExternalFunctionalPredicateDatabaseTest extends PSLBaseTest {
             @Override
             public void doWork(Database db, Constant arg){
                 StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-                assertTrue(db.hasAtom(predicate, arg));
+                assertTrue(db.getAtomStore().hasAtom(predicate, arg));
             }
         };
         testHelper(function, "hasAtom");
@@ -87,18 +87,6 @@ public class ExternalFunctionalPredicateDatabaseTest extends PSLBaseTest {
     }
 
     @Test
-    public void testCountAllGroundRandomVariableAtoms() {
-        DatabaseFunction function = new DatabaseFunction() {
-            @Override
-            public void doWork(Database db, Constant arg) {
-                StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-                assertEquals(20, db.countAllGroundRandomVariableAtoms(predicate));
-            }
-        };
-        testHelper(function, "countAllGroundRandomVariableAtoms");
-    }
-
-    @Test
     public void testGetAllGroundAtoms() {
         DatabaseFunction function = new DatabaseFunction() {
             @Override
@@ -108,30 +96,6 @@ public class ExternalFunctionalPredicateDatabaseTest extends PSLBaseTest {
             }
         };
         testHelper(function, "getAllGroundAtoms");
-    }
-
-    @Test
-    public void testGetAllGroundRandomVariableAtoms() {
-        DatabaseFunction function = new DatabaseFunction() {
-            @Override
-            public void doWork(Database db, Constant arg) {
-                StandardPredicate predicate = StandardPredicate.get("Friends", ConstantType.UniqueStringID, ConstantType.UniqueStringID);
-                assertEquals(20, db.getAllGroundRandomVariableAtoms(predicate).size());
-            }
-        };
-        testHelper(function, "getAllGroundRandomVariableAtoms");
-    }
-
-    @Test
-    public void testGetAllGroundObservedAtoms() {
-        DatabaseFunction function = new DatabaseFunction() {
-            @Override
-            public void doWork(Database db, Constant arg) {
-                StandardPredicate predicate = StandardPredicate.get("Nice", ConstantType.UniqueStringID);
-                assertEquals(5, db.getAllGroundObservedAtoms(predicate).size());
-            }
-        };
-        testHelper(function, "getAllGroundObservedAtoms");
     }
 
     @Test

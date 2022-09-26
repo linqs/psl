@@ -114,7 +114,7 @@ public class PredicateInfo {
      * Create a prepared statement to count all the ground atoms for this predicate (within the specified partitions).
      * You can specify no partitions with null or an empty list.
      */
-    public PreparedStatement createCountAllStatement(Connection connection, List<Integer> partitions) {
+    public PreparedStatement createCountAllStatement(Connection connection, List<Short> partitions) {
         return prepareSQL(connection, buildCountAllStatement(partitions));
     }
 
@@ -123,7 +123,7 @@ public class PredicateInfo {
      * You can specify no partitions with null or an empty list.
      * The columns will ALWAYS be in the following order: partition, value, data columns (determined by getArgumentColumns()).
      */
-    public PreparedStatement createQueryAllStatement(Connection connection, List<Integer> partitions) {
+    public PreparedStatement createQueryAllStatement(Connection connection, List<Short> partitions) {
         return prepareSQL(connection, buildQueryAllStatement(partitions));
     }
 
@@ -132,8 +132,8 @@ public class PredicateInfo {
      * (atoms in the write partition) of this predicate.
      * No query parameters need filling.
      */
-    public PreparedStatement createQueryAllWriteStatement(Connection connection, int writePartition) {
-        List<Integer> partitions = new ArrayList<Integer>(1);
+    public PreparedStatement createQueryAllWriteStatement(Connection connection, short writePartition) {
+        List<Short> partitions = new ArrayList<Short>(1);
         partitions.add(writePartition);
         return createQueryAllStatement(connection, partitions);
     }
@@ -142,7 +142,7 @@ public class PredicateInfo {
      * Create a prepared statement that queries for one specific atom.
      * The variables left to set in the query are the predciate arguments.
      */
-    public PreparedStatement createQueryStatement(Connection connection, List<Integer> readPartitions) {
+    public PreparedStatement createQueryStatement(Connection connection, List<Short> readPartitions) {
         return prepareSQL(connection, buildQueryStatement(readPartitions));
     }
 
@@ -158,14 +158,14 @@ public class PredicateInfo {
      * Create a prepared statement that deletes ground atoms that match all the arguments.
      * Note that we will only delete from the provided partitions.
      */
-    public PreparedStatement createDeleteStatement(Connection connection, List<Integer> partitions) {
+    public PreparedStatement createDeleteStatement(Connection connection, List<Short> partitions) {
         return prepareSQL(connection, buildDeleteStatement(partitions));
     }
 
     /**
      * Create a prepared statement that changes moves atoms from one partition to another.
      */
-    public PreparedStatement createPartitionMoveStatement(Connection connection, int oldPartition, int newPartition) {
+    public PreparedStatement createPartitionMoveStatement(Connection connection, short oldPartition, short newPartition) {
         return prepareSQL(connection, buildPartitionMoveStatement(oldPartition, newPartition));
     }
 
@@ -286,7 +286,7 @@ public class PredicateInfo {
         }
     }
 
-    private synchronized String buildCountAllStatement(List<Integer> partitions) {
+    private synchronized String buildCountAllStatement(List<Short> partitions) {
         assert(partitions != null);
 
         String key = "countAll_" + partitions.toString();
@@ -312,7 +312,7 @@ public class PredicateInfo {
         return sql;
     }
 
-    private synchronized String buildQueryAllStatement(List<Integer> partitions) {
+    private synchronized String buildQueryAllStatement(List<Short> partitions) {
         assert(partitions != null);
 
         String key = "queryAll_" + partitions.toString();
@@ -331,7 +331,7 @@ public class PredicateInfo {
 
         query.addCustomFromTable(tableName);
 
-        // If there is only 1 partition, just do equality, otherwise use IN.
+        // If there is only one partition, just do equality, otherwise use IN.
         // All DBMSs should optimize a single IN the same as equality, but just in case.
         if (partitions.size() == 1) {
             query.addCondition(BinaryCondition.equalTo(new CustomSql(PARTITION_COLUMN_NAME), partitions.get(0)));
@@ -344,7 +344,7 @@ public class PredicateInfo {
         return sql;
     }
 
-    private synchronized String buildQueryStatement(List<Integer> readPartitions) {
+    private synchronized String buildQueryStatement(List<Short> readPartitions) {
         String key = "query_" + readPartitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
@@ -396,7 +396,7 @@ public class PredicateInfo {
         return sql;
     }
 
-    private synchronized String buildDeleteStatement(List<Integer> partitions) {
+    private synchronized String buildDeleteStatement(List<Short> partitions) {
         String key = "delete_" + partitions.toString();
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);
@@ -418,7 +418,7 @@ public class PredicateInfo {
         return sql;
     }
 
-    private synchronized String buildPartitionMoveStatement(int oldPartition, int newPartition) {
+    private synchronized String buildPartitionMoveStatement(short oldPartition, short newPartition) {
         String key = "movePartition_" + oldPartition + "_" + newPartition;
         if (cachedSQL.containsKey(key)) {
             return cachedSQL.get(key);

@@ -31,7 +31,7 @@ public class Partition {
     /**
      * Special partition for unmanaged atoms.
      */
-    public static final short SPECIAL_UNMANAGED = -99;
+    public static final short SPECIAL_UNMANAGED_ID = -99;
 
     private final short id;
     private final String name;

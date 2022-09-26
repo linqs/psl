@@ -513,7 +513,7 @@ public class AtomTest extends PSLBaseTest {
             args[0] = new IntegerAttribute(i);
 
             try {
-                new ObservedAtom(singleInt, args, badValues[i]);
+                new UnmanagedObservedAtom(singleInt, args, badValues[i]);
                 fail("IllegalArgumentException not thrown as expected on index " + i + ", value: " + badValues[i]);
             } catch (IllegalArgumentException ex) {
                 // Expected

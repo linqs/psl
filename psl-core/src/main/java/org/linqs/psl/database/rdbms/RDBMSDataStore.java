@@ -307,7 +307,8 @@ public class RDBMSDataStore implements DataStore {
         return metadata;
     }
 
-    public void releasePartitions(RDBMSDatabase db) {
+    @Override
+    public void releasePartitions(Database db) {
         if (!db.getDataStore().equals(this)) {
             throw new IllegalArgumentException("Database has not been opened with this data store.");
         }

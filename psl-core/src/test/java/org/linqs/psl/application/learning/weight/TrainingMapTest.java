@@ -21,7 +21,6 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
@@ -110,8 +109,7 @@ public class TrainingMapTest extends PSLBaseTest {
         targetsDatabase = dataStore.getDatabase(targetOpenPartition, targetClosedPartition);
         truthDatabase = dataStore.getDatabase(truthOpenPartition, truthClosedPartition);
 
-        PersistedAtomManager atomManager = new PersistedAtomManager(targetsDatabase);
-        trainingMap = new TrainingMap(atomManager, truthDatabase);
+        trainingMap = new TrainingMap(targetsDatabase, truthDatabase);
     }
 
     @After

@@ -24,8 +24,10 @@ import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.UnmanagedRandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.FormulaAnalysis;
 import org.linqs.psl.model.formula.Negation;
@@ -281,7 +283,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         // Ground the atoms in this ground rule.
 
         short positiveRVACount = createAtoms(database, variableMap, resources, negatedDNF.getPosLiterals(), row,
-                resources.positiveAtomArgs, resources.positiveAtoms, 0.0);
+                resources.positiveAtomArgs, resources.positiveAtoms, 0.0f);
         if (positiveRVACount == -1) {
             // Trivial.
             return null;
@@ -289,7 +291,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         rvaCount += positiveRVACount;
 
         short negativeRVACount = createAtoms(database, variableMap, resources, negatedDNF.getNegLiterals(), row,
-                resources.negativeAtomArgs, resources.negativeAtoms, 1.0);
+                resources.negativeAtomArgs, resources.negativeAtoms, 1.0f);
         if (negativeRVACount == -1) {
             // Trivial.
             return null;
@@ -312,7 +314,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
 
     private short createAtoms(Database database, Map<Variable, Integer> variableMap,
             GroundingResources resources, List<Atom> literals, Constant[] row,
-            Constant[][] argumentBuffer, List<GroundAtom> groundAtoms, double trivialValue) {
+            Constant[][] argumentBuffer, List<GroundAtom> groundAtoms, float trivialValue) {
         GroundAtom atom = null;
         short rvaCount = 0;
 

@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.database;
 
+import org.linqs.psl.database.rdbms.Formula2SQL;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;

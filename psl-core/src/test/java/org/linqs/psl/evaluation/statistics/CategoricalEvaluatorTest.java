@@ -22,10 +22,9 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.UnmanagedRandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -77,8 +76,7 @@ public class CategoricalEvaluatorTest extends EvaluatorTest<CategoricalEvaluator
         Database results = dataStore.getDatabase(targetPartition);
         Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        PersistedAtomManager atomManager = new PersistedAtomManager(results);
-        trainingMap = new TrainingMap(atomManager, truth);
+        trainingMap = new TrainingMap(results, truth);
 
         // Since we only need the map, we can close all the databases.
         results.close();
@@ -98,10 +96,10 @@ public class CategoricalEvaluatorTest extends EvaluatorTest<CategoricalEvaluator
 
         // Check fgr all the predicted atoms.
         GroundAtom[] expected = new GroundAtom[]{
-            new RandomVariableAtom(predicate, new Constant[]{new UniqueIntID(1), new UniqueIntID(1)}, 1.0f),
-            new RandomVariableAtom(predicate, new Constant[]{new UniqueIntID(2), new UniqueIntID(2)}, 1.0f),
-            new RandomVariableAtom(predicate, new Constant[]{new UniqueIntID(3), new UniqueIntID(3)}, 1.0f),
-            new RandomVariableAtom(predicate, new Constant[]{new UniqueIntID(4), new UniqueIntID(1)}, 0.3f),
+            new UnmanagedRandomVariableAtom(predicate, new Constant[]{new UniqueIntID(1), new UniqueIntID(1)}, 1.0f),
+            new UnmanagedRandomVariableAtom(predicate, new Constant[]{new UniqueIntID(2), new UniqueIntID(2)}, 1.0f),
+            new UnmanagedRandomVariableAtom(predicate, new Constant[]{new UniqueIntID(3), new UniqueIntID(3)}, 1.0f),
+            new UnmanagedRandomVariableAtom(predicate, new Constant[]{new UniqueIntID(4), new UniqueIntID(1)}, 0.3f),
         };
 
         Set<GroundAtom> actual = evaluator.getPredictedCategories(trainingMap, predicate);

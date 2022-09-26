@@ -252,7 +252,7 @@ public abstract class InferenceApplication implements ModelApplication {
      * Set all the random variable atoms to the initial value for this inference application.
      */
     public void initializeAtoms() {
-        for (RandomVariableAtom atom : database().getAtomStore().getRandomVariableAtoms()) {
+        for (RandomVariableAtom atom : database.getAtomStore().getRandomVariableAtoms()) {
             atom.setValue(initialValue.getVariableValue(atom));
         }
     }

@@ -22,7 +22,6 @@ import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.ConstantType;
@@ -85,8 +84,7 @@ public abstract class EvaluatorTest<T extends Evaluator> extends PSLBaseTest {
         Database resultsDB = dataStore.getDatabase(targetPartition);
         Database truthDB = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        PersistedAtomManager atomManager = new PersistedAtomManager(resultsDB);
-        trainingMap = new TrainingMap(atomManager, truthDB);
+        trainingMap = new TrainingMap(resultsDB, truthDB);
 
         // Since we only need the map, we can close all the databases.
         resultsDB.close();

@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.atom;
 
+import org.linqs.psl.database.Partition;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
@@ -26,7 +27,7 @@ import org.linqs.psl.model.term.Constant;
  */
 public final class UnmanagedObservedAtom extends ObservedAtom {
     public UnmanagedObservedAtom(Predicate predicate, Constant[] args, float value) {
-        super(predicate, args, value);
+        super(predicate, args, value, Partition.SPECIAL_UNMANAGED_ID);
     }
 
     @Override
