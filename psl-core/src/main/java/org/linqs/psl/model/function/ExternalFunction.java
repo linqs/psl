@@ -22,7 +22,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 
 public interface ExternalFunction {
-    public double getValue(Database db, Constant... args);
+    public float getValue(Database db, Constant... args);
 
     public int getArity();
 

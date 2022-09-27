@@ -193,9 +193,9 @@ public class ExternalFunctionalPredicateDatabaseTest extends PSLBaseTest {
         }
 
         @Override
-        public double getValue(Database db, Constant... args) {
+        public float getValue(Database db, Constant... args) {
             doWork(db, args[0]);
-            return 1.0;
+            return 1.0f;
         }
 
         public abstract void doWork(Database db, Constant arg);

@@ -86,6 +86,10 @@ public class RDBMSDatabase extends Database {
         Map<Predicate, List<GroundAtom>> atomsByPredicate = new HashMap<Predicate, List<GroundAtom>>();
 
         for (GroundAtom atom : atoms) {
+            if (!(atom.getPredicate() instanceof StandardPredicate)) {
+                continue;
+            }
+
             if (!atomsByPredicate.containsKey(atom.getPredicate())) {
                 atomsByPredicate.put(atom.getPredicate(), new ArrayList<GroundAtom>());
             }

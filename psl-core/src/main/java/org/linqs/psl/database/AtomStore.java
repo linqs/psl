@@ -37,6 +37,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,9 +47,18 @@ import java.util.Map;
  * AtomStore assume that all (non closed-world) ground atoms are persisted in memory.
  * After initialization, no queries to the database will be made.
  *
+ * Ground atoms that exist, but are not strictly managed by an AtomStore are unmanaged atoms
+ * (UnmanagedObservedAtom and UnmanagedRandomVariableAtom).
+ * These atoms are generally not stored in the AtomStore and have no true backing in the database.
+ * A soft exception to this are ground atoms derived from functional predicates.
+ * These are constructed as unmanaged (since they do not have a database partition),
+ * but will be kept in the data store (so their values are not re-computed).
+ *
  * Read operations are all thread-safe, but read and writes should not be intermixed.
  */
 public class AtomStore implements Iterable<GroundAtom> {
+    public static final int MIN_ALLOCATION = 100;
+
     private Database database;
 
     private String threadKey;
@@ -116,7 +127,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         }
 
         // The atom does not exist.
-        // This is either a closed-world atom, or a PAM exception.
+        // This is either a functional predicate, closed-world atom, or PAM exception.
 
         Term[] queryArguments = query.getArguments();
         Constant[] arguments = new Constant[queryArguments.length];
@@ -129,7 +140,14 @@ public class AtomStore implements Iterable<GroundAtom> {
             arguments[i] = (Constant)queryArguments[i];
         }
 
-        if ((query.getPredicate() instanceof FunctionalPredicate) || database.isClosed(query.getPredicate())) {
+        if (query.getPredicate() instanceof FunctionalPredicate) {
+            float value = ((FunctionalPredicate)query.getPredicate()).computeValue(database, arguments);
+            GroundAtom atom = new UnmanagedObservedAtom(query.getPredicate(), arguments, value);
+            addAtom(atom);
+            return atom;
+        }
+
+        if (database.isClosed(query.getPredicate())) {
             return new UnmanagedObservedAtom(query.getPredicate(), arguments, 0.0f);
         }
 
@@ -137,7 +155,10 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     public GroundAtom getAtom(Predicate predicate, Constant... args) {
-        return getAtom(getQuery(predicate, args));
+        QueryAtom query = getQuery(predicate, args);
+        GroundAtom atom = getAtom(query);
+        releaseQuery(query);
+        return atom;
     }
 
     /**
@@ -155,7 +176,10 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     public int getAtomIndex(Predicate predicate, Constant... args) {
-        return getAtomIndex(getQuery(predicate, args));
+        QueryAtom query = getQuery(predicate, args);
+        int index = getAtomIndex(query);
+        releaseQuery(query);
+        return index;
     }
 
     /**
@@ -167,7 +191,10 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     public boolean hasAtom(Predicate predicate, Constant... args) {
-        return hasAtom(getQuery(predicate, args));
+        QueryAtom query = getQuery(predicate, args);
+        boolean result = hasAtom(query);
+        releaseQuery(query);
+        return result;
     }
 
     /**
@@ -209,13 +236,34 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     public void addAtom(GroundAtom atom) {
+        QueryAtom query = new QueryAtom(atom.getPredicate(), atom.getArguments());
+        if (hasAtom(query)) {
+            GroundAtom otherAtom = getAtom(query);
+
+            if (atom.getPartition() == otherAtom.getPartition()) {
+                // These are the same atom, a multi-thead access may got past an earlier check.
+                return;
+            }
+
+            throw new IllegalStateException(String.format(
+                    "Two identical atoms found in the same database." +
+                    " First Instance: (Atom: %s, Type: %s, Partition: %d)," +
+                    " Second Instance: (Atom: %s, Type: %s, Partition: %d).",
+                    otherAtom, otherAtom.getClass(), otherAtom.getPartition(),
+                    atom, atom.getClass(), atom.getPartition()));
+        }
+
+        addAtomInternal(query, atom);
+    }
+
+    public synchronized void addAtomInternal(QueryAtom query, GroundAtom atom) {
         if (atoms.length == numAtoms) {
             reallocate();
         }
 
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
-        lookup.put(new QueryAtom(atom.getPredicate(), atom.getArguments()), numAtoms);
+        lookup.put(query, numAtoms);
 
         numAtoms++;
     }
@@ -233,19 +281,34 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     /**
      * Get a threadsafe query buffer.
+     * The returned QueryAtom should be released for reuse through releaseQuery().
      */
     private QueryAtom getQuery(Predicate predicate, Constant... args) {
-        QueryAtom query = null;
-
         if (!Parallel.hasThreadObject(threadKey)) {
-            query = new QueryAtom(predicate, args);
-            Parallel.putThreadObject(threadKey, query);
-        } else {
-            query = (QueryAtom)Parallel.getThreadObject(threadKey);
-            query.assume(predicate, args);
+            Parallel.putThreadObject(threadKey, new LinkedList<QueryAtom>());
         }
 
+        @SuppressWarnings("unchecked")
+        List<QueryAtom> queries = (List<QueryAtom>)Parallel.getThreadObject(threadKey);
+
+        if (queries.size() == 0) {
+            queries.add(new QueryAtom(predicate, args));
+        }
+
+        QueryAtom query = queries.remove(0);
+        query.assume(predicate, args);
+
         return query;
+    }
+
+    private void releaseQuery(QueryAtom query) {
+        @SuppressWarnings("unchecked")
+        List<QueryAtom> queries = (List<QueryAtom>)Parallel.getThreadObject(threadKey);
+        if (queries == null) {
+            throw new RuntimeException("Attempt to release a query that has not been allocated (by getQuery()).");
+        }
+
+        queries.add(query);
     }
 
     private void init() {
@@ -253,7 +316,9 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         int databaseAtomCount = getDatabaseAtomCount();
         double overallocationFactor = Options.ATOM_STORE_OVERALLOCATION_FACTOR.getDouble();
-        atomValues = new float[(int)(databaseAtomCount * (1.0 + overallocationFactor))];
+        int allocationSize = (int)(Math.max(MIN_ALLOCATION, databaseAtomCount) * (1.0 + overallocationFactor));
+
+        atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];
         lookup = new HashMap<QueryAtom, Integer>((int)(atomValues.length / 0.75));
 
@@ -289,7 +354,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         }
     }
 
-    private void reallocate() {
+    private synchronized void reallocate() {
         int newSize = atoms.length * 2;
 
         atomValues = Arrays.copyOf(atomValues, newSize);

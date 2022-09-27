@@ -112,11 +112,11 @@ public abstract class DataStoreTest extends PSLBaseTest {
 
         functionalPredicate1 = ExternalFunctionalPredicate.get("FP1", new ExternalFunction() {
             @Override
-            public double getValue(Database db, Constant... args) {
+            public float getValue(Database db, Constant... args) {
                 double a = ((DoubleAttribute) args[0]).getValue();
                 double b = ((DoubleAttribute) args[1]).getValue();
 
-                return Math.max(0.0, Math.min(1.0, (a + b) / 2));
+                return (float)Math.max(0.0f, Math.min(1.0f, (a + b) / 2.0f));
             }
 
             @Override
@@ -295,6 +295,8 @@ public abstract class DataStoreTest extends PSLBaseTest {
         Database db = datastore.getDatabase(partition);
 
         RandomVariableAtom atom = new RandomVariableAtom(p1, args, 1.0f, partition.getID());
+        db.getAtomStore().addAtom(atom);
+
         atom.setValue(0.25f);
         db.getAtomStore().commit();
         atom.setValue(0.5f);
@@ -334,6 +336,9 @@ public abstract class DataStoreTest extends PSLBaseTest {
 
         RandomVariableAtom atom1 = new RandomVariableAtom(p1, new Constant[]{a, b}, 1.0f, partition.getID());
         RandomVariableAtom atom2 = new RandomVariableAtom(p1, new Constant[]{c, d}, 1.0f, partition.getID());
+
+        db.getAtomStore().addAtom(atom1);
+        db.getAtomStore().addAtom(atom2);
 
         atom1.setValue(0.25f);
         atom2.setValue(0.75f);
@@ -574,29 +579,13 @@ public abstract class DataStoreTest extends PSLBaseTest {
             return;
         }
 
-        Database db = datastore.getDatabase(datastore.getPartition("0"));
+        Partition partition = datastore.getPartition("0");
+        Database db = datastore.getDatabase(partition);
         dbs.add(db);
+        db.getAtomStore().addAtom(new ObservedAtom(p2, new Constant[]{new StringAttribute("a"), new StringAttribute("b")}, 1.0f, partition.getID()));
 
         try {
-            db.getAtomStore().getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
-            fail("IllegalArgumentException not thrown as expected.");
-        } catch (IllegalArgumentException ex) {
-            // Expected
-        }
-    }
-
-    @Test
-    public void testLateRegisteredPredicate() {
-        if (datastore == null) {
-            return;
-        }
-
-        Database db = datastore.getDatabase(datastore.getPartition("0"));
-        dbs.add(db);
-        datastore.registerPredicate(p1);
-
-        try {
-            db.getAtomStore().getAtom(p2, new StringAttribute("a"), new StringAttribute("b"));
+            db.getAtomStore().commit();
             fail("IllegalArgumentException not thrown as expected.");
         } catch (IllegalArgumentException ex) {
             // Expected

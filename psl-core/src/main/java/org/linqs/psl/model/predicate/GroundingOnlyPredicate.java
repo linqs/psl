@@ -49,7 +49,7 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
      * Compute the value, possibly using a lookup map for a variable's constant.
      * This style of check will often be used in grounding processes to validate constants before ground rule instantiation.
      */
-    public double computeValue(Atom atom, Map<Variable, Integer> variableMap, Constant[] constants) {
+    public float computeValue(Atom atom, Map<Variable, Integer> variableMap, Constant[] constants) {
         assert(this == atom.getPredicate());
 
         Term[] arguments = atom.getArguments();
@@ -80,7 +80,7 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
     /**
      * A method of computing the value that is more direct (and less robust) than the FunctionalPredicate way.
      */
-    public abstract double computeValue(Constant a, Constant b);
+    public abstract float computeValue(Constant a, Constant b);
 
     /**
      * True if arguments are equal.
@@ -90,14 +90,14 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
-        public double computeValue(Database db, Constant... args) {
+        public float computeValue(Database db, Constant... args) {
             checkArguments(getName(), args);
             return computeValue(args[0], args[1]);
         }
 
         @Override
-        public double computeValue(Constant a, Constant b) {
-            return a.equals(b) ? 1.0 : 0.0;
+        public float computeValue(Constant a, Constant b) {
+            return a.equals(b) ? 1.0f : 0.0f;
         }
     };
 
@@ -109,14 +109,14 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
-        public double computeValue(Database db, Constant... args) {
+        public float computeValue(Database db, Constant... args) {
             checkArguments(getName(), args);
             return computeValue(args[0], args[1]);
         }
 
         @Override
-        public double computeValue(Constant a, Constant b) {
-            return !a.equals(b) ? 1.0 : 0.0;
+        public float computeValue(Constant a, Constant b) {
+            return !a.equals(b) ? 1.0f : 0.0f;
         }
     };
 
@@ -129,14 +129,14 @@ public abstract class GroundingOnlyPredicate extends FunctionalPredicate {
                 new ConstantType[] {ConstantType.DeferredFunctionalUniqueID, ConstantType.DeferredFunctionalUniqueID}) {
 
         @Override
-        public double computeValue(Database db, Constant... args) {
+        public float computeValue(Database db, Constant... args) {
             checkArguments(getName(), args);
             return computeValue(args[0], args[1]);
         }
 
         @Override
-        public double computeValue(Constant a, Constant b) {
-            return (a.compareTo(b) < 0) ? 1.0 : 0.0;
+        public float computeValue(Constant a, Constant b) {
+            return (a.compareTo(b) < 0) ? 1.0f : 0.0f;
         }
     };
 

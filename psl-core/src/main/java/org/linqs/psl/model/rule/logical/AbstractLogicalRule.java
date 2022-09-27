@@ -261,8 +261,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                 continue;
             }
 
-            double result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, row);
-            if (MathUtils.equals(result, 0.0)) {
+            float result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, row);
+            if (MathUtils.equals(result, 0.0f)) {
                 return null;
             }
         }
@@ -274,8 +274,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                 continue;
             }
 
-            double result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, row);
-            if (MathUtils.equals(result, 1.0)) {
+            float result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, row);
+            if (MathUtils.equals(result, 1.0f)) {
                 return null;
             }
         }
@@ -339,7 +339,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                 // First we will check to see if the ground rule is trivial,
                 // then only throw if if it is not.
                 resources.accessExceptionAtoms.add(atom);
-            } else if (atom instanceof RandomVariableAtom) {
+            }
+
+            if (atom instanceof RandomVariableAtom) {
                 rvaCount++;
             }
 

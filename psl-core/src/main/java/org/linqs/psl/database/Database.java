@@ -167,8 +167,12 @@ public abstract class Database {
     }
 
     public AtomStore getAtomStore() {
-        if (atomStore != null) {
-            atomStore = new AtomStore(this);
+        if (closed) {
+            throw new IllegalStateException("Cannot get an AtomStore from a closed database.");
+        }
+
+        if (atomStore == null) {
+            initAtomStore();
         }
 
         return atomStore;
@@ -245,5 +249,14 @@ public abstract class Database {
                 throw new RuntimeException("Error writing predicate " + predicate + ".", ex);
             }
         }
+    }
+
+    private synchronized void initAtomStore() {
+        // While waiting, another thread may have initialized the atom store.
+        if (atomStore != null) {
+            return;
+        }
+
+        atomStore = new AtomStore(this);
     }
 }

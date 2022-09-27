@@ -341,8 +341,8 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
             // First, check if this atom is a grounding only atom (and it is valid).
             // The semantics are not well defined, but any false result will invalidate this grounding.
             if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
-                double result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, queryRow);
-                if (MathUtils.equals(result, 0.0)) {
+                float result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, queryRow);
+                if (MathUtils.equals(result, 0.0f)) {
                     return;
                 }
             }
@@ -544,6 +544,12 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
             if (newArguments != null) {
                 atom = new QueryAtom(atom.getPredicate(), newArguments);
+            }
+
+            // Check if the atom is GroundingOnly.
+            if (atom.getPredicate() instanceof GroundingOnlyPredicate) {
+                float result = ((GroundingOnlyPredicate)atom.getPredicate()).computeValue(atom, variableMap, queryRow);
+                return !MathUtils.equals(result, 0.0f);
             }
 
             GroundAtom groundAtom = atom.ground(database, queryRow, variableMap);

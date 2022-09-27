@@ -40,5 +40,5 @@ public abstract class FunctionalPredicate extends Predicate {
      * @param args the arguments for which the truth value will be computed
      * @return the computed truth value
      */
-    public abstract double computeValue(Database db, Constant... args);
+    public abstract float computeValue(Database db, Constant... args);
 }

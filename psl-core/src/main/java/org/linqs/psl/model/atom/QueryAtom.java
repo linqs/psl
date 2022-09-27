@@ -20,6 +20,7 @@ package org.linqs.psl.model.atom;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ResultList;
+import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -113,31 +114,23 @@ public class QueryAtom extends Atom {
     }
 
     private GroundAtom fetchAtom(Database database, Predicate predicate, Constant[] args, float trivialValue, boolean ignoreUnmanagedAtoms) {
-        AtomStore atomStore = database.getAtomStore();
-        int atomIndex = atomStore.getAtomIndex(predicate, args);
+        GroundAtom atom = database.getAtomStore().getAtom(predicate, args);
 
-        if (atomIndex == -1) {
-            // The atom does not exist (may be a closed-world atom).
-            if (ignoreUnmanagedAtoms) {
-                // We are not looking for closed-world atoms.
-                return null;
-            }
-
-            // Before making a closed-world atom, check for trivality.
-            if (MathUtils.equals(trivialValue, 0.0f)) {
-                return null;
-            }
-
-            return atomStore.getAtom(predicate, args);
+        // Functional atoms always exist (and are unmanaged), shortcut the remaining checks.
+        if (predicate instanceof FunctionalPredicate) {
+            return atom;
         }
 
-        // The atom exists in the store.
-
-        // Check for triviality first.
-        if (MathUtils.equals(trivialValue, atomStore.getAtomValue(atomIndex))) {
+        // Check to ignore unmanaged atoms.
+        if (ignoreUnmanagedAtoms && !atom.isManaged()) {
             return null;
         }
 
-        return atomStore.getAtom(atomIndex);
+        // Check for triviality.
+        if ((atom instanceof ObservedAtom) && MathUtils.equals(trivialValue, atom.getValue())) {
+            return null;
+        }
+
+        return atom;
     }
 }

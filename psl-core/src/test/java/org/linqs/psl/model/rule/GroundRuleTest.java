@@ -103,7 +103,6 @@ public class GroundRuleTest extends PSLBaseTest {
         model = TestModel.getModel(useNice);
 
         // Add in self friendship ground atoms so we can get more groundings on some tests.
-        // (Specifically arithmetic tests where we query for even negative atoms.)
         if (addSelfTargets) {
             Inserter inserter = model.dataStore.getInserter(model.predicates.get("Friends"), model.targetPartition);
             inserter.insert("Alice", "Alice");
@@ -121,6 +120,8 @@ public class GroundRuleTest extends PSLBaseTest {
 
     @Test
     public void testLogicalBase() {
+        initModel(true, true);
+
         GroundRuleStore store = new MemoryGroundRuleStore();
 
         Rule rule;
@@ -179,6 +180,8 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     @Test
     public void testLogicalGroundingOnlyPredicates() {
+        initModel(true, true);
+
         GroundRuleStore store = new MemoryGroundRuleStore();
 
         Rule rule;

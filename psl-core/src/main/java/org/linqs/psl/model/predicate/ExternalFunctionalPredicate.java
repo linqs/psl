@@ -33,7 +33,7 @@ public class ExternalFunctionalPredicate extends FunctionalPredicate {
     }
 
     @Override
-    public double computeValue(Database db, Constant... args) {
+    public float computeValue(Database db, Constant... args) {
         return extFun.getValue(db, args);
     }
 

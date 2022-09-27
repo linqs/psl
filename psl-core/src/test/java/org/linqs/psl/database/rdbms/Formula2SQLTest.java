@@ -161,9 +161,9 @@ public class Formula2SQLTest extends PSLBaseTest {
             return args;
         }
 
-        public synchronized double getValue(Database db, Constant... args) {
+        public synchronized float getValue(Database db, Constant... args) {
             callCount++;
-            return 1;
+            return 1.0f;
         }
 
         public int getCallCount() {
