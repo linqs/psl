@@ -19,6 +19,23 @@
     </Match>
 
     <Match>
+        <Class name="org.linqs.psl.database.AtomStore" />
+        <Or>
+            <Field name="numAtoms" />
+            <Field name="atomValues" />
+            <Field name="atoms" />
+            <Field name="lookup" />
+        </Or>
+        <Bug pattern="IS2_INCONSISTENT_SYNC" />
+    </Match>
+
+    <Match>
+        <Class name="org.linqs.psl.database.Database" />
+        <Field name="atomStore" />
+        <Bug pattern="IS2_INCONSISTENT_SYNC" />
+    </Match>
+
+    <Match>
         <Class name="org.linqs.psl.database.rdbms.PredicateInfo" />
         <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE" />
     </Match>

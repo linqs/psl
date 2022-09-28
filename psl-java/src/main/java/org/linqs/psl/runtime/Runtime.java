@@ -184,7 +184,7 @@ public class Runtime {
                     continue;
                 }
 
-                evaluator.compute(targetDatabase, truthDatabase, targetPredicate, true);
+                evaluator.compute(targetDatabase, truthDatabase, targetPredicate);
                 log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
             }
         }

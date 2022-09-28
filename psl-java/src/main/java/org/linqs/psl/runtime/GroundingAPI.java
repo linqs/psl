@@ -18,11 +18,10 @@
 package org.linqs.psl.runtime;
 
 import org.linqs.psl.config.RuntimeOptions;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.database.atom.PersistedAtomManager;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
@@ -95,12 +94,11 @@ public final class GroundingAPI {
         Partition observationsPartition = dataStore.getPartition(PARTITION_OBS);
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
-        AtomManager atomManager = new PersistedAtomManager(database);
         GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
 
-        Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, atoms, atomArguments, atomManager);
+        Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, atoms, atomArguments, database);
 
-        Grounding.groundAll(rules, atomManager, groundRuleStore);
+        Grounding.groundAll(rules, database, groundRuleStore);
         GroundRuleInfo[] groundRules = mapGroundRules(rules, atomMap, groundRuleStore);
 
         groundRuleStore.close();
@@ -172,10 +170,12 @@ public final class GroundingAPI {
     private static Map<GroundAtom, Integer> buildAtomMap(
             String[] predicateNames,
             String[][] atoms, String[][] atomArguments,
-            AtomManager atomManager) {
+            Database database) {
+        AtomStore atomStore = database.getAtomStore();
+
         // Each atom gets mapped in a reversible way to an index.
         // These indexes are contiguous, go through the predicates in-order, handle obs, and finally unobs.
-        int atomCount = atomManager.getCachedObsCount() + atomManager.getCachedRVACount();
+        int atomCount = atomStore.size();
         Map<GroundAtom, Integer> atomMap = new HashMap<GroundAtom, Integer>(atomCount);
 
         for (int predicateIndex = 0; predicateIndex < predicateNames.length; predicateIndex++) {
@@ -194,7 +194,7 @@ public final class GroundingAPI {
                     arguments[i] = new UniqueStringID(atomArguments[atomIndex][i]);
                 }
 
-                GroundAtom atom = atomManager.getAtom(predicate, arguments);
+                GroundAtom atom = atomStore.getAtom(predicate, arguments);
                 atomMap.put(atom, Integer.valueOf(id));
             }
         }

@@ -158,11 +158,11 @@ public class SimpleAcquaintancesTest extends RuntimeTest {
     // Not an actual similarity.
     public static class SimNameExternalFunction implements ExternalFunction {
         @Override
-        public double getValue(Database db, Constant... args) {
+        public float getValue(Database db, Constant... args) {
             String a = ((UniqueStringID)args[0]).getID();
             String b = ((UniqueStringID)args[1]).getID();
 
-            return Math.abs(a.length() - b.length()) / (double)(Math.max(a.length(), b.length()));
+            return (float)(Math.abs(a.length() - b.length()) / (double)(Math.max(a.length(), b.length())));
         }
 
         @Override
