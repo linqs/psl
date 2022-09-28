@@ -301,7 +301,7 @@ public class CandidateGeneration {
 
     private boolean explainNode(CandidateSearchNode node, RDBMSDatabase database) {
         DatabaseDriver.ExplainResult result = null;
-        boolean usedExpain = false;
+        boolean usedExplain = false;
 
         String formulaString = node.formula.toString();
         if (explains.containsKey(formulaString)) {
@@ -310,7 +310,7 @@ public class CandidateGeneration {
             String sql = Formula2SQL.getQuery(node.formula, database, false);
             result = ((RDBMSDataStore)database.getDataStore()).getDriver().explain(sql);
             explains.put(formulaString, result);
-            usedExpain = true;
+            usedExplain = true;
         }
 
         node.approximateCost = false;
@@ -323,7 +323,11 @@ public class CandidateGeneration {
                 + result.rows * PESSIMISTIC_INSTANTIATION_COST_MULTIPLIER)
                 * (node.numAtoms * CANDIDATE_SIZE_ADJUSTMENT);
 
-        return usedExpain;
+        if (usedExplain) {
+            log.trace("Scored candidate: " + node);
+        }
+
+        return usedExplain;
     }
 
     /**
