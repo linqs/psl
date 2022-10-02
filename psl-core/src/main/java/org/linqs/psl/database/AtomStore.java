@@ -37,8 +37,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -285,30 +283,34 @@ public class AtomStore implements Iterable<GroundAtom> {
      */
     private QueryAtom getQuery(Predicate predicate, Constant... args) {
         if (!Parallel.hasThreadObject(threadKey)) {
-            Parallel.putThreadObject(threadKey, new LinkedList<QueryAtom>());
+            Parallel.putThreadObject(threadKey, new ThreadResources(new QueryAtom(predicate, args)));
         }
 
         @SuppressWarnings("unchecked")
-        List<QueryAtom> queries = (List<QueryAtom>)Parallel.getThreadObject(threadKey);
+        ThreadResources resources = (ThreadResources)Parallel.getThreadObject(threadKey);
 
-        if (queries.size() == 0) {
-            queries.add(new QueryAtom(predicate, args));
+        if (resources.queryInUse) {
+            // There are rare situations (with functional predicates) where a thread can already be using it's query
+            // and request a new one.
+            // In these rare situations, just allocate a new query.
+            return new QueryAtom(predicate, args);
         }
 
-        QueryAtom query = queries.remove(0);
-        query.assume(predicate, args);
+        resources.query.assume(predicate, args);
+        resources.queryInUse = true;
 
-        return query;
+        return resources.query;
     }
 
     private void releaseQuery(QueryAtom query) {
         @SuppressWarnings("unchecked")
-        List<QueryAtom> queries = (List<QueryAtom>)Parallel.getThreadObject(threadKey);
-        if (queries == null) {
+        ThreadResources resources = (ThreadResources)Parallel.getThreadObject(threadKey);
+
+        if (resources == null) {
             throw new RuntimeException("Attempt to release a query that has not been allocated (by getQuery()).");
         }
 
-        queries.add(query);
+        resources.queryInUse = false;
     }
 
     private void init() {
@@ -369,5 +371,15 @@ public class AtomStore implements Iterable<GroundAtom> {
         }
 
         return count;
+    }
+
+    private static class ThreadResources {
+        public QueryAtom query;
+        public boolean queryInUse;
+
+        public ThreadResources(QueryAtom query) {
+            this.query = query;
+            queryInUse = false;
+        }
     }
 }
