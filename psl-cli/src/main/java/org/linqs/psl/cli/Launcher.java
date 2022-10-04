@@ -18,7 +18,6 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.online.messages.responses.OnlineResponse;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.config.RuntimeOptions;
@@ -70,45 +69,8 @@ public class Launcher {
     private static final Logger log = Logger.getLogger(Launcher.class);
     private CommandLine parsedOptions;
 
-    private Launcher(CommandLine givenOptions) {
+    protected Launcher(CommandLine givenOptions) {
         this.parsedOptions = givenOptions;
-    }
-
-    private void outputServerResponses(List<OnlineResponse> serverResponses) {
-        for (OnlineResponse response : serverResponses) {
-            System.out.println(response.toString());
-        }
-    }
-
-    private void outputServerResponses(List<OnlineResponse> serverResponses, String outputFilePath) {
-        Path outputDirectory = Paths.get(outputFilePath).getParent();
-        if (outputDirectory != null) {
-            FileUtils.mkdir(outputDirectory.toString());
-        }
-
-        try (BufferedWriter bufferedWriter = FileUtils.getBufferedWriter(outputFilePath)) {
-            for (OnlineResponse response : serverResponses) {
-                bufferedWriter.write(response.toString() + "\n");
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException(String.format("Error writing online server responses to file: %s", outputFilePath), ex);
-        }
-    }
-
-    private void runOnlineClient() {
-        log.info("Starting OnlinePSL client.");
-        List<OnlineResponse> serverResponses = OnlineActionInterface.run();
-        log.info("OnlinePSL client closed.");
-
-        // Output the results.
-        if (!(parsedOptions.hasOption(CommandLineLoader.OPTION_ONLINE_SERVER_RESPONSE_OUTPUT))) {
-            log.trace("Writing server responses to stdout.");
-            outputServerResponses(serverResponses);
-        } else {
-            String outputFilePath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_ONLINE_SERVER_RESPONSE_OUTPUT);
-            log.trace("Writing inferred predicates to file: " + outputFilePath);
-            outputServerResponses(serverResponses, outputFilePath);
-        }
     }
 
     /**
@@ -222,11 +184,6 @@ public class Launcher {
     }
 
     private void run() {
-        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
-            runOnlineClient();
-            return;
-        }
-
         convertRuntimeOptions();
         Runtime runtime = new Runtime();
         runtime.run();
@@ -239,11 +196,7 @@ public class Launcher {
             return false;
         }
 
-        if (givenOptions.hasOption(CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG)) {
-            return true;
-        }
-
-        // Data and model are required for non-online PSL runs.
+        // Data and model are required for PSL runs.
         // (We don't enforce them earlier so we can have successful runs with help and version.)
         HelpFormatter helpFormatter = new HelpFormatter();
         if (!givenOptions.hasOption(CommandLineLoader.OPTION_DATA)) {

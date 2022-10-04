@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.cli;
 
-import org.linqs.psl.application.inference.online.OnlineServer;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.AbstractRule;
@@ -46,14 +45,11 @@ public abstract class CLITest {
     public static final String RESOURCES_BASE_FILE = ".resources";
     public static final String BASE_DATA_DIR_NAME = "data";
     public static final String BASE_MODELS_DIR_NAME = "models";
-    public static final String BASE_ONLINE_ACTIONS_DIR_NAME = "onlineActions";
-    public static final String SERVER_TEMP_FILE_PATH = Paths.get(SystemUtils.getTempDir(OnlineServer.TEMP_FILE_DIR_PREFIX), OnlineServer.TEMP_FILE_NAME).toString();
 
     protected final String outDir;
     protected final String resourceDir;
     protected final String baseDataDir;
     protected final String baseModelsDir;
-    protected final String baseOnlineActionsDir;
 
     public CLITest() {
         outDir = Paths.get(System.getProperty("java.io.tmpdir"), PREFIX + "_" + this.getClass().getName()).toString();
@@ -61,7 +57,6 @@ public abstract class CLITest {
         resourceDir = (new File(this.getClass().getClassLoader().getResource(RESOURCES_BASE_FILE).getFile())).getParentFile().getAbsolutePath();
         baseDataDir = Paths.get(resourceDir, BASE_DATA_DIR_NAME).toString();
         baseModelsDir = Paths.get(resourceDir, BASE_MODELS_DIR_NAME).toString();
-        baseOnlineActionsDir = Paths.get(resourceDir, BASE_ONLINE_ACTIONS_DIR_NAME).toString();
     }
 
     @Before
@@ -111,139 +106,6 @@ public abstract class CLITest {
         Launcher.main(args.toArray(new String[0]), true);
 
         validate();
-    }
-
-    public String runOnline(String modelPath, String dataPath, String actionPath) {
-        return runOnline(modelPath, dataPath, actionPath, null);
-    }
-
-    public String runOnline(String modelPath, String dataPath, String actionPath, List<String> additionalArgs) {
-        return runOnline(modelPath, dataPath, actionPath, "OFF", additionalArgs);
-    }
-
-    public String runOnline(String modelPath, String dataPath, String actionPath, String loggingLevel, List<String> additionalArgs) {
-        List<String> serverArgs = new ArrayList<String>();
-        List<String> clientArgs = new ArrayList<String>();
-        File actionFile = new File(actionPath);
-
-        // Set the server command line arguments.
-        serverArgs.add("--" + CommandLineLoader.OPERATION_INFER_LONG);
-        serverArgs.add("SGDOnlineInference");
-
-        serverArgs.add("--" + CommandLineLoader.OPTION_MODEL_LONG);
-        serverArgs.add(modelPath);
-
-        serverArgs.add("--" + CommandLineLoader.OPTION_DATA_LONG);
-        serverArgs.add(dataPath);
-
-        serverArgs.add("--" + CommandLineLoader.OPTION_OUTPUT_DIR_LONG);
-        serverArgs.add(outDir);
-
-        serverArgs.add("-" + CommandLineLoader.OPTION_PROPERTIES);
-        serverArgs.add("log4j.threshold=" + loggingLevel);
-
-        // Start the server.
-        Thread serverThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Launcher.main(serverArgs.toArray(new String[0]), true);
-            }
-        });
-        serverThread.start();
-
-        // Wait until the server is ready to accept client connections.
-        waitForServerTempFile();
-
-        // Set the client command line arguments.
-        clientArgs.add("--" + CommandLineLoader.OPERATION_ONLINE_CLIENT_LONG);
-
-        clientArgs.add("--" + CommandLineLoader.OPTION_OUTPUT_DIR_LONG);
-        clientArgs.add(outDir);
-
-        clientArgs.add("-" + CommandLineLoader.OPTION_PROPERTIES);
-        clientArgs.add("log4j.threshold=" + loggingLevel);
-
-        if (additionalArgs != null) {
-            clientArgs.addAll(additionalArgs);
-        }
-
-        // Start the client.
-        ClientTask clientTask = new ClientTask(actionFile, clientArgs);
-        Thread clientThread = new Thread(clientTask);
-        clientThread.start();
-
-        try {
-            clientThread.join();
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
-
-        try {
-            serverThread.join();
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
-
-        validate();
-
-        return clientTask.getClientOutput();
-    }
-
-    /**
-     * Wait for the online server to drop its temporary file.
-     */
-    public void waitForServerTempFile() {
-        while (!FileUtils.exists(SERVER_TEMP_FILE_PATH)) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-    }
-
-    private static class ClientTask implements Runnable {
-        private final File actionFile;
-        private final OutputStream clientOutputStream;
-        private final StringBuilder clientOutputStringBuilder;
-        private final List<String> clientArgs;
-
-        public ClientTask(File actionFile, List<String> clientArgs) {
-            this.actionFile = actionFile;
-            this.clientArgs = clientArgs;
-            this.clientOutputStringBuilder = new StringBuilder();
-            this.clientOutputStream = new OutputStream() {
-                @Override
-                public void write(int b) throws IOException {
-                    clientOutputStringBuilder.append((char) b );
-                }
-
-                public String toString() {
-                    return clientOutputStringBuilder.toString();
-                }
-            };
-        }
-
-        @Override
-        public void run() {
-            try (InputStream clientInputStream = new FileInputStream(actionFile)) {
-                InputStream stdin = System.in;
-                PrintStream stdOut = System.out;
-                System.setOut(new PrintStream(clientOutputStream));
-                System.setIn(clientInputStream);
-
-                Launcher.main(clientArgs.toArray(new String[0]), true);
-
-                System.setIn(stdin);
-                System.setOut(stdOut);
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-
-        public String getClientOutput() {
-            return clientOutputStringBuilder.toString();
-        }
     }
 
     /**

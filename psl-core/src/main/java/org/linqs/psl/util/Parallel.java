@@ -396,7 +396,7 @@ public final class Parallel {
         workerQueue.clear();
     }
 
-    private static void shutdown() {
+    private static synchronized void shutdown() {
         if (!initialized) {
             return;
         }
