@@ -25,16 +25,10 @@ import org.linqs.psl.model.term.Constant;
  */
 public class RandomVariableAtom extends GroundAtom {
     /**
-     * An RVA that mirrors this one during optimization.
-     */
-    private RandomVariableAtom mirror;
-
-    /**
      * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
      */
     public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value, short partition) {
         super(predicate, args, value, partition);
-        mirror = null;
     }
 
     @Override
@@ -52,19 +46,5 @@ public class RandomVariableAtom extends GroundAtom {
      */
     public void setValue(float value) {
         this.value = value;
-    }
-
-    public RandomVariableAtom getMirror() {
-        return mirror;
-    }
-
-    public void setMirror(RandomVariableAtom mirror) {
-        if (this.mirror != null && this.mirror != mirror) {
-            throw new IllegalArgumentException(String.format(
-                    "Mirror atom for %s already set to %s. Cannot change to %s.",
-                    this, this.mirror, mirror));
-        }
-
-        this.mirror = mirror;
     }
 }

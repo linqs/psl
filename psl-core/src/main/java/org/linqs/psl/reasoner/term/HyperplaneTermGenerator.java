@@ -155,16 +155,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
             float coefficient = (float)sum.getCoefficient(i);
             FunctionTerm term = sum.getTerm(i);
 
-            if ((term instanceof RandomVariableAtom) && (((RandomVariableAtom)term).getPredicate().isFixedMirror())) {
-                // These types of RVAs get treated as observations and integrated into the constant.
-
-                // Subtract because hyperplane is stored as coeffs^T * x = constant.
-                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
-
-                // Negate the coefficient so that "incorporating" this term would mean adding it,
-                // and "removing" this term would be subtracting.
-                hyperplane.addIntegratedRVA((RandomVariableAtom)term, -coefficient);
-            } else if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
+            if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
                 V variable = termStore.createLocalVariable((GroundAtom)term);
 
                 // Check to see if we have seen this variable before in this hyperplane.

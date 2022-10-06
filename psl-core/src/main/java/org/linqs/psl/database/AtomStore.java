@@ -324,34 +324,9 @@ public class AtomStore implements Iterable<GroundAtom> {
         atoms = new GroundAtom[atomValues.length];
         lookup = new HashMap<QueryAtom, Integer>((int)(atomValues.length / 0.75));
 
-        boolean seenMirrorAtoms = false;
-
         for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
             for (GroundAtom atom : database.getAllGroundAtoms(predicate)) {
                 addAtom(atom);
-                if (predicate.getMirror() != null) {
-                    seenMirrorAtoms = true;
-                }
-            }
-        }
-
-        if (seenMirrorAtoms) {
-            int oldNumAtoms = numAtoms;
-            for (int i = 0; i < oldNumAtoms; i++) {
-                if (!(atoms[i] instanceof RandomVariableAtom)) {
-                    continue;
-                }
-
-                StandardPredicate basePredicate = (StandardPredicate)atoms[i].getPredicate();
-                if (basePredicate.getMirror() == null) {
-                    continue;
-                }
-
-                RandomVariableAtom mirrorAtom = new RandomVariableAtom(basePredicate.getMirror(), atoms[i].getArguments(), atoms[i].getValue(), atoms[i].getPartition());
-                addAtom(mirrorAtom);
-
-                mirrorAtom.setMirror((RandomVariableAtom)atoms[i]);
-                ((RandomVariableAtom)atoms[i]).setMirror(mirrorAtom);
             }
         }
     }
