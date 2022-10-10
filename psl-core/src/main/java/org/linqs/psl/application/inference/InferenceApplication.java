@@ -24,18 +24,22 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
+import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.admm.ADMMReasoner;
+import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.Reflection;
 
 import java.lang.reflect.Constructor;
@@ -48,7 +52,7 @@ import java.util.Set;
 /**
  * All the tools necessary to perform inference.
  * An inference application owns the ground atoms (Database/AtomStore), ground rules (GroundRuleStore), the terms (TermStore),
- * how terms are generated (TermGenerator), and how inference is actually performed (Reasoner).
+ * and how inference is actually performed (Reasoner).
  * As such, the inference application is the top level authority for these items and methods.
  * For example, inference may set the value of the random variables on construction.
  */
@@ -68,7 +72,6 @@ public abstract class InferenceApplication implements ModelApplication {
 
     protected GroundRuleStore groundRuleStore;
     protected TermStore termStore;
-    protected TermGenerator termGenerator;
 
     private boolean atomsCommitted;
 
@@ -107,7 +110,6 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         reasoner = createReasoner();
-        termGenerator = createTermGenerator();
         termStore = createTermStore();
         groundRuleStore = createGroundRuleStore();
 
@@ -115,19 +117,15 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     protected GroundRuleStore createGroundRuleStore() {
-        return (GroundRuleStore)Options.INFERENCE_GRS.getNewObject();
+        return new MemoryGroundRuleStore();
     }
 
     protected Reasoner createReasoner() {
-        return (Reasoner)Options.INFERENCE_REASONER.getNewObject();
-    }
-
-    protected TermGenerator createTermGenerator() {
-        return (TermGenerator)Options.INFERENCE_TG.getNewObject();
+        return new ADMMReasoner();
     }
 
     protected TermStore createTermStore() {
-        return (TermStore)Options.INFERENCE_TS.getNewObject();
+        return new ADMMTermStore(database);
     }
 
     /**
@@ -146,9 +144,19 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         log.debug("Initializing objective terms for {} ground rules.", groundCount);
-        @SuppressWarnings("unchecked")
-        long termCount = termGenerator.generateTerms(groundRuleStore, termStore);
-        log.debug("Generated {} objective terms from {} ground rules.", termCount, groundCount);
+
+        long initialTerms = termStore.size();
+        termStore.ensureCapacity(initialTerms + groundRuleStore.size());
+        final TermStore finalTermStore = termStore;
+
+        Parallel.foreach(groundRuleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
+            @Override
+            public void work(long index, GroundRule rule) {
+                finalTermStore.add(rule);
+            }
+        });
+
+        log.debug("Generated {} objective terms from {} ground rules.", (termStore.size() - initialTerms), groundCount);
     }
 
     /**
@@ -221,6 +229,7 @@ public abstract class InferenceApplication implements ModelApplication {
      *
      * @return the final objective of the reasoner.
      */
+    @SuppressWarnings("unchecked")
     protected double internalInference(List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
         return reasoner.optimize(termStore, evaluators, trainingMap, evaluationPredicates);
     }

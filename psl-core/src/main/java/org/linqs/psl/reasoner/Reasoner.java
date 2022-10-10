@@ -21,6 +21,7 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 
@@ -31,7 +32,7 @@ import java.util.Set;
  * An oprimizer to minimize the total weighted incompatibility
  * of the terms provided by a TermStore.
  */
-public abstract class Reasoner {
+public abstract class Reasoner<T extends ReasonerTerm> {
     private static final Logger log = Logger.getLogger(Reasoner.class);
 
     protected double budget;
@@ -63,7 +64,7 @@ public abstract class Reasoner {
     /**
      * Optimize without any evaluation.
      */
-    public double optimize(TermStore termStore) {
+    public double optimize(TermStore<T> termStore) {
         return optimize(termStore, null, null, null);
     }
 
@@ -72,7 +73,7 @@ public abstract class Reasoner {
      * If available, use the provided evaluation materials during optimization.
      * @return the objective the reasoner uses.
      */
-    public abstract double optimize(TermStore termStore,
+    public abstract double optimize(TermStore<T> termStore,
             List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates);
 
     /**
@@ -87,7 +88,7 @@ public abstract class Reasoner {
         this.budget = budget;
     }
 
-    protected void evaluate(TermStore termStore, int iteration,
+    protected void evaluate(TermStore<T> termStore, int iteration,
             List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
         if (!evaluate) {
             return;
@@ -100,7 +101,7 @@ public abstract class Reasoner {
         }
 
         // Sync variables before evaluation.
-        termStore.syncAtoms();
+        termStore.sync();
 
         for (Evaluator evaluator : evaluators) {
             for (StandardPredicate predicate : evaluationPredicates) {

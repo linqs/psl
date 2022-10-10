@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Logger;
@@ -36,7 +37,7 @@ import java.util.List;
  *
  * Ground models are provided to the executable and results are read via temporary files.
  */
-public abstract class ExecutableReasoner extends Reasoner {
+public abstract class ExecutableReasoner<T extends ReasonerTerm> extends Reasoner<T> {
     private static final Logger log = Logger.getLogger(ExecutableReasoner.class);
 
     /**
@@ -78,7 +79,7 @@ public abstract class ExecutableReasoner extends Reasoner {
     }
 
     @Override
-    public double optimize(TermStore termStore) {
+    public double optimize(TermStore<T> termStore) {
         log.debug("Writing model file: " + executableInputPath);
         File modelFile = new File(executableInputPath);
 
@@ -146,6 +147,6 @@ public abstract class ExecutableReasoner extends Reasoner {
         }
     }
 
-    protected abstract void writeModel(BufferedWriter modelWriter, TermStore termStore) throws IOException;
-    protected abstract void readResults(BufferedReader resultsReader, TermStore termStore) throws IOException;
+    protected abstract void writeModel(BufferedWriter modelWriter, TermStore<T> termStore) throws IOException;
+    protected abstract void readResults(BufferedReader resultsReader, TermStore<T> termStore) throws IOException;
 }

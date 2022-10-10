@@ -21,7 +21,6 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.util.Logger;
 
 import java.util.List;

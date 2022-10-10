@@ -20,15 +20,14 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.TermGenerator;
 
 import java.util.Collection;
 
 /**
  * A TermGenerator for ADMM objective terms.
  */
-public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm, LocalVariable> {
+public class ADMMTermGenerator extends TermGenerator<ADMMObjectiveTerm> {
     public ADMMTermGenerator() {
         this(true);
     }
@@ -38,13 +37,8 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     }
 
     @Override
-    public Class<LocalVariable> getLocalVariableType() {
-        return LocalVariable.class;
-    }
-
-    @Override
-    public int createLossTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+    public int createLossTerm(Collection<ADMMObjectiveTerm> newTerms,
+            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
         if (isHinge && isSquared) {
             newTerms.add(ADMMObjectiveTerm.createSquaredHingeLossTerm(hyperplane, groundRule.getRule()));
         } else if (isHinge && !isSquared) {
@@ -59,8 +53,8 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     }
 
     @Override
-    public int createLinearConstraintTerm(Collection<ADMMObjectiveTerm> newTerms, TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
-            GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
+    public int createLinearConstraintTerm(Collection<ADMMObjectiveTerm> newTerms,
+            GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
         newTerms.add(ADMMObjectiveTerm.createLinearConstraintTerm(hyperplane, groundRule.getRule(), comparator));
         return 1;
     }

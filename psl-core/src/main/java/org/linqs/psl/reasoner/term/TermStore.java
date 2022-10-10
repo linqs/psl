@@ -17,88 +17,225 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Parallel;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * A place to store terms that are to be optimized.
  */
-public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariable> extends Iterable<T> {
+public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
+    protected Database database;
+    protected TermGenerator<T> termGenerator;
+
+    private final String threadResourceKey;
+
+    public TermStore(Database database, TermGenerator<T> termGenerator) {
+        this.database = database;
+        this.termGenerator = termGenerator;
+        threadResourceKey = "termstore::objectid::" + System.identityHashCode(this);
+    }
+
     /**
-     * Add a term to the store that was generated from the given ground rule.
-     * The hyperplane used to create the term is provided for reference.
+     * An internal add that will always be called to add new terms.
+     * User will use add(GroundRule) which will generate terms and call this method.
+     * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
      */
-    public void add(GroundRule rule, T term, Hyperplane hyperplane);
+    protected abstract int add(GroundRule groundRule, T term, Hyperplane hyperplane);
 
     /**
      * Remove any existing terms and prepare for a new set.
      */
-    public void clear();
-
-    /**
-     * Reset the existing terms for another round of inference.
-     * Atom values are used to reset variables.
-     * Does NOT clear().
-     */
-    public void reset();
-
-    /**
-     * Close down the term store, it will not be used any more.
-     */
-    public void close();
-
-    /**
-     * A notification by the Reasoner that a single iteration is complete.
-     * TermStores may use this as a chance to update and data structures.
-     */
-    public void iterationComplete();
-
-    /**
-     * A notification by the Reasoner that optimization is about to begin.
-     * TermStores may use this as a chance to finalize data structures.
-     */
-    public void initForOptimization();
-
-    public T get(long index);
-
-    public long size();
+    public abstract void clear();
 
     /**
      * Ensure that the underlying structures can have the required term capacity.
      * This is more of a hint to the store about how much memory will be used.
      * This is best called on an empty store so it can prepare.
      */
-    public void ensureCapacity(long capacity);
+    public abstract void ensureCapacity(long capacity);
+
+    public abstract T get(long index);
+
+    public abstract Iterator<T> iterator();
+
+    public abstract long size();
+
+    public Database getDatabase() {
+        return database;
+    }
+
+    public TermGenerator<T> getTermGenerator() {
+        return termGenerator;
+    }
+
+    public void setTermGenerator(TermGenerator<T> termGenerator) {
+        this.termGenerator = termGenerator;
+    }
 
     /**
-     * Ensure that the underlying structures can have the required variable capacity.
-     * This is more of a hint to the store about how much memory will be used.
-     * This is best called on an empty store so it can prepare.
-     * Not all term stores will even manage variables.
+     * Convert the ground rule into terms and add it to this term store.
+     * Return the number of terms added.
+     * Note that this may be called in parallel.
      */
-    public void ensureVariableCapacity(int capacity);
+    public int add(GroundRule groundRule) {
+        // Get the grounding resources for this thread,
+        if (!Parallel.hasThreadObject(threadResourceKey)) {
+            Parallel.putThreadObject(threadResourceKey, new ThreadResources());
+        }
+        @SuppressWarnings("unchecked")
+        ThreadResources resources = (ThreadResources)Parallel.getThreadObject(threadResourceKey);
+
+        resources.newTerms.clear();
+        resources.newHyperplane.clear();
+
+        termGenerator.createTerm(groundRule, resources.newTerms, resources.newHyperplane);
+
+        int count = 0;
+        for (int i = 0; i < resources.newTerms.size(); i++) {
+            count += add(groundRule, resources.newTerms.get(i), resources.newHyperplane.get(i));
+        }
+
+        resources.newTerms.clear();
+        resources.newHyperplane.clear();
+
+        return count;
+    }
 
     /**
-     * Create a variable local to a specific reasoner term.
+     * Reset all atoms and terms.
+     * Atom values are used to reset variables.
+     * Does NOT clear().
      */
-    public V createLocalVariable(GroundAtom atom);
+    public void reset() {
+        database.getAtomStore().resetValues();
+    }
 
     /**
-     * Notify the term store that the variables have been updated through a process external to standard optimization.
+     * Sync all the atom values into atoms.
      */
-    public void variablesExternallyUpdated();
+    public double sync() {
+        return database.getAtomStore().sync();
+    }
 
     /**
-     * Get an iterator over the terms in the store that does not write to disk.
+     * Close down the term store, it will not be used any more.
      */
-    public Iterator<T> noWriteIterator();
+    public void close() {
+        clear();
+
+        termGenerator = null;
+        database = null;
+    }
 
     /**
-     * Ensure that atoms tracked by this term store match the internal representation of those atoms.
-     * Note that atoms not tracked by this term store may not be updated.
-     * @return The RMSE between the tracked atoms and their internal representation.
+     * A notification by the Reasoner that a single iteration is complete.
+     * TermStores may use this as a chance to update and data structures.
      */
-    public abstract double syncAtoms();
+    public void iterationComplete() {
+    }
+
+    /**
+     * A notification by the Reasoner that optimization is about to begin.
+     * TermStores may use this as a chance to finalize data structures.
+     */
+    public void initForOptimization() {
+    }
+
+    /**
+     * Get all the terms associated with this rule.
+     */
+    public Iterable<T> getTerms(Rule rule) {
+        final Rule finalRule = rule;
+
+        return IteratorUtils.filter(this, new IteratorUtils.FilterFunction<T>() {
+            public boolean keep(T term) {
+                return finalRule.equals(term.getRule());
+            }
+        });
+    }
+
+    /**
+     * Get all the atoms associated with each variable from the AtomStore.
+     */
+    public GroundAtom[] getVariableAtoms() {
+        return database.getAtomStore().getAtoms();
+    }
+
+    /**
+     * Get all the variable (atom) values from the AtomStore.
+     */
+    public float[] getVariableValues() {
+        return database.getAtomStore().getAtomValues();
+    }
+
+    /**
+     * Get the total number of all (obs/unobs) variables.
+     */
+    public int getNumVariables() {
+        return database.getAtomStore().size();
+    }
+
+    /**
+     * Get a count of all the types of atoms.
+     */
+    public AtomCount getVariableCounts() {
+        AtomCount count = new AtomCount();
+
+        for (GroundAtom atom : database.getAtomStore()) {
+            if (atom instanceof ObservedAtom) {
+                count.observed++;
+            } else {
+                count.unobserved++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Get the number of terms associated with the given rule.
+     */
+    public long count(Rule rule) {
+        int count = 0;
+
+        for (T term : getTerms(rule)) {
+            count++;
+        }
+
+        return count;
+    }
+
+    private class ThreadResources {
+        public List<T> newTerms;
+        public List<Hyperplane> newHyperplane;
+
+        public ThreadResources() {
+            newTerms = new ArrayList<T>();
+            newHyperplane = new ArrayList<Hyperplane>();
+        }
+    }
+
+    public class AtomCount {
+        public int observed;
+        public int unobserved;
+
+        public AtomCount() {
+            observed = 0;
+            unobserved = 0;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%d unobserved and %d observed", unobserved, observed);
+        }
+    }
 }

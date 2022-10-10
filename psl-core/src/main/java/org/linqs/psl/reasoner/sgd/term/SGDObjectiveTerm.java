@@ -17,13 +17,13 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.AbstractRule;
-import org.linqs.psl.model.rule.FakeRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 import org.linqs.psl.util.MathUtils;
 
@@ -43,10 +43,8 @@ public class SGDObjectiveTerm implements StreamingTerm {
     private float[] coefficients;
     private int[] variableIndexes;
 
-    public SGDObjectiveTerm(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
-            WeightedRule rule,
-            boolean squared, boolean hinge,
-            Hyperplane<GroundAtom> hyperplane) {
+    public SGDObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge,
+            Hyperplane hyperplane) {
         this.squared = squared;
         this.hinge = hinge;
 
@@ -59,7 +57,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
         variableIndexes = new int[size];
         GroundAtom[] variables = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
-            variableIndexes[i] = termStore.getVariableIndex(variables[i]);
+            variableIndexes[i] = variables[i].getIndex();
         }
     }
 
@@ -122,11 +120,8 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return value - constant;
     }
 
-    /**
-     * The number of bytes that writeFixedValues() will need to represent this term.
-     * This is just all the member datum.
-     */
-    public WeightedRule getRule() {
+    @Override
+    public Rule getRule() {
         return rule;
     }
 
@@ -134,6 +129,10 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return variableIndexes;
     }
 
+    /**
+     * The number of bytes that writeFixedValues() will need to represent this term.
+     * This is just all the member datum.
+     */
     @Override
     public int fixedByteSize() {
         int bitSize =
@@ -162,7 +161,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
     }
 
     @Override
-    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer) {
+    public void read(ByteBuffer fixedBuffer) {
         squared = (fixedBuffer.get() == 1);
         hinge = (fixedBuffer.get() == 1);
         rule = (WeightedRule)AbstractRule.getRule(fixedBuffer.getInt());
@@ -186,7 +185,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return toString(null);
     }
 
-    public String toString(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+    public String toString(AtomStore atomStore) {
         // weight * [max(coeffs^T * x - constant, 0.0)]^2
 
         StringBuilder builder = new StringBuilder();
@@ -204,13 +203,13 @@ public class SGDObjectiveTerm implements StreamingTerm {
             builder.append("(");
             builder.append(coefficients[i]);
 
-            if (termStore == null) {
+            if (atomStore == null) {
                 builder.append(" * <index:");
                 builder.append(variableIndexes[i]);
                 builder.append(">)");
             } else {
                 builder.append(" * ");
-                builder.append(termStore.getVariableValue(variableIndexes[i]));
+                builder.append(atomStore.getAtomValue(variableIndexes[i]));
                 builder.append(")");
             }
 

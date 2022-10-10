@@ -37,7 +37,7 @@ public interface StreamingTerm extends ReasonerTerm {
     public void writeFixedValues(ByteBuffer fixedBuffer);
 
     /**
-     * Assume the term that will be next read from the buffers.
+     * Assume the term that will be next read from the buffer.
      */
-    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer);
+    public void read(ByteBuffer fixedBuffer);
 }

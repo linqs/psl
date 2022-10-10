@@ -27,7 +27,6 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
 import org.linqs.psl.util.ArrayUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
@@ -42,7 +41,7 @@ import java.util.Set;
 /**
  * Uses an SGD optimization method to optimize its GroundRules.
  */
-public class SGDReasoner extends Reasoner {
+public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
     private static final Logger log = Logger.getLogger(SGDReasoner.class);
 
     private static final float EPSILON = 1e-8f;
@@ -106,15 +105,8 @@ public class SGDReasoner extends Reasoner {
     }
 
     @Override
-    public double optimize(TermStore baseTermStore,
+    public double optimize(TermStore<SGDObjectiveTerm> termStore,
             List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
-        if (!(baseTermStore instanceof VariableTermStore)) {
-            throw new IllegalArgumentException("SGDReasoner requires a VariableTermStore (found " + baseTermStore.getClass().getName() + ").");
-        }
-
-        @SuppressWarnings("unchecked")
-        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
-
         termStore.initForOptimization();
         initForOptimization(termStore);
 
@@ -220,25 +212,26 @@ public class SGDReasoner extends Reasoner {
         System.arraycopy(lowestVariableValues, 0, variableValues, 0, variableValues.length);
 
         // Compute variable change and log optimization information.
-        change = termStore.syncAtoms();
+        change = termStore.sync();
         log.info("Final Objective: {}, Final Normalized Objective: {}, Total Optimization Time: {}, Total Number of Iterations: {}", lowestObjective, lowestObjective / termCount, totalTime, iteration);
         log.debug("Movement of variables from initial state: {}", change);
-        log.debug("Optimized with {} variables and {} terms.", termStore.getNumRandomVariables(), termCount);
+        log.debug("Optimized with {} variables and {} terms.", termStore.getVariableCounts(), termCount);
         log.debug("Lowest objective reached at iteration: {}", lowestIteration);
 
         return lowestObjective;
     }
 
-    private void initForOptimization(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+    private void initForOptimization(TermStore termStore) {
         switch (sgdExtension) {
             case NONE:
                 break;
             case ADAGRAD:
-                accumulatedGradientSquares = new float[termStore.getNumRandomVariables()];
+                accumulatedGradientSquares = new float[termStore.getVariableCounts().unobserved];
                 break;
             case ADAM:
-                accumulatedGradientMean = new float[termStore.getNumRandomVariables()];
-                accumulatedGradientVariance = new float[termStore.getNumRandomVariables()];
+                int unobservedCount = termStore.getVariableCounts().unobserved;
+                accumulatedGradientMean = new float[unobservedCount];
+                accumulatedGradientVariance = new float[unobservedCount];
                 break;
             default:
                 throw new IllegalArgumentException(String.format("Unsupported SGD Extensions: '%s'", sgdExtension));
@@ -292,7 +285,7 @@ public class SGDReasoner extends Reasoner {
 
     private void addTermGradient(SGDObjectiveTerm term, float[] gradient, float[] variableValues, GroundAtom[] variableAtoms) {
         int size = term.size();
-        WeightedRule rule = term.getRule();
+        WeightedRule rule = (WeightedRule)term.getRule();
         int[] variableIndexes = term.getVariableIndexes();
         float dot = term.dot(variableValues);
 
@@ -305,19 +298,11 @@ public class SGDReasoner extends Reasoner {
         }
     }
 
-    private double computeObjective(VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore) {
+    private double computeObjective(TermStore<SGDObjectiveTerm> termStore) {
         double objective = 0.0;
 
-        // If possible, use a readonly iterator.
-        Iterator<SGDObjectiveTerm> termIterator = null;
-        if (termStore.isLoaded()) {
-            termIterator = termStore.noWriteIterator();
-        } else {
-            termIterator = termStore.iterator();
-        }
-
         float[] variableValues = termStore.getVariableValues();
-        for (SGDObjectiveTerm term : IteratorUtils.newIterable(termIterator)) {
+        for (SGDObjectiveTerm term : termStore) {
             objective += term.evaluate(variableValues);
         }
 
@@ -338,7 +323,7 @@ public class SGDReasoner extends Reasoner {
     /**
      * Update the random variables by taking a step in the direction of the negative gradient of the term.
      */
-    private float variableUpdate(SGDObjectiveTerm term, VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore,
+    private float variableUpdate(SGDObjectiveTerm term, TermStore termStore,
                                 int iteration, float learningRate) {
         float movement = 0.0f;
         float variableStep = 0.0f;
@@ -349,7 +334,7 @@ public class SGDReasoner extends Reasoner {
         float[] variableValues = termStore.getVariableValues();
 
         int size = term.size();
-        WeightedRule rule = term.getRule();
+        WeightedRule rule = (WeightedRule)term.getRule();
         int[] variableIndexes = term.getVariableIndexes();
         float dot = term.dot(variableValues);
 

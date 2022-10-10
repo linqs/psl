@@ -23,9 +23,7 @@ import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
-import org.linqs.psl.reasoner.sgd.term.SGDMemoryTermStore;
-import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
-import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.List;
@@ -49,12 +47,7 @@ public class SGDInference extends MPEInference {
     }
 
     @Override
-    protected TermGenerator createTermGenerator() {
-        return new SGDTermGenerator();
-    }
-
-    @Override
     protected TermStore createTermStore() {
-        return new SGDMemoryTermStore();
+        return new SGDTermStore(database);
     }
 }

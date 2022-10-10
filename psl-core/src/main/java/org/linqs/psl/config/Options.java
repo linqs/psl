@@ -20,16 +20,12 @@ package org.linqs.psl.config;
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.util.SystemUtils;
 
@@ -357,12 +353,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option INFERENCE_GRS = new Option(
-        "inference.groundrulestore",
-        MemoryGroundRuleStore.class.getName(),
-        "The ground rule store to use for inference."
-    );
-
     public static final Option INFERENCE_INITIAL_VARIABLE_VALUE = new Option(
         "inference.initialvalue",
         InitialValue.RANDOM.toString(),
@@ -373,12 +363,6 @@ public class Options {
         "inference.normalize",
         true,
         "Normalize weights to be in [0, 1]. Normalization will be done by dividing all weights by the largest weight."
-    );
-
-    public static final Option INFERENCE_REASONER = new Option(
-        "inference.reasoner",
-        ADMMReasoner.class.getName(),
-        "The reasoner to use for inference."
     );
 
     public static final Option INFERENCE_RELAX = new Option(
@@ -405,18 +389,6 @@ public class Options {
         false,
         "Skip the reasoning portion of inference."
         + " Variables will be set to their specified initial values, but no reasoning will take place."
-    );
-
-    public static final Option INFERENCE_TG = new Option(
-        "inference.termgenerator",
-        ADMMTermGenerator.class.getName(),
-        "The term generator to use for inference."
-    );
-
-    public static final Option INFERENCE_TS = new Option(
-        "inference.termstore",
-        ADMMTermStore.class.getName(),
-        "The term store to use for inference."
     );
 
     public static final Option WLA_IWHB_WLA = new Option(

@@ -15,12 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.term;
+package org.linqs.psl.reasoner.sgd.term;
 
-/**
- * Local variables are the variables in reasoner terms.
- * In the simple case, they are the same as the global variables (RVAs).
- * But, depending on the reasoner (like ADMM), they may have special properties.
- */
-public interface ReasonerLocalVariable {
+import org.linqs.psl.database.Database;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
+
+public class SGDTermStore extends SimpleTermStore<SGDObjectiveTerm> {
+    public SGDTermStore(Database database) {
+        super(database, new SGDTermGenerator());
+    }
 }

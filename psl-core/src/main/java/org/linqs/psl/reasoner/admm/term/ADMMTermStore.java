@@ -17,43 +17,93 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.InitialValue;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.term.MemoryConsensusTermStore;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
-import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
-/**
- * A TermStore specifically for ADMM terms.
- */
-public class ADMMTermStore extends MemoryConsensusTermStore<ADMMObjectiveTerm, LocalVariable> {
-    protected LocalVariable createLocalVariableInternal(RandomVariableAtom atom, int consensusIndex, float value) {
-        return new LocalVariable(consensusIndex, value);
+public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
+    private Map<Integer, List<LocalRecord>> localRecords;
+    private int numLocalVariables;
+
+    public ADMMTermStore(Database database) {
+        super(database, new ADMMTermGenerator());
+
+        numLocalVariables = 0;
+        localRecords = new HashMap<Integer, List<LocalRecord>>(database.getAtomStore().size());
     }
 
-    protected void resetLocalVariables() {
-        for (int i = 0; i < getNumConsensusVariables(); i++) {
-            float value = store.getVariableValue(i);
-            for (LocalVariable local : localVariables.get(i)) {
-                local.setValue(value);
-                local.setLagrange(0.0f);
+    public List<LocalRecord> getLocalRecords(int variableIndex) {
+        return localRecords.get(Integer.valueOf(variableIndex));
+    }
+
+    public int getNumLocalVariables() {
+        return numLocalVariables;
+    }
+
+    @Override
+    protected synchronized int add(GroundRule groundRule, ADMMObjectiveTerm term, Hyperplane hyperplane) {
+        long termIndex = size();
+        super.add(groundRule, term, hyperplane);
+
+        // Add records of local variables.
+        for (int i = 0; i < hyperplane.size(); i++) {
+            int atomIndex = hyperplane.getVariable(i).getIndex();
+
+            // All atoms should be unobserved here (obs should have been merged).
+            if (!localRecords.containsKey(Integer.valueOf(atomIndex))) {
+                localRecords.put(Integer.valueOf(atomIndex), new ArrayList<LocalRecord>());
+            }
+
+            localRecords.get(Integer.valueOf(atomIndex)).add(new LocalRecord(termIndex, (short)i));
+            numLocalVariables++;
+        }
+
+        return 1;
+    }
+
+    @Override
+    public void clear() {
+        super.clear();
+
+        if (localRecords != null) {
+            localRecords.clear();
+        }
+
+        numLocalVariables = 0;
+    }
+
+    @Override
+    public void close() {
+        super.close();
+
+        localRecords = null;
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+
+        float[] consensusValues = database.getAtomStore().getAtomValues();
+        for (Map.Entry<Integer, List<LocalRecord>> entry : localRecords.entrySet()) {
+            for (LocalRecord local : entry.getValue()) {
+                get(local.termIndex).setLocalValue(local.variableIndex, consensusValues[entry.getKey().intValue()], 0.0f);
             }
         }
     }
 
-    @Override
-    public void variablesExternallyUpdated() {
-        super.variablesExternallyUpdated();
-        resetLocalVariables();
+    public static final class LocalRecord {
+        public long termIndex;
+        public short variableIndex;
+
+        public LocalRecord(long termIndex, short variableIndex) {
+            this.termIndex = termIndex;
+            this.variableIndex = variableIndex;
+        }
     }
 }

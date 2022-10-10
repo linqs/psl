@@ -22,9 +22,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
+import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.util.Logger;
 
 import java.util.Collection;
@@ -32,7 +30,7 @@ import java.util.Collection;
 /**
  * A TermGenerator for SGD objective terms.
  */
-public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, GroundAtom> {
+public class SGDTermGenerator extends TermGenerator<SGDObjectiveTerm> {
     private static final Logger log = Logger.getLogger(SGDTermGenerator.class);
 
     public SGDTermGenerator() {
@@ -44,21 +42,15 @@ public class SGDTermGenerator extends HyperplaneTermGenerator<SGDObjectiveTerm, 
     }
 
     @Override
-    public Class<GroundAtom> getLocalVariableType() {
-        return GroundAtom.class;
-    }
-
-    @Override
-    public int createLossTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> baseTermStore,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<GroundAtom> hyperplane) {
-        VariableTermStore<SGDObjectiveTerm, GroundAtom> termStore = (VariableTermStore<SGDObjectiveTerm, GroundAtom>)baseTermStore;
-        newTerms.add(new SGDObjectiveTerm(termStore, ((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane));
+    public int createLossTerm(Collection<SGDObjectiveTerm> newTerms,
+            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
+        newTerms.add(new SGDObjectiveTerm(((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane));
         return 1;
     }
 
     @Override
-    public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms, TermStore<SGDObjectiveTerm, GroundAtom> termStore,
-            GroundRule groundRule, Hyperplane<GroundAtom> hyperplane, FunctionComparator comparator) {
+    public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms,
+            GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
         log.warn("SGD does not support hard constraints, i.e. " + groundRule);
         return 0;
     }

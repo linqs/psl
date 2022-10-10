@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.rule.Rule;
@@ -63,14 +64,17 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         SquaredHingeLossTerm,
     }
 
-    protected final TermType termType;
+    private final TermType termType;
 
-    protected final Rule rule;
+    private final Rule rule;
 
-    protected int size;
+    private int size;
 
     private float[] coefficients;
-    private LocalVariable[] variables;
+
+    private float[] variableValues;
+    private float[] variableLagranges;
+    private int[] consensusIndexes;
 
     private boolean squared;
     private boolean hinge;
@@ -106,7 +110,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      * Construct an ADMM objective term by taking ownership of the hyperplane and all members of it.
      * Use the static creation methods.
      */
-    private ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, Rule rule,
+    private ADMMObjectiveTerm(Hyperplane hyperplane, Rule rule,
             boolean squared, boolean hinge,
             FunctionComparator comparator) {
         this.rule = rule;
@@ -116,9 +120,20 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         this.comparator = comparator;
 
         this.size = hyperplane.size();
-        this.variables = hyperplane.getVariables();
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
+
+        variableValues = new float[size];
+        variableLagranges = new float[size];
+        consensusIndexes = new int[size];
+
+        // We assume all observations have been merged.
+        GroundAtom[] consensusVariables = hyperplane.getVariables();
+        for (int i = 0; i < size; i++) {
+            variableValues[i] = consensusVariables[i].getValue();
+            variableLagranges[i] = 0.0f;
+            consensusIndexes[i] = consensusVariables[i].getIndex();
+        }
 
         termType = getTermType();
         if (termType == TermType.HingeLossTerm || termType == TermType.LinearConstraintTerm) {
@@ -126,39 +141,30 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         }
     }
 
-    public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane<LocalVariable> hyperplane, Rule rule, FunctionComparator comparator) {
+    public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane hyperplane, Rule rule, FunctionComparator comparator) {
         return new ADMMObjectiveTerm(hyperplane, rule, false, false, comparator);
     }
 
-    public static ADMMObjectiveTerm createLinearLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createLinearLossTerm(Hyperplane hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane, rule, false, false, null);
     }
 
-    public static ADMMObjectiveTerm createHingeLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createHingeLossTerm(Hyperplane hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane,rule, false, true, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredLinearLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createSquaredLinearLossTerm(Hyperplane hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane, rule, true, false, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredHingeLossTerm(Hyperplane<LocalVariable> hyperplane, Rule rule) {
+    public static ADMMObjectiveTerm createSquaredHingeLossTerm(Hyperplane hyperplane, Rule rule) {
         return new ADMMObjectiveTerm(hyperplane, rule, true, true, null);
     }
 
     public void updateLagrange(float stepSize, float[] consensusValues) {
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
+            variableLagranges[i] += stepSize * (variableValues[i] - consensusValues[consensusIndexes[i]]);
         }
-    }
-
-    /**
-     * Get the variables used in this term.
-     * The caller should not modify the returned array, and should check size() for a reliable length.
-     */
-    public LocalVariable[] getVariables() {
-        return variables;
     }
 
     /**
@@ -167,6 +173,24 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public Rule getRule() {
+        return rule;
+    }
+
+    public void setLocalValue(short index, float value, float lagrange) {
+        variableValues[index] = value;
+        variableLagranges[index] = lagrange;
+    }
+
+    public float getVariableValue(short index) {
+        return variableValues[index];
+    }
+
+    public float getVariableLagrange(short index) {
+        return variableLagranges[index];
     }
 
     @Override
@@ -282,9 +306,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
             // Take the lagrange step and see if that is the solution.
             for (int i = 0; i < size; i++) {
-                LocalVariable variable = variables[i];
-                variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-                total += coefficients[i] * variable.getValue();
+                float newValue = consensusValues[consensusIndexes[i]] - variableLagranges[i] / stepSize;
+                variableValues[i] = newValue;
+                total += coefficients[i] * newValue;
             }
 
             // If the constraint is satisfied, them we are done.
@@ -341,14 +365,12 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     private void minimizeLinearLoss(float stepSize, float weight, float[] consensusValues) {
         // Linear losses can be directly minimized.
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-
             float value =
-                    consensusValues[variable.getGlobalId()]
-                    - variable.getLagrange() / stepSize
+                    consensusValues[consensusIndexes[i]]
+                    - variableLagranges[i] / stepSize
                     - (weight * coefficients[i] / stepSize);
 
-            variable.setValue(value);
+            variableValues[i] = value;
         }
     }
 
@@ -377,9 +399,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Take a gradient step and see if we are in the flat region.
         float total = 0.0f;
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-            total += (coefficients[i] * variable.getValue());
+            float newValue = consensusValues[consensusIndexes[i]] - variableLagranges[i] / stepSize;
+            variableValues[i] = newValue;
+            total += (coefficients[i] * newValue);
         }
 
         // If we are on the flat region, then we are at a solution.
@@ -390,9 +412,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Take a gradient step and see if we are in the linear region.
         total = 0.0f;
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setValue((consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize) - (weight * coefficients[i] / stepSize));
-            total += coefficients[i] * variable.getValue();
+            float newValue = (consensusValues[consensusIndexes[i]] - variableLagranges[i] / stepSize) - (weight * coefficients[i] / stepSize);
+            variableValues[i] = newValue;
+            total += (coefficients[i] * newValue);
         }
 
         // If we are in the linear region, then we are at a solution.
@@ -444,9 +466,9 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Take a gradient step and see if we are in the flat region.
         float total = 0.0f;
         for (int i = 0; i < size; i++) {
-            LocalVariable variable = variables[i];
-            variable.setValue(consensusValues[variable.getGlobalId()] - variable.getLagrange() / stepSize);
-            total += coefficients[i] * variable.getValue();
+            float newValue = consensusValues[consensusIndexes[i]] - variableLagranges[i] / stepSize;
+            variableValues[i] = newValue;
+            total += (coefficients[i] * newValue);
         }
 
         // If we are on the flat region, then we are at a solution.
@@ -502,7 +524,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     private float computeInnerPotential() {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variables[i].getValue();
+            value += coefficients[i] * variableValues[i];
         }
 
         return value - constant;
@@ -514,7 +536,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     private float computeInnerPotential(float[] consensusValues) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
-            value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
+            value += coefficients[i] * consensusValues[consensusIndexes[i]];
         }
 
         return value - constant;
@@ -532,7 +554,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // When there is only one variable, there is only one answer.
         // This answer must satisfy the constraint.
         if (size == 1) {
-            variables[0].setValue(constant / coefficients[0]);
+            variableValues[0] = constant / coefficients[0];
             return;
         }
 
@@ -543,7 +565,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Get the min w.r.t. to the consensus values.
         // This is done by taking a step according to the lagrange.
         for (int i = 0; i < size; i++) {
-            consensusOptimizer[i] = consensusValues[variables[i].getGlobalId()] - variables[i].getLagrange() / stepSize;
+            consensusOptimizer[i] = consensusValues[consensusIndexes[i]] - variableLagranges[i] / stepSize;
         }
 
         // Get the length of the normal.
@@ -560,7 +582,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
         // Projection = ConsensusOptimizer - (multiplier)(unitNormal).
         for (int i = 0; i < size; i++) {
-            variables[i].setValue(consensusOptimizer[i] - multiplier * unitNormal[i]);
+            variableValues[i] = consensusOptimizer[i] - multiplier * unitNormal[i];
         }
     }
 
@@ -577,27 +599,22 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         // Pre-load the local variable with a term that is common in all the solutions:
         // stepsize * consensus - lagrange + (2 * weight * coefficients * constant).
         for (int i = 0; i < size; i++) {
-            float value =
-                    stepSize * consensusValues[variables[i].getGlobalId()] - variables[i].getLagrange()
+            variableValues[i] =
+                    stepSize * consensusValues[consensusIndexes[i]] - variableLagranges[i]
                     + 2.0f * weight * coefficients[i] * constant;
-
-            variables[i].setValue(value);
         }
 
         // Hyperplanes with only one variable can be solved trivially.
         if (size == 1) {
-            LocalVariable variable = variables[0];
-            float coefficient = coefficients[0];
-
-            variable.setValue(variable.getValue() / (2.0f * weight * coefficient * coefficient + stepSize));
-
+            variableValues[0] /= 2.0f * weight * coefficients[0] * coefficients[0] + stepSize;
             return;
         }
 
         // Hyperplanes with only two variables can be solved fairly easily.
         if (size == 2) {
-            LocalVariable variable0 = variables[0];
-            LocalVariable variable1 = variables[1];
+            float variableValue0 = variableValues[0];
+            float variableValue1 = variableValues[1];
+
             float coefficient0 = coefficients[0];
             float coefficient1 = coefficients[1];
 
@@ -605,10 +622,13 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
             float b1 = 2.0f * weight * coefficient1 * coefficient1 + stepSize;
             float a1b0 = 2.0f * weight * coefficient0 * coefficient1;
 
-            variable1.setValue(variable1.getValue() - a1b0 * variable0.getValue() / a0);
-            variable1.setValue(variable1.getValue() / (b1 - a1b0 * a1b0 / a0));
+            variableValue1 = variableValue1 - a1b0 * variableValue0 / a0;
+            variableValue1 = variableValue1 / (b1 - a1b0 * a1b0 / a0);
 
-            variable0.setValue((variable0.getValue() - a1b0 * variable1.getValue()) / a0);
+            variableValue0 = (variableValue0 - a1b0 * variableValue1) / a0;
+
+            variableValues[0] = variableValue0;
+            variableValues[1] = variableValue1;
 
             return;
         }
@@ -618,23 +638,23 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         FloatMatrix lowerTriangle = fetchLowerTriangle(stepSize, weight);
 
         for (int i = 0; i < size; i++) {
-            float newValue = variables[i].getValue();
+            float newValue = variableValues[i];
 
             for (int j = 0; j < i; j++) {
-                newValue -= lowerTriangle.get(i, j) * variables[j].getValue();
+                newValue -= lowerTriangle.get(i, j) * variableValues[j];
             }
 
-            variables[i].setValue(newValue / lowerTriangle.get(i, i));
+            variableValues[i] = newValue / lowerTriangle.get(i, i);
         }
 
         for (int i = size - 1; i >= 0; i--) {
-            float newValue = variables[i].getValue();
+            float newValue = variableValues[i];
 
             for (int j = size - 1; j > i; j--) {
-                newValue -= lowerTriangle.get(j, i) * variables[j].getValue();
+                newValue -= lowerTriangle.get(j, i) * variableValues[j];
             }
 
-            variables[i].setValue(newValue / lowerTriangle.get(i, i));
+            variableValues[i] = newValue / lowerTriangle.get(i, i);
         }
     }
 

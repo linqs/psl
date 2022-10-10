@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.reasoner.term.ReasonerTerm;
-
 import java.util.Iterator;
 
 /**
@@ -35,6 +33,6 @@ import java.util.Iterator;
  * To avoid this, we will never prefetch (have two terms at a time)
  * and we will fetch in hasNext().
  */
-public interface StreamingIterator<T extends ReasonerTerm> extends Iterator<T> {
+public interface StreamingIterator<T extends StreamingTerm> extends Iterator<T> {
     public void close();
 }

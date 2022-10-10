@@ -17,13 +17,12 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.database.Database;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -43,8 +42,6 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
     public static final double OVERALLOCATION_RATIO = 1.25;
 
     protected StreamingTermStore<T> parentStore;
-    protected HyperplaneTermGenerator<T, GroundAtom> termGenerator;
-    protected Database database;
 
     protected List<Rule> rules;
     protected int currentRule;
@@ -61,7 +58,6 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
     private List<T> newTerms;
 
     protected ByteBuffer termBuffer;
-    protected ByteBuffer volatileBuffer;
 
     protected long termCount;
 
@@ -78,22 +74,16 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
 
     public StreamingGroundingIterator(
             StreamingTermStore<T> parentStore, List<Rule> rules,
-            Database database, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
-            ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize) {
-        this(parentStore, rules, database, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize, 0);
+            ByteBuffer termBuffer, int pageSize) {
+        this(parentStore, rules, termCache, termPool, termBuffer, pageSize, 0);
     }
 
     public StreamingGroundingIterator(
             StreamingTermStore<T> parentStore, List<Rule> rules,
-            Database database, HyperplaneTermGenerator<T, GroundAtom> termGenerator,
             List<T> termCache, List<T> termPool,
-            ByteBuffer termBuffer, ByteBuffer volatileBuffer,
-            int pageSize, int nextPage) {
+            ByteBuffer termBuffer, int pageSize, int nextPage) {
         this.parentStore = parentStore;
-        this.termGenerator = termGenerator;
-        this.database = database;
 
         this.rules = rules;
         currentRule = -1;
@@ -106,7 +96,6 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
         newTerms = new ArrayList<T>();
 
         this.termBuffer = termBuffer;
-        this.volatileBuffer = volatileBuffer;
 
         this.pageSize = pageSize;
         this.nextPage = nextPage;
@@ -210,7 +199,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
                 return;
             }
 
-            termGenerator.createTerm(groundRule, parentStore, newTerms, null);
+            parentStore.getTermGenerator().createTerm(groundRule, newTerms, null);
         }
     }
 
@@ -226,7 +215,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
         // Check if there are any more results pending from the query.
         while (queryResults != null && queryResults.hasNext()) {
             Constant[] tuple = queryResults.next();
-            rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), database, pendingGroundRules);
+            rules.get(currentRule).ground(tuple, queryIterable.getVariableMap(), parentStore.getDatabase(), pendingGroundRules);
 
             while (pendingGroundRules.size() > 0) {
                 GroundRule groundRule = pendingGroundRules.remove(pendingGroundRules.size() - 1);
@@ -258,7 +247,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
      * but just set the queryIterable/queryResults to null if this rule cannot be grounded.
      */
     protected void startGroundingQuery() {
-        queryIterable = database.executeQueryIterator(rules.get(currentRule).getGroundingQuery(database));
+        queryIterable = parentStore.getDatabase().executeQueryIterator(rules.get(currentRule).getGroundingQuery(parentStore.getDatabase()));
         queryResults = queryIterable.iterator();
     }
 
@@ -269,9 +258,8 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
         }
 
         String termPagePath = parentStore.getTermPagePath(nextPage);
-        String volatilePagePath = parentStore.getVolatilePagePath(nextPage);
 
-        writeFullPage(termPagePath, volatilePagePath);
+        writeFullPage(termPagePath);
 
         // Move on to the next page.
         nextPage++;
@@ -326,28 +314,18 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
             queryResults = null;
         }
 
-        // All the terms have been iterated over and the volatile buffer has been flushed,
-        // the term cache is now invalid.
+        // All the terms have been iterated over, the term cache is now invalid.
         termCache.clear();
 
-        parentStore.groundingIterationComplete(termCount, nextPage, termBuffer, volatileBuffer);
-    }
-
-    protected void flushVolatileCache(String volatilePagePath) {
-        // Do not use a volatile buffer by default.
-        if (volatileBuffer == null) {
-            volatileBuffer = ByteBuffer.allocate(0);
-        }
+        parentStore.groundingIterationComplete(termCount, nextPage, termBuffer);
     }
 
     /**
-     * Write a full page (including any volatile page that the child may use).
-     * This is responsible for creating/reallocating both the term buffer and volatile buffer.
+     * Write a full page.
+     * This is responsible for creating/reallocating both the term buffer.
      */
-    protected void writeFullPage(String termPagePath, String volatilePagePath) {
+    protected void writeFullPage(String termPagePath) {
         flushTermCache(termPagePath);
-        flushVolatileCache(volatilePagePath);
-
         termCache.clear();
     }
 }

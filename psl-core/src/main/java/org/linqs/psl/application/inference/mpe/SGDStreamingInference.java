@@ -23,8 +23,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDStreamingTermStore;
-import org.linqs.psl.reasoner.sgd.term.SGDTermGenerator;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.List;
@@ -44,17 +42,12 @@ public class SGDStreamingInference extends MPEInference {
 
     @Override
     protected TermStore createTermStore() {
-        return new SGDStreamingTermStore(rules, database, (SGDTermGenerator)termGenerator);
+        return new SGDStreamingTermStore(rules, database);
     }
 
     @Override
     protected GroundRuleStore createGroundRuleStore() {
         return null;
-    }
-
-    @Override
-    protected TermGenerator createTermGenerator() {
-        return new SGDTermGenerator();
     }
 
     @Override

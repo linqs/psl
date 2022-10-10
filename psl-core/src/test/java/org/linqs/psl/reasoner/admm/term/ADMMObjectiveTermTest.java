@@ -17,7 +17,13 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.ConstantType;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.UnmanagedRandomVariableAtom;
+import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.FakeRule;
+import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.test.PSLBaseTest;
@@ -217,41 +223,47 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
             float[] consensus, float[] lagrange,
             float[] coeffs, float constant,
             float weight, float stepSize, float[] expected) {
-        LocalVariable[] variables = new LocalVariable[consensus.length];
+        StandardPredicate dummyPredicate = StandardPredicate.get("Dummy", ConstantType.UniqueIntID);
 
+        GroundAtom[] variables = new GroundAtom[consensus.length];
         for (int i = 0; i < consensus.length; i++) {
-            variables[i] = new LocalVariable(i, consensus[i]);
-            variables[i].setLagrange(lagrange[i]);
+            // Set the atoms to an allowed value, which we can override later with any value.
+            variables[i] = new UnmanagedRandomVariableAtom(dummyPredicate, new Constant[]{new UniqueIntID(i)}, 0.0f);
+            variables[i].setIndex(i);
         }
 
         ADMMObjectiveTerm term = null;
         if (comparator != null) {
             term = ADMMObjectiveTerm.createLinearConstraintTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane(variables, coeffs, constant, consensus.length),
                     null,
                     comparator);
         } else if (!squared && !hinge) {
             term = ADMMObjectiveTerm.createLinearLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, 0.0f, consensus.length),
+                    new Hyperplane(variables, coeffs, 0.0f, consensus.length),
                     new FakeRule(weight, squared));
         } else if (!squared && hinge) {
             term = ADMMObjectiveTerm.createHingeLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         } else if (squared && !hinge) {
             term = ADMMObjectiveTerm.createSquaredLinearLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         } else if (squared && hinge) {
             term = ADMMObjectiveTerm.createSquaredHingeLossTerm(
-                    new Hyperplane<LocalVariable>(variables, coeffs, constant, consensus.length),
+                    new Hyperplane(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
+        }
+
+        for (int i = 0; i < consensus.length; i++) {
+            term.setLocalValue((short)i, consensus[i], lagrange[i]);
         }
 
         term.minimize(stepSize, consensus);
 
         for (int i = 0; i < consensus.length; i++) {
-            assertEquals(expected[i], variables[i].getValue(), 5e-5);
+            assertEquals(expected[i], term.getVariableValue((short)i), 5e-5);
         }
     }
 }

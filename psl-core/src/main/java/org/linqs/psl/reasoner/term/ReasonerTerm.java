@@ -17,6 +17,8 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.model.rule.Rule;
+
 public interface ReasonerTerm {
     /**
      * The number of variables this term uses.
@@ -29,9 +31,14 @@ public interface ReasonerTerm {
      */
     public void adjustConstant(float oldValue, float newValue);
 
-    /*
+    /**
      * Whether this term is convex.
      * Reasoners may treat non-convex terms differently.
      */
     public boolean isConvex();
+
+    /**
+     * Get the rule this term was generated from.
+     */
+    public Rule getRule();
 }

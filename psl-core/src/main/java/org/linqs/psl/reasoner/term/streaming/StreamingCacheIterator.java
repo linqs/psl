@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
-import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
 import java.nio.ByteBuffer;
@@ -31,17 +30,14 @@ import java.util.List;
  * This iterator can be constructed as read-only.
  * In this case, pages will not be written to disk.
  */
-public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
+public abstract class StreamingCacheIterator<T extends StreamingTerm> implements StreamingIterator<T> {
     protected StreamingTermStore<T> parentStore;
     protected int[] shuffleMap;
-
-    protected boolean readonly;
 
     protected List<T> termCache;
     protected List<T> termPool;
 
     protected ByteBuffer termBuffer;
-    protected ByteBuffer volatileBuffer;
 
     protected long termCount;
 
@@ -62,15 +58,13 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected int numPages;
 
     public StreamingCacheIterator(
-            StreamingTermStore<T> parentStore, boolean readonly,
+            StreamingTermStore<T> parentStore,
             List<T> termCache, List<T> termPool,
-            ByteBuffer termBuffer, ByteBuffer volatileBuffer,
+            ByteBuffer termBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
         this.parentStore = parentStore;
         this.shuffleMap = shuffleMap;
-
-        this.readonly = readonly;
 
         this.termCache = termCache;
         this.termCache.clear();
@@ -78,7 +72,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         this.termPool = termPool;
 
         this.termBuffer = termBuffer;
-        this.volatileBuffer = volatileBuffer;
 
         termCount = 0l;
 
@@ -154,9 +147,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     private T fetchNextTerm() {
         // The cache is exhausted, fill it up.
         if (nextCachedTermIndex >= termCache.size()) {
-            // Flush all the volatile terms.
-            flushCache();
-
             // Check if there is another page, and load it if it exists.
             if (!fetchPage()) {
                 // There are no more pages, we are done.
@@ -189,14 +179,12 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
 
         int pageIndex = pageAccessOrder.get(currentPage).intValue();
         String termPagePath = parentStore.getTermPagePath(pageIndex);
-        String volatilePagePath = parentStore.getVolatilePagePath(pageIndex);
 
         // Prep for the next read.
         // Note that the termBuffer should be at maximum size from the initial round.
         termBuffer.clear();
-        volatileBuffer.clear();
 
-        readPage(termPagePath, volatilePagePath);
+        readPage(termPagePath);
 
         if (shufflePage) {
             // Remember that the shuffle map may be larger than the term cache (for not full pages).
@@ -210,32 +198,6 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         return true;
     }
 
-    private void flushCache() {
-        // We will never do any writes if the iterator is read-only.
-        if (readonly) {
-            return;
-        }
-
-        // We don't need to flush if there is nothing to flush.
-        if (termCache.size() == 0) {
-            return;
-        }
-
-        // We will clear the termCache when we fetch a new page, not on flush.
-        flushVolatileCache();
-    }
-
-    private void flushVolatileCache() {
-        // The buffer has already grown to maximum size in the initial round,
-        // no need to reallocate.
-        volatileBuffer.clear();
-
-        int pageIndex = pageAccessOrder.get(currentPage).intValue();
-        String volatilePagePath = parentStore.getVolatilePagePath(pageIndex);
-
-        writeVolatilePage(volatilePagePath);
-    }
-
     @Override
     public void close() {
         if (closed) {
@@ -243,10 +205,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
         }
         closed = true;
 
-        flushCache();
-
-        // All the terms have been iterated over and the volatile buffer has been flushed,
-        // the term cache is now invalid.
+        // All the terms have been iterated over the term cache is now invalid.
         termCache.clear();
 
         parentStore.cacheIterationComplete(termCount);
@@ -256,11 +215,5 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
      * Read a page and fill the termCache using freed terms from the termPool.
      * The child is responsible for all IO, but shuffling will be handled by the parent.
      */
-    protected abstract void readPage(String termPagePath, String volatilePagePath);
-
-    /**
-     * Write a cache page to disk.
-     * Unlike readPage, the child is responsible for undoing any shuffling via shuffleMap.
-     */
-    protected abstract void writeVolatilePage(String volatilePagePath);
+    protected abstract void readPage(String termPagePath);
 }

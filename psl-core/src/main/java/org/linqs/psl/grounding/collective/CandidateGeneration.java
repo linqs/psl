@@ -117,7 +117,7 @@ public class CandidateGeneration {
 
         List<CandidateQuery> candidates = new ArrayList<CandidateQuery>();
 
-        // A volitile set of atoms used as a working set.
+        // A volatile set of atoms used as a working set.
         // This is just a buffer and it's use case constantly changes.
         // Once a procedure is done with this buffer, they should clear it to indicate it is no longer in-use.
         Set<Atom> atomBuffer = new HashSet<Atom>();

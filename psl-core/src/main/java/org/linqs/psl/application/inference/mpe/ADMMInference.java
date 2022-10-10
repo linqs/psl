@@ -24,9 +24,6 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.List;
@@ -50,12 +47,7 @@ public class ADMMInference extends MPEInference {
     }
 
     @Override
-    protected TermGenerator createTermGenerator() {
-        return new ADMMTermGenerator();
-    }
-
-    @Override
     protected TermStore createTermStore() {
-        return new ADMMTermStore();
+        return new ADMMTermStore(database);
     }
 }

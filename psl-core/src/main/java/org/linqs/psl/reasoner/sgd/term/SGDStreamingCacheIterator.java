@@ -28,17 +28,17 @@ import java.util.List;
 
 public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm> {
     public SGDStreamingCacheIterator(
-            StreamingTermStore<SGDObjectiveTerm> parentStore, boolean readonly,
+            StreamingTermStore<SGDObjectiveTerm> parentStore,
             List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
-            ByteBuffer termBuffer, ByteBuffer volatileBuffer,
+            ByteBuffer termBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
-        super(parentStore, readonly, termCache, termPool, termBuffer,
-                volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
+        super(parentStore, termCache, termPool, termBuffer,
+                shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 
     @Override
-    protected void readPage(String termPagePath, String volatilePagePath) {
+    protected void readPage(String termPagePath) {
         int termsSize = 0;
         int numTerms = 0;
         int headerSize = (Integer.SIZE / 8) * 2;
@@ -73,13 +73,8 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
         // Use the terms from the pool.
         for (int i = 0; i < numTerms; i++) {
             SGDObjectiveTerm term = termPool.get(i);
-            term.read(termBuffer, volatileBuffer);
+            term.read(termBuffer);
             termCache.add(term);
         }
-    }
-
-    @Override
-    protected void writeVolatilePage(String volatilePagePath) {
-        // SGD doesn't need write pages.
     }
 }

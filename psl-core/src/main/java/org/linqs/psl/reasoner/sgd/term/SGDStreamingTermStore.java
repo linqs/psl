@@ -31,28 +31,20 @@ import java.util.List;
  * So interrupting the iteration can cause the term count to be incorrect.
  */
 public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
-    public SGDStreamingTermStore(List<Rule> rules, Database database, SGDTermGenerator termGenerator) {
-        super(rules, database, termGenerator);
+    public SGDStreamingTermStore(List<Rule> rules, Database database) {
+        super(rules, database, new SGDTermGenerator());
     }
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getGroundingIterator() {
         return new SGDStreamingGroundingIterator(
-                this, rules, database, termGenerator,
-                termCache, termPool, termBuffer, volatileBuffer, pageSize, numPages);
+                this, rules, termCache, termPool, termBuffer, pageSize, numPages);
     }
 
     @Override
     protected StreamingIterator<SGDObjectiveTerm> getCacheIterator() {
         return new SGDStreamingCacheIterator(
-                this, false, termCache, termPool,
-                termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
-    }
-
-    @Override
-    protected StreamingIterator<SGDObjectiveTerm> getNoWriteIterator() {
-        return new SGDStreamingCacheIterator(
-                this, true, termCache, termPool,
-                termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
+                this, termCache, termPool,
+                termBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
 }

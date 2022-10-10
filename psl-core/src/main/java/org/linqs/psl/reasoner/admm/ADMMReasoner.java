@@ -26,8 +26,6 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
@@ -39,7 +37,7 @@ import java.util.Set;
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
  */
-public class ADMMReasoner extends Reasoner {
+public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
     private static final Logger log = Logger.getLogger(ADMMReasoner.class);
 
     private static final float LOWER_BOUND = 0.0f;
@@ -104,7 +102,7 @@ public class ADMMReasoner extends Reasoner {
     }
 
     @Override
-    public double optimize(TermStore baseTermStore,
+    public double optimize(TermStore<ADMMObjectiveTerm> baseTermStore,
             List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
         if (!(baseTermStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
@@ -114,9 +112,9 @@ public class ADMMReasoner extends Reasoner {
         termStore.initForOptimization();
 
         long numTerms = termStore.size();
-        int numVariables = termStore.getNumConsensusVariables();
+        int numVariables = termStore.getNumVariables();
 
-        log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
+        log.debug("Performing optimization with {} variables and {} terms.", termStore.getVariableCounts(), numTerms);
 
         termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
         variableBlockSize = numVariables / (Parallel.getNumThreads() * 4) + 1;
@@ -157,7 +155,7 @@ public class ADMMReasoner extends Reasoner {
             Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize, useNonConvex));
 
             // Compute new consensus values and residuals.
-            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize, useNonConvex));
+            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize, useNonConvex, numVariables));
 
             primalRes = Math.sqrt(primalRes);
             dualRes = stepSize * Math.sqrt(dualRes);
@@ -207,7 +205,7 @@ public class ADMMReasoner extends Reasoner {
         }
 
         // Sync the consensus values back to the atoms.
-        termStore.syncAtoms();
+        termStore.sync();
 
         return objective.objective;
     }
@@ -248,7 +246,7 @@ public class ADMMReasoner extends Reasoner {
     private ObjectiveResult computeObjective(ADMMTermStore termStore) {
         double objective = 0.0f;
         long violatedConstraints = 0;
-        float[] consensusValues = termStore.getConsensusValues();
+        float[] consensusValues = termStore.getVariableValues();
 
         for (ADMMObjectiveTerm term : termStore) {
             if (term.isConstraint()) {
@@ -289,7 +287,7 @@ public class ADMMReasoner extends Reasoner {
             this.blockSize = blockSize;
             this.useNonConvex = useNonConvex;
 
-            this.consensusValues = termStore.getConsensusValues();
+            this.consensusValues = termStore.getVariableValues();
         }
 
         @Override
@@ -322,27 +320,28 @@ public class ADMMReasoner extends Reasoner {
     private class VariableWorker extends Parallel.Worker<Long> {
         private final ADMMTermStore termStore;
         private final long blockSize;
-        private final float[] consensusValues;
         private final boolean useNonConvex;
+        private final int numVariables;
 
-        public VariableWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
+        private final float[] consensusValues;
+
+        public VariableWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex, int numVariables) {
             super();
 
             this.termStore = termStore;
             this.blockSize = blockSize;
             this.useNonConvex = useNonConvex;
+            this.numVariables = numVariables;
 
-            this.consensusValues = termStore.getConsensusValues();
+            consensusValues = termStore.getVariableValues();
         }
 
         public Object clone() {
-            return new VariableWorker(termStore, blockSize, useNonConvex);
+            return new VariableWorker(termStore, blockSize, useNonConvex, numVariables);
         }
 
         @Override
         public void work(long blockIndex, Long ignore) {
-            int numVariables = termStore.getNumConsensusVariables();
-
             double primalResInc = 0.0f;
             double dualResInc = 0.0f;
             double AxNormInc = 0.0f;
@@ -360,16 +359,23 @@ public class ADMMReasoner extends Reasoner {
                     break;
                 }
 
+                List<ADMMTermStore.LocalRecord> localRecords = termStore.getLocalRecords(variableIndex);
+                if (localRecords == null) {
+                    continue;
+                }
+
                 double total = 0.0f;
-                int numLocalVariables = termStore.getLocalVariables(variableIndex).size();
+                int numLocalVariables = localRecords.size();
 
                 // First pass computes newConsensusValue and dual residual fom all local copies.
-                for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-                    LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
-                    total += localVariable.getValue() + localVariable.getLagrange() / stepSize;
+                for (ADMMTermStore.LocalRecord localRecord : localRecords) {
+                    float localValue = termStore.get(localRecord.termIndex).getVariableValue(localRecord.variableIndex);
+                    float localLagrange = termStore.get(localRecord.termIndex).getVariableLagrange(localRecord.variableIndex);
 
-                    AxNormInc += localVariable.getValue() * localVariable.getValue();
-                    AyNormInc += localVariable.getLagrange() * localVariable.getLagrange();
+                    total += localValue + localLagrange / stepSize;
+
+                    AxNormInc += localValue * localValue;
+                    AyNormInc += localLagrange * localLagrange;
                 }
 
                 float newConsensusValue = (float)(total / numLocalVariables);
@@ -384,15 +390,16 @@ public class ADMMReasoner extends Reasoner {
 
                 // Second pass computes primal residuals.
 
-                for (int localVarIndex = 0; localVarIndex < numLocalVariables; localVarIndex++) {
-                    LocalVariable localVariable = termStore.getLocalVariables(variableIndex).get(localVarIndex);
+                for (ADMMTermStore.LocalRecord localRecord : localRecords) {
+                    float localValue = termStore.get(localRecord.termIndex).getVariableValue(localRecord.variableIndex);
+                    float localLagrange = termStore.get(localRecord.termIndex).getVariableLagrange(localRecord.variableIndex);
 
-                    diff = localVariable.getValue() - newConsensusValue;
+                    diff = localValue - newConsensusValue;
                     primalResInc += diff * diff;
 
                     // compute Lagrangian penalties
-                    lagrangePenaltyInc += localVariable.getLagrange() * (localVariable.getValue() - consensusValues[variableIndex]);
-                    augmentedLagrangePenaltyInc += 0.5 * stepSize * Math.pow(localVariable.getValue() - consensusValues[variableIndex], 2);
+                    lagrangePenaltyInc += localLagrange * (localValue - consensusValues[variableIndex]);
+                    augmentedLagrangePenaltyInc += 0.5 * stepSize * Math.pow(localValue - consensusValues[variableIndex], 2);
                 }
             }
 

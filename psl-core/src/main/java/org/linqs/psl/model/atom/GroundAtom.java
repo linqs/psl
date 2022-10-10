@@ -21,7 +21,6 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionTerm;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 import org.linqs.psl.util.StringUtils;
 
 /**
@@ -29,7 +28,8 @@ import org.linqs.psl.util.StringUtils;
  *
  * A GroundAtom has a truth value.
  */
-public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm, ReasonerLocalVariable {
+public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm {
+    protected int index;
     protected float value;
     protected short partition;
 
@@ -43,6 +43,7 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         }
         this.value = value;
 
+        this.index = -1;
         this.partition = partition;
     }
 
@@ -61,6 +62,14 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
 
     public short getPartition() {
         return partition;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     @Override

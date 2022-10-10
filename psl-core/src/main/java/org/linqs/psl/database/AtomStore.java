@@ -197,14 +197,35 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     /**
      * Synchronize the atoms (getAtoms()) with their values (getAtomValues()).
+     * Return the RMSE between the atoms and their old values.
      */
-    public void sync() {
+    public double sync() {
+        double movement = 0.0;
+
         for (int i = 0; i < numAtoms; i++) {
             if (!(atoms[i] instanceof RandomVariableAtom)) {
                 continue;
             }
 
+            movement += Math.pow(atoms[i].getValue() - atomValues[i], 2);
             ((RandomVariableAtom)atoms[i]).setValue(atomValues[i]);
+        }
+
+        return Math.sqrt(movement);
+
+    }
+
+    /**
+     * The opposite of sync().
+     * Copy the values from atoms (getAtoms()) into their values (getAtomValues()).
+     */
+    public void resetValues() {
+        for (int i = 0; i < numAtoms; i++) {
+            if (!(atoms[i] instanceof RandomVariableAtom)) {
+                continue;
+            }
+
+            atomValues[i] = atoms[i].getValue();
         }
     }
 
@@ -258,6 +279,8 @@ public class AtomStore implements Iterable<GroundAtom> {
         if (atoms.length == numAtoms) {
             reallocate();
         }
+
+        atom.setIndex(numAtoms);
 
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
