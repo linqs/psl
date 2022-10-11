@@ -70,11 +70,6 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return size;
     }
 
-    @Override
-    public void adjustConstant(float oldValue, float newValue) {
-        constant = constant - oldValue + newValue;
-    }
-
     public boolean isConvex() {
         return true;
     }

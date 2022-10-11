@@ -193,11 +193,6 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         return variableLagranges[index];
     }
 
-    @Override
-    public void adjustConstant(float oldValue, float newValue) {
-        constant = constant - oldValue + newValue;
-    }
-
     public boolean isConstraint() {
         return termType == TermType.LinearConstraintTerm;
     }

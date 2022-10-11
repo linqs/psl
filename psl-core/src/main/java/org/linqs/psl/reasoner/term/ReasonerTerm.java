@@ -26,12 +26,6 @@ public interface ReasonerTerm {
     public int size();
 
     /**
-     * Adjust the term's internal constant by removing the old value and inserting the new value.
-     * This is typically because an observed variable's value has changed.
-     */
-    public void adjustConstant(float oldValue, float newValue);
-
-    /**
      * Whether this term is convex.
      * Reasoners may treat non-convex terms differently.
      */
