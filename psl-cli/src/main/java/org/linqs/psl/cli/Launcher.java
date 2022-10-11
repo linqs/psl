@@ -17,48 +17,17 @@
  */
 package org.linqs.psl.cli;
 
-import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.Options;
 import org.linqs.psl.config.RuntimeOptions;
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.Database;
-import org.linqs.psl.database.Partition;
-import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
-import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
-import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
-import org.linqs.psl.evaluation.statistics.Evaluator;
-import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.model.Model;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.runtime.Runtime;
-import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.Reflection;
-import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 /**
  * Launches PSL from the command line.
