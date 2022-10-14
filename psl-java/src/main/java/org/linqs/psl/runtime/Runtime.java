@@ -433,7 +433,6 @@ public class Runtime {
                 row = StringUtils.join("\t",
                         "" + weightedGroundRule.getWeight(), "" + weightedGroundRule.isSquared(), groundRule.baseToString());
             } else {
-                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
                 row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
             }
 
