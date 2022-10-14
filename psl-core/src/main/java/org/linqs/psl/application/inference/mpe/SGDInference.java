@@ -18,8 +18,6 @@
 package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
@@ -34,11 +32,6 @@ import java.util.List;
 public class SGDInference extends MPEInference {
     public SGDInference(List<Rule> rules, Database db) {
         super(rules, db, true);
-    }
-
-    @Override
-    protected GroundRuleStore createGroundRuleStore() {
-        return new MemoryGroundRuleStore();
     }
 
     @Override

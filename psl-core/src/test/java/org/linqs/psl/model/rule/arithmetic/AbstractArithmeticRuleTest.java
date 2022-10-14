@@ -20,8 +20,6 @@ package org.linqs.psl.model.rule.arithmetic;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
-import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
@@ -43,6 +41,8 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
 import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.After;
@@ -424,10 +424,10 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         try {
-            rule.groundAll(database, groundRuleStore);
+            rule.groundAll(store, null);
             fail("IllegalArgumentException not thrown when trying to ground an open predicate in the filter.");
         } catch (IllegalArgumentException ex) {
             // Exception is expected.

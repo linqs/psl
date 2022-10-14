@@ -26,9 +26,7 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver.Type;
-import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -39,6 +37,8 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.parser.ModelLoader;
+import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 
@@ -94,14 +94,24 @@ public final class GroundingAPI {
         Partition observationsPartition = dataStore.getPartition(PARTITION_OBS);
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
 
-        GroundRuleStore groundRuleStore = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Map<GroundAtom, Integer> atomMap = buildAtomMap(predicateNames, atoms, atomArguments, database);
 
-        Grounding.groundAll(rules, database, groundRuleStore);
-        GroundRuleInfo[] groundRules = mapGroundRules(rules, atomMap, groundRuleStore);
+        final List<GroundRule> rawGroundRules = new ArrayList<GroundRule>();
+        Grounding.setGroundRuleCallback(new Grounding.GroundRuleCallback() {
+            public synchronized void call(GroundRule groundRule) {
+                rawGroundRules.add(groundRule);
+            }
+        });
 
-        groundRuleStore.close();
+        Grounding.groundAll(rules, store);
+        Grounding.setGroundRuleCallback(null);
+
+        GroundRuleInfo[] groundRules = mapGroundRules(rules, atomMap, rawGroundRules);
+
+        rawGroundRules.clear();
+        store.close();
         database.close();
         dataStore.close();
 
@@ -205,11 +215,11 @@ public final class GroundingAPI {
     private static GroundRuleInfo[] mapGroundRules(
             List<Rule> rules,
             Map<GroundAtom, Integer> atomMap,
-            GroundRuleStore groundRuleStore) {
-        GroundRuleInfo[] infos = new GroundRuleInfo[(int)groundRuleStore.size()];
+            List<GroundRule> groundRules) {
+        GroundRuleInfo[] infos = new GroundRuleInfo[(int)groundRules.size()];
 
         int groundRuleCount = 0;
-        for (GroundRule rawGroundRule : groundRuleStore.getGroundRules()) {
+        for (GroundRule rawGroundRule : groundRules) {
             if (rawGroundRule instanceof AbstractGroundLogicalRule) {
                 infos[groundRuleCount++] = mapLogicalGroundRule(
                         rules.indexOf(rawGroundRule.getRule()), atomMap, (AbstractGroundLogicalRule)rawGroundRule);

@@ -134,19 +134,6 @@ public class RuntimeOptions {
         + "The " + INFERENCE_OUTPUT_GROUNDRULES_PATH.name() + " option controls where ground rules are output."
     );
 
-    public static final Option INFERENCE_OUTPUT_SATISFACTIONS_PATH = new Option(
-        "runtime.inference.output.satisfactions.path",
-        null,
-        "If ground rules with satisfaction are output, place them in at the specified path (or STDOUT if not specified)."
-    );
-
-    public static final Option INFERENCE_OUTPUT_SATISFACTIONS = new Option(
-        "runtime.inference.output.satisfactions",
-        false,
-        "Whether to output ground rules with satisfaction after inference."
-        + "The " + INFERENCE_OUTPUT_SATISFACTIONS_PATH.name() + " option controls where ground rules are output."
-    );
-
     public static final Option LEARN = new Option(
         "runtime.learn",
         false,

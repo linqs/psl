@@ -74,6 +74,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return true;
     }
 
+    @Override
     public float evaluate(float[] variableValues) {
         float dot = dot(variableValues);
         float weight = getWeight();

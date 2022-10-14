@@ -27,6 +27,7 @@ import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -34,6 +35,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
@@ -219,14 +221,22 @@ public abstract class InferenceTest extends PSLBaseTest {
             true
         ));
 
+        final List<GroundRule> groundRules = new ArrayList<GroundRule>();
+        Grounding.setGroundRuleCallback(new Grounding.GroundRuleCallback() {
+            public synchronized void call(GroundRule groundRule) {
+                groundRules.add(groundRule);
+            }
+        });
+
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+        Grounding.setGroundRuleCallback(null);
 
         inference.inference();
 
         // There are 20 ground rules, and they are all trivial.
-        assertEquals(20, inference.getGroundRuleStore().size());
+        assertEquals(20, groundRules.size());
         assertEquals(0, inference.getTermStore().size());
 
         inference.close();

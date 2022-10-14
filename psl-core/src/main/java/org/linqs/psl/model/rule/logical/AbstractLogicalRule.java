@@ -21,7 +21,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.PersistedAtomManagementException;
 import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -38,6 +38,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
@@ -126,9 +127,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
-    public long groundAll(Database database, GroundRuleStore groundRuleStore) {
-        try (QueryResultIterable queryResults = database.executeGroundingQuery(negatedDNF.getQueryFormula())) {
-            return groundAll(queryResults, database, groundRuleStore);
+    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
+        try (QueryResultIterable queryResults = termStore.getDatabase().executeGroundingQuery(negatedDNF.getQueryFormula())) {
+            return groundAll(queryResults, termStore, groundRuleCallback);
         }
     }
 
@@ -172,11 +173,11 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         return groundInternal(constants, variableMap, database, resources);
     }
 
-    public long groundAll(QueryResultIterable groundVariables, Database database, GroundRuleStore groundRuleStore) {
-        long initialCount = groundRuleStore.size();
+    public long groundAll(QueryResultIterable groundVariables, TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
+        long initialCount = termStore.size();
 
-        final Database finalDatabase = database;
-        final GroundRuleStore finalGroundRuleStore = groundRuleStore;
+        final Database finalDatabase = termStore.getDatabase();
+        final TermStore finalTermStore = termStore;
         final Map<Variable, Integer> variableMap = groundVariables.getVariableMap();
 
         Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
@@ -184,15 +185,19 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             public void work(long index, Constant[] row) {
                 GroundRule groundRule = ground(row, variableMap, finalDatabase);
                 if (groundRule != null) {
-                    finalGroundRuleStore.addGroundRule(groundRule);
+                    finalTermStore.add(groundRule);
+
+                    if (groundRuleCallback != null) {
+                        groundRuleCallback.call(groundRule);
+                    }
                 }
             }
         });
 
-        long groundCount = groundRuleStore.size() - initialCount;
+        long termCount = termStore.size() - initialCount;
 
-        log.debug("Grounded {} instances of rule {}", groundCount, this);
-        return groundCount;
+        log.debug("Grounded {} terms from rule {}", termCount, this);
+        return termCount;
     }
 
     @Override

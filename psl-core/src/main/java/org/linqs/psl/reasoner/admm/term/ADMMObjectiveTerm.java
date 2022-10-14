@@ -273,6 +273,7 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
     /**
      * Evaluate this potential using the given consensus values.
      */
+    @Override
     public float evaluate(float[] consensusValues) {
         float weight = getWeight();
 

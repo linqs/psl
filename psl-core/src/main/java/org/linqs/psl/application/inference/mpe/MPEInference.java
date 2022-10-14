@@ -19,9 +19,7 @@ package org.linqs.psl.application.inference.mpe;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.util.Logger;
 
 import java.util.List;
 
@@ -37,8 +35,6 @@ import java.util.List;
  * (reasoners, term stores, etc) can be used via the InferenceApplication config options.
  */
 public class MPEInference extends InferenceApplication {
-    private static final Logger log = Logger.getLogger(MPEInference.class);
-
     public MPEInference(List<Rule> rules, Database db, boolean relaxHardConstraints) {
         super(rules, db, relaxHardConstraints);
     }

@@ -19,11 +19,12 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.RawQuery;
-import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public long groundAll(Database database, GroundRuleStore groundRuleStore) {
+    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
         return 0;
     }
 

@@ -32,7 +32,7 @@ import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.database.rdbms.driver.SQLiteDriver;
 import org.linqs.psl.evaluation.statistics.Evaluator;
-import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -269,54 +269,6 @@ public class Runtime {
         return model;
     }
 
-    private void outputGroundRules(GroundRuleStore groundRuleStore, String path, boolean includeSatisfaction) {
-        // Some inference/learning application will not have ground rule stores (if they stream).
-        if (groundRuleStore == null) {
-            return;
-        }
-
-        PrintWriter out = new PrintWriter(System.out);
-        boolean closeOut = false;
-
-        if (path != null) {
-            out = new PrintWriter(FileUtils.getBufferedWriter(path));
-            closeOut = true;
-        }
-
-        // Write a header.
-        String header = StringUtils.join("\t", "Weight", "Squared?", "Rule");
-        if (includeSatisfaction) {
-            header = StringUtils.join("\t", header, "Satisfaction");
-        }
-        out.println(header);
-
-        for (GroundRule groundRule : groundRuleStore.getGroundRules()) {
-            String row = "";
-            double satisfaction = 0.0;
-
-            if (groundRule instanceof WeightedGroundRule) {
-                WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
-                row = StringUtils.join("\t",
-                        "" + weightedGroundRule.getWeight(), "" + weightedGroundRule.isSquared(), groundRule.baseToString());
-                satisfaction = 1.0 - weightedGroundRule.getIncompatibility();
-            } else {
-                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
-                row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
-                satisfaction = 1.0 - unweightedGroundRule.getInfeasibility();
-            }
-
-            if (includeSatisfaction) {
-                row = StringUtils.join("\t", row, "" + satisfaction);
-            }
-
-            out.println(row);
-        }
-
-        if (closeOut) {
-            out.close();
-        }
-    }
-
     private void parseOptions(String[] args) {
         if (args == null) {
             return;
@@ -364,19 +316,21 @@ public class Runtime {
             }
         }
 
+        GroundRuleOutputter groundingCallback = null;
+        if (RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES.getBoolean()) {
+            String path = RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES_PATH.getString();
+            groundingCallback = new GroundRuleOutputter(path);
+            Grounding.setGroundRuleCallback(groundingCallback);
+        }
+
         InferenceApplication inferenceApplication = InferenceApplication.getInferenceApplication(
                 RuntimeOptions.INFERENCE_METHOD.getString(), model.getRules(), targetDatabase);
 
-        if (RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES.getBoolean()) {
-            String path = RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES_PATH.getString();
-            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, false);
-        }
-
         inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluators, truthDatabase);
 
-        if (RuntimeOptions.INFERENCE_OUTPUT_SATISFACTIONS.getBoolean()) {
-            String path = RuntimeOptions.INFERENCE_OUTPUT_SATISFACTIONS_PATH.getString();
-            outputGroundRules(inferenceApplication.getGroundRuleStore(), path, true);
+        if (groundingCallback != null) {
+            groundingCallback.close();
+            Grounding.setGroundRuleCallback(null);
         }
 
         String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();
@@ -451,5 +405,68 @@ public class Runtime {
         H2,
         Postgres,
         SQLite,
+    }
+
+    public static class GroundRuleOutputter implements Grounding.GroundRuleCallback {
+        private volatile boolean headerWritten;
+        private PrintWriter out;
+        private boolean closeOut;
+
+        public GroundRuleOutputter(String path) {
+            headerWritten = false;
+
+            out = new PrintWriter(System.out);
+            boolean closeOut = false;
+
+            if (path != null) {
+                out = new PrintWriter(FileUtils.getBufferedWriter(path));
+                closeOut = true;
+            }
+        }
+
+        @Override
+        public void call(GroundRule groundRule) {
+            String row = "";
+
+            if (groundRule instanceof WeightedGroundRule) {
+                WeightedGroundRule weightedGroundRule = (WeightedGroundRule)groundRule;
+                row = StringUtils.join("\t",
+                        "" + weightedGroundRule.getWeight(), "" + weightedGroundRule.isSquared(), groundRule.baseToString());
+            } else {
+                UnweightedGroundRule unweightedGroundRule = (UnweightedGroundRule)groundRule;
+                row = StringUtils.join("\t", ".", "" + false, groundRule.baseToString());
+            }
+
+            output(row);
+        }
+
+        /**
+         * Synchronized since we may be coming from multiple threads.
+         */
+        private synchronized void output(String row) {
+            if (row == null) {
+                // Used to block close() until all threads are done.
+                return;
+            }
+
+            if (!headerWritten) {
+                headerWritten = true;
+
+                String header = StringUtils.join("\t", "Weight", "Squared?", "Rule");
+                out.println(header);
+            }
+
+            out.println(row);
+        }
+
+        public void close() {
+            // Block.
+            output(null);
+            out.flush();
+
+            if (closeOut) {
+                out.close();
+            }
+        }
     }
 }

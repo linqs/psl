@@ -19,11 +19,12 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.RawQuery;
-import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import java.io.Serializable;
 import java.util.List;
@@ -37,13 +38,7 @@ import java.util.Set;
  * A Rule must instantiate only WeightedGroundRules or only UnweightedGroundRules.
  */
 public interface Rule extends Serializable {
-    /**
-     * Adds all GroundRules to a GroundRuleStore using the Database
-     * to instantiate ground atoms.
-     *
-     * @return the number of ground rules generated.
-     */
-    public long groundAll(Database database, GroundRuleStore groundRuleStore);
+    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback);
 
     public boolean isWeighted();
 

@@ -35,4 +35,9 @@ public interface ReasonerTerm {
      * Get the rule this term was generated from.
      */
     public Rule getRule();
+
+    /**
+     * Evaluate the term using the given variable values (indexed according to the AtomStore).
+     */
+    public float evaluate(float[] variableValues);
 }

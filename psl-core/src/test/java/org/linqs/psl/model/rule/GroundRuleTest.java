@@ -19,8 +19,6 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.loading.Inserter;
-import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Disjunction;
@@ -51,6 +49,8 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 
@@ -122,7 +122,7 @@ public class GroundRuleTest extends PSLBaseTest {
     public void testLogicalBase() {
         initModel(true, true);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -168,8 +168,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Derek') ) | FRIENDS('Eugene', 'Derek') ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     /**
@@ -182,7 +181,7 @@ public class GroundRuleTest extends PSLBaseTest {
     public void testLogicalGroundingOnlyPredicates() {
         initModel(true, true);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -208,8 +207,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Derek') ) | ~( NICE('Derek') ) | FRIENDS('Derek', 'Derek') ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Eugene') ) | FRIENDS('Eugene', 'Eugene') ) ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Nice(A) & Nice(B) & (A != B) -> Friends(A, B)
         rule = new WeightedLogicalRule(
@@ -247,8 +245,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Charlie') ) | FRIENDS('Eugene', 'Charlie') ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( NICE('Derek') ) | FRIENDS('Eugene', 'Derek') ) ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Nice(A) & Nice(B) & (A % B) -> Friends(A, B)
         rule = new WeightedLogicalRule(
@@ -276,15 +273,14 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Charlie') ) | ~( NICE('Eugene') ) | FRIENDS('Charlie', 'Eugene') ) ^2",
             "1.0: ( ~( NICE('Derek') ) | ~( NICE('Eugene') ) | FRIENDS('Derek', 'Eugene') ) ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     @Test
     public void testArithmeticGroundingOnlyPredicates() {
         initModel(true, true);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -320,11 +316,10 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Derek') + 1.0 * ('Derek' == 'Derek') + -1.0 * FRIENDS('Derek', 'Derek') <= 0.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * ('Eugene' == 'Eugene') + -1.0 * FRIENDS('Eugene', 'Eugene') <= 0.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        List<GroundRule> groundRules = groundAndCompare(expected, rule, store);
 
         // Ensure that the grounding only predicate is not contributing to the value (incompatibility) of the rule.
-        for (GroundRule groundRule : store.getGroundRules(rule)) {
+        for (GroundRule groundRule : groundRules) {
             // All should gave the value of 1.0: Both Nice values are 1,0, and the Friends starts at 1.0 (with -1 coefficient).
             assertEquals(1.0f, ((WeightedGroundRule)groundRule).getIncompatibility(), EPSILON);
         }
@@ -373,8 +368,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Charlie') + 1.0 * ('Eugene' != 'Charlie') + -1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * ('Eugene' != 'Derek') + -1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Nice(A) + Nice(B) + (A % B) <= Friends(A, B)
         // Nice(A) + Nice(B) + (A % B) - Friends(A, B) <= 0
@@ -410,13 +404,12 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Charlie') + 1.0 * NICE('Eugene') + 1.0 * ('Charlie' % 'Eugene') + -1.0 * FRIENDS('Charlie', 'Eugene') <= 0.0 ^2",
             "1.0: 1.0 * NICE('Derek') + 1.0 * NICE('Eugene') + 1.0 * ('Derek' % 'Eugene') + -1.0 * FRIENDS('Derek', 'Eugene') <= 0.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     @Test
     public void testArithmeticBase() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -469,8 +462,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
             // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // 1.0: Nice(A) + Nice(B) <= 1 ^2
         coefficients = Arrays.asList(
@@ -518,8 +510,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') <= 1.0 ^2"
             // "1.0: 1.0 * NICE('Eugene') + 1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') <= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // 1.0: Nice(A) + -1 * Nice(B) = 0 ^2
         coefficients = Arrays.asList(
@@ -594,8 +585,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Derek') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
             // "1.0: 1.0 * NICE('Eugene') + -1.0 * NICE('Eugene') + 1.0 * FRIENDS('Eugene', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     @Test
@@ -603,7 +593,7 @@ public class GroundRuleTest extends PSLBaseTest {
     // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
     // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
     public void testSelectBaseNice() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -640,11 +630,10 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Now negate the select.
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
@@ -658,8 +647,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         // There will be no results because ground rules with no subs in the selects do not ground.
         expected = new ArrayList<String>();
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store, false);
+        groundAndCompare(expected, false, rule, store);
     }
 
     @Test
@@ -670,7 +658,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // Reset the model to not use 100% nice.
         initModel(false);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -707,11 +695,10 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 3.0 * FRIENDS('Derek', 'Alice') + 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Now negate the select.
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
@@ -731,8 +718,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
             "1.0: 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store, false);
+        groundAndCompare(expected, false, rule, store);
     }
 
     @Test
@@ -753,7 +739,7 @@ public class GroundRuleTest extends PSLBaseTest {
         toClose.add(model.predicates.get("Friends"));
         database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -799,11 +785,10 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * PERSON('Derek') + 3.0 * FRIENDS('Derek', 'Bob') + 3.0 * FRIENDS('Derek', 'Charlie') + 3.0 * FRIENDS('Derek', 'Derek') >= 1.0 ^2",
             "1.0: 1.0 * PERSON('Eugene') + 3.0 * FRIENDS('Eugene', 'Bob') + 3.0 * FRIENDS('Eugene', 'Charlie') + 3.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Now change the select to a disjunction.
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(
@@ -822,7 +807,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         try {
-            rule.groundAll(database, store);
+            rule.groundAll(store, null);
             fail("Attempting to ground a disjunction without a split did not throw.");
         } catch (IllegalStateException ex) {
             // Expected
@@ -832,7 +817,7 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     // |B| * Friends(A, +B) >= 1
     public void testSummationNoSelect() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -867,8 +852,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 4.0 * FRIENDS('Derek', 'Alice') + 4.0 * FRIENDS('Derek', 'Bob') + 4.0 * FRIENDS('Derek', 'Charlie') + 4.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
             "1.0: 4.0 * FRIENDS('Eugene', 'Alice') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     @Test
@@ -879,7 +863,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // Reset the model to not use 100% nice.
         initModel(false);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -916,11 +900,10 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Add a select on A.
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         filters.put(
             new SummationVariable("A"),
@@ -942,11 +925,10 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Add a select on B.
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         filters.put(
             new SummationVariable("B"),
@@ -968,8 +950,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Derek', 'Alice') + 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     @Test
@@ -983,7 +964,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // Reset the model to not use 100% nice.
         initModel(false);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1025,11 +1006,10 @@ public class GroundRuleTest extends PSLBaseTest {
                 "16.0 * FRIENDS('Eugene', 'Alice') + 16.0 * FRIENDS('Eugene', 'Bob') + 16.0 * FRIENDS('Eugene', 'Charlie') + 16.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // |B|
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Cardinality(new SummationVariable("B")))
@@ -1051,11 +1031,10 @@ public class GroundRuleTest extends PSLBaseTest {
                 "16.0 * FRIENDS('Eugene', 'Alice') + 16.0 * FRIENDS('Eugene', 'Bob') + 16.0 * FRIENDS('Eugene', 'Charlie') + 16.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // |A| + |B|
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Add(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1077,11 +1056,10 @@ public class GroundRuleTest extends PSLBaseTest {
                 "32.0 * FRIENDS('Eugene', 'Alice') + 32.0 * FRIENDS('Eugene', 'Bob') + 32.0 * FRIENDS('Eugene', 'Charlie') + 32.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // |A| - |B|
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Subtract(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1103,11 +1081,10 @@ public class GroundRuleTest extends PSLBaseTest {
                 "0.0 * FRIENDS('Eugene', 'Alice') + 0.0 * FRIENDS('Eugene', 'Bob') + 0.0 * FRIENDS('Eugene', 'Charlie') + 0.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // |A| * |B|
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Multiply(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1129,11 +1106,10 @@ public class GroundRuleTest extends PSLBaseTest {
                 "256.0 * FRIENDS('Eugene', 'Alice') + 256.0 * FRIENDS('Eugene', 'Bob') + 256.0 * FRIENDS('Eugene', 'Charlie') + 256.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // |A| / |B|
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Divide(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1155,8 +1131,7 @@ public class GroundRuleTest extends PSLBaseTest {
                 "1.0 * FRIENDS('Eugene', 'Alice') + 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') " +
                 ">= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     @Test
@@ -1176,7 +1151,7 @@ public class GroundRuleTest extends PSLBaseTest {
         toClose.add(model.predicates.get("Friends"));
         database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1245,11 +1220,10 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Add the additional clause to the select.
-        store = new MemoryGroundRuleStore();
+        store = new SGDTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(
@@ -1299,8 +1273,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * NICE('Derek') + 4.0 * FRIENDS('Eugene', 'Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Derek') >= 1.0 ^2",
             "1.0: 1.0 * NICE('Eugene') + 4.0 * FRIENDS('Eugene', 'Bob') + 4.0 * FRIENDS('Eugene', 'Charlie') + 4.0 * FRIENDS('Eugene', 'Derek') + 4.0 * FRIENDS('Eugene', 'Alice') + 1.0 * PERSON('Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     @Test
@@ -1327,7 +1300,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // Reset the model to not use 100% nice.
         initModel(false);
 
-        GroundRuleStore store;
+        TermStore store;
 
         Rule rule;
         List<String> expected;
@@ -1404,7 +1377,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         for (int i = 0; i < testCoefficients.length; i++) {
             expected = Arrays.asList(expectedBase.replaceAll("__VAL__", expectedValues[i]));
-            store = new MemoryGroundRuleStore();
+            store = new SGDTermStore(database);
 
             coefficients.clear();
             coefficients.add(testCoefficients[i]);
@@ -1416,8 +1389,7 @@ public class GroundRuleTest extends PSLBaseTest {
                     true
             );
 
-            rule.groundAll(database, store);
-            compareGroundRules(expected, rule, store);
+            groundAndCompare(expected, rule, store);
         }
     }
 
@@ -1428,7 +1400,7 @@ public class GroundRuleTest extends PSLBaseTest {
     // Note that everyone is 100% nice in this test.
     @Test
     public void testArithmeticDivdeByZero() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<Coefficient> coefficients;
@@ -1465,7 +1437,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         try {
-            rule.groundAll(database, store);
+            rule.groundAll(store, null);
             fail("Divide by zero did not throw an ArithmeticException.");
         } catch (ArithmeticException ex) {
             // Expected
@@ -1474,7 +1446,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
     @Test
     public void testArithmeticNegativePrior() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1519,9 +1491,8 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Eugene', 'Charlie') <= 0.0 ^2",
             "1.0: 1.0 * FRIENDS('Eugene', 'Derek') <= 0.0 ^2"
         );
-        rule.groundAll(database, store);
         // No need for order with one atom.
-        compareGroundRules(expected, rule, store, false);
+        groundAndCompare(expected, false, rule, store);
     }
 
     @Test
@@ -1531,7 +1502,7 @@ public class GroundRuleTest extends PSLBaseTest {
      * there is not head.
      */
     public void testVariablesInHead() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1569,8 +1540,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Charlie') ) ) ^2",
             "1.0: ( ~( NICE('Eugene') ) | ~( FRIENDS('Eugene', 'Derek') ) ) ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     /**
@@ -1578,7 +1548,7 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     @Test
     public void testArithmeticSingleTrivials() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1602,8 +1572,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // All trivial.
         // 1.0: Friends(A, B) <= 1.0 ^2
@@ -1622,8 +1591,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // All trivial.
         // 1.0: -1.0 * Friends(A, B) >= -1.0 ^2
@@ -1642,8 +1610,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // All trivial.
         // 1.0: -1.0 * Friends(A, B) <= 0.0 ^2
@@ -1662,8 +1629,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         expected = Arrays.asList();
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     /**
@@ -1674,7 +1640,7 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     @Test
     public void testSelectWithoutAtoms() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1709,8 +1675,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Derek', 'Alice') >= 1.0 ^2",
             "1.0: 1.0 * FRIENDS('Eugene', 'Alice') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Now swap the equality to not equals.
 
@@ -1742,8 +1707,7 @@ public class GroundRuleTest extends PSLBaseTest {
             "1.0: 1.0 * FRIENDS('Derek', 'Bob') + 1.0 * FRIENDS('Derek', 'Charlie') + 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
             "1.0: 1.0 * FRIENDS('Eugene', 'Bob') + 1.0 * FRIENDS('Eugene', 'Charlie') + 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
 
         // Now use another variable in the equality check.
 
@@ -1771,8 +1735,7 @@ public class GroundRuleTest extends PSLBaseTest {
         expected = Arrays.asList(
             "1.0: 1.0 * FRIENDS('Alice', 'Bob') + 1.0 * FRIENDS('Alice', 'Charlie') + 1.0 * FRIENDS('Alice', 'Derek') + 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2"
         );
-        rule.groundAll(database, store);
-        compareGroundRules(expected, rule, store);
+        groundAndCompare(expected, rule, store);
     }
 
     /**
@@ -1780,7 +1743,7 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     @Test
     public void testLogicalAccessEcception() {
-        GroundRuleStore store = new MemoryGroundRuleStore();
+        TermStore store = new SGDTermStore(database);
 
         Rule rule;
 
@@ -1798,7 +1761,7 @@ public class GroundRuleTest extends PSLBaseTest {
         );
 
         try {
-            rule.groundAll(database, store);
+            rule.groundAll(store, null);
             fail("PAM exception not thrown for a logcial rule.");
         } catch (Exception ex) {
             // Expected

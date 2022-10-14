@@ -133,15 +133,6 @@ public class Launcher {
             }
         }
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
-            RuntimeOptions.INFERENCE_OUTPUT_SATISFACTIONS.set(true);
-
-            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
-            if (path != null) {
-                RuntimeOptions.INFERENCE_OUTPUT_SATISFACTIONS_PATH.set(path);
-            }
-        }
-
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_PROPERTIES_FILE)) {
             RuntimeOptions.PROPERTIES_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_PROPERTIES_FILE));
         }

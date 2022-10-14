@@ -18,10 +18,11 @@
 package org.linqs.psl.test;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
@@ -51,6 +52,7 @@ public abstract class PSLBaseTest {
 
     @Before
     public void pslBaseSetup() {
+        disableLogger();
     }
 
     @After
@@ -60,6 +62,8 @@ public abstract class PSLBaseTest {
 
         // Clear all options.
         Options.clearAll();
+
+        disableLogger();
     }
 
     // General utils.
@@ -157,11 +161,27 @@ public abstract class PSLBaseTest {
         }
     }
 
+    protected List<GroundRule> groundAndCompare(List<String> expected, Rule rule, TermStore store) {
+        return groundAndCompare(expected, true, rule, store);
+    }
+
+    protected List<GroundRule> groundAndCompare(List<String> expected, boolean alphabetize, Rule rule, TermStore store) {
+        final List<GroundRule> groundRules = new ArrayList<GroundRule>();
+        rule.groundAll(store, new Grounding.GroundRuleCallback() {
+            public synchronized void call(GroundRule groundRule) {
+                groundRules.add(groundRule);
+            }
+        });
+
+        compareGroundRules(expected, groundRules, alphabetize);
+        return groundRules;
+    }
+
     /**
      * Convenience call for the common functionality of compareGroundRules() (alphabetize).
      */
-    protected void compareGroundRules(List<String> expected, Rule rule, GroundRuleStore store) {
-        compareGroundRules(expected, rule, store, true);
+    protected void compareGroundRules(List<String> expected, List<GroundRule> actual) {
+        compareGroundRules(expected, actual, true);
     }
 
     /**
@@ -174,9 +194,9 @@ public abstract class PSLBaseTest {
      * characters in both strings (actual and expected) before comparing.
      * Only alphabetize if it is really necessary.
      */
-    protected void compareGroundRules(List<String> expected, Rule rule, GroundRuleStore store, boolean alphabetize) {
+    protected void compareGroundRules(List<String> expected, List<GroundRule> groundRules, boolean alphabetize) {
         List<String> actual = new ArrayList<String>();
-        for (GroundRule groundRule : store.getGroundRules(rule)) {
+        for (GroundRule groundRule : groundRules) {
             if (alphabetize) {
                 actual.add(sort(groundRule.toString()));
             } else {

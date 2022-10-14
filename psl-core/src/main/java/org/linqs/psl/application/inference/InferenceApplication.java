@@ -22,15 +22,13 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
-import org.linqs.psl.grounding.GroundRuleStore;
-import org.linqs.psl.grounding.Grounding;
-import org.linqs.psl.grounding.MemoryGroundRuleStore;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
@@ -51,7 +49,7 @@ import java.util.Set;
 
 /**
  * All the tools necessary to perform inference.
- * An inference application owns the ground atoms (Database/AtomStore), ground rules (GroundRuleStore), the terms (TermStore),
+ * An inference application owns the ground atoms (Database/AtomStore), the terms (TermStore),
  * and how inference is actually performed (Reasoner).
  * As such, the inference application is the top level authority for these items and methods.
  * For example, inference may set the value of the random variables on construction.
@@ -70,7 +68,6 @@ public abstract class InferenceApplication implements ModelApplication {
     protected float relaxationMultiplier;
     protected boolean relaxationSquared;
 
-    protected GroundRuleStore groundRuleStore;
     protected TermStore termStore;
 
     private boolean atomsCommitted;
@@ -111,13 +108,8 @@ public abstract class InferenceApplication implements ModelApplication {
 
         reasoner = createReasoner();
         termStore = createTermStore();
-        groundRuleStore = createGroundRuleStore();
 
         completeInitialize();
-    }
-
-    protected GroundRuleStore createGroundRuleStore() {
-        return new MemoryGroundRuleStore();
     }
 
     protected Reasoner createReasoner() {
@@ -135,28 +127,9 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void completeInitialize() {
         log.info("Grounding out model.");
-        long groundCount = Grounding.groundAll(rules, database, groundRuleStore);
+        long termCount = Grounding.groundAll(rules, termStore);
         log.info("Grounding complete.");
-        log.debug("Generated {} ground rules.", groundCount);
-
-        if (skipInference) {
-            return;
-        }
-
-        log.debug("Initializing objective terms for {} ground rules.", groundCount);
-
-        long initialTerms = termStore.size();
-        termStore.ensureCapacity(initialTerms + groundRuleStore.size());
-        final TermStore finalTermStore = termStore;
-
-        Parallel.foreach(groundRuleStore.getGroundRules(), new Parallel.Worker<GroundRule>() {
-            @Override
-            public void work(long index, GroundRule rule) {
-                finalTermStore.add(rule);
-            }
-        });
-
-        log.debug("Generated {} objective terms from {} ground rules.", (termStore.size() - initialTerms), groundCount);
+        log.debug("Generated {} terms.", termCount);
     }
 
     /**
@@ -238,10 +211,6 @@ public abstract class InferenceApplication implements ModelApplication {
         return reasoner;
     }
 
-    public GroundRuleStore getGroundRuleStore() {
-        return groundRuleStore;
-    }
-
     public TermStore getTermStore() {
         return termStore;
     }
@@ -286,11 +255,6 @@ public abstract class InferenceApplication implements ModelApplication {
         if (termStore != null) {
             termStore.close();
             termStore = null;
-        }
-
-        if (groundRuleStore != null) {
-            groundRuleStore.close();
-            groundRuleStore = null;
         }
 
         if (reasoner != null) {

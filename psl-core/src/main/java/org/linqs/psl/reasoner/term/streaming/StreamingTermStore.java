@@ -35,6 +35,9 @@ import java.util.List;
 
 /**
  * A term store that does not hold terms in memory, but instead keeps terms on disk.
+ * Note that the iterators given by this class are meant to be exhausted (at least the first time).
+ * Remember that this class will internally iterate over an unknown number of groundings.
+ * So interrupting the iteration can cause the term count to be incorrect.
  */
 public abstract class StreamingTermStore<T extends StreamingTerm> extends TermStore<T> {
     private static final Logger log = Logger.getLogger(StreamingTermStore.class);

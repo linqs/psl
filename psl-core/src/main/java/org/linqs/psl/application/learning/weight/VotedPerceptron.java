@@ -25,7 +25,9 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.StringUtils;
 
@@ -318,7 +320,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
     protected double[] computeScalingFactor() {
         double [] factor = new double[mutableRules.size()];
         for (int i = 0; i < factor.length; i++) {
-            factor[i] = Math.max(1.0, inference.getGroundRuleStore().count(mutableRules.get(i)));
+            factor[i] = Math.max(1.0, inference.getTermStore().count(mutableRules.get(i)));
         }
 
         return factor;
@@ -333,18 +335,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
      */
     protected void computeObservedIncompatibility() {
         setLabeledRandomVariables();
-
-        // Zero out the observed incompatibility first.
-        for (int i = 0; i < observedIncompatibility.length; i++) {
-            observedIncompatibility[i] = 0.0;
-        }
-
-        // Sums up the incompatibilities.
-        for (int i = 0; i < mutableRules.size(); i++) {
-            for (GroundRule groundRule : inference.getGroundRuleStore().getGroundRules(mutableRules.get(i))) {
-                observedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
-            }
-        }
+        setIncompatibility(observedIncompatibility);
     }
 
     /**
@@ -356,16 +347,33 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
      */
     protected void computeExpectedIncompatibility() {
         computeMPEState();
+        setIncompatibility(expectedIncompatibility);
+    }
 
-        // Zero out the expected incompatibility first.
-        for (int i = 0; i < expectedIncompatibility.length; i++) {
-            expectedIncompatibility[i] = 0.0;
+    /**
+     * A helper function to set some vector of incompatibilities.
+     */
+    protected void setIncompatibility(double[] incompatibility) {
+        // Zero out the observed incompatibility first.
+        for (int i = 0; i < incompatibility.length; i++) {
+            incompatibility[i] = 0.0;
         }
+
+        float[] atomValues = inference.getTermStore().getDatabase().getAtomStore().getAtomValues();
 
         // Sums up the incompatibilities.
         for (int i = 0; i < mutableRules.size(); i++) {
-            for (GroundRule groundRule : inference.getGroundRuleStore().getGroundRules(mutableRules.get(i))) {
-                expectedIncompatibility[i] += ((WeightedGroundRule)groundRule).getIncompatibility();
+            // Note that this cast should be unnecessary, but Java does not like the TermStore without a generic.
+            for (Object rawTerm : inference.getTermStore().getTerms(mutableRules.get(i))) {
+                @SuppressWarnings("unchecked")
+                ReasonerTerm term = (ReasonerTerm)rawTerm;
+
+                float value = term.evaluate(atomValues);
+                if (mutableRules.get(i).isSquared()) {
+                    value *= value;
+                }
+
+                incompatibility[i] += value;
             }
         }
     }

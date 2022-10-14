@@ -24,12 +24,6 @@ import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 import java.util.List;
 
-/**
- * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
- * Note that the iterators given by this class are meant to be exhausted (at least the first time).
- * Remember that this class will internally iterate over an unknown number of groundings.
- * So interrupting the iteration can cause the term count to be incorrect.
- */
 public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
     public SGDStreamingTermStore(List<Rule> rules, Database database) {
         super(rules, database, new SGDTermGenerator());

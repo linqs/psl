@@ -23,7 +23,7 @@ import org.linqs.psl.database.PersistedAtomManagementException;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.RawQuery;
 import org.linqs.psl.database.rdbms.Formula2SQL;
-import org.linqs.psl.grounding.GroundRuleStore;
+import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -50,6 +50,7 @@ import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
@@ -295,36 +296,40 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     @Override
-    public long groundAll(Database database, GroundRuleStore groundRuleStore) {
+    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
         if (!validatedByDatabase) {
-            validateForGrounding(database);
+            validateForGrounding(termStore.getDatabase());
         }
 
-        long groundCount = 0;
+        long termCount = 0;
         if (!hasSummation()) {
-            groundCount = groundAllNonSummationRule(database, groundRuleStore);
+            termCount = groundAllNonSummationRule(termStore, groundRuleCallback);
         } else {
-            groundCount = groundAllSummationRule(database, groundRuleStore);
+            termCount = groundAllSummationRule(termStore, groundRuleCallback);
         }
 
-        log.debug("Grounded {} instances of rule {}", groundCount, this);
-        return groundCount;
+        log.debug("Grounded {} terms from rule {}", termCount, this);
+        return termCount;
     }
 
-    private long groundAllNonSummationRule(Database database, GroundRuleStore groundRuleStore) {
+    private long groundAllNonSummationRule(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
         GroundingResources resources = getGroundingResources(expression);
 
-        try (ResultList results = database.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false))) {
+        try (ResultList results = termStore.getDatabase().executeQuery(new DatabaseQuery(expression.getQueryFormula(), false))) {
             Map<Variable, Integer> variableMap = results.getVariableMap();
 
             for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
-                groundSingleNonSummationRule(results.get(groundingIndex), variableMap, database, resources);
+                groundSingleNonSummationRule(results.get(groundingIndex), variableMap, termStore.getDatabase(), resources);
             }
         }
 
         long count = resources.groundRules.size();
         for (GroundRule groundRule : resources.groundRules) {
-            groundRuleStore.addGroundRule(groundRule);
+            termStore.add(groundRule);
+
+            if (groundRuleCallback != null) {
+                groundRuleCallback.call(groundRule);
+            }
         }
         resources.groundRules.clear();
         resources.accessExceptionAtoms.clear();
@@ -387,27 +392,31 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     /**
      * Ground by first expanding summation atoms into normal ones and then calling the non-summation grounding.
      */
-    private long groundAllSummationRule(Database database, GroundRuleStore groundRuleStore) {
-        GroundingResources resources = prepSummationGroundingResources(database);
+    private long groundAllSummationRule(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
+        GroundingResources resources = prepSummationGroundingResources(termStore.getDatabase());
 
         // Bail if there are no groundings.
         if (resources.flatExpression == null) {
             return 0;
         }
 
-        RawQuery rawQuery = getSummationRawQuery(database);
+        RawQuery rawQuery = getSummationRawQuery(termStore.getDatabase());
 
-        try (ResultList results = database.executeSQL(rawQuery)) {
+        try (ResultList results = termStore.getDatabase().executeSQL(rawQuery)) {
             Map<Variable, Integer> variableMap = results.getVariableMap();
 
             for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
-                groundSingleSummationRule(results.get(groundingIndex), variableMap, database, resources);
+                groundSingleSummationRule(results.get(groundingIndex), variableMap, termStore.getDatabase(), resources);
             }
         }
 
         long count = resources.groundRules.size();
         for (GroundRule groundRule : resources.groundRules) {
-            groundRuleStore.addGroundRule(groundRule);
+            termStore.add(groundRule);
+
+            if (groundRuleCallback != null) {
+                groundRuleCallback.call(groundRule);
+            }
         }
         resources.groundRules.clear();
         resources.accessExceptionAtoms.clear();
