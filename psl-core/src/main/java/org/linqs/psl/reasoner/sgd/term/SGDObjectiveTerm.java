@@ -43,6 +43,9 @@ public class SGDObjectiveTerm implements StreamingTerm {
     private float[] coefficients;
     private int[] variableIndexes;
 
+    /**
+     * Construct a SGD objective term by taking ownership of the hyperplane and all members of it.
+     */
     public SGDObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge,
             Hyperplane hyperplane) {
         this.squared = squared;

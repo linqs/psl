@@ -59,6 +59,7 @@ public abstract class TermGenerator<T extends ReasonerTerm> {
      *
      * For each term added, a hyperplane will also be added
      * (usually the same hyperplane, and only if newHyperplanes is not null).
+     * The terms own their respective (by index) hyperplane.
      *
      * @return the number of terms added to the supplied collection.
      */
