@@ -19,6 +19,7 @@ package org.linqs.psl.database;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -31,6 +32,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
 
 import java.util.Arrays;
@@ -55,6 +57,8 @@ import java.util.Map;
  * Read operations are all thread-safe, but read and writes should not be intermixed.
  */
 public class AtomStore implements Iterable<GroundAtom> {
+    private static final Logger log = Logger.getLogger(AtomStore.class);
+
     public static final int MIN_ALLOCATION = 100;
 
     private Database database;
@@ -65,7 +69,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     private float[] atomValues;
     private GroundAtom[] atoms;
 
-    private Map<QueryAtom, Integer> lookup;
+    private Map<Atom, Integer> lookup;
 
     public AtomStore(Database database) {
         this.database = database;
@@ -118,7 +122,7 @@ public class AtomStore implements Iterable<GroundAtom> {
      * Lookup the atom and get it.
      * A GroundAtom will always be returned, but it may be unmanaged (not persisted in this store).
      */
-    public GroundAtom getAtom(QueryAtom query) {
+    public GroundAtom getAtom(Atom query) {
         Integer index = lookup.get(query);
         if (index != null) {
             return atoms[index.intValue()];
@@ -164,7 +168,7 @@ public class AtomStore implements Iterable<GroundAtom> {
      * Returns -1 if the atom does not exist.
      * Will ignore closed-world atoms.
      */
-    public int getAtomIndex(QueryAtom query) {
+    public int getAtomIndex(Atom query) {
         Integer index = lookup.get(query);
         if (index == null) {
             return -1;
@@ -183,7 +187,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     /**
      * Check if there is an actual (not closed-world) atom managed by this store.
      */
-    public boolean hasAtom(QueryAtom query) {
+    public boolean hasAtom(Atom query) {
         Integer index = lookup.get(query);
         return (index != null);
     }
@@ -266,9 +270,8 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     public void addAtom(GroundAtom atom) {
-        QueryAtom query = new QueryAtom(atom.getPredicate(), atom.getArguments());
-        if (hasAtom(query)) {
-            GroundAtom otherAtom = getAtom(query);
+        if (hasAtom(atom)) {
+            GroundAtom otherAtom = getAtom(atom);
 
             if (atom.getPartition() == otherAtom.getPartition()) {
                 // These are the same atom, a multi-thead access may got past an earlier check.
@@ -283,10 +286,10 @@ public class AtomStore implements Iterable<GroundAtom> {
                     atom, atom.getClass(), atom.getPartition()));
         }
 
-        addAtomInternal(query, atom);
+        addAtomInternal(atom);
     }
 
-    public synchronized void addAtomInternal(QueryAtom query, GroundAtom atom) {
+    public synchronized void addAtomInternal(GroundAtom atom) {
         if (atoms.length == numAtoms) {
             reallocate();
         }
@@ -295,7 +298,7 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
-        lookup.put(query, numAtoms);
+        lookup.put(atom, numAtoms);
 
         numAtoms++;
     }
@@ -350,19 +353,23 @@ public class AtomStore implements Iterable<GroundAtom> {
     private void init() {
         assert(numAtoms == 0);
 
+        log.debug("Initializing AtomStore.");
+
         int databaseAtomCount = getDatabaseAtomCount();
         double overallocationFactor = Options.ATOM_STORE_OVERALLOCATION_FACTOR.getDouble();
         int allocationSize = (int)(Math.max(MIN_ALLOCATION, databaseAtomCount) * (1.0 + overallocationFactor));
 
         atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];
-        lookup = new HashMap<QueryAtom, Integer>((int)(atomValues.length / 0.75));
+        lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
 
         for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
             for (GroundAtom atom : database.getAllGroundAtoms(predicate)) {
                 addAtom(atom);
             }
         }
+
+        log.debug("AtomStore Initialized.");
     }
 
     private synchronized void reallocate() {
