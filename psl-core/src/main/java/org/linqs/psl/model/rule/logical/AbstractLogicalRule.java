@@ -180,15 +180,17 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         final TermStore finalTermStore = termStore;
         final Map<Variable, Integer> variableMap = groundVariables.getVariableMap();
 
-        Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
+        Parallel.foreachBatch(groundVariables, 100, new Parallel.Worker<List<Constant[]>>() {
             @Override
-            public void work(long index, Constant[] row) {
-                GroundRule groundRule = ground(row, variableMap, finalDatabase);
-                if (groundRule != null) {
-                    finalTermStore.add(groundRule);
+            public void work(long size, List<Constant[]> rows) {
+                for (int i = 0; i < size; i++) {
+                    GroundRule groundRule = ground(rows.get(i), variableMap, finalDatabase);
+                    if (groundRule != null) {
+                        finalTermStore.add(groundRule);
 
-                    if (groundRuleCallback != null) {
-                        groundRuleCallback.call(groundRule);
+                        if (groundRuleCallback != null) {
+                            groundRuleCallback.call(groundRule);
+                        }
                     }
                 }
             }

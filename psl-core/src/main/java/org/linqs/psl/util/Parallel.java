@@ -25,11 +25,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -344,7 +344,7 @@ public final class Parallel {
 
         // We can use an unbounded queue (no initial size given) since the parent
         // thread is disciplined when giving out work.
-        workerQueue = new LinkedBlockingQueue<Worker<?>>();
+        workerQueue = new ArrayBlockingQueue<Worker<?>>(numThreads);
         allWorkers = new ArrayList<Worker<?>>(numThreads);
 
         // We will make all the threads daemons, so the JVM shutdown will not be held up.
