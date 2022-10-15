@@ -37,7 +37,7 @@ public class Hyperplane {
         this(new GroundAtom[maxSize], new float[maxSize], constant, 0);
     }
 
-    private Hyperplane(GroundAtom[] variables, float[] coefficients, float constant, int size) {
+    public Hyperplane(GroundAtom[] variables, float[] coefficients, float constant, int size) {
         this.variables = variables;
         this.coefficients = coefficients;
         this.constant = constant;

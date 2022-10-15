@@ -585,7 +585,7 @@ public abstract class DataStoreTest extends PSLBaseTest {
         db.getAtomStore().addAtom(new ObservedAtom(p2, new Constant[]{new StringAttribute("a"), new StringAttribute("b")}, 1.0f, partition.getID()));
 
         try {
-            db.getAtomStore().commit();
+            db.getAtomStore().commit(true);
             fail("IllegalArgumentException not thrown as expected.");
         } catch (IllegalArgumentException ex) {
             // Expected

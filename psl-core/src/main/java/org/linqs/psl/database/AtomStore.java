@@ -230,10 +230,21 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     /**
-     * Commit all unobserved atoms to the database.
+     * Commit all unobs atoms to the database.
      */
     public void commit() {
-        database.commit(getRandomVariableAtoms());
+        commit(false);
+    }
+
+    /**
+     * Commit atoms to the database.
+     */
+    public void commit(boolean includeObs) {
+        if (includeObs) {
+            database.commit(this);
+        } else {
+            database.commit(getRandomVariableAtoms());
+        }
     }
 
     @Override
