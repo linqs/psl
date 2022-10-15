@@ -49,13 +49,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -411,6 +414,11 @@ public class RDBMSDatabase extends Database {
         }
 
         @Override
+        public void reuse(Collection<Constant[]> reuseConstants) {
+            iterator.reuse(reuseConstants);
+        }
+
+        @Override
         public Map<Variable, Integer> getVariableMap() {
             return projectionMap;
         }
@@ -444,10 +452,14 @@ public class RDBMSDatabase extends Database {
 
         private Constant[] next;
 
+        private Queue<Constant[]> reusePool;
+
         public RDBMSQueryResultIterator(String queryString, int[] orderedIndexes, ConstantType[] orderedTypes) {
             this.queryString = queryString;
             this.orderedIndexes = orderedIndexes;
             this.orderedTypes = orderedTypes;
+
+            reusePool = new ConcurrentLinkedQueue<Constant[]>();
 
             next = null;
 
@@ -489,6 +501,13 @@ public class RDBMSDatabase extends Database {
             throw new UnsupportedOperationException();
         }
 
+        public void reuse(Collection<Constant[]> reuseConstants) {
+            // Check for close.
+            if (reusePool != null) {
+                reusePool.addAll(reuseConstants);
+            }
+        }
+
         private void fetchNext() {
             boolean hasNext = false;
             try {
@@ -499,7 +518,10 @@ public class RDBMSDatabase extends Database {
 
             if (hasNext) {
                 // Fetch the next result.
-                next = new Constant[orderedIndexes.length];
+                next = reusePool.poll();
+                if (next == null) {
+                    next = new Constant[orderedIndexes.length];
+                }
 
                 for (int i = 0; i < next.length; i++) {
                     next[i] = extractConstantFromResult(resultSet, orderedIndexes[i], orderedTypes[i]);
@@ -538,6 +560,11 @@ public class RDBMSDatabase extends Database {
                     // Ignore.
                 }
                 connection = null;
+            }
+
+            if (reusePool != null) {
+                reusePool.clear();
+                reusePool = null;
             }
         }
     }

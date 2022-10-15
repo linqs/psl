@@ -22,6 +22,7 @@ import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -50,6 +51,11 @@ public class RDBMSResultList implements ResultList {
         }
 
         varMap.put(var, Integer.valueOf(pos));
+    }
+
+    @Override
+    public void reuse(Collection<Constant[]> reuseConstants) {
+        // Unsupported.
     }
 
     @Override

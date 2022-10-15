@@ -241,6 +241,8 @@ public class Grounding {
                     groundRules.clear();
                 }
             }
+
+            ((QueryResultIterable)source).reuse(batch);
         }
     }
 

@@ -105,7 +105,7 @@ public final class Parallel {
      * The long value provided to the worker will be the number also passed as a Long.
      */
     public synchronized static RunTimings count(long start, long end, long increment, Worker<Long> baseWorker) {
-        initWorkers(baseWorker);
+        initWorkers(baseWorker, null);
         RunTimings timings = countInternal(start, end, increment);
         cleanupWorkers();
 
@@ -179,7 +179,7 @@ public final class Parallel {
      * The long value provided to the worker will be the index of the piece of work.
      */
     public synchronized static <T> RunTimings foreach(Iterable<T> work, Worker<T> baseWorker) {
-        initWorkers(baseWorker);
+        initWorkers(baseWorker, work);
         RunTimings timings = foreachInternal(work);
         cleanupWorkers();
 
@@ -251,7 +251,7 @@ public final class Parallel {
      * The long value passed to the worker will be the number of items in the batch.
      */
     public static <T> RunTimings foreachBatch(Iterator<T> work, int batchSize, Worker<List<T>> baseWorker) {
-        initWorkers(baseWorker);
+        initWorkers(baseWorker, work);
         RunTimings timings = foreachBatchInternal(work, batchSize);
         cleanupWorkers();
 
@@ -364,7 +364,7 @@ public final class Parallel {
     /**
      * Always the first thing called when setting up to run a task in parallel.
      */
-    private static <T> void initWorkers(Worker<T> baseWorker) {
+    private static <T> void initWorkers(Worker<T> baseWorker, Object source) {
         initPool();
 
         workerQueue.clear();
@@ -380,7 +380,7 @@ public final class Parallel {
                 worker = baseWorker.copy();
             }
 
-            worker.init(i);
+            worker.init(i, source);
 
             allWorkers.add(worker);
             workerQueue.add(worker);
@@ -436,6 +436,7 @@ public final class Parallel {
      */
     public static abstract class Worker<T> implements Runnable, Cloneable {
         protected int id;
+        protected Object source;
 
         private long value;
         private long waitTimeMS;
@@ -445,6 +446,7 @@ public final class Parallel {
 
         public Worker() {
             this.id = -1;
+            this.source = null;
             this.value = -1;
             this.waitTimeMS = 0;
             this.workTimeMS = 0;
@@ -456,7 +458,10 @@ public final class Parallel {
          * Cleanup anything.
          * Called after all work has been complete and it is time to clean up.
          */
-        public void close() {}
+        public void close() {
+            id = -1;
+            source = null;
+        }
 
         /**
          * Make a deep copy of this worker.
@@ -476,8 +481,9 @@ public final class Parallel {
          * The id will be unique to this worker for this batch of work.
          * The id is guarenteed to be in [0, numThreads).
          */
-        public void init(int id) {
+        public void init(int id, Object source) {
             this.id = id;
+            this.source = source;
         }
 
         public int getID() {

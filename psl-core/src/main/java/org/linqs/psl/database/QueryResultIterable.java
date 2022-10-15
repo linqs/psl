@@ -20,6 +20,7 @@ package org.linqs.psl.database;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
+import java.util.Collection;
 import java.util.Map;
 
 public interface QueryResultIterable extends Iterable<Constant[]>, AutoCloseable {
@@ -32,4 +33,9 @@ public interface QueryResultIterable extends Iterable<Constant[]>, AutoCloseable
      * Close the associated iterator and any open queries.
      */
     public void close();
+
+    /**
+     * Optional operation to let the iterator/iterable know that some query result buffers can be reused.
+     */
+    public void reuse(Collection<Constant[]> reuseConstants);
 }

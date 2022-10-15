@@ -23,23 +23,32 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * A term store that handles the consensus variables for ADMM.
+ * This term store assumes that no more random variables (RVAs) are added after the first call to add() is made.
+ */
 public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
-    private Map<Integer, List<LocalRecord>> localRecords;
+    // Entries are List<LocalRecord>.
+    private List[] localRecords;
+
     private int numLocalVariables;
 
     public ADMMTermStore(Database database) {
         super(database, new ADMMTermGenerator());
 
         numLocalVariables = 0;
-        localRecords = new HashMap<Integer, List<LocalRecord>>(database.getAtomStore().size());
+        localRecords = null;
     }
 
+    @SuppressWarnings("unchecked")
     public List<LocalRecord> getLocalRecords(int variableIndex) {
-        return localRecords.get(Integer.valueOf(variableIndex));
+        if (localRecords == null || variableIndex >= localRecords.length) {
+            return null;
+        }
+
+        return (List<LocalRecord>)localRecords[variableIndex];
     }
 
     public int getNumLocalVariables() {
@@ -48,6 +57,8 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
 
     @Override
     protected synchronized int add(GroundRule groundRule, ADMMObjectiveTerm term, Hyperplane hyperplane) {
+        init();
+
         long termIndex = size();
         super.add(groundRule, term, hyperplane);
 
@@ -56,11 +67,13 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
             int atomIndex = hyperplane.getVariable(i).getIndex();
 
             // All atoms should be unobserved here (obs should have been merged).
-            if (!localRecords.containsKey(Integer.valueOf(atomIndex))) {
-                localRecords.put(Integer.valueOf(atomIndex), new ArrayList<LocalRecord>());
+            if (localRecords[atomIndex] == null) {
+                localRecords[atomIndex] = new ArrayList();
             }
 
-            localRecords.get(Integer.valueOf(atomIndex)).add(new LocalRecord(termIndex, (short)i));
+            @SuppressWarnings("unchecked")
+            List<LocalRecord> records = (List<LocalRecord>)localRecords[atomIndex];
+            records.add(new LocalRecord(termIndex, (short)i));
             numLocalVariables++;
         }
 
@@ -72,7 +85,12 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
         super.clear();
 
         if (localRecords != null) {
-            localRecords.clear();
+            for (int i = 0; i < localRecords.length; i++) {
+                if (localRecords[i] != null) {
+                    localRecords[i].clear();
+                    localRecords[i] = null;
+                }
+            }
         }
 
         numLocalVariables = 0;
@@ -89,11 +107,25 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     public void reset() {
         super.reset();
 
-        float[] consensusValues = database.getAtomStore().getAtomValues();
-        for (Map.Entry<Integer, List<LocalRecord>> entry : localRecords.entrySet()) {
-            for (LocalRecord local : entry.getValue()) {
-                get(local.termIndex).setLocalValue(local.variableIndex, consensusValues[entry.getKey().intValue()], 0.0f);
+        if (localRecords != null) {
+            float[] consensusValues = database.getAtomStore().getAtomValues();
+            for (int i = 0; i < localRecords.length; i++) {
+                if (localRecords[i] == null) {
+                    continue;
+                }
+
+                @SuppressWarnings("unchecked")
+                List<LocalRecord> records = (List<LocalRecord>)localRecords[i];
+                for (LocalRecord local : records) {
+                    get(local.termIndex).setLocalValue(local.variableIndex, consensusValues[i], 0.0f);
+                }
             }
+        }
+    }
+
+    private synchronized void init() {
+        if (localRecords == null) {
+            localRecords = new List[database.getAtomStore().size()];
         }
     }
 

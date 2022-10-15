@@ -193,6 +193,8 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                         }
                     }
                 }
+
+                groundVariables.reuse(rows);
             }
         });
 
