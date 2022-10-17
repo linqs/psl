@@ -55,6 +55,9 @@ import java.util.Map;
  * but will be kept in the data store (so their values are not re-computed).
  *
  * Read operations are all thread-safe, but read and writes should not be intermixed.
+ *
+ * When initializing, the AtomStore will attempt to put RVA at lower indexes and will track the highest index of an RVA.
+ * This is to allow downstream processes to potentially optimize storage requirements.
  */
 public class AtomStore implements Iterable<GroundAtom> {
     private static final Logger log = Logger.getLogger(AtomStore.class);
@@ -68,6 +71,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     private int numAtoms;
     private float[] atomValues;
     private GroundAtom[] atoms;
+    private int maxRVAIndex;
 
     private Map<Atom, Integer> lookup;
 
@@ -79,6 +83,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         numAtoms = 0;
         atomValues = null;
         atoms = null;
+        maxRVAIndex = -1;
 
         lookup = null;
 
@@ -87,6 +92,10 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     public int size() {
         return numAtoms;
+    }
+
+    public int getMaxRVAIndex() {
+        return maxRVAIndex;
     }
 
     /**
@@ -300,6 +309,10 @@ public class AtomStore implements Iterable<GroundAtom> {
         atomValues[numAtoms] = atom.getValue();
         lookup.put(atom, numAtoms);
 
+        if (atom instanceof RandomVariableAtom) {
+            maxRVAIndex = numAtoms;
+        }
+
         numAtoms++;
     }
 
@@ -307,6 +320,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         numAtoms = 0;
         atomValues = null;
         atoms = null;
+        maxRVAIndex = -1;
 
         if (lookup != null) {
             lookup.clear();
@@ -363,7 +377,23 @@ public class AtomStore implements Iterable<GroundAtom> {
         atoms = new GroundAtom[atomValues.length];
         lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
 
+        // Load open predicates first (to get RVAs at a lower index).
         for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
+            if (database.isClosed(predicate)) {
+                continue;
+            }
+
+            for (GroundAtom atom : database.getAllGroundAtoms(predicate)) {
+                addAtom(atom);
+            }
+        }
+
+        // Now load closed predicates.
+        for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
+            if (!database.isClosed(predicate)) {
+                continue;
+            }
+
             for (GroundAtom atom : database.getAllGroundAtoms(predicate)) {
                 addAtom(atom);
             }

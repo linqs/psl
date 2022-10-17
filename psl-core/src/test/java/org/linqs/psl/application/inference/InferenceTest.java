@@ -103,6 +103,9 @@ public abstract class InferenceTest extends PSLBaseTest {
     @Test
     public void baseTest() {
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
+        toClose.add(info.predicates.get("Nice"));
+        toClose.add(info.predicates.get("Person"));
+
         Database inferDB = info.dataStore.getDatabase(info.targetPartition, toClose, info.observationPartition);
         InferenceApplication inference = getInference(info.model.getRules(), inferDB);
 
