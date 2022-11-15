@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
@@ -173,5 +174,14 @@ public class FileUtils {
         }
 
         return Paths.get(relativeDir, basePath).toString();
+    }
+
+    public static String readFileAsString(String path) {
+        try {
+            byte[] bytes = Files.readAllBytes(Paths.get(path));
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to read file contents from: '" + path + "'.", ex);
+        }
     }
 }
