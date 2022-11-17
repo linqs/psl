@@ -376,6 +376,14 @@ public class Config {
         return string.toString();
     }
 
+    public static DataConfiguration getCopy() {
+        return new DataConfiguration(config);
+    }
+
+    public static void replace(DataConfiguration newConfig) {
+        config = newConfig;
+    }
+
     private static void logAccess(String key, Object defaultValue) {
         if (config.containsKey(key)) {
             log.debug("Found value {} for option {}.", config.getProperty(key), key);

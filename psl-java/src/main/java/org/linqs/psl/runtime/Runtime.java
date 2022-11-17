@@ -47,6 +47,7 @@ import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 
+import org.apache.commons.configuration2.DataConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.io.BufferedReader;
@@ -57,6 +58,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -71,28 +73,40 @@ public class Runtime {
     public static final String PARTITION_NAME_TARGET = "targets";
     public static final String PARTITION_NAME_LABELS = "truth";
 
-    /**
-     * Create a new runtime with no additional arguments.
-     * Arguments may have already been set in the config.
-     */
     public Runtime() {
-        this(null);
-    }
-
-    /**
-     * Create a new runtime with the additional supplied arguments.
-     */
-    public Runtime(String[] args) {
-        parseOptions(args);
-
         initConfig();
         initLogger();
     }
 
+    // TEST
+    public void run() {
+        run(null);
+    }
+
     /**
      * The primary interface into a PSL runtime.
+     * Options specified in the config will be applied during the runtime, and reset after.
      */
-    public void run() {
+    public void run(RuntimeConfig config) {
+        if (config == null) {
+            config = new RuntimeConfig();
+        }
+
+        DataConfiguration oldSettings = Config.getCopy();
+
+        try {
+            runInternal(config);
+        } finally {
+            Config.replace(oldSettings);
+        }
+    }
+
+    private void runInternal(RuntimeConfig config) {
+        // Apply any top-level options found in the config.
+        for (Map.Entry<String, String> entry : config.options.entrySet()) {
+            Config.setProperty(entry.getKey(), entry.getValue());
+        }
+
         if (checkHelp() || checkVersion()) {
             return;
         }
@@ -269,25 +283,6 @@ public class Runtime {
         return model;
     }
 
-    private void parseOptions(String[] args) {
-        if (args == null) {
-            return;
-        }
-
-        for (String arg : args) {
-            String optionName = arg;
-            String optionValue = null;
-
-            if (arg.contains("=")) {
-                String[] parts = arg.split("=");
-                optionName = parts[0];
-                optionValue = parts[1];
-            }
-
-            Config.setProperty(optionName, optionValue);
-        }
-    }
-
     private void runInference(Model model) {
         DataStore dataStore = initDataStore();
         Set<StandardPredicate> closedPredicates = loadDataFile(dataStore, RuntimeOptions.INFERENCE_DATA_PATH.getString());
@@ -397,8 +392,15 @@ public class Runtime {
     }
 
     public static void main(String[] args) {
-        Runtime runtime = new Runtime(args);
-        runtime.run();
+        if (args == null || args.length != 1) {
+            System.out.println("USAGE: " + Runtime.class + " <path to JSON config>");
+            return;
+        }
+
+        RuntimeConfig config = RuntimeConfig.fromFile(args[0]);
+
+        Runtime runtime = new Runtime();
+        runtime.run(config);
     }
 
     public static enum DatabaseType {
