@@ -100,6 +100,25 @@
         <Bug pattern="IS2_INCONSISTENT_SYNC" />
     </Match>
 
+    <!-- Several RuntimeConfig subclasses are used for JSON data binding and use public fields. -->
+    <Match>
+        <Class name="~org.linqs.psl.runtime.RuntimeConfig.*" />
+        <Or>
+            <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD" />
+            <Bug pattern="UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD" />
+        </Or>
+    </Match>
+
+    <!-- Jackson value filtering (to remove null/empty values during serialization) uses the equals() method to filter out values. -->
+    <Match>
+        <Class name="org.linqs.psl.runtime.RuntimeConfig$EmptyValueFilter" />
+        <Or>
+            <Bug pattern="EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS" />
+            <Bug pattern="EQ_UNUSUAL" />
+            <Bug pattern="HE_EQUALS_USE_HASHCODE" />
+        </Or>
+    </Match>
+
     <!-- These checks come from working directly from System.out (which we cannot set an encoding for at this point). -->
     <Match>
         <Class name="org.linqs.psl.runtime.Runtime$GroundRuleOutputter" />
