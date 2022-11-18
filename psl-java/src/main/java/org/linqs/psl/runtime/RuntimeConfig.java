@@ -17,12 +17,20 @@
  */
 package org.linqs.psl.runtime;
 
+import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.function.ExternalFunction;
+import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.predicate.model.ModelPredicate;
+import org.linqs.psl.model.predicate.model.SupportingModel;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.IteratorUtils;
+import org.linqs.psl.util.Reflection;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,10 +38,13 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
@@ -68,7 +79,7 @@ public class RuntimeConfig {
 
     public static final String KEY_ALL = "all";
     public static final String KEY_WL = "learn";
-    public static final String KEY_EVAL = "eval";
+    public static final String KEY_INFER = "infer";
 
     public static final String KEY_EVALAUTOR = "evaluator";
     public static final String KEY_OPTIONS = "options";
@@ -77,8 +88,8 @@ public class RuntimeConfig {
     public Map<String, PredicateConfigInfo> predicates;
     public Map<String, String> options;
 
-    public SplitConfigInfo eval;
     public SplitConfigInfo learn;
+    public SplitConfigInfo infer;
 
     public RuntimeConfig() {
         rules = null;
@@ -86,18 +97,119 @@ public class RuntimeConfig {
         options = new HashMap<String, String>();
     }
 
+    /**
+     * Validate the config, instantiate predicates, and infer any missing options.
+     * This is not a simple validation method, and should not be called until the runtime is ready to instantiate predicates.
+     * All additional runtime-level options (like int/string types) should already be set before calling,
+     * since these options may be used to infer the values for other configurations.
+     * Rules will be validated, but not passed back their Rule form.
+     * After validation, the options in this config should be applied again (since new options may be set).
+     */
+    public void validate() {
+        boolean runLearn = RuntimeOptions.LEARN.getBoolean();
+        boolean runInfer = RuntimeOptions.INFERENCE.getBoolean();
+
+        // Any top-level learn/infer indicates that those respective steps should be run.
+        if (learn == null) {
+            learn = new SplitConfigInfo();
+        } else {
+            runLearn = true;
+        }
+
+        if (infer == null) {
+            infer = new SplitConfigInfo();
+        } else {
+            runInfer = true;
+        }
+
+        // Validate each predicate.
+        for (Map.Entry<String, PredicateConfigInfo> entry : predicates.entrySet()) {
+            validatePredicate(entry.getKey(), entry.getValue());
+        }
+
+        // TEST: More?
+
+        options.put(RuntimeOptions.LEARN.name(), "" + runLearn);
+        options.put(RuntimeOptions.INFERENCE.name(), "" + runInfer);
+
+        // TEST
+        System.out.println("---");
+        System.out.println(this);
+        System.out.println("---");
+    }
+
+    private void validatePredicate(String name, PredicateConfigInfo info) {
+        if (!name.equals(info.name)) {
+            throw new IllegalArgumentException(String.format("Predicate name mismatch: ['%s', '%s'].", name, info.name));
+        }
+
+        // Arity validated at JSON-level.
+
+        // Fill in missing types.
+
+        if (info.types == null || info.types.size() == 0) {
+            info.types = new ArrayList<String>(info.arity);
+
+            String defaultType = ConstantType.UniqueStringID.toString();
+            if (RuntimeOptions.DB_INT_IDS.getBoolean()) {
+                defaultType = ConstantType.UniqueIntID.toString();
+            }
+
+            for (int i = 0; i < info.arity; i++) {
+                info.types.add(defaultType);
+            }
+        }
+
+        ConstantType[] types = new ConstantType[info.arity];
+        for (int i = 0; i < info.arity; i++) {
+            types[i] = ConstantType.valueOf(info.types.get(i));
+        }
+
+        // Instantiate the actual predicate.
+
+        if (info.function != null && info.model != null) {
+            throw new IllegalArgumentException(String.format(
+                    "Predicate (%s) cannot be both functional and model.", name));
+        }
+
+        if (info.function != null) {
+            ExternalFunctionalPredicate.get(name, (ExternalFunction)(Reflection.newObject(info.function)));
+
+            if (info.dataSize() > 0) {
+                throw new IllegalArgumentException(String.format(
+                        "Predicate (%s) cannot be functional and have data.", name));
+            }
+        } else if (info.model != null) {
+            SupportingModel model = (SupportingModel)Reflection.newObject(info.model);
+            ModelPredicate.get(name, model, types);
+        } else {
+            StandardPredicate.get(name, types);
+        }
+    }
+
     @Override
     public String toString() {
+        return toString(false);
+    }
+
+    public String toString(boolean skipEmptyValues) {
         ObjectMapper mapper = getMapper();
 
-        JsonInclude.Value includeValue = JsonInclude.Value.empty()
-                .withValueInclusion(JsonInclude.Include.CUSTOM)
-                .withValueFilter(EmptyValueFilter.class);
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
 
-        mapper.setDefaultPropertyInclusion(includeValue);
+        if (skipEmptyValues) {
+            JsonInclude.Value includeValue = JsonInclude.Value.empty()
+                    .withValueInclusion(JsonInclude.Include.CUSTOM)
+                    .withValueFilter(EmptyValueFilter.class);
+
+            mapper.setDefaultPropertyInclusion(includeValue);
+        }
+
+        DefaultPrettyPrinter printer = new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter("    ", "\n"));
 
         try {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(this);
+            return mapper.writer(printer).writeValueAsString(this);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -113,7 +225,7 @@ public class RuntimeConfig {
         throw new IllegalArgumentException("Expected runtime config file to end  in '.json' or '.yaml'.");
     }
 
-    private static RuntimeConfig fromJSON(String contents) {
+    public static RuntimeConfig fromJSON(String contents) {
         JSONRuntimeConfig baseConfig = parseJSON(contents);
 
         RuntimeConfig config = new RuntimeConfig();
@@ -126,7 +238,7 @@ public class RuntimeConfig {
         this.options = baseConfig.options;
         this.rules = baseConfig.rules;
         this.learn = baseConfig.learn;
-        this.eval = baseConfig.eval;
+        this.infer = baseConfig.infer;
 
         predicates = new HashMap<String, PredicateConfigInfo>(baseConfig.predicates.size());
         for (Map.Entry<String, JSONPredicate> entry : baseConfig.predicates.entrySet()) {
@@ -202,6 +314,10 @@ public class RuntimeConfig {
     public static class RuleStrings implements RuleSource {
         public List<String> rules;
 
+        public RuleStrings() {
+            rules = new ArrayList<String>();
+        }
+
         public RuleStrings(List<String> rules) {
             this.rules = rules;
         }
@@ -210,6 +326,11 @@ public class RuntimeConfig {
     public static class SplitConfigInfo {
         public RuleSource rules;
         public Map<String, String> options;
+
+        public SplitConfigInfo() {
+            rules = new RuleStrings();
+            options = new HashMap<String, String>();
+        }
     }
 
     public static class PredicateConfigInfo {
@@ -232,7 +353,7 @@ public class RuntimeConfig {
 
         public Map<String, String> options;
 
-        public int size() {
+        public int dataSize() {
             return observations.size() + targets.size() + truth.size();
         }
     }
@@ -240,16 +361,16 @@ public class RuntimeConfig {
     public static class PartitionInfo {
         public SplitDataInfo all;
         public SplitDataInfo learn;
-        public SplitDataInfo eval;
+        public SplitDataInfo infer;
 
         public PartitionInfo() {
             all = new SplitDataInfo();
             learn = new SplitDataInfo();
-            eval = new SplitDataInfo();
+            infer = new SplitDataInfo();
         }
 
         public int size() {
-            return all.size() + learn.size() + eval.size();
+            return all.size() + learn.size() + infer.size();
         }
     }
 
@@ -282,8 +403,8 @@ public class RuntimeConfig {
         public Map<String, JSONPredicate> predicates;
         public Map<String, String> options;
 
-        public SplitConfigInfo eval;
         public SplitConfigInfo learn;
+        public SplitConfigInfo infer;
 
         /**
          * Convert this config to a RuntimeConfig.
@@ -292,7 +413,7 @@ public class RuntimeConfig {
             config.options = this.options;
             config.rules = this.rules;
             config.learn = this.learn;
-            config.eval = this.eval;
+            config.infer = this.infer;
 
             config.predicates = new HashMap<String, PredicateConfigInfo>(this.predicates.size());
             for (Map.Entry<String, JSONPredicate> entry : this.predicates.entrySet()) {
@@ -330,12 +451,13 @@ public class RuntimeConfig {
 
             // Properties that do not require any validation/modification.
             config.options = options;
-            config.observations = observations;
-            config.targets = targets;
-            config.truth = truth;
             config.function = function;
             config.model = model;
             config.evaluations = evaluations;
+
+            config.observations = (observations == null) ? new PartitionInfo() : observations;
+            config.targets = (targets == null) ? new PartitionInfo() : targets;
+            config.truth = (truth == null) ? new PartitionInfo() : truth;
 
             config.forceOpen = false;
             if (forceOpen != null && forceOpen.booleanValue()) {
@@ -545,13 +667,13 @@ public class RuntimeConfig {
                         parseDataSpec((ArrayNode)entry.getValue(), partition.all);
                     } else if (entry.getKey().equals(KEY_WL)) {
                         parseDataSpec((ArrayNode)entry.getValue(), partition.learn);
-                    } else if (entry.getKey().equals(KEY_EVAL)) {
-                        parseDataSpec((ArrayNode)entry.getValue(), partition.eval);
+                    } else if (entry.getKey().equals(KEY_INFER)) {
+                        parseDataSpec((ArrayNode)entry.getValue(), partition.infer);
                     } else {
                         throw new IllegalStateException(String.format(
                                 "Unknown split type (%s). Expecting one of [%s, %s, %s].",
                                 entry.getKey(),
-                                KEY_ALL, KEY_WL, KEY_EVAL));
+                                KEY_ALL, KEY_WL, KEY_INFER));
                     }
                 }
             } else {
@@ -582,6 +704,9 @@ public class RuntimeConfig {
         }
     }
 
+    /**
+     * when preting pretty, skip null/empty values.
+     */
     private static class EmptyValueFilter {
         @Override
         public boolean equals(Object value) {
@@ -607,7 +732,13 @@ public class RuntimeConfig {
 
     public static void main(String[] args) {
         RuntimeConfig config = RuntimeConfig.fromFile(args[0]);
-        System.out.println(config);
-        RuntimeConfig.fromJSON(config.toString());
+
+        // TEST
+        config.validate();
+        System.out.println(config.toString(false));
+
+        // TEST
+        // System.out.println(config.toString(true));
+        // RuntimeConfig.fromJSON(config.toString());
     }
 }

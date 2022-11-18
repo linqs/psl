@@ -78,9 +78,8 @@ public class Runtime {
         initLogger();
     }
 
-    // TEST
     public void run() {
-        run(null);
+        run(new RuntimeConfig());
     }
 
     /**
@@ -88,10 +87,6 @@ public class Runtime {
      * Options specified in the config will be applied during the runtime, and reset after.
      */
     public void run(RuntimeConfig config) {
-        if (config == null) {
-            config = new RuntimeConfig();
-        }
-
         DataConfiguration oldSettings = Config.getCopy();
 
         try {
@@ -112,6 +107,8 @@ public class Runtime {
         }
 
         log.info("PSL Runtime Version {}", Version.getFull());
+        // TEST
+        config.validate();
         checkConfig();
 
         Model model = null;
@@ -126,6 +123,7 @@ public class Runtime {
         cleanup();
     }
 
+    // TEST
     private void checkConfig() {
         boolean hasLearn = RuntimeOptions.LEARN.getBoolean();
         boolean hasInference = RuntimeOptions.INFERENCE.getBoolean();
