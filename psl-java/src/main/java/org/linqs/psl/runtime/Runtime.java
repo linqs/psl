@@ -26,14 +26,17 @@ import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
+import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.H2DatabaseDriver;
 import org.linqs.psl.database.rdbms.driver.PostgreSQLDriver;
 import org.linqs.psl.database.rdbms.driver.SQLiteDriver;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
@@ -56,6 +59,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +76,12 @@ public class Runtime {
     public static final String PARTITION_NAME_OBSERVATIONS = "observations";
     public static final String PARTITION_NAME_TARGET = "targets";
     public static final String PARTITION_NAME_LABELS = "truth";
+
+    public static final String[] PARTITION_NAMES = new String[]{
+        PARTITION_NAME_OBSERVATIONS,
+        PARTITION_NAME_TARGET,
+        PARTITION_NAME_LABELS
+    };
 
     public Runtime() {
         initConfig();
@@ -102,51 +112,31 @@ public class Runtime {
             Config.setProperty(entry.getKey(), entry.getValue());
         }
 
+        // Specially check if we need to re-init the logger.
+        initLogger();
+
         if (checkHelp() || checkVersion()) {
             return;
         }
 
         log.info("PSL Runtime Version {}", Version.getFull());
-        // TEST
         config.validate();
-        checkConfig();
+
+        // Apply top-level options again after validation (since options may have been changed or added).
+        for (Map.Entry<String, String> entry : config.options.entrySet()) {
+            Config.setProperty(entry.getKey(), entry.getValue());
+        }
 
         Model model = null;
         if (RuntimeOptions.LEARN.getBoolean()) {
-            model = runLearning();
+            model = runLearning(config);
         }
 
         if (RuntimeOptions.INFERENCE.getBoolean()) {
-            runInference(model);
+            runInference(config, model);
         }
 
         cleanup();
-    }
-
-    // TEST
-    private void checkConfig() {
-        boolean hasLearn = RuntimeOptions.LEARN.getBoolean();
-        boolean hasInference = RuntimeOptions.INFERENCE.getBoolean();
-
-        if (!hasInference && !hasLearn) {
-            throw new IllegalStateException("Neither inference nor learning was specified.");
-        }
-
-        if (hasLearn && !RuntimeOptions.LEARN_DATA_PATH.isSet()) {
-            throw new IllegalStateException("No learn data specified.");
-        }
-
-        if (hasLearn && !RuntimeOptions.LEARN_MODEL_PATH.isSet()) {
-            throw new IllegalStateException("No learn model specified.");
-        }
-
-        if (!hasLearn && !RuntimeOptions.INFERENCE_MODEL_PATH.isSet()) {
-            throw new IllegalStateException("No inference model (or learning) specified.");
-        }
-
-        if (hasInference && !RuntimeOptions.INFERENCE_DATA_PATH.isSet()) {
-            throw new IllegalStateException("No infernece data specified.");
-        }
     }
 
     private boolean checkHelp() {
@@ -180,25 +170,10 @@ public class Runtime {
         Parallel.close();
     }
 
-    private void evaluate(DataStore dataStore, Database targetDatabase, Database truthDatabase,
-            Set<StandardPredicate> closedPredicates, List<Evaluator> evaluators) {
-        // Set of open predicates
-        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
-        openPredicates.removeAll(closedPredicates);
-
-        for (Evaluator evaluator : evaluators) {
-            log.debug("Starting evaluation with class: {}.", evaluator.getClass());
-
-            for (StandardPredicate targetPredicate : openPredicates) {
-                // Before we run evaluation, ensure that the truth database actually has instances of the target predicate.
-                if (truthDatabase.countAllGroundAtoms(targetPredicate) == 0) {
-                    log.debug("Skipping evaluation for {} since there are no ground truth atoms", targetPredicate);
-                    continue;
-                }
-
-                evaluator.compute(targetDatabase, truthDatabase, targetPredicate);
-                log.info("Evaluation results for {} -- {}", targetPredicate.getName(), evaluator.getAllStats());
-            }
+    private void evaluate(Database targetDatabase, Database truthDatabase, List<EvaluationInstance> evaluations) {
+        for (EvaluationInstance evaluation : evaluations) {
+            evaluation.compute(targetDatabase, truthDatabase);
+            log.info("Evaluation results: {}", evaluation.getOutput());
         }
     }
 
@@ -212,7 +187,7 @@ public class Runtime {
         }
     }
 
-    private DataStore initDataStore() {
+    private DataStore initDataStore(RuntimeConfig config) {
         DatabaseDriver driver = null;
         String path = null;
 
@@ -238,7 +213,16 @@ public class Runtime {
                 throw new IllegalStateException("Unknown database type: " + RuntimeOptions.DB_TYPE.getString());
         }
 
-        return new RDBMSDataStore(driver);
+        DataStore dataStore = new RDBMSDataStore(driver);
+
+        for (RuntimeConfig.PredicateConfigInfo predicateInfo : config.predicates.values()) {
+            Predicate predicate = Predicate.get(predicateInfo.name);
+            if (predicate instanceof StandardPredicate) {
+                dataStore.registerPredicate((StandardPredicate)predicate);
+            }
+        }
+
+        return dataStore;
     }
 
     private void initLogger() {
@@ -247,52 +231,104 @@ public class Runtime {
         }
     }
 
-    private Set<StandardPredicate> loadDataFile(DataStore dataStore, String path) {
-        log.debug("Loading data");
+    private void loadData(DataStore dataStore, RuntimeConfig config, boolean infer) {
+        log.debug("Data loading start");
 
-        Set<StandardPredicate> closedPredicates;
-        try {
-            closedPredicates = DataLoader.load(dataStore, path, RuntimeOptions.DB_INT_IDS.getBoolean());
-        } catch (ConfigurationException | FileNotFoundException ex) {
-            throw new RuntimeException("Failed to load data from file: " + path, ex);
+        for (RuntimeConfig.PredicateConfigInfo predicateInfo : config.predicates.values()) {
+            if (predicateInfo.dataSize() == 0) {
+                continue;
+            }
+
+            StandardPredicate predicate = StandardPredicate.get(predicateInfo.name);
+
+            // Align with partition names.
+            List<Iterable<String>> paths = Arrays.asList(
+                predicateInfo.observations.getDataPaths(infer),
+                predicateInfo.targets.getDataPaths(infer),
+                predicateInfo.truth.getDataPaths(infer)
+            );
+
+            List<Iterable<List<String>>> points = Arrays.asList(
+                predicateInfo.observations.getDataPoints(infer),
+                predicateInfo.targets.getDataPoints(infer),
+                predicateInfo.truth.getDataPoints(infer)
+            );
+
+
+            for (int i = 0; i < PARTITION_NAMES.length; i++) {
+                loadDataPaths(dataStore, predicate, PARTITION_NAMES[i], paths.get(i));
+                loadDataPoints(dataStore, predicate, PARTITION_NAMES[i], points.get(i));
+            }
         }
 
         log.debug("Data loading complete");
-
-        return closedPredicates;
     }
 
-    private Model loadModelFile(String path) {
-        log.debug("Loading model from {}", path);
+    private void loadDataPaths(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<String> paths) {
+        Partition partition = dataStore.getPartition(partitionName);
+        Inserter insert = dataStore.getInserter(predicate, partition);
 
-        Model model = null;
+        for (String path : paths) {
+            log.debug("Loading data for {} ({} partition) from {}", predicate, partitionName, path);
+            insert.loadDelimitedDataAutomatic(path);
+        }
+    }
 
-        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
-            model = ModelLoader.load(reader);
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to load model from file: " + path, ex);
+    private void loadDataPoints(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<List<String>> points) {
+        Partition partition = dataStore.getPartition(partitionName);
+        Inserter insert = dataStore.getInserter(predicate, partition);
+
+        log.debug("Loading embeded data for {} ({} partition)", predicate, partitionName);
+
+        for (List<String> point : points) {
+            insert.insert(point);
+        }
+    }
+
+    private void runInference(RuntimeConfig config, Model model) {
+        // Save the config so we can apply inference-only options.
+        DataConfiguration oldSettings = Config.getCopy();
+
+        try {
+            runInferenceInternal(config, model);
+        } finally {
+            Config.replace(oldSettings);
+        }
+    }
+
+    private void runInferenceInternal(RuntimeConfig config, Model model) {
+        // Apply any inference-only options found in the config.
+        for (Map.Entry<String, String> entry : config.infer.options.entrySet()) {
+            Config.setProperty(entry.getKey(), entry.getValue());
         }
 
-        log.debug("Loaded Model:");
+        // If a model was passed in, then it was learned from the common rules (so don't include them).
+        // Otherwise, load the common rules.
+        if (model == null) {
+            model = new Model();
+            for (Rule rule : config.rules.getRules()) {
+                model.addRule(rule);
+            }
+        }
+
+        // Add infer-only rules.
+        for (Rule rule : config.learn.rules.getRules()) {
+            model.addRule(rule);
+        }
+
+        if (model.getRules().size() == 0) {
+            throw new RuntimeException("No rules found for inference.");
+        }
+
+        log.debug("Model:");
         for (Rule rule : model.getRules()) {
             log.debug("   " + rule);
         }
 
-        return model;
-    }
+        DataStore dataStore = initDataStore(config);
+        loadData(dataStore, config, true);
 
-    private void runInference(Model model) {
-        DataStore dataStore = initDataStore();
-        Set<StandardPredicate> closedPredicates = loadDataFile(dataStore, RuntimeOptions.INFERENCE_DATA_PATH.getString());
-
-        if (RuntimeOptions.INFERENCE_MODEL_PATH.isSet()) {
-            model = loadModelFile(RuntimeOptions.INFERENCE_MODEL_PATH.getString());
-        } else {
-            log.debug("Using trained model:");
-            for (Rule rule : model.getRules()) {
-                log.debug("   " + rule);
-            }
-        }
+        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(true);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
@@ -301,13 +337,7 @@ public class Runtime {
         Database targetDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        List<Evaluator> evaluators = new ArrayList<Evaluator>();
-        String evaluatorNames = RuntimeOptions.INFERENCE_EVAL.getString();
-        if (evaluatorNames != null) {
-            for (String evaluatorName : evaluatorNames.split(",")) {
-                evaluators.add((Evaluator)Reflection.newObject(evaluatorName));
-            }
-        }
+        List<EvaluationInstance> evaluations = getEvaluations(config);
 
         GroundRuleOutputter groundingCallback = null;
         if (RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES.getBoolean()) {
@@ -319,7 +349,7 @@ public class Runtime {
         InferenceApplication inferenceApplication = InferenceApplication.getInferenceApplication(
                 RuntimeOptions.INFERENCE_METHOD.getString(), model.getRules(), targetDatabase);
 
-        inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluators, truthDatabase);
+        inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 
         if (groundingCallback != null) {
             groundingCallback.close();
@@ -335,7 +365,7 @@ public class Runtime {
             targetDatabase.outputRandomVariableAtoms(outputDir);
         }
 
-        evaluate(dataStore, targetDatabase, truthDatabase, closedPredicates, evaluators);
+        evaluate(targetDatabase, truthDatabase, evaluations);
 
         inferenceApplication.close();
         targetDatabase.close();
@@ -343,10 +373,48 @@ public class Runtime {
         dataStore.close();
     }
 
-    private Model runLearning() {
-        DataStore dataStore = initDataStore();
-        Set<StandardPredicate> closedPredicates = loadDataFile(dataStore, RuntimeOptions.LEARN_DATA_PATH.getString());
-        Model model = loadModelFile(RuntimeOptions.LEARN_MODEL_PATH.getString());
+    private Model runLearning(RuntimeConfig config) {
+        // Save the config so we can apply learn-only options.
+        DataConfiguration oldSettings = Config.getCopy();
+
+        try {
+            return runLearningInternal(config);
+        } finally {
+            Config.replace(oldSettings);
+        }
+    }
+
+    private Model runLearningInternal(RuntimeConfig config) {
+        // Apply any learn-only options found in the config.
+        for (Map.Entry<String, String> entry : config.learn.options.entrySet()) {
+            Config.setProperty(entry.getKey(), entry.getValue());
+        }
+
+        Model model = new Model();
+
+        // Add all common rules.
+        for (Rule rule : config.rules.getRules()) {
+            model.addRule(rule);
+        }
+
+        // Add learn-only rules.
+        for (Rule rule : config.learn.rules.getRules()) {
+            model.addRule(rule);
+        }
+
+        if (model.getRules().size() == 0) {
+            throw new RuntimeException("No rules found for learning.");
+        }
+
+        log.debug("Model:");
+        for (Rule rule : model.getRules()) {
+            log.debug("   " + rule);
+        }
+
+        DataStore dataStore = initDataStore(config);
+        loadData(dataStore, config, false);
+
+        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(false);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
@@ -387,6 +455,51 @@ public class Runtime {
         }
 
         return model;
+    }
+
+    private List<EvaluationInstance> getEvaluations(RuntimeConfig config) {
+        boolean hasPrimaryEval = false;
+
+        List<EvaluationInstance> evaluations = new ArrayList<EvaluationInstance>();
+
+        for (RuntimeConfig.PredicateConfigInfo predicateInfo : config.predicates.values()) {
+            if (predicateInfo.evaluations.size() == 0) {
+                continue;
+            }
+
+            Predicate predicate = Predicate.get(predicateInfo.name);
+            if (!(predicate instanceof StandardPredicate)) {
+                continue;
+            }
+
+            for (RuntimeConfig.EvalInfo eval : predicateInfo.evaluations) {
+                Evaluator evaluator = null;
+                DataConfiguration oldSettings = Config.getCopy();
+
+                try {
+                    evaluator = (Evaluator)Reflection.newObject(eval.evaluator);
+                } finally {
+                    Config.replace(oldSettings);
+                }
+
+                evaluations.add(new EvaluationInstance((StandardPredicate)predicate, evaluator, eval.primary));
+                hasPrimaryEval |= eval.primary;
+            }
+        }
+
+        if (evaluations.size() == 0) {
+            return evaluations;
+        }
+
+        if (!hasPrimaryEval) {
+            if (evaluations.size() > 1) {
+                log.info("Multiple evaluations declared, but no primary evaluation specified. Using the first evaluation instance: {}.", evaluations.get(0));
+            }
+
+            evaluations.get(0).setPrimary(true);
+        }
+
+        return evaluations;
     }
 
     public static void main(String[] args) {

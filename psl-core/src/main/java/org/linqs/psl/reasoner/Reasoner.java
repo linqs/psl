@@ -19,8 +19,7 @@ package org.linqs.psl.reasoner;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
-import org.linqs.psl.evaluation.statistics.Evaluator;
-import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
@@ -65,7 +64,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      * Optimize without any evaluation.
      */
     public double optimize(TermStore<T> termStore) {
-        return optimize(termStore, null, null, null);
+        return optimize(termStore, null, null);
     }
 
     /**
@@ -73,8 +72,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      * If available, use the provided evaluation materials during optimization.
      * @return the objective the reasoner uses.
      */
-    public abstract double optimize(TermStore<T> termStore,
-            List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates);
+    public abstract double optimize(TermStore<T> termStore, List<EvaluationInstance> evaluations, TrainingMap trainingMap);
 
     /**
      * Releases all resources acquired by this Reasoner.
@@ -88,28 +86,21 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         this.budget = budget;
     }
 
-    protected void evaluate(TermStore<T> termStore, int iteration,
-            List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
+    protected void evaluate(TermStore<T> termStore, int iteration, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
         if (!evaluate) {
             return;
         }
 
-        if (trainingMap == null
-                || evaluators == null || evaluators.size() == 0
-                || evaluationPredicates == null || evaluationPredicates.size() == 0) {
+        if (trainingMap == null || evaluations == null || evaluations.size() == 0) {
             return;
         }
 
         // Sync variables before evaluation.
         termStore.sync();
 
-        for (Evaluator evaluator : evaluators) {
-            for (StandardPredicate predicate : evaluationPredicates) {
-                evaluator.compute(trainingMap, predicate);
-                log.info(
-                        "Iteration {} -- Evaluator: {}, Predicate: {}, Results -- {}.",
-                        iteration, evaluator.getClass().getSimpleName(), predicate.getName(), evaluator.getAllStats());
-            }
+        for (EvaluationInstance evaluation : evaluations) {
+            evaluation.compute(trainingMap);
+            log.info("Iteration {} -- {}.", iteration, evaluation.getOutput());
         }
     }
 }

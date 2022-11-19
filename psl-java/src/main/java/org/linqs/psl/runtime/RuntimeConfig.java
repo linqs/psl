@@ -19,6 +19,7 @@ package org.linqs.psl.runtime;
 
 import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
@@ -64,11 +65,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * A configuration continaer that describes how a runtime should operate.
+ * A configuration container that describes how a runtime should operate.
  * Note that this class just represents what was provided as a configuration,
  * not a fully validated configuration.
  *
@@ -76,6 +79,9 @@ import java.util.Map;
  * but will be overwritten by command-line/one-off options.
  *
  * This config is only meant to be applied for the duration of the relevant runtime.
+ *
+ * This class assumes that there are two phases in PSL: learning (learn) and inference (infer).
+ * When using a boolean to indicate phase, assume absence of one is presence of the other.
  */
 public class RuntimeConfig {
     public static final String KEY_RULES = "rules";
@@ -86,6 +92,7 @@ public class RuntimeConfig {
 
     public static final String KEY_EVALAUTOR = "evaluator";
     public static final String KEY_OPTIONS = "options";
+    public static final String KEY_PRIMARY = "primary";
 
     public RuleSource rules;
     public Map<String, PredicateConfigInfo> predicates;
@@ -113,8 +120,11 @@ public class RuntimeConfig {
      * This is not a simple validation method, and should not be called until the runtime is ready to instantiate predicates.
      * All additional runtime-level options (like int/string types) should already be set before calling,
      * since these options may be used to infer the values for other configurations.
+     *
      * Rules will be validated, but not passed back their Rule form.
+     *
      * After validation, the options in this config should be applied again (since new options may be set).
+     *
      * All relative paths will be resolved to absolute paths using |relativeBasePath|.
      */
     public void validate() {
@@ -136,8 +146,10 @@ public class RuntimeConfig {
 
         // Validate each predicate.
 
+        boolean hasPrimaryEval = false;
+
         for (Map.Entry<String, PredicateConfigInfo> entry : predicates.entrySet()) {
-            validatePredicate(entry.getKey(), entry.getValue());
+            hasPrimaryEval = validatePredicate(entry.getKey(), entry.getValue(), hasPrimaryEval);
 
             if (entry.getValue().hasExplicitLearnData()) {
                 runLearn = true;
@@ -156,36 +168,40 @@ public class RuntimeConfig {
         options.put(RuntimeOptions.LEARN.name(), "" + runLearn);
         options.put(RuntimeOptions.INFERENCE.name(), "" + runInfer);
 
-        // TEST
-        System.out.println("---");
-        System.out.println(this);
-        System.out.println("---");
-    }
-
-    private void validateRules(RuleSource ruleSource) {
-        if (ruleSource instanceof RulePath) {
-            String path = FileUtils.makePath(relativeBasePath, ((RulePath)ruleSource).path);
-            ((RulePath)ruleSource).path = path;
-
-            try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
-                ModelLoader.load(reader);
-            } catch (Exception ex) {
-                throw new RuntimeException("Failed to load model from file: " + path, ex);
-            }
-        } else if (ruleSource instanceof RuleList) {
-            for (String ruleString : ((RuleList)ruleSource).rules) {
-                try {
-                    ModelLoader.loadRule(ruleString);
-                } catch (Exception ex) {
-                    throw new RuntimeException("Failed to parse rule: " + ruleString, ex);
-                }
-            }
-        } else {
-            throw new IllegalStateException("Unknown RuleSource subclass: " + ruleSource.getClass());
+        if (!runLearn && !runInfer) {
+            throw new IllegalStateException("Neither inference nor learning were specified.");
         }
     }
 
-    private void validatePredicate(String name, PredicateConfigInfo info) {
+    /**
+     * Fetch standard predicates that are closed.
+     * Should only be called after validation.
+     */
+    public Set<StandardPredicate> getClosedPredicates(boolean useInfer) {
+        Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>();
+
+        for (PredicateConfigInfo predicateInfo : predicates.values()) {
+            if (predicateInfo.isOpen(useInfer)) {
+                continue;
+            }
+
+            Predicate predicate = Predicate.get(predicateInfo.name);
+            if (predicate instanceof StandardPredicate) {
+                closedPredicates.add((StandardPredicate)predicate);
+            }
+        }
+
+        return closedPredicates;
+    }
+
+    private void validateRules(RuleSource ruleSource) {
+        ruleSource.resolvePaths(relativeBasePath);
+        for (Rule rule : ruleSource.getRules()) {
+            // Empty.
+        }
+    }
+
+    private boolean validatePredicate(String name, PredicateConfigInfo info, boolean hasPrimaryEval) {
         if (!name.equals(info.name)) {
             throw new IllegalArgumentException(String.format("Predicate name mismatch: ['%s', '%s'].", name, info.name));
         }
@@ -234,6 +250,27 @@ public class RuntimeConfig {
         } else {
             StandardPredicate.get(name, types);
         }
+
+        // Validate the evaluations.
+
+        for (EvalInfo eval : info.evaluations) {
+            Object evaluator = Reflection.newObject(eval.evaluator);
+            if (!(evaluator instanceof Evaluator)) {
+                throw new IllegalArgumentException(String.format(
+                        "Predicate (%s) has a listed evaluator that is not a child of %s. Found type: %s.",
+                        name, "org.linqs.psl.evaluation.statistics.Evaluator", evaluator.getClass()));
+            }
+
+            if (eval.primary) {
+                if (hasPrimaryEval) {
+                    throw new IllegalArgumentException("Multiple primary evaluations found, at most one is allowed.");
+                }
+
+                hasPrimaryEval = true;
+            }
+        }
+
+        return hasPrimaryEval;
     }
 
     @Override
@@ -355,13 +392,39 @@ public class RuntimeConfig {
         }
     }
 
-    public static interface RuleSource {}
+    public static interface RuleSource {
+        /**
+         * Get all the rules represented by this source.
+         * Do NOT call until the owning RuntimeConfig has been validated.
+         * Predicates need to be instantiated and paths resolved.
+         */
+        public Iterable<Rule> getRules();
+
+        public void resolvePaths(String relativeBasePath);
+    }
 
     public static class RulePath implements RuleSource {
         public String path;
 
         public RulePath(String path) {
             this.path = path;
+        }
+
+        @Override
+        public Iterable<Rule> getRules() {
+            Model model = null;
+            try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
+                model = ModelLoader.load(reader);
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to load model from file: " + path, ex);
+            }
+
+            return model.getRules();
+        }
+
+        @Override
+        public void resolvePaths(String relativeBasePath) {
+            path = FileUtils.makePath(relativeBasePath, path);
         }
     }
 
@@ -375,6 +438,24 @@ public class RuntimeConfig {
         public RuleList(List<String> rules) {
             this.rules = rules;
         }
+
+        @Override
+        public Iterable<Rule> getRules() {
+            List<Rule> parsedRules = new ArrayList<Rule>(rules.size());
+
+            for (String rule : rules) {
+                try {
+                    parsedRules.add(ModelLoader.loadRule(rule));
+                } catch (Exception ex) {
+                    throw new RuntimeException("Failed to parse rule: " + rule, ex);
+                }
+            }
+
+            return parsedRules;
+        }
+
+        @Override
+        public void resolvePaths(String relativeBasePath) {}
     }
 
     public static class SplitConfigInfo {
@@ -434,6 +515,17 @@ public class RuntimeConfig {
             targets.resolvePaths(relativeBasePath);
             truth.resolvePaths(relativeBasePath);
         }
+
+        /**
+         * Check if this predicate is open.
+         * !useInfer == learn.
+         */
+        public boolean isOpen(boolean useInfer) {
+            return forceOpen
+                || (targets.all.size() > 0)
+                || (useInfer && targets.infer.size() > 0)
+                || (!useInfer && targets.learn.size() > 0);
+        }
     }
 
     public static class PartitionInfo {
@@ -455,6 +547,38 @@ public class RuntimeConfig {
             all.resolvePaths(relativeBasePath);
             learn.resolvePaths(relativeBasePath);
             infer.resolvePaths(relativeBasePath);
+        }
+
+        /**
+         * Get all the paths to data files.
+         * !useInfer == learn.
+         */
+        public Iterable<String> getDataPaths(boolean useInfer) {
+            Iterable<String> allPaths = all.paths;
+
+            if (useInfer) {
+                allPaths = IteratorUtils.join(allPaths, infer.paths);
+            } else {
+                allPaths = IteratorUtils.join(allPaths, learn.paths);
+            }
+
+            return allPaths;
+        }
+
+        /**
+         * Get all the embedded data points.
+         * !useInfer == learn.
+         */
+        public Iterable<List<String>> getDataPoints(boolean useInfer) {
+            Iterable<List<String>> allPoints = all.data;
+
+            if (useInfer) {
+                allPoints = IteratorUtils.join(allPoints, infer.data);
+            } else {
+                allPoints = IteratorUtils.join(allPoints, learn.data);
+            }
+
+            return allPoints;
         }
     }
 
@@ -481,10 +605,12 @@ public class RuntimeConfig {
     public static class EvalInfo {
         public String evaluator;
         public Map<String, String> options;
+        public boolean primary;
 
-        public EvalInfo(String evaluator, Map<String, String> options) {
+        public EvalInfo(String evaluator, Map<String, String> options, boolean primary) {
             this.evaluator = evaluator;
             this.options = options;
+            this.primary = primary;
         }
     }
 
@@ -622,7 +748,7 @@ public class RuntimeConfig {
         public EvalInfo deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             JsonNode root = jsonParser.getCodec().readTree(jsonParser);
             if (root instanceof TextNode) {
-                return new EvalInfo(((TextNode)root).textValue(), new HashMap<String, String>());
+                return new EvalInfo(((TextNode)root).textValue(), new HashMap<String, String>(), false);
             } else if (root instanceof ObjectNode) {
                 return parseEvalDef((ObjectNode)root);
             } else {
@@ -637,6 +763,7 @@ public class RuntimeConfig {
 
             String evaluator = root.get(KEY_EVALAUTOR).textValue();
             Map<String, String> options = null;
+            boolean primary = false;
 
             if (root.hasNonNull(KEY_OPTIONS)) {
                 options = parseEvalOptions(root.get(KEY_OPTIONS));
@@ -644,7 +771,11 @@ public class RuntimeConfig {
                 options = new HashMap<String, String>();
             }
 
-            return new EvalInfo(evaluator, options);
+            if (root.hasNonNull(KEY_PRIMARY)) {
+                primary = root.get(KEY_PRIMARY).booleanValue();
+            }
+
+            return new EvalInfo(evaluator, options, primary);
         }
 
         private Map<String, String> parseEvalOptions(JsonNode root) {

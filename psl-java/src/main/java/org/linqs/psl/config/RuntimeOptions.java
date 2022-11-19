@@ -107,14 +107,6 @@ public class RuntimeOptions {
         "Use the specified InferenceApplication when running inference."
     );
 
-    public static final Option INFERENCE_MODEL_PATH = new Option(
-        "runtime.inference.model.path",
-        null,
-        "Path to a PSL model file to use for infernece."
-        + " Existance of file will not be checked until inference is ready to run."
-        + " If not specified and learning is run, then the learned model will be used."
-    );
-
     public static final Option INFERENCE_OUTPUT_RESULTS_DIR = new Option(
         "runtime.inference.output.results.dir",
         null,
@@ -150,12 +142,6 @@ public class RuntimeOptions {
         "runtime.learn.method",
         MaxLikelihoodMPE.class.getName(),
         "Use the specified WeightLearningApplication when running learning."
-    );
-
-    public static final Option LEARN_MODEL_PATH = new Option(
-        "runtime.learn.model.path",
-        null,
-        "Path to a PSL model file to use for learning."
     );
 
     public static final Option LEARN_OUTPUT_MODEL_PATH = new Option(

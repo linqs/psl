@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.admm;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
-import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
@@ -102,8 +102,7 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
     }
 
     @Override
-    public double optimize(TermStore<ADMMObjectiveTerm> baseTermStore,
-            List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
+    public double optimize(TermStore<ADMMObjectiveTerm> baseTermStore, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
         if (!(baseTermStore instanceof ADMMTermStore)) {
             throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
@@ -178,7 +177,7 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                             primalRes, dualRes, epsilonPrimal, epsilonDual);
                 }
 
-                evaluate(termStore, iteration, evaluators, trainingMap, evaluationPredicates);
+                evaluate(termStore, iteration, evaluations, trainingMap);
 
                 termStore.iterationComplete();
             }

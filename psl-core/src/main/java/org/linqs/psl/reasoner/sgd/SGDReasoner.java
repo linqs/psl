@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.sgd;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
-import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -105,8 +105,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
     }
 
     @Override
-    public double optimize(TermStore<SGDObjectiveTerm> termStore,
-            List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
+    public double optimize(TermStore<SGDObjectiveTerm> termStore, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
         termStore.initForOptimization();
         initForOptimization(termStore);
 
@@ -159,7 +158,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
                 meanMovement += variableUpdate(term, termStore, iteration, learningRate);
             }
 
-            evaluate(termStore, iteration, evaluators, trainingMap, evaluationPredicates);
+            evaluate(termStore, iteration, evaluations, trainingMap);
 
             termStore.iterationComplete();
 

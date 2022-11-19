@@ -21,7 +21,7 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -152,12 +152,12 @@ public abstract class InferenceApplication implements ModelApplication {
      *
      * All RandomVariableAtoms which the model might access must be persisted in the Database.
      *
-     * If available, the evaluators and database (converted into a TrainingMap)
+     * If available, the evaluations and database (converted into a TrainingMap)
      * will be presented to reasoners to use during optimization.
      *
      * @return the final objective of the reasoner.
      */
-    public double inference(boolean commitAtoms, boolean reset, List<Evaluator> evaluators, Database truthDatabase) {
+    public double inference(boolean commitAtoms, boolean reset, List<EvaluationInstance> evaluations, Database truthDatabase) {
         if (reset) {
             initializeAtoms();
 
@@ -172,20 +172,12 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         TrainingMap trainingMap = null;
-        Set<StandardPredicate> evaluationPredicates = null;
-        if (truthDatabase != null && evaluators.size() > 0) {
+        if (truthDatabase != null && evaluations != null && evaluations.size() > 0) {
             trainingMap = new TrainingMap(database, truthDatabase);
-            evaluationPredicates = new HashSet<StandardPredicate>();
-
-            for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
-                if (truthDatabase.getAtomStore().size() > 0) {
-                    evaluationPredicates.add(predicate);
-                }
-            }
         }
 
         log.info("Beginning inference.");
-        double objective = internalInference(evaluators, trainingMap, evaluationPredicates);
+        double objective = internalInference(evaluations, trainingMap);
         log.info("Inference complete.");
         atomsCommitted = false;
 
@@ -203,8 +195,8 @@ public abstract class InferenceApplication implements ModelApplication {
      * @return the final objective of the reasoner.
      */
     @SuppressWarnings("unchecked")
-    protected double internalInference(List<Evaluator> evaluators, TrainingMap trainingMap, Set<StandardPredicate> evaluationPredicates) {
-        return reasoner.optimize(termStore, evaluators, trainingMap, evaluationPredicates);
+    protected double internalInference(List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
+        return reasoner.optimize(termStore, evaluations, trainingMap);
     }
 
     public Reasoner getReasoner() {
