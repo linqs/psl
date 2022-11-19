@@ -32,6 +32,7 @@ import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Reflection;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -57,7 +58,9 @@ import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -91,10 +94,18 @@ public class RuntimeConfig {
     public SplitConfigInfo learn;
     public SplitConfigInfo infer;
 
+    /**
+     * The path that other relative paths are resolved against.
+     */
+    @JsonIgnore
+    private String relativeBasePath;
+
     public RuntimeConfig() {
         rules = null;
         predicates = new HashMap<String, PredicateConfigInfo>();
         options = new HashMap<String, String>();
+
+        relativeBasePath = ".";
     }
 
     /**
@@ -104,6 +115,7 @@ public class RuntimeConfig {
      * since these options may be used to infer the values for other configurations.
      * Rules will be validated, but not passed back their Rule form.
      * After validation, the options in this config should be applied again (since new options may be set).
+     * All relative paths will be resolved to absolute paths using |relativeBasePath|.
      */
     public void validate() {
         boolean runLearn = RuntimeOptions.LEARN.getBoolean();
@@ -123,11 +135,23 @@ public class RuntimeConfig {
         }
 
         // Validate each predicate.
+
         for (Map.Entry<String, PredicateConfigInfo> entry : predicates.entrySet()) {
             validatePredicate(entry.getKey(), entry.getValue());
+
+            if (entry.getValue().hasExplicitLearnData()) {
+                runLearn = true;
+            }
+
+            if (entry.getValue().hasExplicitInferData()) {
+                runInfer = true;
+            }
         }
 
-        // TEST: More?
+        // Parse and validate all rules.
+        validateRules(rules);
+        validateRules(learn.rules);
+        validateRules(infer.rules);
 
         options.put(RuntimeOptions.LEARN.name(), "" + runLearn);
         options.put(RuntimeOptions.INFERENCE.name(), "" + runInfer);
@@ -138,10 +162,35 @@ public class RuntimeConfig {
         System.out.println("---");
     }
 
+    private void validateRules(RuleSource ruleSource) {
+        if (ruleSource instanceof RulePath) {
+            String path = FileUtils.makePath(relativeBasePath, ((RulePath)ruleSource).path);
+            ((RulePath)ruleSource).path = path;
+
+            try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
+                ModelLoader.load(reader);
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to load model from file: " + path, ex);
+            }
+        } else if (ruleSource instanceof RuleList) {
+            for (String ruleString : ((RuleList)ruleSource).rules) {
+                try {
+                    ModelLoader.loadRule(ruleString);
+                } catch (Exception ex) {
+                    throw new RuntimeException("Failed to parse rule: " + ruleString, ex);
+                }
+            }
+        } else {
+            throw new IllegalStateException("Unknown RuleSource subclass: " + ruleSource.getClass());
+        }
+    }
+
     private void validatePredicate(String name, PredicateConfigInfo info) {
         if (!name.equals(info.name)) {
             throw new IllegalArgumentException(String.format("Predicate name mismatch: ['%s', '%s'].", name, info.name));
         }
+
+        info.resolvePaths(relativeBasePath);
 
         // Arity validated at JSON-level.
 
@@ -216,13 +265,18 @@ public class RuntimeConfig {
     }
 
     public static RuntimeConfig fromFile(String path) {
+        RuntimeConfig config = null;
+
         if (path.toLowerCase().endsWith(".json")) {
-            return RuntimeConfig.fromJSON(FileUtils.readFileAsString(path));
+            config = RuntimeConfig.fromJSON(FileUtils.readFileAsString(path));
         } else if (path.toLowerCase().endsWith(".yaml")) {
-            return RuntimeConfig.fromJSON(convertYAML(FileUtils.readFileAsString(path)));
+            config = RuntimeConfig.fromJSON(convertYAML(FileUtils.readFileAsString(path)));
+        } else {
+            throw new IllegalArgumentException("Expected runtime config file to end  in '.json' or '.yaml'.");
         }
 
-        throw new IllegalArgumentException("Expected runtime config file to end  in '.json' or '.yaml'.");
+        config.relativeBasePath = Paths.get(path).getParent().toString();
+        return config;
     }
 
     public static RuntimeConfig fromJSON(String contents) {
@@ -311,14 +365,14 @@ public class RuntimeConfig {
         }
     }
 
-    public static class RuleStrings implements RuleSource {
+    public static class RuleList implements RuleSource {
         public List<String> rules;
 
-        public RuleStrings() {
+        public RuleList() {
             rules = new ArrayList<String>();
         }
 
-        public RuleStrings(List<String> rules) {
+        public RuleList(List<String> rules) {
             this.rules = rules;
         }
     }
@@ -328,7 +382,7 @@ public class RuntimeConfig {
         public Map<String, String> options;
 
         public SplitConfigInfo() {
-            rules = new RuleStrings();
+            rules = new RuleList();
             options = new HashMap<String, String>();
         }
     }
@@ -356,6 +410,30 @@ public class RuntimeConfig {
         public int dataSize() {
             return observations.size() + targets.size() + truth.size();
         }
+
+        /**
+         * Is there any data for this predicate explicitly defined to be infer-only?
+         */
+        public boolean hasExplicitInferData() {
+            return (observations.infer.size() > 0)
+                    || (targets.infer.size() > 0)
+                    || (truth.infer.size() > 0);
+        }
+
+        /**
+         * Is there any data for this predicate explicitly defined to be learn-only?
+         */
+        public boolean hasExplicitLearnData() {
+            return (observations.learn.size() > 0)
+                    || (targets.learn.size() > 0)
+                    || (truth.learn.size() > 0);
+        }
+
+        public void resolvePaths(String relativeBasePath) {
+            observations.resolvePaths(relativeBasePath);
+            targets.resolvePaths(relativeBasePath);
+            truth.resolvePaths(relativeBasePath);
+        }
     }
 
     public static class PartitionInfo {
@@ -372,6 +450,12 @@ public class RuntimeConfig {
         public int size() {
             return all.size() + learn.size() + infer.size();
         }
+
+        public void resolvePaths(String relativeBasePath) {
+            all.resolvePaths(relativeBasePath);
+            learn.resolvePaths(relativeBasePath);
+            infer.resolvePaths(relativeBasePath);
+        }
     }
 
     public static class SplitDataInfo {
@@ -386,6 +470,12 @@ public class RuntimeConfig {
         public int size() {
             return paths.size() + data.size();
         }
+
+        public void resolvePaths(String relativeBasePath) {
+            for (int i = 0; i < paths.size(); i++) {
+                paths.set(i, FileUtils.makePath(relativeBasePath, paths.get(i)));
+            }
+        }
     }
 
     public static class EvalInfo {
@@ -398,6 +488,9 @@ public class RuntimeConfig {
         }
     }
 
+    /**
+     * A representation for the config only used for parsing.
+     */
     private static class JSONRuntimeConfig {
         public RuleSource rules;
         public Map<String, JSONPredicate> predicates;
@@ -423,6 +516,9 @@ public class RuntimeConfig {
         }
     }
 
+    /**
+     * A representation for predicates only used for parsing.
+     */
     private static class JSONPredicate {
         public String name;
 
@@ -453,7 +549,8 @@ public class RuntimeConfig {
             config.options = options;
             config.function = function;
             config.model = model;
-            config.evaluations = evaluations;
+
+            config.evaluations = (evaluations == null) ? new ArrayList<EvalInfo>() : evaluations;
 
             config.observations = (observations == null) ? new PartitionInfo() : observations;
             config.targets = (targets == null) ? new PartitionInfo() : targets;
@@ -599,8 +696,8 @@ public class RuntimeConfig {
         public void serialize(RuleSource value, JsonGenerator generator, SerializerProvider provider) throws IOException {
             if (value instanceof RulePath) {
                 generator.writeString(((RulePath)value).path);
-            } else if (value instanceof RuleStrings) {
-                generator.writeObject(((RuleStrings)value).rules);
+            } else if (value instanceof RuleList) {
+                generator.writeObject(((RuleList)value).rules);
             } else {
                 throw new IllegalStateException("Unknown RuleSource subtype: " + value.getClass());
             }
@@ -631,7 +728,7 @@ public class RuntimeConfig {
                     rules.add(((TextNode)ruleNode).textValue());
                 }
 
-                return new RuleStrings(rules);
+                return new RuleList(rules);
             } else if (root instanceof TextNode) {
                 return new RulePath(((TextNode)root).textValue());
             }
@@ -726,19 +823,17 @@ public class RuntimeConfig {
                 return true;
             }
 
+            if ((value instanceof PartitionInfo) && (((PartitionInfo)value).size() == 0)) {
+                return true;
+            }
+
             return false;
         }
     }
 
     public static void main(String[] args) {
         RuntimeConfig config = RuntimeConfig.fromFile(args[0]);
-
-        // TEST
-        config.validate();
-        System.out.println(config.toString(false));
-
-        // TEST
-        // System.out.println(config.toString(true));
-        // RuntimeConfig.fromJSON(config.toString());
+        System.out.println(config.toString(true));
+        RuntimeConfig.fromJSON(config.toString());
     }
 }
