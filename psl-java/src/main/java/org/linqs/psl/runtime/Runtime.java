@@ -423,9 +423,18 @@ public class Runtime {
         Database targetDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
+        EvaluationInstance primaryEvaluation = null;
+        for (EvaluationInstance evaluation : getEvaluations(config)) {
+            if (evaluation.isPrimary()) {
+                primaryEvaluation = evaluation;
+                break;
+            }
+        }
+
         WeightLearningApplication learner = WeightLearningApplication.getWLA(
                 RuntimeOptions.LEARN_METHOD.getString(), model.getRules(),
                 targetDatabase, truthDatabase);
+        learner.setEvaluation(primaryEvaluation);
         learner.learn();
 
         learner.close();

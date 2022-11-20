@@ -41,7 +41,7 @@ import java.util.PriorityQueue;
  *
  * TODO(eriq): Think about inital weights.
  *
- * All extending classes should ensure that values for RVAs are set before evaluators are computed.
+ * All extending classes should ensure that values for RVAs are set before evalautions are computed.
  */
 public class Hyperband extends WeightLearningApplication {
     private static final Logger log = Logger.getLogger(Hyperband.class);
@@ -172,14 +172,12 @@ public class Hyperband extends WeightLearningApplication {
      * The rules have already been set with the given weights, they are only passed in so the method
      * has a chance to modify them before the result is stored.
      * This is a prime method for child classes to override.
-     * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
-     * if lower is better for that evaluator.
      */
     protected double run(float[] weights) {
         computeMPEState();
 
-        evaluator.compute(trainingMap);
-        return -1.0 * evaluator.getNormalizedRepMetric();
+        evaluation.compute(trainingMap);
+        return -1.0 * evaluation.getNormalizedRepMetric();
     }
 
     private static class RunResult implements Comparable<RunResult> {

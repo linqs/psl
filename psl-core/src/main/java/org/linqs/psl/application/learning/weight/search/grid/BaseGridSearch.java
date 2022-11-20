@@ -148,16 +148,14 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * The rules have already been set with the given weights, they are only passed in so the method
      * has a chance to modify them before the result is stored.
      * This is a prime method for child classes to override.
-     * Implementers should make sure to correct (negate) the value that comes back from the Evaluator
-     * if lower is better for that evaluator.
      * @param weights
      */
     protected double inspectLocation(float[] weights) {
         computeMPEState();
 
-        evaluator.compute(trainingMap);
+        evaluation.compute(trainingMap);
 
-        return -1.0 * evaluator.getNormalizedRepMetric();
+        return -1.0 * evaluation.getNormalizedRepMetric();
     }
 
     /**

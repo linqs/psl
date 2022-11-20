@@ -112,7 +112,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     }
 
     private void setInitialConfigValAndStd(WeightConfig initialConfig) {
-        float initialStd = (float)evaluator.getNormalizedMaxRepMetric() - initialConfig.valueAndStd.value;
+        float initialStd = (float)evaluation.getNormalizedMaxRepMetric() - initialConfig.valueAndStd.value;
 
         for (int i = 0; i < configs.size(); i++) {
             WeightConfig config = configs.get(i);
@@ -363,8 +363,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     protected double getFunctionValue(WeightConfig config) {
         setWeights(config);
         computeMPEState();
-        evaluator.compute(trainingMap);
-        return evaluator.getNormalizedRepMetric();
+        evaluation.compute(trainingMap);
+        return evaluation.getNormalizedRepMetric();
     }
 
     // Exploration strategy

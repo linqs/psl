@@ -60,6 +60,14 @@ public class EvaluationInstance {
         evaluator.compute(targets, truth, predicate);
     }
 
+    public double getNormalizedRepMetric() {
+        return evaluator.getNormalizedRepMetric();
+    }
+
+    public double getNormalizedMaxRepMetric() {
+        return evaluator.getNormalizedMaxRepMetric();
+    }
+
     public String getOutput() {
         return String.format("Evaluator: %s, Predicate: %s, Results -- %s",
                 evaluator.getClass().getSimpleName(), predicate.getName(), evaluator.getAllStats());

@@ -21,7 +21,7 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.Logger;
@@ -57,7 +57,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
     protected TrainingMap trainingMap;
 
     protected InferenceApplication inference;
-    protected Evaluator evaluator;
+    protected EvaluationInstance evaluation;
 
     private boolean groundModelInit;
 
@@ -86,7 +86,11 @@ public abstract class WeightLearningApplication implements ModelApplication {
         groundModelInit = false;
         inMPEState = false;
 
-        evaluator = (Evaluator)Options.WLA_EVAL.getNewObject();
+        evaluation = null;
+    }
+
+    public void setEvaluation(EvaluationInstance evaluation) {
+        this.evaluation = evaluation;
     }
 
     /**
