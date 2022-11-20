@@ -83,8 +83,10 @@ public class Launcher {
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL)) {
             String modelPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL);
 
+            /* TEST
             RuntimeOptions.INFERENCE_MODEL_PATH.set(modelPath);
             RuntimeOptions.LEARN_MODEL_PATH.set(modelPath);
+            */
 
             RuntimeOptions.LEARN_OUTPUT_MODEL_PATH.set(modelPath.replaceFirst("\\.psl$", "-learned.psl"));
         }
