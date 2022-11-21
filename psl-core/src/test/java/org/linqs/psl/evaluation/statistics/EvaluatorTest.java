@@ -72,12 +72,12 @@ public abstract class EvaluatorTest<T extends Evaluator> extends PSLBaseTest {
 
         Inserter inserter = dataStore.getInserter(predicate, targetPartition);
         for (int i = 0; i < predictions.length; i++) {
-            inserter.insertValue(predictions[i], new UniqueIntID(i), new UniqueIntID(i));
+            inserter.insertValueRaw(predictions[i], new UniqueIntID(i), new UniqueIntID(i));
         }
 
         inserter = dataStore.getInserter(predicate, truthPartition);
         for (int i = 0; i < truth.length; i++) {
-            inserter.insertValue(truth[i], new UniqueIntID(i), new UniqueIntID(i));
+            inserter.insertValueRaw(truth[i], new UniqueIntID(i), new UniqueIntID(i));
         }
 
         // Redefine the truth database with no atoms in the write partition.

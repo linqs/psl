@@ -26,7 +26,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.database.DatabaseTestUtil;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -395,10 +395,10 @@ public abstract class InferenceTest extends PSLBaseTest {
 
         Database truthDatabase = info.dataStore.getDatabase(info.truthPartition, info.dataStore.getRegisteredPredicates());
 
-        List<Evaluator> evaluators = new ArrayList<Evaluator>();
-        evaluators.add(new ContinuousEvaluator());
+        List<EvaluationInstance> evaluations = new ArrayList<EvaluationInstance>();
+        evaluations.add(new EvaluationInstance(info.predicates.get("Friends"), new ContinuousEvaluator(), true));
 
-        inference.inference(true, false, evaluators, truthDatabase);
+        inference.inference(true, false, evaluations, truthDatabase);
         inference.close();
         inferDB.close();
         truthDatabase.close();

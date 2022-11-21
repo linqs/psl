@@ -29,7 +29,7 @@ public class RandomGridSearchTest extends WeightLearningTest {
     }
 
     @Override
-    protected WeightLearningApplication getWLA() {
+    protected WeightLearningApplication getBaseWLA() {
         // Narrow the search space for tests.
         Options.WLA_RGS_MAX_LOCATIONS.set(50);
 

@@ -41,7 +41,7 @@ public abstract class Inserter {
     /**
      * Insert a single object using the default truth value.
      */
-    public void insert(Object... data) {
+    public void insert(Object[] data) {
         if (data == null || data.length == 0) {
             throw new IllegalArgumentException("Attempted to insert empty data.");
         }
@@ -49,6 +49,10 @@ public abstract class Inserter {
         List<List<Object>> newData = new ArrayList<List<Object>>(1);
         newData.add(Arrays.asList(data));
         insertAll(newData);
+    }
+
+    public void insertRaw(Object... data) {
+        insert(data);
     }
 
     /**
@@ -67,7 +71,7 @@ public abstract class Inserter {
     /**
      * Insert a single object using the specified truth value.
      */
-    public void insertValue(double value, Object... data) {
+    public void insertValue(double value, Object[] data) {
         if (data == null || data.length == 0) {
             throw new IllegalArgumentException("Attempted to insert empty data.");
         }
@@ -83,6 +87,10 @@ public abstract class Inserter {
         newValue.add(value);
 
         insertAllValues(newValue, newData);
+    }
+
+    public void insertValueRaw(double value, Object... data) {
+        insertValue(value, data);
     }
 
     /**

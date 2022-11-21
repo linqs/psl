@@ -148,8 +148,8 @@ public class RDBMSInserter extends Inserter {
 
             if (row.size() != predicateInfo.argumentColumns().size()) {
                 throw new IllegalArgumentException(
-                    String.format("Data on row %d length does not match for partition %s: Expecting: %d, Got: %d",
-                    rowIndex, partition.getName(), predicateInfo.argumentColumns().size(), row.size()));
+                    String.format("Data on row %d length does not match for predicate %s: Expecting: %d, Got: %d",
+                    rowIndex, predicateInfo.predicate().getName(), predicateInfo.argumentColumns().size(), row.size()));
             }
         }
 

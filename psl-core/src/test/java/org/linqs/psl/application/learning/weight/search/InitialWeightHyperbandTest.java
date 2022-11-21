@@ -32,7 +32,7 @@ public class InitialWeightHyperbandTest extends WeightLearningTest {
     }
 
     @Override
-    protected WeightLearningApplication getWLA() {
+    protected WeightLearningApplication getBaseWLA() {
         Options.WLA_HB_NUM_BRACKETS.set(1);
         Options.WLA_HB_BRACKET_SIZE.set(2);
         Options.WLA_VP_NUM_STEPS.set(5);

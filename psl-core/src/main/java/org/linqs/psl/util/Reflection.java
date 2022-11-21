@@ -43,7 +43,7 @@ public final class Reflection {
         }
 
         String longName = null;
-        for (String knownClass : Config.getList(Config.CLASS_LIST_KEY, true)) {
+        for (String knownClass : Config.getStringList(Config.CLASS_LIST_KEY)) {
             // There are several ways we could do this match.
             // Instead of splitting the full path, we are just going to search for a dot and the short name
             // so that we can hack in disabbiguation matches.

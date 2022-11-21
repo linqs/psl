@@ -123,6 +123,12 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
     @Override
     protected void doLearn() {
+        if (evaluation == null) {
+            throw new IllegalStateException(String.format(
+                    "No evaluation has been set for weight learning method (%s), which is required for search-based methods.",
+                    getClass().getName()));
+        }
+
         String currentLocation = null;
 
         // Very important to define a good kernel.

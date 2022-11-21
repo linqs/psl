@@ -80,9 +80,9 @@ public class TrainingMapTest extends PSLBaseTest {
 
         for (int i = 0; i < 4; i++) {
             if (i < 2) {
-                targetOpenInserter.insertValue(1.0, new UniqueIntID(i));
+                targetOpenInserter.insertValueRaw(1.0, new UniqueIntID(i));
             } else {
-                targetClosedInserter.insertValue(1.0, new UniqueIntID(i));
+                targetClosedInserter.insertValueRaw(1.0, new UniqueIntID(i));
             }
         }
 
@@ -99,9 +99,9 @@ public class TrainingMapTest extends PSLBaseTest {
 
         for (int i = 0; i < 7; i++) {
             if (i == 6) {
-                truthOpenInserter.insertValue(1.0, new UniqueIntID(i));
+                truthOpenInserter.insertValueRaw(1.0, new UniqueIntID(i));
             } else if (i % 2 == 0) {
-                truthClosedInserter.insertValue(1.0, new UniqueIntID(i));
+                truthClosedInserter.insertValueRaw(1.0, new UniqueIntID(i));
             }
         }
 

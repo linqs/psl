@@ -21,6 +21,8 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.evaluation.EvaluationInstance;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.FloatMatrix;
@@ -34,7 +36,7 @@ import java.util.List;
 
 public class GaussianProcessPriorTest extends WeightLearningTest {
     @Override
-    protected WeightLearningApplication getWLA() {
+    protected WeightLearningApplication getBaseWLA() {
         // Do less steps for tests.
         Options.WLA_GPP_MAX_ITERATIONS.set(2);
 
@@ -45,7 +47,10 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         // Do less steps for tests.
         Options.WLA_GPP_MAX_ITERATIONS.set(2);
 
-        return new GPPTest(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        WeightLearningApplication wla = new GPPTest(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        wla.setEvaluation(new EvaluationInstance(info.predicates.get("Friends"), new ContinuousEvaluator(), true));
+
+        return wla;
     }
 
     @Test
@@ -134,7 +139,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         Options.WLA_GPP_MAX_ITERATIONS.set(3);
         Options.WLA_GPP_RANDOM_CONFIGS_ONLY.set(false);
 
-        GaussianProcessPrior wl = (GaussianProcessPrior) getWLALocal();
+        GaussianProcessPrior wl = (GaussianProcessPrior)getWLALocal();
         wl.doLearn();
 
         for (int i = 0; i < 3; i++) {

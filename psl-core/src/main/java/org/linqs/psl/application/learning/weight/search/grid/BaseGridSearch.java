@@ -78,6 +78,12 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
     @Override
     protected void doLearn() {
+        if (evaluation == null) {
+            throw new IllegalStateException(String.format(
+                    "No evaluation has been set for weight learning method (%s), which is required for search-based methods.",
+                    getClass().getName()));
+        }
+
         double bestObjective = -1.0;
         float[] bestWeights = new float[mutableRules.size()];
         float[] weights = new float[mutableRules.size()];

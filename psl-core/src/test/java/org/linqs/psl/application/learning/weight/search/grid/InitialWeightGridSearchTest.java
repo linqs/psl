@@ -31,7 +31,7 @@ public class InitialWeightGridSearchTest extends WeightLearningTest {
     }
 
     @Override
-    protected WeightLearningApplication getWLA() {
+    protected WeightLearningApplication getBaseWLA() {
         // Narrow the search space for tests.
         Options.WLA_GS_POSSIBLE_WEIGHTS.set("1:10:100");
 

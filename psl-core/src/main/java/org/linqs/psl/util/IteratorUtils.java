@@ -20,6 +20,7 @@ package org.linqs.psl.util;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Various static iterator/iterable utilities.
@@ -390,7 +391,7 @@ public final class IteratorUtils {
         @Override
         public boolean[] next() {
             if (!hasNext()) {
-                throw new java.util.NoSuchElementException();
+                throw new NoSuchElementException();
             }
 
             long mask = 1;
@@ -428,7 +429,7 @@ public final class IteratorUtils {
         @Override
         public Integer next() {
             if (!hasNext()) {
-                throw new java.util.NoSuchElementException();
+                throw new NoSuchElementException();
             }
 
             return Integer.valueOf(next++);

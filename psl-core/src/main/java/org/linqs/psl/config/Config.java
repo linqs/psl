@@ -22,47 +22,49 @@ import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.RuntimeStats;
 
-import org.apache.commons.configuration2.BaseConfiguration;
-import org.apache.commons.configuration2.DataConfiguration;
-import org.apache.commons.configuration2.PropertiesConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-
-import java.io.File;
-import java.io.IOException;
+import java.io.BufferedReader;
 import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * The storage for all configuration values used in PSL.
- * No prefixes are used (unlike previous config infrastructure).
- * All access to configuration is static.
+ * The storage for all process-wide configuration values used in PSL.
+ * All access to the configuration is static.
  *
- * Properties can be managed through the following methods:
- * loadResource(), addProperty(), setProperty(), clearProperty(), clear().
+ * Users should heavily favor the org.linqs.psl.config.Options interface over this.
+ * Options uses this as its backend.
  *
- * PSL will statically try to load a properties file pointed to by the "psl.configuration"
- * system property ("psl.properties") by default.
+ * Configuration is set on a process-wide level.
  *
- * When a property is put, RuntimeStats will get called to try collecting stats.
+ * Internally, all config values is kept as objects and conversion attempts are made when requested.
+ * Null values are considered empty or missing (don't store nulls).
+ * To get raw objects use getProperty(), otherwise parsing will be done for the specific type.
+ *
+ * Configurations are loaded into stacked layers.
+ * Callers may manipulate layers through pushLayer() and popLayer().
+ * When a config value is requested, the key will be searched for in the layers (most recent first).
+ * The first instance of the configuration will be returned.
+ * Callers are responsible for ensuring that any layer they push is eventually popped (use try/finally).
+ *
+ * An attempt to load a few properties files
+ * (CLASS_LIST_PROPS, GIT_PROPS, and PROJECT_PROPS)
+ * will be made when this class initializes.
  */
 public class Config {
     public static final String CLASS_LIST_PROPS = "classlist.properties";
     public static final String GIT_PROPS = "git.properties";
     public static final String PROJECT_PROPS = "project.properties";
 
-    public static final String PSL_CONFIG = "psl.configuration";
-    public static final String PSL_CONFIG_DEFAULT = "psl.properties";
-
     public static final String CLASS_LIST_KEY = "classlist.classes";
 
     private static final Logger log = Logger.getLogger(Config.class);
 
-    private static DataConfiguration config = null;
+    private static Deque<Map<String, Object>> layers = null;
 
     static {
         init();
@@ -72,278 +74,245 @@ public class Config {
      * (Re)create and populate the initial config.
      */
     public static void init() {
-        config = new DataConfiguration(new BaseConfiguration());
+        layers = new LinkedList<Map<String, Object>>();
+        pushLayer();
 
         // Load maven project properties.
         InputStream stream = ClassLoader.getSystemClassLoader().getResourceAsStream(PROJECT_PROPS);
         if (stream != null) {
-            loadResource(stream, PROJECT_PROPS);
+            loadProperties(stream, PROJECT_PROPS);
         }
 
         // Load git project properties.
         stream = ClassLoader.getSystemClassLoader().getResourceAsStream(GIT_PROPS);
         if (stream != null) {
-            loadResource(stream, GIT_PROPS);
+            loadProperties(stream, GIT_PROPS);
         }
 
         // Load list of classes build at compile time.
         stream = ClassLoader.getSystemClassLoader().getResourceAsStream(CLASS_LIST_PROPS);
         if (stream != null) {
-            loadResource(stream, CLASS_LIST_PROPS);
+            loadClassList(stream, CLASS_LIST_PROPS);
         }
-
-        // Load the configuration file directly if the path exists.
-        String path = System.getProperty(PSL_CONFIG, PSL_CONFIG_DEFAULT);
-        if (FileUtils.isFile(path)) {
-            loadResource(path);
-            return;
-        }
-
-        // Try to get a resource URL from the system (if we have a property key instead of a path).
-        stream = ClassLoader.getSystemClassLoader().getResourceAsStream(path);
-        if (stream != null) {
-            loadResource(stream, PSL_CONFIG);
-            return;
-        }
-
-        log.debug(
-                "PSL configuration {} file not found." +
-                " Only default values will be used unless additional properties are specified.",
-                path);
     }
 
-    public static void loadResource(InputStream stream, String resourceName) {
-        try {
-            PropertiesConfiguration props = new PropertiesConfiguration();
-            props.read(FileUtils.getInputStreamReader(stream));
-            config.append(props);
-        } catch (IOException | ConfigurationException ex) {
+    public static void pushLayer() {
+        layers.push(new HashMap<String, Object>());
+    }
+
+    public static Map<String, Object> popLayer() {
+        if (layers.size() == 1) {
+            throw new IllegalStateException("Attempt to pop the only Config layer.");
+        }
+
+        return layers.pop();
+    }
+
+    public static void loadProperties(InputStream stream, String resourceName) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(stream)) {
+            for (String line : FileUtils.lines(reader)) {
+                line = line.trim();
+                if (line.equals("") || line.startsWith("#")) {
+                    continue;
+                }
+
+                String[] parts = line.split("=", 2);
+
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException(String.format(
+                            "Bad properties format for resource %s. Offending line: '%s'.",
+                            resourceName, line));
+                }
+
+                setProperty(parts[0], parts[1], false);
+            }
+        } catch (Exception ex) {
             throw new RuntimeException("Failed to load config resource: " + resourceName, ex);
         }
 
-        log.debug("Configuration stream loaded: {}", resourceName);
+        log.debug("Configuration resource loaded: {}", resourceName);
         RuntimeStats.collect();
     }
 
-    public static void loadResource(String path) {
-        try {
-            PropertiesConfiguration props = new PropertiesConfiguration();
-            props.read(FileUtils.getInputStreamReader(path));
-            config.append(props);
-        } catch (IOException | ConfigurationException ex) {
-            throw new RuntimeException("Failed to load config resource: " + path, ex);
+    public static void loadClassList(InputStream stream, String resourceName) {
+        List<String> classNames = new ArrayList<String>();
+
+        try (BufferedReader reader = FileUtils.getBufferedReader(stream)) {
+            for (String line : FileUtils.lines(reader)) {
+                line = line.trim();
+                if (line.equals("") || line.startsWith("#")) {
+                    continue;
+                }
+
+                String[] parts = line.split("=", 2);
+
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException(String.format(
+                            "Bad properties format for resource %s. Offending line: '%s'.",
+                            resourceName, line));
+                }
+
+                if (!parts[0].equals(CLASS_LIST_KEY)) {
+                    throw new IllegalArgumentException(String.format(
+                            "Unknown key (%s) found in classlist. Expecting only '%s'.",
+                            parts[0], CLASS_LIST_KEY));
+                }
+
+                classNames.add(parts[1]);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to load config resource: " + resourceName, ex);
         }
 
-        log.debug("Configuration file loaded: {}", path);
+        setProperty(CLASS_LIST_KEY, classNames, false);
+
+        log.debug("Configuration resource loaded: {}", resourceName);
         RuntimeStats.collect();
     }
 
     /**
-     * Add a property to the configuration.
-     * If it already exists then the value stated here will be added to the configuration entry.
-     * For example, if the property:
-     *
-     * <pre>
-     * resource.loader = file
-     * </pre>
-     *
-     * is already present in the configuration and you call
-     *
-     * <pre>
-     * addProperty(&quot;resource.loader&quot;, &quot;classpath&quot;)
-     * </pre>
-     *
-     * Then you will end up with a List like the following:
-     *
-     * <pre>
-     * ["file", "classpath"]
-     * </pre>
-     *
-     * @param key The key to add the property to.
-     * @param value The value to add.
+     * Set a property in the most recent layer.
      */
-    public static void addProperty(String key, Object value) {
-        config.addProperty(key, value);
-        log.debug("Added {} to option {}.", value, key);
+    public static void setProperty(String key, Object value, boolean logAccess) {
+        layers.peek().put(key, value);
+
+        if (logAccess) {
+            log.debug("Set option {} to {}.", key, value);
+        }
+
         RuntimeStats.collect();
     }
 
     /**
-     * Set a property, this will replace any previously set values.
-     * Set values is implicitly a call to clearProperty(key), addProperty(key, value).
-     *
-     * @param key the key to remove along with corresponding value.
+     * Remove a property from the current layer of this configuration.
      */
-    public static void setProperty(String key, Object value) {
-        config.setProperty(key, value);
-        log.debug("Set option {} to {}.", key, value);
-        RuntimeStats.collect();
-    }
+    public static void clearProperty(String key, boolean logAccess) {
+        layers.peek().remove(key);
 
-    /**
-     * Remove a property from the configuration.
-     *
-     * @param key the key to remove along with corresponding value.
-     */
-    public static void clearProperty(String key) {
-        config.clearProperty(key);
-        log.debug("Cleared option {}.", key);
-    }
-
-    /**
-     * Remove all properties from the configuration.
-     */
-    public static void clear() {
-        config.clear();
-        log.debug("Cleared all options in the configuration.");
+        if (logAccess) {
+            log.debug("Cleared option {}.", key);
+        }
     }
 
     /**
      * Get a property from the configuration.
      * Typically, a more specific method should be used.
-     *
-     * @param key The configuration key
-     *
-     * @return The associated Object (or null if undefined)
      */
-    public static Object getProperty(String key) {
-        logAccess(key, "");
-        if (config.containsKey(key)) {
-            return config.getProperty(key);
+    public static Object getProperty(String key, Object defaultValue, boolean logAccess) {
+        Object value = null;
+        for (Map<String, Object> layer : layers) {
+            if (layer.containsKey(key)) {
+                value = layer.get(key);
+                break;
+            }
         }
 
-        return null;
+        if (logAccess) {
+            if (value != null) {
+                log.debug("Found value {} for option {}.", value, key);
+            } else {
+                log.debug("No value found for option {}. Returning default of {}.", key, defaultValue);
+            }
+        }
+
+        return (value == null) ? defaultValue : value;
     }
 
     public static boolean hasProperty(String key) {
-        return config.containsKey(key);
-    }
-
-    public static boolean getBoolean(String key, boolean defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getBoolean(key, defaultValue);
+        return getProperty(key, null, false) != null;
     }
 
     public static Boolean getBoolean(String key, Boolean defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getBoolean(key, defaultValue);
+        Object value = getProperty(key, defaultValue, true);
+        if (value instanceof Boolean) {
+            return (Boolean)value;
+        } else if (value instanceof String) {
+            return Boolean.valueOf((String)value);
+        }
+
+        return Boolean.valueOf(value.toString());
     }
 
-    public static Double getDouble(String key, Double defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getDouble(key, defaultValue);
+    public static Double getDouble(String key, Number defaultValue) {
+        Object value = getProperty(key, defaultValue, true);
+        if (value instanceof Double) {
+            return (Double)value;
+        } else if (value instanceof String) {
+            return Double.valueOf((String)value);
+        } else if (value instanceof Number) {
+            return Double.valueOf(((Number)value).doubleValue());
+        }
+
+        return Double.valueOf(value.toString());
+    }
+
+    public static Float getFloat(String key, Number defaultValue) {
+        Object value = getProperty(key, defaultValue, true);
+        if (value instanceof Float) {
+            return (Float)value;
+        } else if (value instanceof String) {
+            return Float.valueOf((String)value);
+        } else if (value instanceof Number) {
+            return Float.valueOf(((Number)value).floatValue());
+        }
+
+        return Float.valueOf(value.toString());
+    }
+
+    public static Integer getInteger(String key, Number defaultValue) {
+        Object value = getProperty(key, defaultValue, true);
+        if (value instanceof Integer) {
+            return (Integer)value;
+        } else if (value instanceof String) {
+            return Integer.valueOf((String)value);
+        } else if (value instanceof Number) {
+            return Integer.valueOf(((Number)value).intValue());
+        }
+
+        return Integer.valueOf(value.toString());
+    }
+
+    public static Long getLong(String key, Number defaultValue) {
+        Object value = getProperty(key, defaultValue, true);
+        if (value instanceof Long) {
+            return (Long)value;
+        } else if (value instanceof String) {
+            return Long.valueOf((String)value);
+        } else if (value instanceof Number) {
+            return Long.valueOf(((Number)value).longValue());
+        }
+
+        return Long.valueOf(value.toString());
     }
 
     public static String getString(String key, String defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getString(key, defaultValue);
-    }
-
-    public static byte getByte(String key, byte defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getByte(key, defaultValue);
-    }
-
-    public static Byte getByte(String key, Byte defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getByte(key, defaultValue);
-    }
-
-    public static double getDouble(String key, double defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getDouble(key, defaultValue);
-    }
-
-    public static float getFloat(String key, float defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getFloat(key, defaultValue);
-    }
-
-    public static Float getFloat(String key, Float defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getFloat(key, defaultValue);
-    }
-
-    public static int getInt(String key, int defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getInt(key, defaultValue);
-    }
-
-    public static Integer getInteger(String key, Integer defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getInteger(key, defaultValue);
-    }
-
-    public static long getLong(String key, long defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getLong(key, defaultValue);
-    }
-
-    public static Long getLong(String key, Long defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getLong(key, defaultValue);
-    }
-
-    public static short getShort(String key, short defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getShort(key, defaultValue);
-    }
-
-    public static Short getShort(String key, Short defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getShort(key, defaultValue);
-    }
-
-    public static BigDecimal getBigDecimal(String key, BigDecimal defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getBigDecimal(key, defaultValue);
-    }
-
-    public static BigInteger getBigInteger(String key, BigInteger defaultValue) {
-        logAccess(key, defaultValue);
-        return config.getBigInteger(key, defaultValue);
-    }
-
-     /**
-      * Because list options can be quite large, we allow them to be suppressed on request.
-      */
-    public static List<String> getList(String key, List<String> defaultValue, boolean suppressLogging) {
-        if (!suppressLogging) {
-            logAccess(key, defaultValue);
+        Object value = getProperty(key, defaultValue, true);
+        if (value == null) {
+            return null;
+        } else if (!(value instanceof String)) {
+            return value.toString();
         }
 
-        List<?> configList = config.getList(key, defaultValue);
-
-        List<String> toReturn = new ArrayList<String>(configList.size());
-        for (Object item : configList) {
-            toReturn.add((String)item);
-        }
-
-        return toReturn;
+        return (String)value;
     }
 
-    public static List<String> getList(String key, List<String> defaultValue) {
-        return getList(key, defaultValue, false);
-    }
-
-    public static List<String> getList(String key, boolean suppressLogging) {
-        return getList(key, new ArrayList<String>(0), suppressLogging);
-    }
-
-    public static List<String> getList(String key) {
-        return getList(key, new ArrayList<String>(0));
+    public static List getList(String key, List defaultValue, boolean logAccess) {
+        return (List)getProperty(key, defaultValue, logAccess);
     }
 
     /**
-     * Get a property, but don't log the access.
-     * This should only be used in rare cases.
+     * A less flexible list fetch.
      */
-    public static Object getUnloggedProperty(String key) {
-        if (config.containsKey(key)) {
-            return config.getProperty(key);
+    public static List<String> getStringList(String key) {
+        List rawList = getList(key, null, false);
+        if (rawList == null) {
+            return Collections.emptyList();
         }
 
-        return null;
+        @SuppressWarnings("unchecked")
+        List<String> rtn = (List<String>)rawList;
+
+        return rtn;
     }
 
     /**
@@ -351,44 +320,11 @@ public class Config {
      * The default constructor will be used.
      */
     public static Object getNewObject(String key, String defaultValue) {
-        logAccess(key, defaultValue);
-
-        String className = config.getString(key, defaultValue);
-
-        // It is not unusual for someone to want no object if the key does not exist.
+        String className = getString(key, defaultValue);
         if (className == null) {
             return null;
         }
 
         return Reflection.newObject(className);
-    }
-
-    public static String asString() {
-        StringBuilder string = new StringBuilder();
-
-        @SuppressWarnings("unchecked")
-        Iterator<String> keys = config.getKeys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            string.append(key + ": " + config.getProperty(key) + System.lineSeparator());
-        }
-
-        return string.toString();
-    }
-
-    public static DataConfiguration getCopy() {
-        return new DataConfiguration(config);
-    }
-
-    public static void replace(DataConfiguration newConfig) {
-        config = newConfig;
-    }
-
-    private static void logAccess(String key, Object defaultValue) {
-        if (config.containsKey(key)) {
-            log.debug("Found value {} for option {}.", config.getProperty(key), key);
-        } else {
-            log.debug("No value found for option {}. Returning default of {}.", key, defaultValue);
-        }
     }
 }

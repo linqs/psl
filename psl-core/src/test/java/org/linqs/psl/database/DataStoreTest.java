@@ -164,9 +164,9 @@ public abstract class DataStoreTest extends PSLBaseTest {
         UniqueIntID c = new UniqueIntID(2);
         UniqueIntID d = new UniqueIntID(3);
 
-        inserter.insert(a, b);
-        inserter.insertValue(0.5, b, c);
-        inserter.insertValue(0.25, c, d);
+        inserter.insertRaw(a, b);
+        inserter.insertValueRaw(0.5, b, c);
+        inserter.insertValueRaw(0.25, c, d);
 
         Database db;
         GroundAtom atom;
@@ -384,8 +384,8 @@ public abstract class DataStoreTest extends PSLBaseTest {
 
         datastore.registerPredicate(p3);
         Inserter inserter = datastore.getInserter(p3, datastore.getPartition("0"));
-        inserter.insert(0.5, 1.0);
-        inserter.insert(0.0, 0.0);
+        inserter.insertRaw(0.5, 1.0);
+        inserter.insertRaw(0.0, 0.0);
 
         Database db = datastore.getDatabase(datastore.getPartition("0"));
 
@@ -431,7 +431,7 @@ public abstract class DataStoreTest extends PSLBaseTest {
 
         // Tests a simple query
         inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-        inserter.insert(a, b);
+        inserter.insertRaw(a, b);
 
         db = datastore.getDatabase(datastore.getPartition("0"));
 
@@ -448,9 +448,9 @@ public abstract class DataStoreTest extends PSLBaseTest {
         db.close();
 
         // Tests a simple query with mixed argument types
-        inserter.insert(b, a);
+        inserter.insertRaw(b, a);
         inserter = datastore.getInserter(p4, datastore.getPartition("0"));
-        inserter.insert(a, -0.1);
+        inserter.insertRaw(a, -0.1);
 
         db = datastore.getDatabase(datastore.getPartition("0"));
 
@@ -467,11 +467,11 @@ public abstract class DataStoreTest extends PSLBaseTest {
         db.close();
 
         // Tests a simple query with multiple results
-        inserter.insert(b, 4.0);
-        inserter.insert(c, 4.0);
-        inserter.insert(d, 4.0);
-        inserter.insert(e, 4.0);
-        inserter.insert(f, 4.0);
+        inserter.insertRaw(b, 4.0);
+        inserter.insertRaw(c, 4.0);
+        inserter.insertRaw(d, 4.0);
+        inserter.insertRaw(e, 4.0);
+        inserter.insertRaw(f, 4.0);
 
         db = datastore.getDatabase(datastore.getPartition("0"));
 
@@ -516,8 +516,8 @@ public abstract class DataStoreTest extends PSLBaseTest {
         UniqueIntID b = new UniqueIntID(1);
 
         Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-        inserter.insert(a, a);
-        inserter.insert(a, b);
+        inserter.insertRaw(a, a);
+        inserter.insertRaw(a, b);
 
         Variable X = new Variable("X");
         Variable Y = new Variable("Y");
@@ -604,10 +604,10 @@ public abstract class DataStoreTest extends PSLBaseTest {
         UniqueIntID b = new UniqueIntID(1);
 
         Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-        inserter.insert(a, b);
+        inserter.insertRaw(a, b);
 
         inserter = datastore.getInserter(p1, datastore.getPartition("1"));
-        inserter.insert(a, b);
+        inserter.insertRaw(a, b);
 
         Database db = datastore.getDatabase(datastore.getPartition("0"), datastore.getPartition("1"));
         dbs.add(db);
@@ -632,10 +632,10 @@ public abstract class DataStoreTest extends PSLBaseTest {
         UniqueIntID b = new UniqueIntID(1);
 
         Inserter inserter = datastore.getInserter(p1, datastore.getPartition("0"));
-        inserter.insert(a, b);
+        inserter.insertRaw(a, b);
 
         inserter = datastore.getInserter(p1, datastore.getPartition("1"));
-        inserter.insert(a, b);
+        inserter.insertRaw(a, b);
 
         Database db = datastore.getDatabase(datastore.getPartition("2"), datastore.getPartition("0"), datastore.getPartition("1"));
         dbs.add(db);
@@ -663,10 +663,10 @@ public abstract class DataStoreTest extends PSLBaseTest {
         UniqueIntID c = new UniqueIntID(2);
         UniqueIntID d = new UniqueIntID(3);
 
-        inserter.insert(a, b);
-        inserter.insert(b, c);
-        inserter.insert(c, d);
-        inserter.insert(a, d);
+        inserter.insertRaw(a, b);
+        inserter.insertRaw(b, c);
+        inserter.insertRaw(c, d);
+        inserter.insertRaw(a, d);
 
         Database db1 = datastore.getDatabase(datastore.getPartition("1"), datastore.getPartition("0"));
         Database db2 = datastore.getDatabase(datastore.getPartition("2"), datastore.getPartition("0"));
@@ -857,10 +857,10 @@ public abstract class DataStoreTest extends PSLBaseTest {
         UniqueIntID c = new UniqueIntID(2);
         UniqueIntID d = new UniqueIntID(3);
 
-        inserter.insert(a, b);
-        inserter.insert(b, c);
-        inserter.insert(c, d);
-        inserter.insert(a, d);
+        inserter.insertRaw(a, b);
+        inserter.insertRaw(b, c);
+        inserter.insertRaw(c, d);
+        inserter.insertRaw(a, d);
 
         int numDeleted = datastore.deletePartition(datastore.getPartition("0"));
         assertEquals(4, numDeleted);
@@ -936,7 +936,7 @@ public abstract class DataStoreTest extends PSLBaseTest {
         ));
 
         for (Object value : values) {
-            inserter.insert(value, value);
+            inserter.insertRaw(value, value);
         }
 
         Database db = datastore.getDatabase(datastore.getPartition("0"));
@@ -1008,7 +1008,7 @@ public abstract class DataStoreTest extends PSLBaseTest {
 
         for (int i = 0; i < badValues.length; i++) {
             try {
-                inserter.insertValue(badValues[i], a, b);
+                inserter.insertValueRaw(badValues[i], a, b);
                 fail("IllegalArgumentException not thrown as expected on index " + i + ", value: " + badValues[i]);
             } catch (IllegalArgumentException ex) {
                 // Expected

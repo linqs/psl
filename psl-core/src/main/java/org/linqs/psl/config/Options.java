@@ -373,7 +373,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_MULTIPLIER = new Option(
         "inference.relax.multiplier",
-        100,
+        100.0f,
         "When relaxing a hard constraint into a soft one, the weight of the rule is set to this value times the largest weight seen.",
         Option.FLAG_POSITIVE
     );

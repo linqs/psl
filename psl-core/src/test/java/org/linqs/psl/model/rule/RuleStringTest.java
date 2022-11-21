@@ -113,14 +113,14 @@ public class RuleStringTest extends PSLBaseTest {
         targetPartition = dataStore.getNewPartition();
 
         Inserter inserter = dataStore.getInserter(singlePredicate, obsPartition);
-        inserter.insert(new UniqueStringID("Alice"));
-        inserter.insert(new UniqueStringID("Bob"));
+        inserter.insertRaw(new UniqueStringID("Alice"));
+        inserter.insertRaw(new UniqueStringID("Bob"));
 
         inserter = dataStore.getInserter(doublePredicate, targetPartition);
-        inserter.insert(new UniqueStringID("Alice"), new UniqueStringID("Alice"));
-        inserter.insert(new UniqueStringID("Alice"), new UniqueStringID("Bob"));
-        inserter.insert(new UniqueStringID("Bob"), new UniqueStringID("Alice"));
-        inserter.insert(new UniqueStringID("Bob"), new UniqueStringID("Bob"));
+        inserter.insertRaw(new UniqueStringID("Alice"), new UniqueStringID("Alice"));
+        inserter.insertRaw(new UniqueStringID("Alice"), new UniqueStringID("Bob"));
+        inserter.insertRaw(new UniqueStringID("Bob"), new UniqueStringID("Alice"));
+        inserter.insertRaw(new UniqueStringID("Bob"), new UniqueStringID("Bob"));
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
         database = dataStore.getDatabase(targetPartition, toClose, obsPartition);

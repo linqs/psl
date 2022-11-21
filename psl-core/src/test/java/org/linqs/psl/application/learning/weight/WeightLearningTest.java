@@ -20,6 +20,8 @@ package org.linqs.psl.application.learning.weight;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.evaluation.EvaluationInstance;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
@@ -100,7 +102,15 @@ public abstract class WeightLearningTest extends PSLBaseTest {
     /**
      * @return the WeightLearningApplication to be tested.
      */
-    protected abstract WeightLearningApplication getWLA();
+    protected abstract WeightLearningApplication getBaseWLA();
+
+    protected WeightLearningApplication getWLA() {
+
+        WeightLearningApplication wla = getBaseWLA();
+        wla.setEvaluation(new EvaluationInstance(info.predicates.get("Friends"), new ContinuousEvaluator(), true));
+
+        return wla;
+    }
 
     protected void initModel(boolean useNice) {
         if (weightLearningTrainDB != null) {

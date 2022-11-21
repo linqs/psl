@@ -29,6 +29,8 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Utilities for interfacing with files and directories.
@@ -77,6 +79,14 @@ public class FileUtils {
 
     public static InputStreamReader getInputStreamReader(InputStream stream) {
         return new InputStreamReader(stream, StandardCharsets.UTF_8);
+    }
+
+    public static Iterable<String> lines(BufferedReader reader) {
+        return IteratorUtils.newIterable(new LinesIterator(reader));
+    }
+
+    public static Iterable<String> lines(InputStream stream) {
+        return IteratorUtils.newIterable(new LinesIterator(getBufferedReader(stream)));
     }
 
     /**
@@ -182,6 +192,55 @@ public class FileUtils {
             return new String(bytes, StandardCharsets.UTF_8);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to read file contents from: '" + path + "'.", ex);
+        }
+    }
+
+    private static class LinesIterator implements Iterator<String> {
+        private BufferedReader reader;
+        private String next;
+
+        public LinesIterator(BufferedReader reader) {
+            this.reader = reader;
+            load();
+        }
+
+        @Override
+        public String next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
+            String temp = next;
+            load();
+
+            return temp;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return next != null;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        private void load() {
+            if (reader == null) {
+                return;
+            }
+
+            try {
+                next = reader.readLine();
+
+                if (next == null) {
+                    reader.close();
+                    reader = null;
+                }
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 }

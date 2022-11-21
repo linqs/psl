@@ -25,7 +25,7 @@ import org.linqs.psl.config.Options;
 
 public class InitialWeightRankSearchTest extends WeightLearningTest {
     @Override
-    protected WeightLearningApplication getWLA() {
+    protected WeightLearningApplication getBaseWLA() {
         // Turn down the number of iterations of both ADMM and VotedPerceptron.
         Options.WLA_VP_NUM_STEPS.set(5);
         Options.ADMM_MAX_ITER.set(Integer.valueOf(25));

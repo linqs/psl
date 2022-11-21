@@ -105,11 +105,11 @@ public class GroundRuleTest extends PSLBaseTest {
         // Add in self friendship ground atoms so we can get more groundings on some tests.
         if (addSelfTargets) {
             Inserter inserter = model.dataStore.getInserter(model.predicates.get("Friends"), model.targetPartition);
-            inserter.insert("Alice", "Alice");
-            inserter.insert("Bob", "Bob");
-            inserter.insert("Charlie", "Charlie");
-            inserter.insert("Derek", "Derek");
-            inserter.insert("Eugene", "Eugene");
+            inserter.insertRaw("Alice", "Alice");
+            inserter.insertRaw("Bob", "Bob");
+            inserter.insertRaw("Charlie", "Charlie");
+            inserter.insertRaw("Derek", "Derek");
+            inserter.insertRaw("Eugene", "Eugene");
         }
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();

@@ -22,7 +22,7 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 
 public class RankSearchTest extends WeightLearningTest {
     @Override
-    protected WeightLearningApplication getWLA() {
+    protected WeightLearningApplication getBaseWLA() {
         return new RankSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
     }
 }

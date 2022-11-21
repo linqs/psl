@@ -51,26 +51,26 @@ public class CategoricalEvaluatorTest extends EvaluatorTest<CategoricalEvaluator
 
         // Create the RVAs.
         Inserter inserter = dataStore.getInserter(predicate, targetPartition);
-        inserter.insertValue(1.0, new UniqueIntID(1), new UniqueIntID(1));
+        inserter.insertValueRaw(1.0, new UniqueIntID(1), new UniqueIntID(1));
 
-        inserter.insertValue(0.99, new UniqueIntID(2), new UniqueIntID(1));
-        inserter.insertValue(1.00, new UniqueIntID(2), new UniqueIntID(2));
+        inserter.insertValueRaw(0.99, new UniqueIntID(2), new UniqueIntID(1));
+        inserter.insertValueRaw(1.00, new UniqueIntID(2), new UniqueIntID(2));
 
-        inserter.insertValue(0.0, new UniqueIntID(3), new UniqueIntID(1));
-        inserter.insertValue(0.0, new UniqueIntID(3), new UniqueIntID(2));
-        inserter.insertValue(1.0, new UniqueIntID(3), new UniqueIntID(3));
+        inserter.insertValueRaw(0.0, new UniqueIntID(3), new UniqueIntID(1));
+        inserter.insertValueRaw(0.0, new UniqueIntID(3), new UniqueIntID(2));
+        inserter.insertValueRaw(1.0, new UniqueIntID(3), new UniqueIntID(3));
 
-        inserter.insertValue(0.30, new UniqueIntID(4), new UniqueIntID(1));
-        inserter.insertValue(0.20, new UniqueIntID(4), new UniqueIntID(2));
-        inserter.insertValue(0.25, new UniqueIntID(4), new UniqueIntID(3));
-        inserter.insertValue(0.25, new UniqueIntID(4), new UniqueIntID(4));
+        inserter.insertValueRaw(0.30, new UniqueIntID(4), new UniqueIntID(1));
+        inserter.insertValueRaw(0.20, new UniqueIntID(4), new UniqueIntID(2));
+        inserter.insertValueRaw(0.25, new UniqueIntID(4), new UniqueIntID(3));
+        inserter.insertValueRaw(0.25, new UniqueIntID(4), new UniqueIntID(4));
 
         // Create the truth atoms.
         inserter = dataStore.getInserter(predicate, truthPartition);
-        inserter.insertValue(1.0, new UniqueIntID(1), new UniqueIntID(1));  // Hit
-        inserter.insertValue(1.0, new UniqueIntID(2), new UniqueIntID(1));  // Miss
-        inserter.insertValue(1.0, new UniqueIntID(3), new UniqueIntID(1));  // Miss
-        inserter.insertValue(1.0, new UniqueIntID(4), new UniqueIntID(1));  // Hit
+        inserter.insertValueRaw(1.0, new UniqueIntID(1), new UniqueIntID(1));  // Hit
+        inserter.insertValueRaw(1.0, new UniqueIntID(2), new UniqueIntID(1));  // Miss
+        inserter.insertValueRaw(1.0, new UniqueIntID(3), new UniqueIntID(1));  // Miss
+        inserter.insertValueRaw(1.0, new UniqueIntID(4), new UniqueIntID(1));  // Hit
 
         // Redefine the truth database with no atoms in the write partition.
         Database results = dataStore.getDatabase(targetPartition);
