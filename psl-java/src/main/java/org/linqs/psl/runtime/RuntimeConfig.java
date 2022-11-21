@@ -165,12 +165,14 @@ public class RuntimeConfig {
         validateRules(learn.rules);
         validateRules(infer.rules);
 
+        // If no learn/infer option was passed in or inferred, then just assume inference.
+
+        if (!RuntimeOptions.LEARN.isSet() && !RuntimeOptions.INFERENCE.isSet() && !runLearn && !runInfer) {
+            runInfer = true;
+        }
+
         options.put(RuntimeOptions.LEARN.name(), "" + runLearn);
         options.put(RuntimeOptions.INFERENCE.name(), "" + runInfer);
-
-        if (!runLearn && !runInfer) {
-            throw new IllegalStateException("Neither inference nor learning were specified.");
-        }
     }
 
     /**
@@ -318,24 +320,7 @@ public class RuntimeConfig {
 
     public static RuntimeConfig fromJSON(String contents) {
         JSONRuntimeConfig baseConfig = parseJSON(contents);
-
-        RuntimeConfig config = new RuntimeConfig();
-        config.convertBaseConfig(baseConfig);
-
-        return config;
-    }
-
-    private void convertBaseConfig(JSONRuntimeConfig baseConfig) {
-        this.options = baseConfig.options;
-        this.rules = baseConfig.rules;
-        this.learn = baseConfig.learn;
-        this.infer = baseConfig.infer;
-
-        predicates = new HashMap<String, PredicateConfigInfo>(baseConfig.predicates.size());
-        for (Map.Entry<String, JSONPredicate> entry : baseConfig.predicates.entrySet()) {
-            PredicateConfigInfo predicate = entry.getValue().formalize(entry.getKey());
-            this.predicates.put(predicate.name, predicate);
-        }
+        return baseConfig.formalize();
     }
 
     private static JSONRuntimeConfig parseJSON(String contents) {
@@ -628,17 +613,25 @@ public class RuntimeConfig {
         /**
          * Convert this config to a RuntimeConfig.
          */
-        public void formalize(RuntimeConfig config) {
-            config.options = this.options;
-            config.rules = this.rules;
-            config.learn = this.learn;
-            config.infer = this.infer;
+        public RuntimeConfig formalize() {
+            RuntimeConfig config = new RuntimeConfig();
+
+            config.options = (this.options == null) ? new HashMap<String, String>() : this.options;
+            config.rules = (this.rules == null) ? new RuleList() : this.rules;
+            config.learn = (this.learn == null) ? new SplitConfigInfo() : this.learn;
+            config.infer = (this.infer == null) ? new SplitConfigInfo() : this.infer;
+
+            if (this.predicates == null) {
+                this.predicates = new HashMap<String, JSONPredicate>();
+            }
 
             config.predicates = new HashMap<String, PredicateConfigInfo>(this.predicates.size());
             for (Map.Entry<String, JSONPredicate> entry : this.predicates.entrySet()) {
                 PredicateConfigInfo predicate = entry.getValue().formalize(entry.getKey());
                 config.predicates.put(predicate.name, predicate);
             }
+
+            return config;
         }
     }
 
@@ -676,6 +669,7 @@ public class RuntimeConfig {
             config.function = function;
             config.model = model;
 
+            config.types = (types == null) ? new ArrayList<String>() : types;
             config.evaluations = (evaluations == null) ? new ArrayList<EvalInfo>() : evaluations;
 
             config.observations = (observations == null) ? new PartitionInfo() : observations;

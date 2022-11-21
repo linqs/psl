@@ -50,9 +50,6 @@ import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 
-import org.apache.commons.configuration2.DataConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
@@ -92,24 +89,29 @@ public class Runtime {
         run(new RuntimeConfig());
     }
 
+    public void run(String configPath) {
+        RuntimeConfig config = RuntimeConfig.fromFile(configPath);
+        run(config);
+    }
+
     /**
      * The primary interface into a PSL runtime.
      * Options specified in the config will be applied during the runtime, and reset after.
      */
     public void run(RuntimeConfig config) {
-        DataConfiguration oldSettings = Config.getCopy();
+        Config.pushLayer();
 
         try {
             runInternal(config);
         } finally {
-            Config.replace(oldSettings);
+            Config.popLayer();
         }
     }
 
     private void runInternal(RuntimeConfig config) {
         // Apply any top-level options found in the config.
         for (Map.Entry<String, String> entry : config.options.entrySet()) {
-            Config.setProperty(entry.getKey(), entry.getValue());
+            Config.setProperty(entry.getKey(), entry.getValue(), false);
         }
 
         // Specially check if we need to re-init the logger.
@@ -124,7 +126,7 @@ public class Runtime {
 
         // Apply top-level options again after validation (since options may have been changed or added).
         for (Map.Entry<String, String> entry : config.options.entrySet()) {
-            Config.setProperty(entry.getKey(), entry.getValue());
+            Config.setProperty(entry.getKey(), entry.getValue(), false);
         }
 
         Model model = null;
@@ -181,10 +183,12 @@ public class Runtime {
      * Loads any additional configuration.
      */
     private void initConfig() {
+        /* TEST
         String propertiesPath = RuntimeOptions.PROPERTIES_PATH.getString();
         if (propertiesPath != null) {
             Config.loadResource(propertiesPath);
         }
+        */
     }
 
     private DataStore initDataStore(RuntimeConfig config) {
@@ -266,40 +270,57 @@ public class Runtime {
 
     private void loadDataPaths(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<String> paths) {
         Partition partition = dataStore.getPartition(partitionName);
-        Inserter insert = dataStore.getInserter(predicate, partition);
+        Inserter inserter = dataStore.getInserter(predicate, partition);
 
         for (String path : paths) {
             log.debug("Loading data for {} ({} partition) from {}", predicate, partitionName, path);
-            insert.loadDelimitedDataAutomatic(path);
+            inserter.loadDelimitedDataAutomatic(path);
         }
     }
 
     private void loadDataPoints(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<List<String>> points) {
         Partition partition = dataStore.getPartition(partitionName);
-        Inserter insert = dataStore.getInserter(predicate, partition);
+        Inserter inserter = dataStore.getInserter(predicate, partition);
 
         log.debug("Loading embeded data for {} ({} partition)", predicate, partitionName);
 
-        for (List<String> point : points) {
-            insert.insert(point);
+        int arity = predicate.getArity();
+        Object[] point = new Object[arity];
+
+        for (List<String> rawPoint : points) {
+            if (rawPoint.size() < arity || rawPoint.size() > (arity + 1)) {
+                throw new IllegalArgumentException(String.format(
+                        "Provided data point for predicate %s does not have the correct number of arguments. Expecting %d or %d arguments. Offending data point: %s.",
+                        predicate.getName(), arity, arity + 1, rawPoint));
+            }
+
+            for (int i = 0; i < arity; i++) {
+                point[i] = rawPoint.get(i);
+            }
+
+            if (rawPoint.size() == (arity + 1)) {
+                inserter.insertValue(Double.parseDouble(rawPoint.get(arity)), point);
+            } else {
+                inserter.insert(point);
+            }
         }
     }
 
     private void runInference(RuntimeConfig config, Model model) {
         // Save the config so we can apply inference-only options.
-        DataConfiguration oldSettings = Config.getCopy();
+        Config.pushLayer();
 
         try {
             runInferenceInternal(config, model);
         } finally {
-            Config.replace(oldSettings);
+            Config.popLayer();
         }
     }
 
     private void runInferenceInternal(RuntimeConfig config, Model model) {
         // Apply any inference-only options found in the config.
         for (Map.Entry<String, String> entry : config.infer.options.entrySet()) {
-            Config.setProperty(entry.getKey(), entry.getValue());
+            Config.setProperty(entry.getKey(), entry.getValue(), false);
         }
 
         // If a model was passed in, then it was learned from the common rules (so don't include them).
@@ -375,19 +396,19 @@ public class Runtime {
 
     private Model runLearning(RuntimeConfig config) {
         // Save the config so we can apply learn-only options.
-        DataConfiguration oldSettings = Config.getCopy();
+        Config.pushLayer();
 
         try {
             return runLearningInternal(config);
         } finally {
-            Config.replace(oldSettings);
+            Config.popLayer();
         }
     }
 
     private Model runLearningInternal(RuntimeConfig config) {
         // Apply any learn-only options found in the config.
         for (Map.Entry<String, String> entry : config.learn.options.entrySet()) {
-            Config.setProperty(entry.getKey(), entry.getValue());
+            Config.setProperty(entry.getKey(), entry.getValue(), false);
         }
 
         Model model = new Model();
@@ -483,12 +504,12 @@ public class Runtime {
 
             for (RuntimeConfig.EvalInfo eval : predicateInfo.evaluations) {
                 Evaluator evaluator = null;
-                DataConfiguration oldSettings = Config.getCopy();
+                Config.pushLayer();
 
                 try {
                     evaluator = (Evaluator)Reflection.newObject(eval.evaluator);
                 } finally {
-                    Config.replace(oldSettings);
+                    Config.popLayer();
                 }
 
                 evaluations.add(new EvaluationInstance((StandardPredicate)predicate, evaluator, eval.primary));
@@ -517,10 +538,8 @@ public class Runtime {
             return;
         }
 
-        RuntimeConfig config = RuntimeConfig.fromFile(args[0]);
-
         Runtime runtime = new Runtime();
-        runtime.run(config);
+        runtime.run(args[0]);
     }
 
     public static enum DatabaseType {

@@ -107,7 +107,7 @@ public class CommandLineLoader {
         // Load any options specified directly on the command line (override standing options).
         for (Map.Entry<Object, Object> entry : parsedOptions.getOptionProperties("D").entrySet()) {
             String key = entry.getKey().toString();
-            Config.setProperty(key, entry.getValue());
+            Config.setProperty(key, entry.getValue(), true);
         }
     }
 

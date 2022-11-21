@@ -17,18 +17,6 @@
  */
 package org.linqs.psl.runtime;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import org.linqs.psl.database.Database;
-import org.linqs.psl.config.RuntimeOptions;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
-import org.linqs.psl.model.function.ExternalFunction;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueStringID;
-
 import org.junit.Test;
 
 import java.nio.file.Paths;
@@ -36,143 +24,19 @@ import java.nio.file.Paths;
 public class SimpleAcquaintancesTest extends RuntimeTest {
     @Test
     public void testBase() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-
-        runInference(modelPath, dataPath);
+        String path = Paths.get(resourceDir, "simple-acquaintances", "base.json").toString();
+        run(path);
     }
 
     @Test
     public void testEval() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-
-        RuntimeOptions.INFERENCE_EVAL.set(ContinuousEvaluator.class.getName());
-
-        runInference(modelPath, dataPath);
-    }
-
-    @Test
-    public void testMultipleEval() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-
-        String evals = ContinuousEvaluator.class.getName() + "," + DiscreteEvaluator.class.getName();
-        RuntimeOptions.INFERENCE_EVAL.set(evals);
-
-        runInference(modelPath, dataPath);
+        String path = Paths.get(resourceDir, "simple-acquaintances", "eval.json").toString();
+        run(path);
     }
 
     @Test
     public void testTypes() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_types.data").toString();
-
-        runInference(modelPath, dataPath);
-    }
-
-    @Test
-    public void testMixedTypes() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances-mixed", "base.data").toString();
-
-        runInference(modelPath, dataPath);
-    }
-
-    @Test
-    public void testBlock() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_block.data").toString();
-
-        runInference(modelPath, dataPath);
-    }
-
-    @Test
-    public void testErrorUndeclaredPredicate() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_undeclared_predicate.data").toString();
-
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on non-existent predicate.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testErrorDataInFunctional() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_data_in_functional.data").toString();
-
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on data in a functional predicate.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testFunctional() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances-functional.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_functional.data").toString();
-
-        runInference(modelPath, dataPath);
-    }
-
-    @Test
-    public void testErrorBadTopLevelKey() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_bad_top_key.data").toString();
-
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on bad top level key.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testErrorObservedTargets() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_obs_targets.data").toString();
-
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on atoms that are observed and targets.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testUnaryDataFile() {
-        String modelPath = Paths.get(baseModelsDir, "unary.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_unary.data").toString();
-
-        runInference(modelPath, dataPath);
-    }
-
-    // Not an actual similarity.
-    public static class SimNameExternalFunction implements ExternalFunction {
-        @Override
-        public float getValue(Database db, Constant... args) {
-            String a = ((UniqueStringID)args[0]).getID();
-            String b = ((UniqueStringID)args[1]).getID();
-
-            return (float)(Math.abs(a.length() - b.length()) / (double)(Math.max(a.length(), b.length())));
-        }
-
-        @Override
-        public int getArity() {
-            return 2;
-        }
-
-        @Override
-        public ConstantType[] getArgumentTypes() {
-            return new ConstantType[] {ConstantType.UniqueStringID, ConstantType.UniqueStringID};
-        }
+        String path = Paths.get(resourceDir, "simple-acquaintances", "types.json").toString();
+        run(path);
     }
 }

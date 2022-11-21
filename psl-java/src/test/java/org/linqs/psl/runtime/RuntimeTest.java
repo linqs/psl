@@ -35,26 +35,22 @@ import java.nio.file.Paths;
 public abstract class RuntimeTest {
     public static final String PREFIX = "runtime_test";
     public static final String RESOURCES_BASE_FILE = ".resources";
-    public static final String BASE_DATA_DIR_NAME = "data";
-    public static final String BASE_MODELS_DIR_NAME = "models";
 
     protected final String outDir;
     protected final String resourceDir;
-    protected final String baseDataDir;
-    protected final String baseModelsDir;
 
     public RuntimeTest() {
         outDir = Paths.get(System.getProperty("java.io.tmpdir"), PREFIX + "_" + this.getClass().getName()).toString();
-
         resourceDir = (new File(this.getClass().getClassLoader().getResource(RESOURCES_BASE_FILE).getFile())).getParentFile().getAbsolutePath();
-        baseDataDir = Paths.get(resourceDir, BASE_DATA_DIR_NAME).toString();
-        baseModelsDir = Paths.get(resourceDir, BASE_MODELS_DIR_NAME).toString();
     }
 
     @Before
     public void setUp() {
         (new File(outDir)).mkdirs();
         Options.clearAll();
+
+        Logger.setLevel("OFF");
+        RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.set(outDir);
     }
 
     @After
@@ -66,30 +62,21 @@ public abstract class RuntimeTest {
         Options.clearAll();
     }
 
-    public void runInference(String modelPath, String dataPath) {
-        runInference(modelPath, dataPath, "OFF");
-    }
-
-    public void runInference(String modelPath, String dataPath, String loggingLevel) {
-        RuntimeOptions.INFERENCE.set(true);
-        RuntimeOptions.INFERENCE_DATA_PATH.set(dataPath);
-        RuntimeOptions.INFERENCE_MODEL_PATH.set(modelPath);
-        RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.set(outDir);
-
-        run(loggingLevel);
-    }
-
-    public void run(String loggingLevel) {
+    public void run(String path, String loggingLevel) {
         RuntimeOptions.LOG_LEVEL.set(loggingLevel);
-        run();
+        run(path);
     }
 
-    /**
-     * Run assuming that all options have already been set in config.
-     */
-    public void run() {
+    public void run(RuntimeConfig config) {
         Runtime runtime = new Runtime();
-        runtime.run();
+        runtime.run(config);
+
+        validate();
+    }
+
+    public void run(String path) {
+        Runtime runtime = new Runtime();
+        runtime.run(path);
 
         validate();
     }
