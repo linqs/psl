@@ -18,21 +18,15 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.AbstractRule;
-import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.SystemUtils;
 
 import org.junit.After;
 import org.junit.Before;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,26 +37,25 @@ import java.util.List;
 public abstract class CLITest {
     public static final String PREFIX = "cli_test";
     public static final String RESOURCES_BASE_FILE = ".resources";
-    public static final String BASE_DATA_DIR_NAME = "data";
-    public static final String BASE_MODELS_DIR_NAME = "models";
+    public static final String RUNTIME_DIR_NAME = "runtime";
 
     protected final String outDir;
     protected final String resourceDir;
-    protected final String baseDataDir;
-    protected final String baseModelsDir;
+    protected final String runtimeDir;
 
     public CLITest() {
         outDir = Paths.get(System.getProperty("java.io.tmpdir"), PREFIX + "_" + this.getClass().getName()).toString();
-
         resourceDir = (new File(this.getClass().getClassLoader().getResource(RESOURCES_BASE_FILE).getFile())).getParentFile().getAbsolutePath();
-        baseDataDir = Paths.get(resourceDir, BASE_DATA_DIR_NAME).toString();
-        baseModelsDir = Paths.get(resourceDir, BASE_MODELS_DIR_NAME).toString();
+        runtimeDir = Paths.get(resourceDir, RUNTIME_DIR_NAME).toString();
     }
 
     @Before
     public void setUp() {
         (new File(outDir)).mkdirs();
         Options.clearAll();
+
+        Logger.setLevel("OFF");
+        RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.set(outDir);
     }
 
     @After
@@ -74,30 +67,26 @@ public abstract class CLITest {
         Options.clearAll();
     }
 
-    public void run(String modelPath, String dataPath) {
-        run(modelPath, dataPath, null);
+    public void run(String configPath) {
+        run(configPath, null);
     }
 
-    public void run(String modelPath, String dataPath, List<String> additionalArgs) {
-        run(modelPath, dataPath, "OFF", additionalArgs);
+    public void run(String configPath, List<String> additionalArgs) {
+        run(configPath, "OFF", additionalArgs);
     }
 
-    public void run(String modelPath, String dataPath, String loggingLevel, List<String> additionalArgs) {
+    public void run(String configPath, String loggingLevel, List<String> additionalArgs) {
         List<String> args = new ArrayList<String>();
         args.add("--" + CommandLineLoader.OPERATION_INFER_LONG);
 
-        args.add("--" + CommandLineLoader.OPTION_MODEL_LONG);
-        args.add(modelPath);
-
-        args.add("--" + CommandLineLoader.OPTION_DATA_LONG);
-        args.add(dataPath);
+        args.add("--" + CommandLineLoader.OPTION_CONFIG_LONG);
+        args.add(configPath);
 
         args.add("--" + CommandLineLoader.OPTION_OUTPUT_DIR_LONG);
         args.add(outDir);
 
-        // Set the logging level.
-        args.add("-" + CommandLineLoader.OPTION_PROPERTIES);
-        args.add("log4j.threshold=" + loggingLevel);
+        args.add("--" + CommandLineLoader.OPTION_LOG_LONG);
+        args.add(loggingLevel);
 
         if (additionalArgs != null) {
             args.addAll(additionalArgs);

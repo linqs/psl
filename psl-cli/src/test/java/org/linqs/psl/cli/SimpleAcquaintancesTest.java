@@ -17,116 +17,26 @@
  */
 package org.linqs.psl.cli;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueStringID;
-
 import org.junit.Test;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 
 public class SimpleAcquaintancesTest extends CLITest {
     @Test
     public void testBase() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-
-        run(modelPath, dataPath);
+        String path = Paths.get(runtimeDir, "simple-acquaintances", "base.json").toString();
+        run(path);
     }
 
     @Test
     public void testEval() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-
-        List<String> additionalArgs = Arrays.asList(
-            "--" + CommandLineLoader.OPTION_EVAL_LONG, ContinuousEvaluator.class.getName()
-        );
-
-        run(modelPath, dataPath, additionalArgs);
-    }
-
-    @Test
-    public void testMultipleEval() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base.data").toString();
-
-        List<String> additionalArgs = Arrays.asList(
-            "--" + CommandLineLoader.OPTION_EVAL_LONG,
-            ContinuousEvaluator.class.getName(),
-            DiscreteEvaluator.class.getName()
-        );
-
-        run(modelPath, dataPath);
+        String path = Paths.get(runtimeDir, "simple-acquaintances", "eval.json").toString();
+        run(path);
     }
 
     @Test
     public void testTypes() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_types.data").toString();
-
-        run(modelPath, dataPath);
-    }
-
-    @Test
-    public void testMixedTypes() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances-mixed", "base.data").toString();
-
-        run(modelPath, dataPath);
-    }
-
-    @Test
-    public void testBlock() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_block.data").toString();
-
-        run(modelPath, dataPath);
-    }
-
-    @Test
-    public void testErrorUndeclaredPredicate() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_undeclared_predicate.data").toString();
-
-        try {
-            run(modelPath, dataPath);
-            fail("Error not thrown on non-existent predicate.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testErrorBadTopLevelKey() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_bad_top_key.data").toString();
-
-        try {
-            run(modelPath, dataPath);
-            fail("Error not thrown on bad top level key.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testErrorObservedTargets() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_obs_targets.data").toString();
-
-        try {
-            run(modelPath, dataPath);
-            fail("Error not thrown on atoms that are observed and targets.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
+        String path = Paths.get(runtimeDir, "simple-acquaintances", "types.json").toString();
+        run(path);
     }
 }

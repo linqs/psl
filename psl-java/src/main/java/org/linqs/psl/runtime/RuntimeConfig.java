@@ -108,9 +108,12 @@ public class RuntimeConfig {
     private String relativeBasePath;
 
     public RuntimeConfig() {
-        rules = null;
+        rules = new RuleList();
         predicates = new HashMap<String, PredicateConfigInfo>();
         options = new HashMap<String, String>();
+
+        learn = new SplitConfigInfo();
+        infer = new SplitConfigInfo();
 
         relativeBasePath = ".";
     }

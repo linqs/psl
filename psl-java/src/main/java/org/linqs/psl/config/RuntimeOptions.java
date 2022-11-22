@@ -88,19 +88,6 @@ public class RuntimeOptions {
         "Commit inferred values to the database."
     );
 
-    public static final Option INFERENCE_DATA_PATH = new Option(
-        "runtime.inference.data.path",
-        null,
-        "Path to a PSL data file to use for infernece."
-    );
-
-    public static final Option INFERENCE_EVAL = new Option(
-        "runtime.inference.eval",
-        null,
-        "A comma-separated list of all the evaluators to run after infernece."
-        + " Evaluators are run on any open predicate with a 'truth' partition."
-    );
-
     public static final Option INFERENCE_METHOD = new Option(
         "runtime.inference.method",
         ADMMInference.class.getName(),
@@ -130,12 +117,6 @@ public class RuntimeOptions {
         "runtime.learn",
         false,
         "Run learning."
-    );
-
-    public static final Option LEARN_DATA_PATH = new Option(
-        "runtime.learn.data.path",
-        null,
-        "Path to a PSL data file to use for learning."
     );
 
     public static final Option LEARN_METHOD = new Option(

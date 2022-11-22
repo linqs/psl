@@ -19,12 +19,20 @@ package org.linqs.psl.cli;
 
 import org.junit.Test;
 
-public class VersionTest {
+public class MiscTest {
     @Test
-    public void testBase() {
+    public void testVersion() {
         String[] args = {
             "--" + CommandLineLoader.OPTION_VERSION_LONG,
-            "-" + CommandLineLoader.OPTION_PROPERTIES, "log4j.threshold=OFF"
+        };
+
+        Launcher.main(args, true);
+    }
+
+    @Test
+    public void testHelp() {
+        String[] args = {
+            "--" + CommandLineLoader.OPTION_HELP_LONG,
         };
 
         Launcher.main(args, true);

@@ -46,24 +46,17 @@ public class CommandLineLoader {
     public static final String OPERATION_LEARN = "l";
     public static final String OPERATION_LEARN_LONG = "learn";
 
-    public static final String OPTION_DATA = "d";
-    public static final String OPTION_DATA_LONG = "data";
+    public static final String OPTION_CONFIG = "c";
+    public static final String OPTION_CONFIG_LONG = "config";
     public static final String OPTION_DB_H2_PATH = "h2path";
     public static final String OPTION_DB_POSTGRESQL_NAME = "postgres";
-    public static final String OPTION_EVAL = "e";
-    public static final String OPTION_EVAL_LONG = "eval";
     public static final String OPTION_INT_IDS = "int";
     public static final String OPTION_INT_IDS_LONG = "int-ids";
-    public static final String OPTION_LOG4J = "4j";
-    public static final String OPTION_LOG4J_LONG = "log4j";
-    public static final String OPTION_MODEL = "m";
-    public static final String OPTION_MODEL_LONG = "model";
+    public static final String OPTION_LOG_LONG = "log";
     public static final String OPTION_OUTPUT_DIR = "o";
     public static final String OPTION_OUTPUT_DIR_LONG = "output";
     public static final String OPTION_OUTPUT_GROUND_RULES_LONG = "groundrules";
     public static final String OPTION_PROPERTIES = "D";
-    public static final String OPTION_PROPERTIES_FILE = "p";
-    public static final String OPTION_PROPERTIES_FILE_LONG = "properties";
     public static final String OPTION_SKIP_ATOM_COMMIT_LONG = "skipAtomCommit";
     public static final String OPTION_VERSION = "v";
     public static final String OPTION_VERSION_LONG = "version";
@@ -145,9 +138,9 @@ public class CommandLineLoader {
                 .desc("Print the PSL version and exit")
                 .build());
 
-        newOptions.addOption(Option.builder(OPTION_DATA)
-                .longOpt(OPTION_DATA_LONG)
-                .desc("Path to PSL data file")
+        newOptions.addOption(Option.builder(OPTION_CONFIG)
+                .longOpt(OPTION_CONFIG_LONG)
+                .desc("Path to PSL config file (JSON or YAML)")
                 .hasArg()
                 .argName("path")
                 .build());
@@ -170,31 +163,16 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
-        newOptions.addOption(Option.builder(OPTION_EVAL)
-                .longOpt(OPTION_EVAL_LONG)
-                .desc("Run the named Evaluator on any open predicate with a 'truth' partition." +
-                        " If multiple evaluators are specific, they will each be run.")
-                .hasArgs()
-                .argName("evaluator ...")
-                .build());
-
         newOptions.addOption(Option.builder(OPTION_INT_IDS)
                 .longOpt(OPTION_INT_IDS_LONG)
                 .desc("Use integer identifiers (UniqueIntID) instead of string identifiers (UniqueStringID).")
                 .build());
 
-        newOptions.addOption(Option.builder(OPTION_LOG4J)
-                .longOpt(OPTION_LOG4J_LONG)
-                .desc("Optional log4j properties file path")
+        newOptions.addOption(Option.builder()
+                .longOpt(OPTION_LOG_LONG)
+                .desc("Set the logging level to one of (TRACE, DEBUG, INFO (default), WARN, ERROR, FATAL).")
                 .hasArg()
-                .argName("path")
-                .build());
-
-        newOptions.addOption(Option.builder(OPTION_MODEL)
-                .longOpt(OPTION_MODEL_LONG)
-                .desc("Path to PSL model file")
-                .hasArg()
-                .argName("path")
+                .argName("level")
                 .build());
 
         newOptions.addOption(Option.builder(OPTION_OUTPUT_DIR)
@@ -214,19 +192,10 @@ public class CommandLineLoader {
                 .optionalArg(true)
                 .build());
 
-        newOptions.addOption(Option.builder(OPTION_PROPERTIES_FILE)
-                .longOpt(OPTION_PROPERTIES_FILE_LONG)
-                .desc("Optional PSL properties file path")
-                .hasArg()
-                .argName("path")
-                .build());
-
         newOptions.addOption(Option.builder(OPTION_PROPERTIES)
                 .argName("name=value")
-                .desc("Directly specify PSL properties (overrides options set via --" + OPTION_PROPERTIES_FILE_LONG + ")." +
-                        " See https://github.com/linqs/psl/wiki/Configuration-Options for a list of available options." +
-                        " Log4j properties (properties starting with 'log4j') will be passed to the logger." +
-                        " 'log4j.threshold=DEBUG', for example, will be passed to log4j and set the global logging threshold.")
+                .desc("Directly specify PSL properties." +
+                        " See https://github.com/linqs/psl/wiki/Configuration-Options for a list of available options.")
                 .hasArg()
                 .numberOfArgs(2)
                 .valueSeparator('=')
@@ -311,12 +280,12 @@ public class CommandLineLoader {
 
         if (commandLineOptions.hasOption(OPTION_HELP)) {
             getHelpFormatter().printHelp("psl", options, true);
-            return commandLineOptions;
+            return null;
         }
 
         if (commandLineOptions.hasOption(OPTION_VERSION)) {
             System.out.println("PSL Version " + Version.getFull());
-            return commandLineOptions;
+            return null;
         }
 
         // Can't have both an H2 and Postgres database.

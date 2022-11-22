@@ -18,6 +18,7 @@
 package org.linqs.psl.cli;
 
 import org.linqs.psl.config.RuntimeOptions;
+import org.linqs.psl.runtime.RuntimeConfig;
 import org.linqs.psl.runtime.Runtime;
 import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.Logger;
@@ -44,140 +45,89 @@ public class Launcher {
     /**
      * Convert all compatible options to the PSL runtime.
      */
-    private void convertRuntimeOptions() {
-        boolean hasInference = false;
-        boolean hasLearn = false;
+    private RuntimeConfig convertRuntimeOptions() {
+        RuntimeConfig config = null;
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_CONFIG)) {
+            config = RuntimeConfig.fromFile(parsedOptions.getOptionValue(CommandLineLoader.OPTION_CONFIG));
+        } else {
+            config = new RuntimeConfig();
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_HELP)) {
+            config.options.put(RuntimeOptions.HELP.name(), "" + true);
+        }
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_VERSION)) {
+            config.options.put(RuntimeOptions.VERSION.name(), "" + true);
+        }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_INFER)) {
-            hasInference = true;
-            RuntimeOptions.INFERENCE.set(true);
+            config.options.put(RuntimeOptions.INFERENCE.name(), "" + true);
 
             String method = parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER);
             if (method != null) {
-                RuntimeOptions.INFERENCE_METHOD.set(method);
+                config.options.put(RuntimeOptions.INFERENCE_METHOD.name(), method);
             }
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
-            hasLearn = true;
-            RuntimeOptions.LEARN.set(true);
+            config.options.put(RuntimeOptions.LEARN.name(), "" + true);
 
             String method = parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN);
             if (method != null) {
-                RuntimeOptions.LEARN_METHOD.set(method);
+                config.options.put(RuntimeOptions.LEARN_METHOD.name(), method);
             }
-        }
-
-        if (!hasInference && !hasLearn) {
-            RuntimeOptions.INFERENCE.set(true);
-        }
-
-        // HACK(eriq): Since the CLI currently only supports one mode (infer/learn) at a time,
-        // we will just set both modes when we see data/model files.
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_DATA)) {
-            RuntimeOptions.INFERENCE_DATA_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DATA));
-            RuntimeOptions.LEARN_DATA_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DATA));
-        }
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_MODEL)) {
-            String modelPath = parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL);
-
-            /* TEST
-            RuntimeOptions.INFERENCE_MODEL_PATH.set(modelPath);
-            RuntimeOptions.LEARN_MODEL_PATH.set(modelPath);
-            */
-
-            RuntimeOptions.LEARN_OUTPUT_MODEL_PATH.set(modelPath.replaceFirst("\\.psl$", "-learned.psl"));
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_H2_PATH)) {
-            RuntimeOptions.DB_TYPE.set(Runtime.DatabaseType.H2.toString());
-            RuntimeOptions.DB_H2_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_H2_PATH));
+            config.options.put(RuntimeOptions.DB_TYPE.name(), Runtime.DatabaseType.H2.toString());
+            config.options.put(RuntimeOptions.DB_H2_PATH.name(), parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_H2_PATH));
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME)) {
-            RuntimeOptions.DB_TYPE.set(Runtime.DatabaseType.Postgres.toString());
-            RuntimeOptions.DB_PG_NAME.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME));
-        }
-
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_EVAL)) {
-            List<String> evaluatorNames = new ArrayList<String>();
-            for (String evaluatorName : parsedOptions.getOptionValues(CommandLineLoader.OPTION_EVAL)) {
-                evaluatorNames.add(evaluatorName);
-            }
-
-            RuntimeOptions.INFERENCE_EVAL.set(ListUtils.join(",", evaluatorNames));
+            config.options.put(RuntimeOptions.DB_TYPE.name(), Runtime.DatabaseType.Postgres.toString());
+            config.options.put(RuntimeOptions.DB_PG_NAME.name(), parsedOptions.getOptionValue(CommandLineLoader.OPTION_DB_POSTGRESQL_NAME));
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_INT_IDS)) {
-            RuntimeOptions.DB_INT_IDS.set(parsedOptions.hasOption(CommandLineLoader.OPTION_INT_IDS));
+            config.options.put(RuntimeOptions.DB_INT_IDS.name(), "" + true);
         }
 
-        // Look specially for the logging level.
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_PROPERTIES)) {
             Properties props = parsedOptions.getOptionProperties(CommandLineLoader.OPTION_PROPERTIES);
-            if (props.containsKey("log4j.threshold")) {
-                RuntimeOptions.LOG_LEVEL.set(props.getProperty("log4j.threshold"));
+            for (String key : props.stringPropertyNames()) {
+                config.options.put(key, props.getProperty(key));
             }
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_DIR)) {
-            RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR));
+            config.options.put(RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.name(), parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_DIR));
         }
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
-            RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES.set(true);
+            config.options.put(RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES.name(), "" + true);
 
             String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
             if (path != null) {
-                RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES_PATH.set(path);
+                config.options.put(RuntimeOptions.INFERENCE_OUTPUT_GROUNDRULES_PATH.name(), path);
             }
         }
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_PROPERTIES_FILE)) {
-            RuntimeOptions.PROPERTIES_PATH.set(parsedOptions.getOptionValue(CommandLineLoader.OPTION_PROPERTIES_FILE));
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG)) {
+            config.options.put(RuntimeOptions.INFERENCE_COMMIT.name(), "" + !parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG));
         }
 
-        if (parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG)) {
-            RuntimeOptions.INFERENCE_COMMIT.set(!parsedOptions.hasOption(CommandLineLoader.OPTION_SKIP_ATOM_COMMIT_LONG));
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_LOG_LONG)) {
+            config.options.put(RuntimeOptions.LOG_LEVEL.name(), parsedOptions.getOptionValue(CommandLineLoader.OPTION_LOG_LONG));
         }
+
+        return config;
     }
 
     private void run() {
-        convertRuntimeOptions();
         Runtime runtime = new Runtime();
-        runtime.run();
-    }
-
-    private static boolean isCommandLineValid(CommandLine givenOptions) {
-        // Return early in case of help or version option.
-        if (givenOptions.hasOption(CommandLineLoader.OPTION_HELP) ||
-                givenOptions.hasOption(CommandLineLoader.OPTION_VERSION)) {
-            return false;
-        }
-
-        // Data and model are required for PSL runs.
-        // (We don't enforce them earlier so we can have successful runs with help and version.)
-        HelpFormatter helpFormatter = new HelpFormatter();
-        if (!givenOptions.hasOption(CommandLineLoader.OPTION_DATA)) {
-            System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPTION_DATA_LONG, CommandLineLoader.OPTION_DATA));
-            helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
-            return false;
-        }
-        if (!givenOptions.hasOption(CommandLineLoader.OPTION_MODEL)) {
-            System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPTION_MODEL_LONG, CommandLineLoader.OPTION_MODEL));
-            helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
-            return false;
-        }
-
-        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) && (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN))) {
-            System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
-            helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
-            return false;
-        }
-
-        return true;
+        runtime.run(convertRuntimeOptions());
     }
 
     public static void main(String[] args) {
@@ -189,7 +139,7 @@ public class Launcher {
             CommandLineLoader commandLineLoader = new CommandLineLoader(args);
             CommandLine givenOptions = commandLineLoader.getParsedOptions();
             // Return for command line parse errors or PSL errors.
-            if ((givenOptions == null) || (!(isCommandLineValid(givenOptions)))) {
+            if (givenOptions == null) {
                 return;
             }
             Launcher pslLauncher = new Launcher(givenOptions);

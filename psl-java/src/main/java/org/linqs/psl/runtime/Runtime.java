@@ -81,7 +81,6 @@ public class Runtime {
     };
 
     public Runtime() {
-        initConfig();
         initLogger();
     }
 
@@ -177,18 +176,6 @@ public class Runtime {
             evaluation.compute(targetDatabase, truthDatabase);
             log.info("Evaluation results: {}", evaluation.getOutput());
         }
-    }
-
-    /**
-     * Loads any additional configuration.
-     */
-    private void initConfig() {
-        /* TEST
-        String propertiesPath = RuntimeOptions.PROPERTIES_PATH.getString();
-        if (propertiesPath != null) {
-            Config.loadResource(propertiesPath);
-        }
-        */
     }
 
     private DataStore initDataStore(RuntimeConfig config) {
