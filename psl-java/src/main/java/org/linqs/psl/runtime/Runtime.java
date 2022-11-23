@@ -74,7 +74,7 @@ public class Runtime {
     public static final String PARTITION_NAME_TARGET = "targets";
     public static final String PARTITION_NAME_LABELS = "truth";
 
-    public static final String[] PARTITION_NAMES = new String[]{
+    private static final String[] PARTITION_NAMES = new String[]{
         PARTITION_NAME_OBSERVATIONS,
         PARTITION_NAME_TARGET,
         PARTITION_NAME_LABELS

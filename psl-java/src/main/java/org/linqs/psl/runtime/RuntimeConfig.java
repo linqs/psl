@@ -61,6 +61,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -317,7 +318,11 @@ public class RuntimeConfig {
             throw new IllegalArgumentException("Expected runtime config file to end  in '.json' or '.yaml'.");
         }
 
-        config.relativeBasePath = Paths.get(path).getParent().toString();
+        Path parent = Paths.get(path).normalize().getParent();
+        if (parent != null) {
+            config.relativeBasePath = parent.toString();
+        }
+
         return config;
     }
 
