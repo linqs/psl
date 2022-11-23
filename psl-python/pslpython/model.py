@@ -18,6 +18,7 @@ limitations under the License.
 
 import csv
 import logging
+import json
 import os
 import re
 import shutil
@@ -44,12 +45,13 @@ class Model(object):
 
     CLI_INFERRED_OUTPUT_DIR = 'inferred-predicates'
     CLI_DELIM = "\t"
+    CLI_CONFIG_FILENAME = "config.json"
+    CLI_OUTPUT_RULES_FILENAME = "learned-rules.psl"
     TEMP_DIR_SUBDIR = 'psl-python'
-    DATA_STORAGE_DIR = 'data'
     TRUTH_COLUMN_NAME = 'truth'
     CLI_JAR_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cli', 'psl-cli.jar'))
 
-    PSL_LOGGING_OPTION = 'log4j.threshold'
+    PSL_LOGGING_OPTION = 'runtime.log.level'
     PSL_LOGGING_LEVEL_REGEX = r'\] (TRACE|DEBUG|INFO|WARN|ERROR|FATAL) '
     PYTHON_LOGGING_FORMAT_STRING = '%(relativeCreated)d [%(name)s PSL] %(levelname)s --- %(message)s'
     PYTHON_TO_PSL_LOGGING_LEVELS = {
@@ -148,21 +150,25 @@ class Model(object):
             The frame will have columns names that match the index of the argument and 'truth'.
         """
 
-        logger, temp_dir, data_file_path, rules_file_path = self._prep_run(logger, temp_dir)
+        logger, temp_dir, config = self._prep_run(logger, temp_dir, psl_config)
 
-        cli_options = []
+        config_path = os.path.join(temp_dir, Model.CLI_CONFIG_FILENAME)
 
-        cli_options.append('--infer')
+        config["options"]["runtime.inference"] = True
+
         if (method != ''):
-            cli_options.append(method)
+            config["options"]["runtime.inference.method"] = method
 
         inferred_dir = os.path.join(temp_dir, Model.CLI_INFERRED_OUTPUT_DIR)
-        cli_options.append('--output')
-        cli_options.append(inferred_dir)
+        config["options"]["runtime.inference.output.results.dir"] = inferred_dir
 
+        cli_options = ["--config", config_path]
         cli_options += additional_cli_options
 
-        self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger)
+        with open(config_path, 'w') as file:
+            json.dump(config, file, indent = 4)
+
+        self._run_psl(cli_options, jvm_options, logger)
         results = self._collect_inference_results(inferred_dir)
 
         if (cleanup_temp):
@@ -196,18 +202,25 @@ class Model(object):
             This model.
         """
 
-        logger, temp_dir, data_file_path, rules_file_path = self._prep_run(logger, temp_dir)
+        logger, temp_dir, config = self._prep_run(logger, temp_dir, psl_config)
 
-        cli_options = []
+        config_path = os.path.join(temp_dir, Model.CLI_CONFIG_FILENAME)
+        output_rules_path = os.path.join(temp_dir, Model.CLI_OUTPUT_RULES_FILENAME)
 
-        cli_options.append('--learn')
+        config["options"]["runtime.learn"] = True
+        config["options"]["runtime.learn.output.model.path"] = output_rules_path
+
         if (method != ''):
-            cli_options.append(method)
+            config["options"]["runtime.learn.method"] = method
 
+        cli_options = ["--config", config_path]
         cli_options += additional_cli_options
 
-        self._run_psl(data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger)
-        self._fetch_new_weights(rules_file_path)
+        with open(config_path, 'w') as file:
+            json.dump(config, file, indent = 4)
+
+        self._run_psl(cli_options, jvm_options, logger)
+        self._fetch_new_weights(output_rules_path)
 
         if (cleanup_temp):
             self._cleanup_temp(temp_dir)
@@ -287,10 +300,9 @@ class Model(object):
 
         return results
 
-    def _fetch_new_weights(self, base_rules_file_path):
+    def _fetch_new_weights(self, learned_rules_path):
         new_weights = []
 
-        learned_rules_path = re.sub(r'\.psl$', '-learned.psl', base_rules_file_path)
         with open(learned_rules_path, 'r') as file:
             for line in file:
                 line = line.strip()
@@ -306,7 +318,7 @@ class Model(object):
                 new_weights.append(float(parts[0]))
 
         if (len(new_weights) != len(self._rules)):
-            raise ModelError("Mismatch between the number of base rules and the number of weighted rules. Base rules: '%s', learned rules: '%s'." % (base_rules_file_path, learned_rules_path))
+            raise ModelError("Mismatch between the number of base rules (%d) and the number of weighted rules (%d)." % (len(self._rules), len(new_weights)))
 
         for i in range(len(self._rules)):
             if (self._rules[i].weighted()):
@@ -315,105 +327,9 @@ class Model(object):
     def _cleanup_temp(self, temp_dir):
         shutil.rmtree(temp_dir)
 
-    def _write_data(self, temp_dir):
+    def _prep_run(self, logger = None, temp_dir = None, psl_config = {}):
         """
-        Write out all the data for the predicates found in the rules of this model.
-        Will clobber any existing data.
-        Also writes out the CLI data file.
-
-        Returns:
-            The path to the data file.
-        """
-
-        data_file_path = os.path.join(temp_dir, self._name + '.data')
-
-        data_storage_path = os.path.join(temp_dir, Model.DATA_STORAGE_DIR)
-        os.makedirs(data_storage_path, exist_ok = True)
-
-        self._write_cli_datafile(data_file_path, data_storage_path)
-        self._write_cli_data(data_storage_path)
-
-        return data_file_path
-
-    def _write_cli_data(self, data_storage_path):
-        for partition in Partition:
-            for predicate in self._predicates.values():
-                if (partition not in predicate.data()):
-                    continue
-
-                data = predicate.data()[partition]
-                if (data is None or len(data) == 0):
-                    continue
-
-                filename = "%s_%s.txt" % (predicate.name(), partition.value)
-                path = os.path.join(data_storage_path, filename)
-
-                data.to_csv(path, sep = Model.CLI_DELIM, header = False, index = False)
-
-    def _write_cli_datafile(self, data_file_path, data_storage_path):
-        data_file_contents = {}
-
-        predicates = {}
-        for predicate in self._predicates.values():
-            predicate_id = predicate.name() + '/' + str(len(predicate))
-
-            types = []
-            for predicate_type in predicate.types():
-                types.append(predicate_type.value)
-
-            open_closed = 'open'
-            if (predicate.closed()):
-                open_closed = 'closed'
-
-            predicates[predicate_id] = [
-                open_closed,
-                {'types': types}
-            ]
-
-        data_file_contents['predicates'] = predicates
-
-        for partition in Partition:
-            partition_data = {}
-
-            for predicate in self._predicates.values():
-                if (partition not in predicate.data()):
-                    continue
-
-                data = predicate.data()[partition]
-                if (data is None or len(data) == 0):
-                    continue
-
-                filename = "%s_%s.txt" % (predicate.name(), partition.value)
-                # Make paths relative to the CLI data file for portability.
-                partition_data[predicate.name()] = os.path.join(Model.DATA_STORAGE_DIR, filename)
-
-            if (len(partition_data) > 0):
-                data_file_contents[partition.value] = partition_data
-
-        with open(data_file_path, 'w') as file:
-            yaml.dump(data_file_contents, file, default_flow_style = False)
-
-    def _write_rules(self, temp_dir):
-        """
-        Write out all the rules for this model.
-        Will clobber any existing rules.
-
-        Returns:
-            The path to the rules file.
-        """
-
-        rules_file_path = os.path.join(temp_dir, self._name + '.psl')
-
-        with open(rules_file_path, 'w') as file:
-            for rule in self._rules:
-                file.write(str(rule) + "\n")
-
-        return rules_file_path
-
-    def _prep_run(self, logger = None, temp_dir = None):
-        """
-        Run weight learning on this model.
-        The new weights will be applied to this model.
+        Prep the necessary files to run PSL.
 
         Args:
             logger: An optional logger to send the output of PSL to.
@@ -423,7 +339,7 @@ class Model(object):
                       Defaults to Model.TEMP_DIR_SUBDIR inside the system's temp directory (tempfile.gettempdir()).
 
         Returns:
-            A prepped logger, a usable temp_dir, the path to the CLI data file, and the path to the CLI rules file.
+            A prepped logger, a usable temp_dir, and the path to the JSON config file.
         """
 
         if (len(self._rules) == 0):
@@ -443,12 +359,23 @@ class Model(object):
         temp_dir = os.path.join(temp_dir, self._name)
         os.makedirs(temp_dir, exist_ok = True)
 
-        data_file_path = self._write_data(temp_dir)
-        rules_file_path = self._write_rules(temp_dir)
+        config = {
+            "options": {
+            },
+            "rules": list(map(str, self._rules)),
+            "predicates": {predicate.name() : predicate.to_dict() for predicate in self._predicates.values()},
+        }
 
-        return logger, temp_dir, data_file_path, rules_file_path
+        for (key, value) in psl_config.items():
+            config["options"][key] = value
 
-    def _run_psl(self, data_file_path, rules_file_path, cli_options, psl_config, jvm_options, logger):
+        # Set the PSL logging level to match the logger (if not explicitly set in the additional options).
+        if (Model.PSL_LOGGING_OPTION not in psl_config):
+            config["options"][Model.PSL_LOGGING_OPTION] = Model.PYTHON_TO_PSL_LOGGING_LEVELS[logger.level]
+
+        return logger, temp_dir, config
+
+    def _run_psl(self, cli_options, jvm_options, logger):
         command = [
             self._java_path
         ]
@@ -459,22 +386,10 @@ class Model(object):
         command += [
             '-jar',
             Model.CLI_JAR_PATH,
-            '--model',
-            rules_file_path,
-            '--data',
-            data_file_path,
         ]
-
-        # Set the PSL logging level to match the logger (if not explicitly set in the additional options).
-        if (Model.PSL_LOGGING_OPTION not in psl_config):
-            psl_config[Model.PSL_LOGGING_OPTION] = Model.PYTHON_TO_PSL_LOGGING_LEVELS[logger.level]
 
         for option in cli_options:
             command.append(str(option))
-
-        for (key, value) in psl_config.items():
-            command.append('-D')
-            command.append("%s=%s" % (key, value))
 
         log_callback = lambda line: Model._log_stdout(logger, line)
 

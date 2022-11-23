@@ -201,6 +201,25 @@ class Predicate(object):
     def data(self):
         return self._data
 
+    def to_dict(self):
+        """
+        Return a dict representation (in PSL Runtime Config form) of this predicate.
+        """
+
+        config = {
+            "name": self._name,
+            "arity": len(self._types),
+            "types": list([type.value for type in self._types]),
+            "observations": self._serialize_data(Partition.OBSERVATIONS),
+            "targets": self._serialize_data(Partition.TARGETS),
+            "truth": self._serialize_data(Partition.TRUTH),
+        }
+
+        return config
+
+    def _serialize_data(self, partition):
+        return self._data[partition].to_numpy().tolist()
+
     @staticmethod
     def normalize_name(name):
         return name.upper()

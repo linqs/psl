@@ -8,7 +8,7 @@ from pslpython.predicate import Predicate
 from pslpython.rule import Rule
 
 MODEL_NAME = 'simple-acquaintances'
-ADDITIONAL_PSL_OPTIONS = {'log4j.threshold': 'ERROR'}
+ADDITIONAL_PSL_OPTIONS = {'runtime.log.level': 'ERROR'}
 
 DEFAULT_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simple-acquaintances', 'data'))
 
