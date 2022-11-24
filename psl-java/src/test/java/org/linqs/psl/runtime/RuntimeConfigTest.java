@@ -17,112 +17,195 @@
  */
 package org.linqs.psl.runtime;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.database.Database;
 import org.linqs.psl.config.RuntimeOptions;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
-import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
-import org.linqs.psl.model.function.ExternalFunction;
-import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.ConstantType;
-import org.linqs.psl.model.term.UniqueStringID;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
-public class RuntimeConfigTest extends RuntimeTest {
-    /* TEST
-
+public class RuntimeConfigTest {
     @Test
-    public void testErrorUndeclaredPredicate() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_undeclared_predicate.data").toString();
-
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on non-existent predicate.");
-        } catch (RuntimeException ex) {
-            // Expected.
+    public void testGoodSyntax() {
+        for (int i = 0; i < GOOD_SYNTAX.length; i++) {
+            RuntimeConfig config = RuntimeConfig.fromJSON(GOOD_SYNTAX[i]);
+            assertEquals(config, GOOD_SYNTAX_CONFIG[i]);
         }
     }
 
-    @Test
-    public void testErrorDataInFunctional() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_data_in_functional.data").toString();
+    private static final String[] GOOD_SYNTAX = new String[]{
+        // Exercise all parts of the syntax.
+        "{}",
+        "{'rules': ['CommonRule1']}",
+        "{'rules': ['CommonRule1','CommonRule2']}",
+        "{'rules': 'common/rule/path.txt'}",
+        "{'options':{'common.key':'common.value'}}",
+        "{'infer':{'rules':['InferRule1'],'options':{'infer.key':'infer.value'}}}",
+        "{'learn':{'rules':'learn/rule/path.txt','options':{'learn.key':'learn.value'}}}",
+        "{'predicates':{'DataDemo1/2':{'observations':['some/path/to/data.txt'],'targets':[['embeded','data']],'truth':[['embeded','data',0.5]]}}}",
+        "{'predicates':{'DataDemo2/2':{'observations':{'all':['common/data.txt'],'learn':[['learn-only','data']],'infer':[['infer-only','data',1.0],'infer/only/data.txt']}}}}",
+        "{'predicates':{'EvalDemo1/2':{'evaluations':['ContinuousEvaluator']}}}",
+        "{'predicates':{'EvalDemo2/2':{'evaluations':['ContinuousEvaluator']}}}",
+        "{'predicates':{'EvalDemo3/2':{'evaluations':[{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
+        "{'predicates':{'EvalDemo4a/2':{'evaluations':['ContinuousEvaluator',{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
+        "{'predicates':{'EvalDemo4b/2':{'evaluations':[{'evaluator':'ContinuousEvaluator'},{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
+        "{'predicates':{'EvalDemo5/2':{'evaluations':[{'evaluator':'DiscreteEvaluator'},{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
+        "{'predicates':{'ArityDemo1/2':{}}}",
+        "{'predicates':{'ArityDemo2':{'arity':2}}}",
+        "{'predicates':{'ArityDemo3':{'types':['Int','String']}}}",
+        "{'predicates':{'ModelPredicate1/2':{'model':'org.some.model'}}}",
+        "{'predicates':{'FunctionPredicate1/2':{'function':'org.some.implementation'}}}",
+        "{'predicates':{'OptionsDemo/2':{'options':{'predicate.option.key':'predicate.option.value'}}}}",
 
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on data in a functional predicate.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
+
+        // TEST: TODO
+        // Use non-standard JSON syntax that is recognized by our parser.
+    };
+
+    // Manually constructed RuntimeConfig objects that match 1-1 with GOOD_SYNTAX.
+    private static RuntimeConfig[] GOOD_SYNTAX_CONFIG = new RuntimeConfig[GOOD_SYNTAX.length];
+
+    @BeforeClass
+    public static void initGoodSyntaxConfigs() {
+        RuntimeConfig config = null;
+        RuntimeConfig.PredicateConfigInfo predicate = null;
+        RuntimeConfig.EvalInfo eval = null;
+        Map<String, String> options = null;
+
+        GOOD_SYNTAX_CONFIG[0] = new RuntimeConfig();
+
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1");
+        GOOD_SYNTAX_CONFIG[1] = config;
+
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1", "CommonRule2");
+        GOOD_SYNTAX_CONFIG[2] = config;
+
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RulePath("common/rule/path.txt");
+        GOOD_SYNTAX_CONFIG[3] = config;
+
+        config = new RuntimeConfig();
+        config.options.put("common.key", "common.value");
+        GOOD_SYNTAX_CONFIG[4] = config;
+
+        config = new RuntimeConfig();
+        config.infer.rules = new RuntimeConfig.RuleList("InferRule1");
+        config.infer.options.put("infer.key", "infer.value");
+        GOOD_SYNTAX_CONFIG[5] = config;
+
+        config = new RuntimeConfig();
+        config.learn.rules = new RuntimeConfig.RulePath("learn/rule/path.txt");
+        config.learn.options.put("learn.key", "learn.value");
+        GOOD_SYNTAX_CONFIG[6] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("DataDemo1", 2);
+        predicate.observations.all.paths.add("some/path/to/data.txt");
+        predicate.targets.all.data.add(Arrays.asList("embeded", "data"));
+        predicate.truth.all.data.add(Arrays.asList("embeded", "data", "0.5"));
+        config.predicates.put("DataDemo1", predicate);
+        GOOD_SYNTAX_CONFIG[7] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("DataDemo2", 2);
+        predicate.observations.all.paths.add("common/data.txt");
+        predicate.observations.learn.data.add(Arrays.asList("learn-only", "data"));
+        predicate.observations.infer.data.add(Arrays.asList("infer-only", "data", "1.0"));
+        predicate.observations.infer.paths.add("infer/only/data.txt");
+        config.predicates.put("DataDemo2", predicate);
+        GOOD_SYNTAX_CONFIG[8] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo1", 2);
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
+        config.predicates.put("EvalDemo1", predicate);
+        GOOD_SYNTAX_CONFIG[9] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo2", 2);
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
+        config.predicates.put("EvalDemo2", predicate);
+        GOOD_SYNTAX_CONFIG[10] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo3", 2);
+        options = new HashMap<String, String>();
+        options.put("discreteevaluator.representative", "RMSE");
+        options.put("discreteevaluator.threshold", "0.75");
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
+        config.predicates.put("EvalDemo3", predicate);
+        GOOD_SYNTAX_CONFIG[11] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo4a", 2);
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
+        options = new HashMap<String, String>();
+        options.put("discreteevaluator.representative", "RMSE");
+        options.put("discreteevaluator.threshold", "0.75");
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
+        config.predicates.put("EvalDemo4a", predicate);
+        GOOD_SYNTAX_CONFIG[12] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo4b", 2);
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
+        options = new HashMap<String, String>();
+        options.put("discreteevaluator.representative", "RMSE");
+        options.put("discreteevaluator.threshold", "0.75");
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
+        config.predicates.put("EvalDemo4b", predicate);
+        GOOD_SYNTAX_CONFIG[13] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo5", 2);
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator"));
+        options = new HashMap<String, String>();
+        options.put("discreteevaluator.representative", "RMSE");
+        options.put("discreteevaluator.threshold", "0.75");
+        predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
+        config.predicates.put("EvalDemo5", predicate);
+        GOOD_SYNTAX_CONFIG[14] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo1", 2);
+        config.predicates.put("ArityDemo1", predicate);
+        GOOD_SYNTAX_CONFIG[15] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo2", 2);
+        config.predicates.put("ArityDemo2", predicate);
+        GOOD_SYNTAX_CONFIG[16] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo3", 2);
+        predicate.types.add("Int");
+        predicate.types.add("String");
+        config.predicates.put("ArityDemo3", predicate);
+        GOOD_SYNTAX_CONFIG[17] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("ModelPredicate1", 2);
+        predicate.model = "org.some.model";
+        config.predicates.put("ModelPredicate1", predicate);
+        GOOD_SYNTAX_CONFIG[18] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("FunctionPredicate1", 2);
+        predicate.function = "org.some.implementation";
+        config.predicates.put("FunctionPredicate1", predicate);
+        GOOD_SYNTAX_CONFIG[19] = config;
+
+        config = new RuntimeConfig();
+        predicate = new RuntimeConfig.PredicateConfigInfo("OptionsDemo", 2);
+        predicate.options.put("predicate.option.key", "predicate.option.value");
+        config.predicates.put("OptionsDemo", predicate);
+        GOOD_SYNTAX_CONFIG[20] = config;
     }
-
-    @Test
-    public void testFunctional() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances-functional.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_functional.data").toString();
-
-        runInference(modelPath, dataPath);
-    }
-
-    @Test
-    public void testErrorBadTopLevelKey() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_bad_top_key.data").toString();
-
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on bad top level key.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testErrorObservedTargets() {
-        String modelPath = Paths.get(baseModelsDir, "simple-acquaintances.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "error_obs_targets.data").toString();
-
-        try {
-            runInference(modelPath, dataPath);
-            fail("Error not thrown on atoms that are observed and targets.");
-        } catch (RuntimeException ex) {
-            // Expected.
-        }
-    }
-
-    @Test
-    public void testUnaryDataFile() {
-        String modelPath = Paths.get(baseModelsDir, "unary.psl").toString();
-        String dataPath = Paths.get(baseDataDir, "simple-acquaintances", "base_unary.data").toString();
-
-        runInference(modelPath, dataPath);
-    }
-
-    // Not an actual similarity.
-    public static class SimNameExternalFunction implements ExternalFunction {
-        @Override
-        public float getValue(Database db, Constant... args) {
-            String a = ((UniqueStringID)args[0]).getID();
-            String b = ((UniqueStringID)args[1]).getID();
-
-            return (float)(Math.abs(a.length() - b.length()) / (double)(Math.max(a.length(), b.length())));
-        }
-
-        @Override
-        public int getArity() {
-            return 2;
-        }
-
-        @Override
-        public ConstantType[] getArgumentTypes() {
-            return new ConstantType[] {ConstantType.UniqueStringID, ConstantType.UniqueStringID};
-        }
-    }
-    */
 }

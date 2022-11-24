@@ -276,6 +276,9 @@ public class RuntimeConfig {
             }
         }
 
+        // TEST: TODO Validate arity
+        // TEST: TODO Validate embeded data size.
+
         return hasPrimaryEval;
     }
 
@@ -305,6 +308,21 @@ public class RuntimeConfig {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null || !(other instanceof RuntimeConfig)) {
+            return false;
+        }
+
+        RuntimeConfig otherConfig = (RuntimeConfig)other;
+        return
+                this.rules.equals(otherConfig.rules)
+                && this.predicates.equals(otherConfig.predicates)
+                && this.options.equals(otherConfig.options)
+                && this.learn.equals(otherConfig.learn)
+                && this.infer.equals(otherConfig.infer);
     }
 
     public static RuntimeConfig fromFile(String path) {
@@ -419,6 +437,15 @@ public class RuntimeConfig {
         public void resolvePaths(String relativeBasePath) {
             path = FileUtils.makePath(relativeBasePath, path);
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof RulePath)) {
+                return false;
+            }
+
+            return this.path.equals(((RulePath)other).path);
+        }
     }
 
     public static class RuleList implements RuleSource {
@@ -430,6 +457,14 @@ public class RuntimeConfig {
 
         public RuleList(List<String> rules) {
             this.rules = rules;
+        }
+
+        public RuleList(String... rules) {
+            this();
+
+            for (String rule : rules) {
+                this.rules.add(rule);
+            }
         }
 
         @Override
@@ -449,6 +484,16 @@ public class RuntimeConfig {
 
         @Override
         public void resolvePaths(String relativeBasePath) {}
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof RuleList)) {
+                return false;
+            }
+
+            RuleList otherList = (RuleList)other;
+            return this.rules.containsAll(otherList.rules) && otherList.rules.containsAll(this.rules);
+        }
     }
 
     public static class SplitConfigInfo {
@@ -458,6 +503,16 @@ public class RuntimeConfig {
         public SplitConfigInfo() {
             rules = new RuleList();
             options = new HashMap<String, String>();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof SplitConfigInfo)) {
+                return false;
+            }
+
+            SplitConfigInfo otherInfo = (SplitConfigInfo)other;
+            return this.rules.equals(otherInfo.rules) && this.options.equals(otherInfo.options);
         }
     }
 
@@ -474,12 +529,37 @@ public class RuntimeConfig {
         public PartitionInfo targets;
         public PartitionInfo truth;
 
+        // May be null.
         public String function;
         public String model;
 
         public List<EvalInfo> evaluations;
 
         public Map<String, String> options;
+
+        public PredicateConfigInfo() {
+            this(null, -1);
+        }
+
+        public PredicateConfigInfo(String name, int arity) {
+            this.name = name;
+
+            this.arity = arity;
+            types = new ArrayList<String>();
+
+            forceOpen = false;
+
+            observations = new PartitionInfo();
+            targets = new PartitionInfo();
+            truth = new PartitionInfo();
+
+            function = null;
+            model = null;
+
+            evaluations = new ArrayList<EvalInfo>();
+
+            options = new HashMap<String, String>();
+        }
 
         public int dataSize() {
             return observations.size() + targets.size() + truth.size();
@@ -518,6 +598,27 @@ public class RuntimeConfig {
                 || (targets.all.size() > 0)
                 || (useInfer && targets.infer.size() > 0)
                 || (!useInfer && targets.learn.size() > 0);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof PredicateConfigInfo)) {
+                return false;
+            }
+
+            PredicateConfigInfo otherInfo = (PredicateConfigInfo)other;
+            return
+                    this.name.equals(otherInfo.name)
+                    && (this.arity == otherInfo.arity)
+                    && this.types.equals(otherInfo.types)
+                    && (this.forceOpen == otherInfo.forceOpen)
+                    && this.observations.equals(otherInfo.observations)
+                    && this.targets.equals(otherInfo.targets)
+                    && this.truth.equals(otherInfo.truth)
+                    && ((this.function == null) ? (otherInfo.function == null) : this.function.equals(otherInfo.function))
+                    && ((this.model == null) ? (otherInfo.model == null) : this.model.equals(otherInfo.model))
+                    && this.evaluations.equals(otherInfo.evaluations)
+                    && this.options.equals(otherInfo.options);
         }
     }
 
@@ -573,6 +674,16 @@ public class RuntimeConfig {
 
             return allPoints;
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof PartitionInfo)) {
+                return false;
+            }
+
+            PartitionInfo otherInfo = (PartitionInfo)other;
+            return this.all.equals(otherInfo.all) && this.learn.equals(otherInfo.learn) && this.infer.equals(otherInfo.infer);
+        }
     }
 
     public static class SplitDataInfo {
@@ -593,6 +704,16 @@ public class RuntimeConfig {
                 paths.set(i, FileUtils.makePath(relativeBasePath, paths.get(i)));
             }
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof SplitDataInfo)) {
+                return false;
+            }
+
+            SplitDataInfo otherInfo = (SplitDataInfo)other;
+            return this.paths.equals(otherInfo.paths) && this.data.equals(otherInfo.data);
+        }
     }
 
     public static class EvalInfo {
@@ -600,10 +721,24 @@ public class RuntimeConfig {
         public Map<String, String> options;
         public boolean primary;
 
+        public EvalInfo(String evaluator) {
+            this(evaluator, new HashMap<String, String>(), false);
+        }
+
         public EvalInfo(String evaluator, Map<String, String> options, boolean primary) {
             this.evaluator = evaluator;
             this.options = options;
             this.primary = primary;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof EvalInfo)) {
+                return false;
+            }
+
+            EvalInfo otherInfo = (EvalInfo)other;
+            return this.evaluator.equals(otherInfo.evaluator) && this.options.equals(otherInfo.options) && this.primary == otherInfo.primary;
         }
     }
 
@@ -673,10 +808,10 @@ public class RuntimeConfig {
             PredicateConfigInfo config = new PredicateConfigInfo();
 
             // Properties that do not require any validation/modification.
-            config.options = options;
             config.function = function;
             config.model = model;
 
+            config.options = (options == null) ? new HashMap<String, String>() : options;
             config.types = (types == null) ? new ArrayList<String>() : types;
             config.evaluations = (evaluations == null) ? new ArrayList<EvalInfo>() : evaluations;
 
@@ -718,7 +853,7 @@ public class RuntimeConfig {
             }
 
             if (types != null) {
-                if (config.arity != -1 && types.size() != config.arity) {
+                if (config.arity != -1 && types.size() > 0 && types.size() != config.arity) {
                     throw new IllegalArgumentException(String.format(
                             "Arity mismatch on predicate %s." +
                             " Declared arity: %d." +
