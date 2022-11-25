@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RuntimeConfigTest {
+public class RuntimeConfigTest extends RuntimeTest {
     @Test
     public void testGoodSyntax() {
         for (int i = 0; i < GOOD_SYNTAX.size(); i++) {
@@ -40,10 +40,70 @@ public class RuntimeConfigTest {
         }
     }
 
-    private static List<String> GOOD_SYNTAX = null ;
+    @Test
+    public void testBadSyntax() {
+        for (int i = 0; i < BAD_SYNTAX.size(); i++) {
+            try {
+                RuntimeConfig.fromJSON(BAD_SYNTAX.get(i));
+                fail("Failed to throw an error on parse for config at index " + i + ".");
+            } catch (Exception ex) {
+                // Expected.
+            }
+        }
+    }
 
-    // Manually constructed RuntimeConfig objects that match 1-1 with GOOD_SYNTAX.
+    @Test
+    public void testBadValidation() {
+        for (int i = 0; i < BAD_VALIDATION.size(); i++) {
+            RuntimeConfig config = RuntimeConfig.fromJSON(BAD_VALIDATION.get(i));
+
+            try {
+                config.validate();
+                fail("Failed to throw an error on validation for config at index " + i + ".");
+            } catch (Exception ex) {
+                // Expected.
+            }
+        }
+    }
+
+    // A 1-1 pairing with string JSON and a manually constructed RuntimeConfig object.
+    private static List<String> GOOD_SYNTAX = null ;
     private static List<RuntimeConfig> GOOD_SYNTAX_CONFIG = null;
+
+    // JSON that fails to parse, but not for JSON syntax reasons.
+    private static List<String> BAD_SYNTAX = Arrays.asList(
+        "{'predicates':{'BadArity/2':{'arity':3}}}"
+    );
+
+    // JSON that passes parsing, but fails validation.
+    private static List<String> BAD_VALIDATION = Arrays.asList(
+        // Arity issues.
+        "{'predicates':{'BadArity':{}}}",
+        "{'predicates':{'BadArity':{'arity':0}}}",
+        "{'predicates':{'BadArity/2':{'types':['UniqueIntID']}}}",
+        "{'predicates':{'BadArity/2':{'types':['UniqueIntID', 'UniqueIntID', 'UniqueIntID']}}}",
+        // Bad Type.
+        "{'predicates':{'BadType/1':{'types':['ZZZ']}}}",
+        // Bad data path.
+        "{'predicates':{'BadPath/2':{'observations':['some/path/to/data.txt']}}}",
+        // Bad embeded data size.
+        "{'predicates':{'BadData/2':{'observations':[['1']]}}}",
+        "{'predicates':{'BadData/2':{'observations':[['1', '2', '3', '4']]}}}",
+        // Bad function.
+        "{'predicates':{'BadFunction/2':{'function':'org.some.implementation'}}}",
+        // Bad model.
+        "{'predicates':{'BadModel/2':{'model':'org.some.model'}}}",
+        // Bad evaluation.
+        "{'predicates':{'BadEval/2':{'evaluations':['FakeEvaluator']}}}",
+        "{'predicates':{'BadEval/2':{'evaluations':['org.linqs.psl.runtime.RuntimeConfig']}}}",
+        "{'predicates':{'BadEval/2':{'evaluations':[{'evaluator':'ContinuousEvaluator','primary':true},{'evaluator':'ContinuousEvaluator','primary':true}]}}}",
+        // Bad rule syntax.
+        "{'rules': ['CommonRule1']}",
+        // Non-existant predicate in rule.
+        "{'rules': ['1.0: Foo(A, B) = 0.0']}",
+        "{'learn': {'rules': ['1.0: Foo(A, B) = 0.0']}}",
+        "{'infer': {'rules': ['1.0: Foo(A, B) = 0.0']}}"
+    );
 
     @BeforeClass
     public static void initGoodSyntaxConfigs() {
@@ -182,7 +242,7 @@ public class RuntimeConfigTest {
 
         GOOD_SYNTAX.add("{'predicates':{'ArityDemo3':{'types':['Int','String']}}}");
         config = new RuntimeConfig();
-        predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo3", 2);
+        predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo3", -1);
         predicate.types.add("Int");
         predicate.types.add("String");
         config.predicates.put("ArityDemo3", predicate);
@@ -209,7 +269,7 @@ public class RuntimeConfigTest {
         config.predicates.put("OptionsDemo", predicate);
         GOOD_SYNTAX_CONFIG.add(config);
 
-        // Use non-standard JSON syntax that is recognized by our parser.
+        // Non-standard JSON syntax that is recognized by our parser.
 
         // Comments
 

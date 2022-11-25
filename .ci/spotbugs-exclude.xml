@@ -109,6 +109,14 @@
         </Or>
     </Match>
 
+    <!-- RuntimeConfig and its subclasses use equals() in a very limted manner. -->
+    <Match>
+        <Class name="~org.linqs.psl.runtime.RuntimeConfig.*" />
+        <Or>
+            <Bug pattern="HE_EQUALS_USE_HASHCODE" />
+        </Or>
+    </Match>
+
     <!-- Jackson value filtering (to remove null/empty values during serialization) uses the equals() method to filter out values. -->
     <Match>
         <Class name="org.linqs.psl.runtime.RuntimeConfig$EmptyValueFilter" />

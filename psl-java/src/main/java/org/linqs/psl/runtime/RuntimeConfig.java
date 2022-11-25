@@ -214,7 +214,30 @@ public class RuntimeConfig {
 
         info.resolvePaths(relativeBasePath);
 
-        // Arity validated at JSON-level.
+        // Validate arity
+
+        if (info.types == null) {
+            info.types = new ArrayList<String>();
+        }
+
+        if (info.types.size() != 0 && info.arity <= 0) {
+            info.arity = info.types.size();
+        }
+
+        if (info.types.size() != 0 && info.types.size() != info.arity) {
+            throw new IllegalArgumentException(String.format(
+                    "Arity mismatch on predicate %s." +
+                    " Arity declared as property: %d." +
+                    " Arity inferred by types: %d.",
+                    info.name, info.arity, info.types.size()));
+        }
+
+        if (info.arity <= 0) {
+            throw new IllegalArgumentException(String.format(
+                    "Bad or missing arity on predicate %s." +
+                    " Arity should be a positive integer, found %d.",
+                    info.name, info.arity));
+        }
 
         // Fill in missing types.
 
@@ -234,6 +257,29 @@ public class RuntimeConfig {
         ConstantType[] types = new ConstantType[info.arity];
         for (int i = 0; i < info.arity; i++) {
             types[i] = ConstantType.valueOf(info.types.get(i));
+        }
+
+        // Validate that paths exist.
+
+        for (String path : info.getAllDataPaths()) {
+            if (!FileUtils.isFile(path)) {
+                throw new IllegalArgumentException(String.format(
+                        "Non-existant path found in data for predicate %s." +
+                        " Path: '%s'.",
+                        info.name, path));
+            }
+        }
+
+        // Validate embeded data size.
+
+        for (List<String> point : info.getAllDataPoints()) {
+            if ((point.size() != info.arity) && (point.size() != info.arity + 1)) {
+                throw new IllegalArgumentException(String.format(
+                        "Mismatch on embeded data size for predicate %s." +
+                        " Expected size %s or %s, found size %s." +
+                        " Offending row: %s.",
+                        info.name, info.arity, info.arity + 1, point.size(), point));
+            }
         }
 
         // Instantiate the actual predicate.
@@ -275,9 +321,6 @@ public class RuntimeConfig {
                 hasPrimaryEval = true;
             }
         }
-
-        // TEST: TODO Validate arity
-        // TEST: TODO Validate embeded data size.
 
         return hasPrimaryEval;
     }
@@ -598,6 +641,32 @@ public class RuntimeConfig {
                 || (!useInfer && targets.learn.size() > 0);
         }
 
+        /**
+         * Get all data paths represented by this predicate.
+         */
+        public Iterable<String> getAllDataPaths() {
+            return IteratorUtils.join(
+                    observations.getDataPaths(true),
+                    observations.getDataPaths(false),
+                    targets.getDataPaths(true),
+                    targets.getDataPaths(false),
+                    truth.getDataPaths(true),
+                    truth.getDataPaths(false));
+        }
+
+        /**
+         * Get all data points represented by this predicate.
+         */
+        public Iterable<List<String>> getAllDataPoints() {
+            return IteratorUtils.join(
+                    observations.getDataPoints(true),
+                    observations.getDataPoints(false),
+                    targets.getDataPoints(true),
+                    targets.getDataPoints(false),
+                    truth.getDataPoints(true),
+                    truth.getDataPoints(false));
+        }
+
         @Override
         public boolean equals(Object other) {
             if (other == null || !(other instanceof PredicateConfigInfo)) {
@@ -848,22 +917,6 @@ public class RuntimeConfig {
                 config.arity = parsedArity;
             } else {
                 config.name = rawName;
-            }
-
-            if (types != null) {
-                if (config.arity != -1 && types.size() > 0 && types.size() != config.arity) {
-                    throw new IllegalArgumentException(String.format(
-                            "Arity mismatch on predicate %s." +
-                            " Declared arity: %d." +
-                            " Length of supplied types: %d.",
-                            config.name, config.arity, types.size()));
-                }
-
-                config.arity = types.size();
-            }
-
-            if (config.arity == -1) {
-                throw new IllegalArgumentException(String.format("Could not find arity for predicate: %s.", config.name));
             }
 
             return config;
