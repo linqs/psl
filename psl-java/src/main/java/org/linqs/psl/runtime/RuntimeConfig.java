@@ -370,8 +370,6 @@ public class RuntimeConfig {
                 .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
                 .enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS)
                 .enable(JsonReadFeature.ALLOW_LEADING_PLUS_SIGN_FOR_NUMBERS)
-                .enable(JsonReadFeature.ALLOW_LEADING_DECIMAL_POINT_FOR_NUMBERS)
-                .enable(JsonReadFeature.ALLOW_TRAILING_DECIMAL_POINT_FOR_NUMBERS)
                 .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
                 .build();
 

@@ -25,94 +25,83 @@ import org.linqs.psl.config.RuntimeOptions;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RuntimeConfigTest {
     @Test
     public void testGoodSyntax() {
-        for (int i = 0; i < GOOD_SYNTAX.length; i++) {
-            RuntimeConfig config = RuntimeConfig.fromJSON(GOOD_SYNTAX[i]);
-            assertEquals(config, GOOD_SYNTAX_CONFIG[i]);
+        for (int i = 0; i < GOOD_SYNTAX.size(); i++) {
+            RuntimeConfig config = RuntimeConfig.fromJSON(GOOD_SYNTAX.get(i));
+            assertEquals(config, GOOD_SYNTAX_CONFIG.get(i));
         }
     }
 
-    private static final String[] GOOD_SYNTAX = new String[]{
-        // Exercise all parts of the syntax.
-        "{}",
-        "{'rules': ['CommonRule1']}",
-        "{'rules': ['CommonRule1','CommonRule2']}",
-        "{'rules': 'common/rule/path.txt'}",
-        "{'options':{'common.key':'common.value'}}",
-        "{'infer':{'rules':['InferRule1'],'options':{'infer.key':'infer.value'}}}",
-        "{'learn':{'rules':'learn/rule/path.txt','options':{'learn.key':'learn.value'}}}",
-        "{'predicates':{'DataDemo1/2':{'observations':['some/path/to/data.txt'],'targets':[['embeded','data']],'truth':[['embeded','data',0.5]]}}}",
-        "{'predicates':{'DataDemo2/2':{'observations':{'all':['common/data.txt'],'learn':[['learn-only','data']],'infer':[['infer-only','data',1.0],'infer/only/data.txt']}}}}",
-        "{'predicates':{'EvalDemo1/2':{'evaluations':['ContinuousEvaluator']}}}",
-        "{'predicates':{'EvalDemo2/2':{'evaluations':['ContinuousEvaluator']}}}",
-        "{'predicates':{'EvalDemo3/2':{'evaluations':[{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
-        "{'predicates':{'EvalDemo4a/2':{'evaluations':['ContinuousEvaluator',{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
-        "{'predicates':{'EvalDemo4b/2':{'evaluations':[{'evaluator':'ContinuousEvaluator'},{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
-        "{'predicates':{'EvalDemo5/2':{'evaluations':[{'evaluator':'DiscreteEvaluator'},{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}",
-        "{'predicates':{'ArityDemo1/2':{}}}",
-        "{'predicates':{'ArityDemo2':{'arity':2}}}",
-        "{'predicates':{'ArityDemo3':{'types':['Int','String']}}}",
-        "{'predicates':{'ModelPredicate1/2':{'model':'org.some.model'}}}",
-        "{'predicates':{'FunctionPredicate1/2':{'function':'org.some.implementation'}}}",
-        "{'predicates':{'OptionsDemo/2':{'options':{'predicate.option.key':'predicate.option.value'}}}}",
-
-
-        // TEST: TODO
-        // Use non-standard JSON syntax that is recognized by our parser.
-    };
+    private static List<String> GOOD_SYNTAX = null ;
 
     // Manually constructed RuntimeConfig objects that match 1-1 with GOOD_SYNTAX.
-    private static RuntimeConfig[] GOOD_SYNTAX_CONFIG = new RuntimeConfig[GOOD_SYNTAX.length];
+    private static List<RuntimeConfig> GOOD_SYNTAX_CONFIG = null;
 
     @BeforeClass
     public static void initGoodSyntaxConfigs() {
+        GOOD_SYNTAX = new ArrayList<String>();
+        GOOD_SYNTAX_CONFIG = new ArrayList<RuntimeConfig>();
+
         RuntimeConfig config = null;
         RuntimeConfig.PredicateConfigInfo predicate = null;
         RuntimeConfig.EvalInfo eval = null;
         Map<String, String> options = null;
 
-        GOOD_SYNTAX_CONFIG[0] = new RuntimeConfig();
+        // Exercise all parts of the syntax.
 
+        GOOD_SYNTAX.add("{}");
+        GOOD_SYNTAX_CONFIG.add(new RuntimeConfig());
+
+        GOOD_SYNTAX.add("{'rules': ['CommonRule1']}");
         config = new RuntimeConfig();
         config.rules = new RuntimeConfig.RuleList("CommonRule1");
-        GOOD_SYNTAX_CONFIG[1] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'rules': ['CommonRule1','CommonRule2']}");
         config = new RuntimeConfig();
         config.rules = new RuntimeConfig.RuleList("CommonRule1", "CommonRule2");
-        GOOD_SYNTAX_CONFIG[2] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'rules': 'common/rule/path.txt'}");
         config = new RuntimeConfig();
         config.rules = new RuntimeConfig.RulePath("common/rule/path.txt");
-        GOOD_SYNTAX_CONFIG[3] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'options':{'common.key':'common.value'}}");
         config = new RuntimeConfig();
         config.options.put("common.key", "common.value");
-        GOOD_SYNTAX_CONFIG[4] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'infer':{'rules':['InferRule1'],'options':{'infer.key':'infer.value'}}}");
         config = new RuntimeConfig();
         config.infer.rules = new RuntimeConfig.RuleList("InferRule1");
         config.infer.options.put("infer.key", "infer.value");
-        GOOD_SYNTAX_CONFIG[5] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'learn':{'rules':'learn/rule/path.txt','options':{'learn.key':'learn.value'}}}");
         config = new RuntimeConfig();
         config.learn.rules = new RuntimeConfig.RulePath("learn/rule/path.txt");
         config.learn.options.put("learn.key", "learn.value");
-        GOOD_SYNTAX_CONFIG[6] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'DataDemo1/2':{'observations':['some/path/to/data.txt'],'targets':[['embeded','data']],'truth':[['embeded','data',0.5]]}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("DataDemo1", 2);
         predicate.observations.all.paths.add("some/path/to/data.txt");
         predicate.targets.all.data.add(Arrays.asList("embeded", "data"));
         predicate.truth.all.data.add(Arrays.asList("embeded", "data", "0.5"));
         config.predicates.put("DataDemo1", predicate);
-        GOOD_SYNTAX_CONFIG[7] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'DataDemo2/2':{'observations':{'all':['common/data.txt'],'learn':[['learn-only','data']],'infer':[['infer-only','data',1.0],'infer/only/data.txt']}}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("DataDemo2", 2);
         predicate.observations.all.paths.add("common/data.txt");
@@ -120,20 +109,23 @@ public class RuntimeConfigTest {
         predicate.observations.infer.data.add(Arrays.asList("infer-only", "data", "1.0"));
         predicate.observations.infer.paths.add("infer/only/data.txt");
         config.predicates.put("DataDemo2", predicate);
-        GOOD_SYNTAX_CONFIG[8] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'EvalDemo1/2':{'evaluations':['ContinuousEvaluator']}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo1", 2);
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
         config.predicates.put("EvalDemo1", predicate);
-        GOOD_SYNTAX_CONFIG[9] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'EvalDemo2/2':{'evaluations':['ContinuousEvaluator']}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo2", 2);
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
         config.predicates.put("EvalDemo2", predicate);
-        GOOD_SYNTAX_CONFIG[10] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'EvalDemo3/2':{'evaluations':[{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo3", 2);
         options = new HashMap<String, String>();
@@ -141,8 +133,9 @@ public class RuntimeConfigTest {
         options.put("discreteevaluator.threshold", "0.75");
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
         config.predicates.put("EvalDemo3", predicate);
-        GOOD_SYNTAX_CONFIG[11] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'EvalDemo4a/2':{'evaluations':['ContinuousEvaluator',{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo4a", 2);
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
@@ -151,8 +144,9 @@ public class RuntimeConfigTest {
         options.put("discreteevaluator.threshold", "0.75");
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
         config.predicates.put("EvalDemo4a", predicate);
-        GOOD_SYNTAX_CONFIG[12] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'EvalDemo4b/2':{'evaluations':[{'evaluator':'ContinuousEvaluator'},{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo4b", 2);
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("ContinuousEvaluator"));
@@ -161,8 +155,9 @@ public class RuntimeConfigTest {
         options.put("discreteevaluator.threshold", "0.75");
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
         config.predicates.put("EvalDemo4b", predicate);
-        GOOD_SYNTAX_CONFIG[13] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'EvalDemo5/2':{'evaluations':[{'evaluator':'DiscreteEvaluator'},{'evaluator':'DiscreteEvaluator','options':{'discreteevaluator.representative':'RMSE','discreteevaluator.threshold':0.75}}]}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("EvalDemo5", 2);
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator"));
@@ -171,41 +166,108 @@ public class RuntimeConfigTest {
         options.put("discreteevaluator.threshold", "0.75");
         predicate.evaluations.add(new RuntimeConfig.EvalInfo("DiscreteEvaluator", options, false));
         config.predicates.put("EvalDemo5", predicate);
-        GOOD_SYNTAX_CONFIG[14] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'ArityDemo1/2':{}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo1", 2);
         config.predicates.put("ArityDemo1", predicate);
-        GOOD_SYNTAX_CONFIG[15] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'ArityDemo2':{'arity':2}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo2", 2);
         config.predicates.put("ArityDemo2", predicate);
-        GOOD_SYNTAX_CONFIG[16] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'ArityDemo3':{'types':['Int','String']}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("ArityDemo3", 2);
         predicate.types.add("Int");
         predicate.types.add("String");
         config.predicates.put("ArityDemo3", predicate);
-        GOOD_SYNTAX_CONFIG[17] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'ModelPredicate1/2':{'model':'org.some.model'}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("ModelPredicate1", 2);
         predicate.model = "org.some.model";
         config.predicates.put("ModelPredicate1", predicate);
-        GOOD_SYNTAX_CONFIG[18] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'FunctionPredicate1/2':{'function':'org.some.implementation'}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("FunctionPredicate1", 2);
         predicate.function = "org.some.implementation";
         config.predicates.put("FunctionPredicate1", predicate);
-        GOOD_SYNTAX_CONFIG[19] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
 
+        GOOD_SYNTAX.add("{'predicates':{'OptionsDemo/2':{'options':{'predicate.option.key':'predicate.option.value'}}}}");
         config = new RuntimeConfig();
         predicate = new RuntimeConfig.PredicateConfigInfo("OptionsDemo", 2);
         predicate.options.put("predicate.option.key", "predicate.option.value");
         config.predicates.put("OptionsDemo", predicate);
-        GOOD_SYNTAX_CONFIG[20] = config;
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        // Use non-standard JSON syntax that is recognized by our parser.
+
+        // Comments
+
+        GOOD_SYNTAX.add("{'rules': /* Comment */ ['CommonRule1','CommonRule2']}");
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1", "CommonRule2");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        GOOD_SYNTAX.add("{'rules': /* Comment \n Comment */ ['CommonRule1','CommonRule2']}");
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1", "CommonRule2");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        GOOD_SYNTAX.add("{'rules': ['CommonRule1','CommonRule2'] // Comment \n }");
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1", "CommonRule2");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        GOOD_SYNTAX.add("{'rules': ['CommonRule1','CommonRule2'] # Comment \n }");
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1", "CommonRule2");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        // Quotes
+        // Technicially JSON uses double quotes and single quotes are non-standard,
+        // but it is easier for us to use literal single quotes in Java.
+
+        GOOD_SYNTAX.add("{\"rules\": [\"CommonRule1\"]}");
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        // Leading Zeroes
+
+        GOOD_SYNTAX.add("{'options': {'int': 01, 'float': 01.2}}");
+        config = new RuntimeConfig();
+        config.options.put("int", "1");
+        config.options.put("float", "1.2");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        // Leading Plus Sign
+
+        GOOD_SYNTAX.add("{'options': {'int': +1, 'float': +1.2}}");
+        config = new RuntimeConfig();
+        config.options.put("int", "1");
+        config.options.put("float", "1.2");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        // Trailing Comma
+
+        GOOD_SYNTAX.add("{'rules': ['CommonRule1',], 'options': {'foo': 'bar',},}");
+        config = new RuntimeConfig();
+        config.rules = new RuntimeConfig.RuleList("CommonRule1");
+        config.options.put("foo", "bar");
+        GOOD_SYNTAX_CONFIG.add(config);
+
+        if (GOOD_SYNTAX.size() != GOOD_SYNTAX_CONFIG.size()) {
+            throw new IllegalStateException("Mismatch in GOOD_SYNTAX[_CONFIG] sizes.");
+        }
     }
 }
