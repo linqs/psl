@@ -39,7 +39,7 @@ public class H2DatabaseDriver extends DatabaseDriver {
      * Constructor for the H2 database driver.
      * @param dbType Type of database, either Disk or Memory.
      * @param path Path to database on disk, or name if type is Memory.
-     * @param clearDatabase Whether to perform a DROP ALL on the database after connecting.
+     * @param clear Whether to perform a DROP ALL on the database after connecting.
      */
     public H2DatabaseDriver(Type dbType, String path, boolean clear) {
         super("org.h2.Driver", buildConnectionString(dbType, path), checkClearDatabase(dbType, path, clear));
