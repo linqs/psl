@@ -63,7 +63,7 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
                 numLocations,
                 numSeedLocations + numExploreLocations * (int)(Math.pow(2, mutableRules.size())));
 
-        toExplore = new HashSet<String>(numLocations - numSeedLocations);
+        toExplore = new HashSet<String>(Math.max(10, numLocations - numSeedLocations));
     }
 
     @Override
