@@ -505,9 +505,15 @@ public class Runtime {
 
             for (RuntimeConfig.EvalInfo eval : predicateInfo.evaluations) {
                 Evaluator evaluator = null;
+
                 Config.pushLayer();
 
                 try {
+                    // Apply any evaluation-only options.
+                    for (Map.Entry<String, String> entry : eval.options.entrySet()) {
+                        Config.setProperty(entry.getKey(), entry.getValue(), false);
+                    }
+
                     evaluator = (Evaluator)Reflection.newObject(eval.evaluator);
                 } finally {
                     Config.popLayer();
