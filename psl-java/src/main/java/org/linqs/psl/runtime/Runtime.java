@@ -58,6 +58,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -266,6 +267,11 @@ public class Runtime {
     }
 
     private void loadDataPoints(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<List<String>> points) {
+        Iterator<List<String>> iterator = points.iterator();
+        if (!iterator.hasNext()) {
+            return;
+        }
+
         Partition partition = dataStore.getPartition(partitionName);
         Inserter inserter = dataStore.getInserter(predicate, partition);
 
@@ -274,7 +280,11 @@ public class Runtime {
         int arity = predicate.getArity();
         Object[] point = new Object[arity];
 
-        for (List<String> rawPoint : points) {
+        int count = 0;
+
+        while (iterator.hasNext()) {
+            List<String> rawPoint = iterator.next();
+
             if (rawPoint.size() < arity || rawPoint.size() > (arity + 1)) {
                 throw new IllegalArgumentException(String.format(
                         "Provided data point for predicate %s does not have the correct number of arguments. Expecting %d or %d arguments. Offending data point: %s.",
@@ -290,7 +300,11 @@ public class Runtime {
             } else {
                 inserter.insert(point);
             }
+
+            count++;
         }
+
+        log.trace("Loaded {} rows of embeded data for {} ({} partition)", count, predicate, partitionName);
     }
 
     private void runInference(RuntimeConfig config, Model model) {
