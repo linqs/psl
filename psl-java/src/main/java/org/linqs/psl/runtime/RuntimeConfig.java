@@ -132,19 +132,15 @@ public class RuntimeConfig {
      * All relative paths will be resolved to absolute paths using |relativeBasePath|.
      */
     public void validate() {
-        boolean runLearn = RuntimeOptions.LEARN.getBoolean();
-        boolean runInfer = RuntimeOptions.INFERENCE.getBoolean();
+        boolean runLearn = false;
+        boolean runInfer = false;
 
         // Any top-level learn/infer indicates that those respective steps should be run.
-        if (learn == null) {
-            learn = new SplitConfigInfo();
-        } else {
+        if (!learn.isEmpty()) {
             runLearn = true;
         }
 
-        if (infer == null) {
-            infer = new SplitConfigInfo();
-        } else {
+        if (!infer.isEmpty()) {
             runInfer = true;
         }
 
@@ -173,6 +169,15 @@ public class RuntimeConfig {
 
         if (!RuntimeOptions.LEARN.isSet() && !RuntimeOptions.INFERENCE.isSet() && !runLearn && !runInfer) {
             runInfer = true;
+        }
+
+        // Any explicitly set value will always override.
+        if (RuntimeOptions.LEARN.isSet()) {
+            runLearn = RuntimeOptions.LEARN.getBoolean();
+        }
+
+        if (RuntimeOptions.INFERENCE.isSet()) {
+            runInfer = RuntimeOptions.INFERENCE.getBoolean();
         }
 
         options.put(RuntimeOptions.LEARN.name(), "" + runLearn);
@@ -453,6 +458,8 @@ public class RuntimeConfig {
         public Iterable<Rule> getRules();
 
         public void resolvePaths(String relativeBasePath);
+
+        public int size();
     }
 
     public static class RulePath implements RuleSource {
@@ -460,6 +467,11 @@ public class RuntimeConfig {
 
         public RulePath(String path) {
             this.path = path;
+        }
+
+        @Override
+        public int size() {
+            return (path == null) ? 0 : 1;
         }
 
         @Override
@@ -509,6 +521,11 @@ public class RuntimeConfig {
         }
 
         @Override
+        public int size() {
+            return (rules == null) ? 0 : rules.size();
+        }
+
+        @Override
         public Iterable<Rule> getRules() {
             List<Rule> parsedRules = new ArrayList<Rule>(rules.size());
 
@@ -544,6 +561,10 @@ public class RuntimeConfig {
         public SplitConfigInfo() {
             rules = new RuleList();
             options = new HashMap<String, String>();
+        }
+
+        public boolean isEmpty() {
+            return rules.size() == 0 && options.size() == 0;
         }
 
         @Override
