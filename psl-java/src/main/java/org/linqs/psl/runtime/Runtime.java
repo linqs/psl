@@ -105,10 +105,11 @@ public class Runtime {
             runInternal(config);
         } finally {
             Config.popLayer();
+            cleanup();
         }
     }
 
-    private void runInternal(RuntimeConfig config) {
+    protected void runInternal(RuntimeConfig config) {
         // Apply any top-level options found in the config.
         for (Map.Entry<String, String> entry : config.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
@@ -137,11 +138,9 @@ public class Runtime {
         if (RuntimeOptions.INFERENCE.getBoolean()) {
             runInference(config, model);
         }
-
-        cleanup();
     }
 
-    private boolean checkHelp() {
+    protected boolean checkHelp() {
         if (!RuntimeOptions.HELP.getBoolean()) {
             return false;
         }
@@ -159,7 +158,7 @@ public class Runtime {
         return true;
     }
 
-    private boolean checkVersion() {
+    protected boolean checkVersion() {
         if (!RuntimeOptions.VERSION.getBoolean()) {
             return false;
         }
@@ -168,18 +167,18 @@ public class Runtime {
         return true;
     }
 
-    private void cleanup() {
+    protected void cleanup() {
         Parallel.close();
     }
 
-    private void evaluate(Database targetDatabase, Database truthDatabase, List<EvaluationInstance> evaluations) {
+    protected void evaluate(Database targetDatabase, Database truthDatabase, List<EvaluationInstance> evaluations) {
         for (EvaluationInstance evaluation : evaluations) {
             evaluation.compute(targetDatabase, truthDatabase);
             log.info("Evaluation results: {}", evaluation.getOutput());
         }
     }
 
-    private DataStore initDataStore(RuntimeConfig config) {
+    protected DataStore initDataStore(RuntimeConfig config) {
         DatabaseDriver driver = null;
         String path = null;
 
@@ -217,13 +216,13 @@ public class Runtime {
         return dataStore;
     }
 
-    private void initLogger() {
+    protected void initLogger() {
         if (RuntimeOptions.LOG_LEVEL.isSet()) {
             Logger.setLevel(RuntimeOptions.LOG_LEVEL.getString());
         }
     }
 
-    private void loadData(DataStore dataStore, RuntimeConfig config, boolean infer) {
+    protected void loadData(DataStore dataStore, RuntimeConfig config, boolean infer) {
         log.debug("Data loading start");
 
         for (RuntimeConfig.PredicateConfigInfo predicateInfo : config.predicates.values()) {
@@ -256,7 +255,7 @@ public class Runtime {
         log.debug("Data loading complete");
     }
 
-    private void loadDataPaths(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<String> paths) {
+    protected void loadDataPaths(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<String> paths) {
         Partition partition = dataStore.getPartition(partitionName);
         Inserter inserter = dataStore.getInserter(predicate, partition);
 
@@ -266,7 +265,7 @@ public class Runtime {
         }
     }
 
-    private void loadDataPoints(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<List<String>> points) {
+    protected void loadDataPoints(DataStore dataStore, StandardPredicate predicate, String partitionName, Iterable<List<String>> points) {
         Iterator<List<String>> iterator = points.iterator();
         if (!iterator.hasNext()) {
             return;
@@ -307,7 +306,7 @@ public class Runtime {
         log.trace("Loaded {} rows of embeded data for {} ({} partition)", count, predicate, partitionName);
     }
 
-    private void runInference(RuntimeConfig config, Model model) {
+    protected void runInference(RuntimeConfig config, Model model) {
         // Save the config so we can apply inference-only options.
         Config.pushLayer();
 
@@ -318,7 +317,7 @@ public class Runtime {
         }
     }
 
-    private void runInferenceInternal(RuntimeConfig config, Model model) {
+    protected void runInferenceInternal(RuntimeConfig config, Model model) {
         // Apply any inference-only options found in the config.
         for (Map.Entry<String, String> entry : config.infer.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
@@ -395,7 +394,7 @@ public class Runtime {
         dataStore.close();
     }
 
-    private Model runLearning(RuntimeConfig config) {
+    protected Model runLearning(RuntimeConfig config) {
         // Save the config so we can apply learn-only options.
         Config.pushLayer();
 
@@ -406,7 +405,7 @@ public class Runtime {
         }
     }
 
-    private Model runLearningInternal(RuntimeConfig config) {
+    protected Model runLearningInternal(RuntimeConfig config) {
         // Apply any learn-only options found in the config.
         for (Map.Entry<String, String> entry : config.learn.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
@@ -488,7 +487,7 @@ public class Runtime {
         return model;
     }
 
-    private List<EvaluationInstance> getEvaluations(RuntimeConfig config) {
+    protected List<EvaluationInstance> getEvaluations(RuntimeConfig config) {
         boolean hasPrimaryEval = false;
 
         List<EvaluationInstance> evaluations = new ArrayList<EvaluationInstance>();

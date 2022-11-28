@@ -24,4 +24,8 @@ public class SGDTermStore extends SimpleTermStore<SGDObjectiveTerm> {
     public SGDTermStore(Database database) {
         super(database, new SGDTermGenerator());
     }
+
+    public SGDTermStore(Database database, boolean mergeConstants, boolean warnOnConstraint) {
+        super(database, new SGDTermGenerator(mergeConstants, warnOnConstraint));
+    }
 }

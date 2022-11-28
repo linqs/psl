@@ -33,12 +33,19 @@ import java.util.Collection;
 public class SGDTermGenerator extends TermGenerator<SGDObjectiveTerm> {
     private static final Logger log = Logger.getLogger(SGDTermGenerator.class);
 
+    private boolean warnOnConstraint;
+
     public SGDTermGenerator() {
-        this(true);
+        this(true, true);
     }
 
-    public SGDTermGenerator(boolean mergeConstants) {
+    public SGDTermGenerator(boolean mergeConstants, boolean warnOnConstraint) {
         super(mergeConstants);
+        this.warnOnConstraint = warnOnConstraint;
+    }
+
+    public void setWarnOnConstraint(boolean warn) {
+        warnOnConstraint = warn;
     }
 
     @Override
@@ -51,7 +58,11 @@ public class SGDTermGenerator extends TermGenerator<SGDObjectiveTerm> {
     @Override
     public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms,
             GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
-        log.warn("SGD does not support hard constraints, i.e. " + groundRule);
+        if (warnOnConstraint) {
+            log.warn("SGD does not support hard constraints, i.e. " + groundRule);
+            warnOnConstraint = false;
+        }
+
         return 0;
     }
 }
