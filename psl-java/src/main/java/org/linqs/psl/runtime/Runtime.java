@@ -36,6 +36,7 @@ import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -85,31 +86,52 @@ public class Runtime {
         initLogger();
     }
 
-    public void run() {
-        run(new RuntimeConfig());
+    public RuntimeResult run() {
+        return run(new RuntimeConfig());
     }
 
-    public void run(String configPath) {
-        RuntimeConfig config = RuntimeConfig.fromFile(configPath);
-        run(config);
+    public RuntimeResult run(String configPath) {
+        return run(configPath, false);
+    }
+
+    public RuntimeResult run(String configPath, boolean fillResult) {
+        return run(RuntimeConfig.fromFile(configPath), fillResult);
+    }
+
+    public RuntimeResult run(RuntimeConfig config) {
+        return run(config, false);
+    }
+
+    /**
+     * An interface specifically meant for methods that provide serialized input and want serialized output
+     * (both in the form of JSON).
+     */
+    public String serializedRun(String jsonConfig) {
+        RuntimeResult result = run(RuntimeConfig.fromJSON(jsonConfig), true);
+        return result.toJSON();
     }
 
     /**
      * The primary interface into a PSL runtime.
      * Options specified in the config will be applied during the runtime, and reset after.
      */
-    public void run(RuntimeConfig config) {
+    public RuntimeResult run(RuntimeConfig config, boolean fillResult) {
         Config.pushLayer();
 
         try {
-            runInternal(config);
+            return runInternal(config, fillResult);
         } finally {
             Config.popLayer();
             cleanup();
         }
     }
 
-    protected void runInternal(RuntimeConfig config) {
+    protected RuntimeResult runInternal(RuntimeConfig config, boolean fillResult) {
+        RuntimeResult result = null;
+        if (fillResult) {
+            result = new RuntimeResult();
+        }
+
         // Apply any top-level options found in the config.
         for (Map.Entry<String, String> entry : config.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
@@ -119,7 +141,7 @@ public class Runtime {
         initLogger();
 
         if (checkHelp() || checkVersion()) {
-            return;
+            return result;
         }
 
         log.info("PSL Runtime Version {}", Version.getFull());
@@ -132,12 +154,14 @@ public class Runtime {
 
         Model model = null;
         if (RuntimeOptions.LEARN.getBoolean()) {
-            model = runLearning(config);
+            model = runLearning(config, result);
         }
 
         if (RuntimeOptions.INFERENCE.getBoolean()) {
-            runInference(config, model);
+            runInference(config, model, result);
         }
+
+        return result;
     }
 
     protected boolean checkHelp() {
@@ -171,10 +195,14 @@ public class Runtime {
         Parallel.close();
     }
 
-    protected void evaluate(Database targetDatabase, Database truthDatabase, List<EvaluationInstance> evaluations) {
+    protected void evaluate(Database targetDatabase, Database truthDatabase, List<EvaluationInstance> evaluations, RuntimeResult result) {
         for (EvaluationInstance evaluation : evaluations) {
             evaluation.compute(targetDatabase, truthDatabase);
             log.info("Evaluation results: {}", evaluation.getOutput());
+
+            if (result != null) {
+                result.addEvaluation(evaluation.getOutput());
+            }
         }
     }
 
@@ -306,18 +334,18 @@ public class Runtime {
         log.trace("Loaded {} rows of embeded data for {} ({} partition)", count, predicate, partitionName);
     }
 
-    protected void runInference(RuntimeConfig config, Model model) {
+    protected void runInference(RuntimeConfig config, Model model, RuntimeResult result) {
         // Save the config so we can apply inference-only options.
         Config.pushLayer();
 
         try {
-            runInferenceInternal(config, model);
+            runInferenceInternal(config, model, result);
         } finally {
             Config.popLayer();
         }
     }
 
-    protected void runInferenceInternal(RuntimeConfig config, Model model) {
+    protected void runInferenceInternal(RuntimeConfig config, Model model, RuntimeResult result) {
         // Apply any inference-only options found in the config.
         for (Map.Entry<String, String> entry : config.infer.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
@@ -386,7 +414,13 @@ public class Runtime {
             targetDatabase.outputRandomVariableAtoms(outputDir);
         }
 
-        evaluate(targetDatabase, truthDatabase, evaluations);
+        if (result != null) {
+            for (RandomVariableAtom atom : targetDatabase.getAtomStore().getRandomVariableAtoms()) {
+                result.addAtom(atom);
+            }
+        }
+
+        evaluate(targetDatabase, truthDatabase, evaluations, result);
 
         inferenceApplication.close();
         targetDatabase.close();
@@ -394,18 +428,18 @@ public class Runtime {
         dataStore.close();
     }
 
-    protected Model runLearning(RuntimeConfig config) {
+    protected Model runLearning(RuntimeConfig config, RuntimeResult result) {
         // Save the config so we can apply learn-only options.
         Config.pushLayer();
 
         try {
-            return runLearningInternal(config);
+            return runLearningInternal(config, result);
         } finally {
             Config.popLayer();
         }
     }
 
-    protected Model runLearningInternal(RuntimeConfig config) {
+    protected Model runLearningInternal(RuntimeConfig config, RuntimeResult result) {
         // Apply any learn-only options found in the config.
         for (Map.Entry<String, String> entry : config.learn.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
@@ -466,6 +500,10 @@ public class Runtime {
         log.info("Learned Model:");
         for (Rule rule : model.getRules()) {
             log.info("   " + rule);
+
+            if (result != null) {
+                result.addRule(rule);
+            }
         }
 
         String outModelPath = RuntimeOptions.LEARN_OUTPUT_MODEL_PATH.getString();
@@ -538,16 +576,6 @@ public class Runtime {
         return evaluations;
     }
 
-    public static void main(String[] args) {
-        if (args == null || args.length != 1) {
-            System.out.println("USAGE: " + Runtime.class + " <path to JSON config>");
-            return;
-        }
-
-        Runtime runtime = new Runtime();
-        runtime.run(args[0]);
-    }
-
     public static enum DatabaseType {
         H2,
         Postgres,
@@ -614,5 +642,16 @@ public class Runtime {
                 out.close();
             }
         }
+    }
+
+    public static void main(String[] args) {
+        if (args == null || args.length != 1) {
+            System.out.println("USAGE: " + Runtime.class + " <path to JSON config>");
+            return;
+        }
+
+        Runtime runtime = new Runtime();
+        RuntimeResult result = runtime.run(args[0], true);
+        System.out.println(result);
     }
 }

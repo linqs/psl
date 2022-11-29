@@ -100,9 +100,12 @@
         <Bug pattern="IS2_INCONSISTENT_SYNC" />
     </Match>
 
-    <!-- Several RuntimeConfig subclasses are used for JSON data binding and use public fields. -->
+    <!-- Subclasses that are used for JSON data binding and use public fields. -->
     <Match>
-        <Class name="~org.linqs.psl.runtime.RuntimeConfig.*" />
+        <Or>
+            <Class name="~org.linqs.psl.runtime.RuntimeConfig.*" />
+            <Class name="~org.linqs.psl.runtime.RuntimeResult.*" />
+        </Or>
         <Or>
             <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD" />
             <Bug pattern="UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD" />
