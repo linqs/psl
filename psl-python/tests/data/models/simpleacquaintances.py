@@ -52,7 +52,7 @@ def run(data_dir = DEFAULT_DATA_DIR):
     model.add_rule(Rule('5: !Knows(P1, P2) ^2'))
 
     # Run Inference
-    results = model.infer(psl_config = ADDITIONAL_PSL_OPTIONS)
+    results = model.infer(psl_options = ADDITIONAL_PSL_OPTIONS)
 
     return results
 

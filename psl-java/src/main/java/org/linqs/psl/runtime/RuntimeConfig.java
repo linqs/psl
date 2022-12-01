@@ -393,8 +393,14 @@ public class RuntimeConfig {
     }
 
     public static RuntimeConfig fromJSON(String contents) {
+        return fromJSON(contents, ".");
+    }
+
+    public static RuntimeConfig fromJSON(String contents, String relativeBasePath) {
         JSONRuntimeConfig baseConfig = parseJSON(contents);
-        return baseConfig.formalize();
+        RuntimeConfig config = baseConfig.formalize();
+        config.relativeBasePath = relativeBasePath;
+        return config;
     }
 
     private static JSONRuntimeConfig parseJSON(String contents) {

@@ -37,7 +37,7 @@
     <dependencies>
         <dependency>
             <groupId>org.linqs</groupId>
-            <artifactId>psl-cli</artifactId>
+            <artifactId>psl-runtime</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

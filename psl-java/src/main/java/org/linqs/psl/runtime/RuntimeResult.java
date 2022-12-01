@@ -20,6 +20,7 @@ package org.linqs.psl.runtime;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 
@@ -81,14 +82,14 @@ public class RuntimeResult {
     }
 
     private static class JSONRuntimeResult {
-        public String[] rules;
+        public JSONRule[] rules;
         public JSONAtom[] atoms;
         public String[] evaluations;
 
         public JSONRuntimeResult(RuntimeResult result) {
-            rules = new String[result.rules.size()];
+            rules = new JSONRule[result.rules.size()];
             for (int i = 0; i < rules.length; i++) {
-                rules[i] = result.rules.get(i).toString();
+                rules[i] = new JSONRule(result.rules.get(i));
             }
 
             atoms = new JSONAtom[result.atoms.size()];
@@ -99,6 +100,24 @@ public class RuntimeResult {
             evaluations = new String[result.evaluations.size()];
             for (int i = 0; i < evaluations.length; i++) {
                 evaluations[i] = result.evaluations.get(i);
+            }
+        }
+    }
+
+    private static class JSONRule {
+        public String text;
+        public Float weight;
+        public boolean squared;
+
+        public JSONRule(Rule rule) {
+            text = rule.toString();
+
+            weight = null;
+            squared = false;
+
+            if (rule instanceof WeightedRule) {
+                weight = ((WeightedRule)rule).getWeight();
+                squared = ((WeightedRule)rule).isSquared();
             }
         }
     }

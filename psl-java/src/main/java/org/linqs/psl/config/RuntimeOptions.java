@@ -94,6 +94,12 @@ public class RuntimeOptions {
         "Use the specified InferenceApplication when running inference."
     );
 
+    public static final Option INFERENCE_OUTPUT_RESULTS = new Option(
+        "runtime.inference.output.results",
+        true,
+        "Whether to output the inferred atoms after inference."
+    );
+
     public static final Option INFERENCE_OUTPUT_RESULTS_DIR = new Option(
         "runtime.inference.output.results.dir",
         null,

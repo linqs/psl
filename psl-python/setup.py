@@ -25,14 +25,14 @@ def get_pom_info():
 
     return (url, author, email, version)
 
-# The build depends on having the psl-cli project built.
+# The build depends on having the psl-runtime project built.
 # Fetch the jar from there.
-def copy_cli_jar(version):
-    jar_path = os.path.abspath(os.path.join(THIS_DIR, '..', 'psl-cli', 'target', "psl-cli-%s.jar" % (version)))
-    dest_path = os.path.join('pslpython', 'cli', 'psl-cli.jar')
+def copy_jar(version):
+    jar_path = os.path.abspath(os.path.join(THIS_DIR, '..', 'psl-runtime', 'target', "psl-runtime-%s.jar" % (version)))
+    dest_path = os.path.join('pslpython', 'psl-runtime.jar')
 
     if (not os.path.isfile(jar_path)):
-        raise FileNotFoundError("Could not locate psl-cli jar file (%s). The psl-cli project should be built prior this project." % (jar_path))
+        raise FileNotFoundError("Could not locate psl-runtime jar file (%s). The psl-runtime project should be built prior this project." % (jar_path))
 
     shutil.copyfile(jar_path, dest_path)
 
@@ -86,7 +86,7 @@ def main():
 
     version = create_version(raw_version)
 
-    copy_cli_jar(raw_version)
+    copy_jar(raw_version)
 
     setuptools.setup(
         name = 'pslpython',
@@ -105,13 +105,14 @@ def main():
 
         include_package_data = True,
         package_data = {
-            'pslpython.cli': [
-                'psl-cli.jar',
+            'pslpython': [
+                'psl-runtime.jar',
             ]
         },
 
         install_requires = [
-            'pandas>=0.24.1', 'pyyaml>=3.13'
+            'JPype1==1.4.0',
+            'pandas>=0.24.1',
         ],
 
         extras_require = {

@@ -67,5 +67,6 @@ class TestModel(PSLTest):
         self.assertEquals(len(results), 1)
 
         predicate, frame = list(results.items())[0]
+
         self.assertEquals(predicate.name(), 'KNOWS')
         self.assertEquals(len(frame), 6)

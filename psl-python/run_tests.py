@@ -5,7 +5,7 @@ import re
 import sys
 import unittest
 
-TEST_DIR = os.path.join('tests')
+TARGET_DIR = os.path.join('tests')
 
 # Return a list of unittest.TestCase
 def _collect_tests(suite, testCases = []):
@@ -23,7 +23,7 @@ def _collect_tests(suite, testCases = []):
 
 def main(pattern = None):
     runner = unittest.TextTestRunner(verbosity = 3)
-    discoveredSuite = unittest.TestLoader().discover(TEST_DIR)
+    discoveredSuite = unittest.TestLoader().discover(TARGET_DIR)
     testCases = _collect_tests(discoveredSuite)
 
     tests = unittest.suite.TestSuite()

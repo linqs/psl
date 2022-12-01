@@ -103,11 +103,14 @@ public class Runtime {
     }
 
     /**
-     * An interface specifically meant for methods that provide serialized input and want serialized output
+     * A static interface specifically meant for methods that provide serialized input and want serialized output
      * (both in the form of JSON).
      */
-    public String serializedRun(String jsonConfig) {
-        RuntimeResult result = run(RuntimeConfig.fromJSON(jsonConfig), true);
+    public static String serializedRun(String jsonConfig, String basePath) {
+        Runtime runtime = new Runtime();
+        RuntimeResult result = runtime.run(RuntimeConfig.fromJSON(jsonConfig, basePath), true);
+        runtime.cleanup();
+
         return result.toJSON();
     }
 
@@ -405,13 +408,15 @@ public class Runtime {
             Grounding.setGroundRuleCallback(null);
         }
 
-        String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();
-        if (outputDir == null) {
-            log.info("Writing inferred predicates to stdout.");
-            targetDatabase.outputRandomVariableAtoms();
-        } else {
-            log.info("Writing inferred predicates to directory: " + outputDir);
-            targetDatabase.outputRandomVariableAtoms(outputDir);
+        if (RuntimeOptions.INFERENCE_OUTPUT_RESULTS.getBoolean()) {
+            String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();
+            if (outputDir == null) {
+                log.info("Writing inferred predicates to stdout.");
+                targetDatabase.outputRandomVariableAtoms();
+            } else {
+                log.info("Writing inferred predicates to directory: " + outputDir);
+                targetDatabase.outputRandomVariableAtoms(outputDir);
+            }
         }
 
         if (result != null) {
