@@ -103,6 +103,7 @@
     <!-- Subclasses that are used for JSON data binding and use public fields. -->
     <Match>
         <Or>
+            <Class name="~org.linqs.psl.runtime.GroundingAPI.*" />
             <Class name="~org.linqs.psl.runtime.RuntimeConfig.*" />
             <Class name="~org.linqs.psl.runtime.RuntimeResult.*" />
         </Or>
