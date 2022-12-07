@@ -17,13 +17,13 @@ def run(data_dir = DEFAULT_DATA_DIR):
 
     # Add Predicates
 
-    knows_predicate = Predicate('Knows', closed = False, size = 2)
+    knows_predicate = Predicate('Knows', size = 2)
     model.add_predicate(knows_predicate)
 
-    likes_predicate = Predicate('Likes', closed = True, size = 2)
+    likes_predicate = Predicate('Likes', size = 2)
     model.add_predicate(likes_predicate)
 
-    lived_predicate = Predicate('Lived', closed = True, size = 2)
+    lived_predicate = Predicate('Lived', size = 2)
     model.add_predicate(lived_predicate)
 
     # Add Data

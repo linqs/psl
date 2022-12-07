@@ -190,6 +190,9 @@ class Rule(object):
     def __str__(self):
         return self.to_string()
 
+    def __repr__(self):
+        return self.to_string()
+
     def to_string(self, weight_places: int = None):
         """
         Create a PSL CLI compliant string representation of this string.

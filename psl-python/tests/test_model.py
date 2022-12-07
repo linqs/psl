@@ -38,14 +38,14 @@ class TestModel(PSLTest):
         model = Model('test-predicate')
         predicate_name = 'Foo'
 
-        a = Predicate(predicate_name, closed = True, size = 2)
+        a = Predicate(predicate_name, size = 2)
         model.add_predicate(a)
 
         # Adding the same predicate again should by no issue.
         model.add_predicate(a)
 
         try:
-            b = Predicate(predicate_name, closed = True, size = 2)
+            b = Predicate(predicate_name, size = 2)
             model.add_predicate(b)
             self.fail('Duplicate predicate name did not raise an exception.')
         except PredicateError:
@@ -53,7 +53,7 @@ class TestModel(PSLTest):
             pass
 
         try:
-            b = Predicate(predicate_name, closed = True, size = 3)
+            b = Predicate(predicate_name, size = 3)
             model.add_predicate(b)
             self.fail('Duplicate predicate name did not raise an exception.')
         except PredicateError:

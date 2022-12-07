@@ -89,7 +89,7 @@ public class RuntimeResult {
         public JSONRuntimeResult(RuntimeResult result) {
             rules = new JSONRule[result.rules.size()];
             for (int i = 0; i < rules.length; i++) {
-                rules[i] = new JSONRule(result.rules.get(i));
+                rules[i] = new JSONRule(result.rules.get(i), i);
             }
 
             atoms = new JSONAtom[result.atoms.size()];
@@ -108,9 +108,11 @@ public class RuntimeResult {
         public String text;
         public Float weight;
         public boolean squared;
+        public int ruleIndex;
 
-        public JSONRule(Rule rule) {
+        public JSONRule(Rule rule, int ruleIndex) {
             text = rule.toString();
+            this.ruleIndex = ruleIndex;
 
             weight = null;
             squared = false;

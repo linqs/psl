@@ -51,6 +51,7 @@ class Model(object):
         self._rules = []
         # {normalized_name: predicate, ...}
         self._predicates = {}
+        self._options = {}
 
     def add_predicate(self, predicate: Predicate):
         """
@@ -91,7 +92,7 @@ class Model(object):
         self._rules.append(rule)
         return self
 
-    def infer(self, method = '', psl_options = {}, jvm_options = []):
+    def infer(self, method = '', psl_options = {}, jvm_options = [], transform_config = None):
         """
         Run inference on this model.
 
@@ -109,18 +110,22 @@ class Model(object):
 
         config = self._prep_config(psl_options)
 
+        config["options"]["runtime.learn"] = False
         config["options"]["runtime.inference"] = True
         config["options"]["runtime.inference.output.results"] = False
 
         if (method != ''):
             config["options"]["runtime.inference.method"] = method
 
+        if (transform_config is not None):
+            config = transform_config(config)
+
         raw_results = pslpython.runtime.run(config, jvm_options = jvm_options)
         results = self._collect_inference_results(raw_results)
 
         return results
 
-    def learn(self, method = '', psl_options = {}, jvm_options = []):
+    def learn(self, method = '', psl_options = {}, jvm_options = [], transform_config = None):
         """
         Run weight learning on this model.
         The new weights will be applied to this model.
@@ -138,14 +143,31 @@ class Model(object):
         config = self._prep_config(psl_options)
 
         config["options"]["runtime.learn"] = True
+        config["options"]["runtime.inference"] = False
 
         if (method != ''):
             config["options"]["runtime.learn.method"] = method
+
+        if (transform_config is not None):
+            config = transform_config(config)
 
         raw_results = pslpython.runtime.run(config, jvm_options = jvm_options)
         self._fetch_new_weights(raw_results)
 
         return self
+
+    def ground(self, psl_options = {}, jvm_options = [], transform_config = None):
+        """
+        Ground the model.
+        """
+
+        config = self._prep_config(psl_options)
+        if (transform_config is not None):
+            config = transform_config(config)
+
+        ground_program = pslpython.runtime.ground(config, jvm_options = jvm_options)
+
+        return ground_program
 
     def get_rules(self):
         return self._rules
@@ -175,6 +197,15 @@ class Model(object):
 
     def get_name(self):
         return self._name
+
+    def add_options(self, options):
+        self._options.update(options)
+
+    def get_options(self):
+        return self._options
+
+    def clear_options(self):
+        self._options = {}
 
     def _collect_inference_results(self, raw_results):
         """
@@ -228,8 +259,11 @@ class Model(object):
         if (len(self._rules) == 0):
             raise ModelError("No rules specified to the model.")
 
+        options = dict(self._options)
+        options.update(psl_options)
+
         config = {
-            "options": psl_options,
+            "options": options,
             "rules": list(map(str, self._rules)),
             "predicates": {predicate.name() : predicate.to_dict() for predicate in self._predicates.values()},
         }

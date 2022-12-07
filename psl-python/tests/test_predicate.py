@@ -37,16 +37,16 @@ class TestPredicate(PSLTest):
         ]
 
         for (input_name, expected_name) in names:
-            predicate = Predicate(input_name, closed = True, size = 2)
+            predicate = Predicate(input_name, size = 2)
             self.assertEqual(predicate.name(), expected_name)
 
     def test_init_args(self):
         failing_configs = [
-            ({'raw_name': 'Foo', 'closed': False}, 'No size supplied.'),
-            ({'raw_name': 'Foo', 'closed': False, 'size': -1}, 'Negative size.'),
-            ({'raw_name': 'Foo', 'closed': False, 'size': 0}, 'Zero size.'),
-            ({'raw_name': 'Foo', 'closed': False, 'size': 2, 'arg_types': [Predicate.ArgType.UNIQUE_INT_ID]}, 'Type size mismatch.'),
-            ({'raw_name': 'Foo', 'closed': False, 'size': 1, 'arg_types': ['UniqueIntID']}, 'Non-enum arg type.'),
+            ({'raw_name': 'Foo'}, 'No size supplied.'),
+            ({'raw_name': 'Foo', 'size': -1}, 'Negative size.'),
+            ({'raw_name': 'Foo', 'size': 0}, 'Zero size.'),
+            ({'raw_name': 'Foo', 'size': 2, 'arg_types': [Predicate.ArgType.UNIQUE_INT_ID]}, 'Type size mismatch.'),
+            ({'raw_name': 'Foo', 'size': 1, 'arg_types': ['UniqueIntID']}, 'Non-enum arg type.'),
         ]
 
         for (args, reason) in failing_configs:
@@ -58,7 +58,7 @@ class TestPredicate(PSLTest):
                 pass
 
     def test_add_record(self):
-        predicate = Predicate('Foo', closed = True, size = 2)
+        predicate = Predicate('Foo', size = 2)
 
         predicate.add_data_row(Partition.OBSERVATIONS, ['A', 'B'])
         predicate.add_data_row(Partition.OBSERVATIONS, ['C', 'D'], 0.5)
@@ -73,7 +73,7 @@ class TestPredicate(PSLTest):
         pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
     def test_add_frame(self):
-        predicate = Predicate('Foo', closed = True, size = 2)
+        predicate = Predicate('Foo', size = 2)
 
         input_data = pandas.DataFrame([
             ['A', 'B'],
@@ -91,7 +91,7 @@ class TestPredicate(PSLTest):
         pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
     def test_add_list(self):
-        predicate = Predicate('Foo', closed = True, size = 2)
+        predicate = Predicate('Foo', size = 2)
 
         input_data = [
             ['A', 'B', 0.0],
@@ -109,7 +109,7 @@ class TestPredicate(PSLTest):
         pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
     def test_add_file(self):
-        predicate = Predicate('1', closed = True, size = 2)
+        predicate = Predicate('1', size = 2)
         path = os.path.join(PSLTest.DATA_DIR, 'misc', 'binary_small.txt')
         predicate.add_data_file(Partition.OBSERVATIONS, path)
         expected = pandas.DataFrame([
@@ -119,7 +119,7 @@ class TestPredicate(PSLTest):
         ])
         pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
-        predicate = Predicate('2', closed = True, size = 2)
+        predicate = Predicate('2', size = 2)
         path = os.path.join(PSLTest.DATA_DIR, 'misc', 'binary_small.txt')
         predicate.add_data_file(Partition.OBSERVATIONS, path, has_header = True)
         expected = pandas.DataFrame([
@@ -128,7 +128,7 @@ class TestPredicate(PSLTest):
         ])
         pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
-        predicate = Predicate('3', closed = True, size = 2)
+        predicate = Predicate('3', size = 2)
         path = os.path.join(PSLTest.DATA_DIR, 'misc', 'binary_small.csv')
         predicate.add_data_file(Partition.OBSERVATIONS, path, delim = ',')
         expected = pandas.DataFrame([
@@ -138,7 +138,7 @@ class TestPredicate(PSLTest):
         ])
         pandas.testing.assert_frame_equal(predicate._data[Partition.OBSERVATIONS], expected, check_dtype = False)
 
-        predicate = Predicate('4', closed = True, size = 2)
+        predicate = Predicate('4', size = 2)
         path = os.path.join(PSLTest.DATA_DIR, 'misc', 'binary_small_truth.txt')
         predicate.add_data_file(Partition.OBSERVATIONS, path)
         expected = pandas.DataFrame([
@@ -150,7 +150,7 @@ class TestPredicate(PSLTest):
 
     def test_add_wrong_number_of_cols(self):
         # Too few.
-        predicate = Predicate('1', closed = True, size = 3)
+        predicate = Predicate('1', size = 3)
         path = os.path.join(PSLTest.DATA_DIR, 'misc', 'binary_small.txt')
         try:
             predicate.add_data_file(Partition.OBSERVATIONS, path)
@@ -160,7 +160,7 @@ class TestPredicate(PSLTest):
             pass
 
         # Too many.
-        predicate = Predicate('2', closed = True, size = 1)
+        predicate = Predicate('2', size = 1)
         path = os.path.join(PSLTest.DATA_DIR, 'misc', 'binary_small_truth.txt')
         try:
             predicate.add_data_file(Partition.OBSERVATIONS, path)
@@ -170,7 +170,7 @@ class TestPredicate(PSLTest):
             pass
 
     def test_no_quoting(self):
-        predicate = Predicate('1', closed = True, size = 2)
+        predicate = Predicate('1', size = 2)
         path = os.path.join(PSLTest.DATA_DIR, 'misc', 'binary_small_quoted.txt')
         predicate.add_data_file(Partition.OBSERVATIONS, path)
         expected = pandas.DataFrame([

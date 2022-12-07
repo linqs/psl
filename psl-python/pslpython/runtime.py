@@ -27,8 +27,17 @@ THIS_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 JAR_PATH = os.path.join(THIS_DIR, 'psl-runtime.jar')
 
 def run(config, base_path = '.', jvm_options = []):
-    runtime = _init(jvm_options)
-    raw_output = runtime.serializedRun(json.dumps(config), base_path)
+    _init(jvm_options)
+    from org.linqs.psl.runtime import Runtime
+
+    raw_output = Runtime.serializedRun(json.dumps(config), base_path)
+    return json.loads(str(raw_output))
+
+def ground(config, base_path = '.', jvm_options = []):
+    _init(jvm_options)
+    from org.linqs.psl.runtime import GroundingAPI
+
+    raw_output = GroundingAPI.serializedGround(json.dumps(config), base_path)
     return json.loads(str(raw_output))
 
 def _shutdown():
@@ -37,9 +46,6 @@ def _shutdown():
 def _init(jvm_options = []):
     if (not jpype.isJVMStarted()):
         jpype.startJVM(jpype.getDefaultJVMPath(), *jvm_options, classpath = [JAR_PATH])
-
-    from org.linqs.psl.runtime import Runtime
-    return Runtime
 
 def main(path):
     with open(path, 'r') as file:

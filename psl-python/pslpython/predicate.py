@@ -47,7 +47,7 @@ class Predicate(object):
     DEFAULT_ARG_TYPE = ArgType.UNIQUE_STRING_ID
     DEFAULT_TRUTH_VALUE = 1.0
 
-    def __init__(self, raw_name: str, closed: bool, size: int = None, arg_types = None):
+    def __init__(self, raw_name: str, size: int = None, arg_types = None):
         """
         Construct a new predicate.
 
@@ -72,7 +72,6 @@ class Predicate(object):
         # Note that the dataframes have a spot for the truth value.
         self._data = {}
         self._name = Predicate.normalize_name(raw_name)
-        self._closed = closed
 
         if (size is None and (arg_types is None or len(arg_types) == 0)):
             raise PredicateError("Predicates must have a size and/or type infornation, neither supplied.")
@@ -140,6 +139,15 @@ class Predicate(object):
         data = pandas.DataFrame([args + [truth_value]], columns = list(range(size + 1)))
         return self.add_data(partition, data)
 
+    def add_observed_data(self, data):
+        return self.add_data(Partition.OBSERVATIONS, data)
+
+    def add_target_data(self, data):
+        return self.add_data(Partition.TARGETS, data)
+
+    def add_truth_data(self, data):
+        return self.add_data(Partition.TRUTH, data)
+
     def add_data(self, partition: Partition, data):
         """
         Add several records to the predciate.
@@ -185,9 +193,6 @@ class Predicate(object):
             self._data[partition] = pandas.DataFrame(columns = list(range(len(self._types) + 1)))
 
         return self
-
-    def closed(self):
-        return self._closed
 
     def name(self):
         return self._name
