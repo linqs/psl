@@ -47,9 +47,24 @@ def _init(jvm_options = []):
     if (not jpype.isJVMStarted()):
         jpype.startJVM(jpype.getDefaultJVMPath(), *jvm_options, classpath = [JAR_PATH])
 
-def main(path):
+# A very rough loading of JSON that is more relaxed, like PSL's java parser.
+def _load_json(path):
+    contents = []
     with open(path, 'r') as file:
-        config = json.load(file)
+        for line in file:
+            line = line.strip()
+            if (line == '' or line.startswith('#') or line.startswith('//')):
+                continue
+
+            if ('/*' in line):
+                raise ValueError("Multi-line comments ('/* ... */') not allowed.")
+
+            contents.append(line)
+
+    return json.loads(' '.join(contents))
+
+def main(path):
+    config = _load_json(path)
 
     base_path = os.path.dirname(path)
     output = run(config, base_path)

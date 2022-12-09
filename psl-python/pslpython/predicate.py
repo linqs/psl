@@ -47,7 +47,7 @@ class Predicate(object):
     DEFAULT_ARG_TYPE = ArgType.UNIQUE_STRING_ID
     DEFAULT_TRUTH_VALUE = 1.0
 
-    def __init__(self, raw_name: str, size: int = None, arg_types = None):
+    def __init__(self, raw_name: str, size: int = None, arg_types = None, evaluations = []):
         """
         Construct a new predicate.
 
@@ -65,6 +65,7 @@ class Predicate(object):
             name: The name of the predicate.
             size: The number of arguments to this predicate.
             arg_types: The types of arguments to this predicate.
+            evaluations: dicts that are passed blindly to the config.
         """
 
         self._types = []
@@ -72,6 +73,8 @@ class Predicate(object):
         # Note that the dataframes have a spot for the truth value.
         self._data = {}
         self._name = Predicate.normalize_name(raw_name)
+
+        self._evaluations = evaluations
 
         if (size is None and (arg_types is None or len(arg_types) == 0)):
             raise PredicateError("Predicates must have a size and/or type infornation, neither supplied.")
@@ -218,6 +221,7 @@ class Predicate(object):
             "observations": self._serialize_data(Partition.OBSERVATIONS),
             "targets": self._serialize_data(Partition.TARGETS),
             "truth": self._serialize_data(Partition.TRUTH),
+            "evaluations": self._evaluations,
         }
 
         return config
