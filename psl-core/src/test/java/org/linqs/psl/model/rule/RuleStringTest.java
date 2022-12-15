@@ -41,8 +41,8 @@ import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.DummyTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
 import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.After;
@@ -164,7 +164,7 @@ public class RuleStringTest extends PSLBaseTest {
 
     @Test
     public void testGroundLogicalRuleString() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -203,7 +203,7 @@ public class RuleStringTest extends PSLBaseTest {
 
     @Test
     public void testGroundArithmeticRuleString() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;

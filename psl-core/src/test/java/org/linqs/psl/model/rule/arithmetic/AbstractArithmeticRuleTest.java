@@ -41,8 +41,8 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.DummyTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
 import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.After;
@@ -424,7 +424,7 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         try {
             rule.groundAll(store, null);

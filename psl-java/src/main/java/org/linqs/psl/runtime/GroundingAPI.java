@@ -34,7 +34,7 @@ import org.linqs.psl.model.rule.logical.AbstractGroundLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
+import org.linqs.psl.reasoner.term.DummyTermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
@@ -92,7 +92,7 @@ public final class GroundingAPI extends Runtime {
         }
     }
 
-    public GroundProgram groundInternal(RuntimeConfig config) {
+    private GroundProgram groundInternal(RuntimeConfig config) {
         // Apply any top-level options found in the config.
         for (Map.Entry<String, String> entry : config.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
@@ -123,7 +123,7 @@ public final class GroundingAPI extends Runtime {
         Partition observationsPartition = dataStore.getPartition(Runtime.PARTITION_NAME_OBSERVATIONS);
 
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
-        TermStore store = new SGDTermStore(database, true, false);
+        TermStore store = new DummyTermStore(database);
 
         final List<GroundRuleInfo> groundRules = new ArrayList<GroundRuleInfo>();
         final Map<Integer, AtomInfo> usedAtoms = new HashMap<Integer, AtomInfo>();

@@ -74,6 +74,12 @@
     </Match>
 
     <Match>
+        <Class name="org.linqs.psl.reasoner.term.DummyTermStore" />
+        <Field name="count" />
+        <Bug pattern="IS2_INCONSISTENT_SYNC" />
+    </Match>
+
+    <Match>
         <Class name="org.linqs.psl.reasoner.admm.term.ADMMTermStore" />
         <Field name="numLocalVariables" />
         <Bug pattern="IS2_INCONSISTENT_SYNC" />

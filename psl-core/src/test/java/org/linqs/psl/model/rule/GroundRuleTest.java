@@ -49,7 +49,7 @@ import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.sgd.term.SGDTermStore;
+import org.linqs.psl.reasoner.term.DummyTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
@@ -122,7 +122,7 @@ public class GroundRuleTest extends PSLBaseTest {
     public void testLogicalBase() {
         initModel(true, true);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -181,7 +181,7 @@ public class GroundRuleTest extends PSLBaseTest {
     public void testLogicalGroundingOnlyPredicates() {
         initModel(true, true);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -280,7 +280,7 @@ public class GroundRuleTest extends PSLBaseTest {
     public void testArithmeticGroundingOnlyPredicates() {
         initModel(true, true);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -409,7 +409,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
     @Test
     public void testArithmeticBase() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -593,7 +593,7 @@ public class GroundRuleTest extends PSLBaseTest {
     // |B| * Friends(A, +B) >= 1 {B: Nice(B)}
     // |B| * Friends(A, +B) >= 1 {B: !Nice(B)}
     public void testSelectBaseNice() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -633,7 +633,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // Now negate the select.
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
@@ -658,7 +658,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // Reset the model to not use 100% nice.
         initModel(false);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -698,7 +698,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // Now negate the select.
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(new SummationVariable("B"), new Negation(new QueryAtom(model.predicates.get("Nice"), new Variable("B"))));
@@ -739,7 +739,7 @@ public class GroundRuleTest extends PSLBaseTest {
         toClose.add(model.predicates.get("Friends"));
         database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -788,7 +788,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // Now change the select to a disjunction.
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(
@@ -817,7 +817,7 @@ public class GroundRuleTest extends PSLBaseTest {
     @Test
     // |B| * Friends(A, +B) >= 1
     public void testSummationNoSelect() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -863,7 +863,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // Reset the model to not use 100% nice.
         initModel(false);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -903,7 +903,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // Add a select on A.
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         filters.put(
             new SummationVariable("A"),
@@ -928,7 +928,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // Add a select on B.
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         filters.put(
             new SummationVariable("B"),
@@ -964,7 +964,7 @@ public class GroundRuleTest extends PSLBaseTest {
         // Reset the model to not use 100% nice.
         initModel(false);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1009,7 +1009,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // |B|
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Cardinality(new SummationVariable("B")))
@@ -1034,7 +1034,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // |A| + |B|
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Add(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1059,7 +1059,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // |A| - |B|
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Subtract(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1084,7 +1084,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // |A| * |B|
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Multiply(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1109,7 +1109,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // |A| / |B|
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         coefficients = Arrays.asList(
             (Coefficient)(new Divide(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B"))))
@@ -1151,7 +1151,7 @@ public class GroundRuleTest extends PSLBaseTest {
         toClose.add(model.predicates.get("Friends"));
         database = model.dataStore.getDatabase(model.observationPartition, toClose, model.targetPartition);
 
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1223,7 +1223,7 @@ public class GroundRuleTest extends PSLBaseTest {
         groundAndCompare(expected, rule, store);
 
         // Add the additional clause to the select.
-        store = new SGDTermStore(database);
+        store = new DummyTermStore(database);
 
         filters = new HashMap<SummationVariable, Formula>();
         filters.put(
@@ -1377,7 +1377,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
         for (int i = 0; i < testCoefficients.length; i++) {
             expected = Arrays.asList(expectedBase.replaceAll("__VAL__", expectedValues[i]));
-            store = new SGDTermStore(database);
+            store = new DummyTermStore(database);
 
             coefficients.clear();
             coefficients.add(testCoefficients[i]);
@@ -1400,7 +1400,7 @@ public class GroundRuleTest extends PSLBaseTest {
     // Note that everyone is 100% nice in this test.
     @Test
     public void testArithmeticDivdeByZero() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<Coefficient> coefficients;
@@ -1446,7 +1446,7 @@ public class GroundRuleTest extends PSLBaseTest {
 
     @Test
     public void testArithmeticNegativePrior() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1502,7 +1502,7 @@ public class GroundRuleTest extends PSLBaseTest {
      * there is not head.
      */
     public void testVariablesInHead() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1548,7 +1548,7 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     @Test
     public void testArithmeticSingleTrivials() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1640,7 +1640,7 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     @Test
     public void testSelectWithoutAtoms() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
         List<String> expected;
@@ -1743,7 +1743,7 @@ public class GroundRuleTest extends PSLBaseTest {
      */
     @Test
     public void testLogicalAccessEcception() {
-        TermStore store = new SGDTermStore(database);
+        TermStore store = new DummyTermStore(database);
 
         Rule rule;
 
