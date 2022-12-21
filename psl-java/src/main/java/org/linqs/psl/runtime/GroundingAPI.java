@@ -165,8 +165,10 @@ public final class GroundingAPI extends Runtime {
         float[] coefficients = new float[groundRule.size()];
         int[] atoms = new int[groundRule.size()];
 
+        // Remember: the negated DNF is tracked, so invert all coefficients.
+
         for (GroundAtom atom : groundRule.getPositiveAtoms()) {
-            coefficients[currentAtom] = 1.0f;
+            coefficients[currentAtom] = -1.0f;
 
             int atomIndex = store.getAtomIndex(atom);
             atoms[currentAtom] = atomIndex;
@@ -179,7 +181,7 @@ public final class GroundingAPI extends Runtime {
         }
 
         for (GroundAtom atom : groundRule.getNegativeAtoms()) {
-            coefficients[currentAtom] = -1.0f;
+            coefficients[currentAtom] = 1.0f;
 
             int atomIndex = store.getAtomIndex(atom);
             atoms[currentAtom] = atomIndex;
