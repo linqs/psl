@@ -19,6 +19,7 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.database.DataStore;
@@ -147,8 +148,8 @@ public class Launcher {
         // Look specially for the logging level.
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_PROPERTIES)) {
             Properties props = parsedOptions.getOptionProperties(CommandLineLoader.OPTION_PROPERTIES);
-            if (props.containsKey("log4j.threshold")) {
-                RuntimeOptions.LOG_LEVEL.set(props.getProperty("log4j.threshold"));
+            for (String key : props.stringPropertyNames()) {
+                Config.setProperty(key, props.getProperty(key));
             }
         }
 
