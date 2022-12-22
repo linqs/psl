@@ -180,7 +180,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         final GroundRuleStore finalGroundRuleStore = groundRuleStore;
         final Map<Variable, Integer> variableMap = groundVariables.getVariableMap();
 
-        Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
+        Parallel.RunTimings timings = Parallel.foreach(groundVariables, new Parallel.Worker<Constant[]>() {
             @Override
             public void work(long index, Constant[] row) {
                 GroundRule groundRule = ground(row, variableMap, finalAtomManager);
@@ -193,7 +193,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         long groundCount = groundRuleStore.size() - initialCount;
         atomManager.enableAccessExceptions(oldAccessExceptionState);
 
-        log.debug("Grounded {} instances of rule {}", groundCount, this);
+        log.debug("Generated {} ground rules from {} query results.", groundCount, timings.iterations);
+        log.trace("   " + timings);
+
         return groundCount;
     }
 
