@@ -19,7 +19,6 @@ package org.linqs.psl.cli;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.config.RuntimeOptions;
-import org.linqs.psl.runtime.Runtime;
 import org.linqs.psl.util.Version;
 
 import org.apache.commons.cli.CommandLine;

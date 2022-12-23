@@ -20,14 +20,10 @@ package org.linqs.psl.cli;
 import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.runtime.RuntimeConfig;
 import org.linqs.psl.runtime.Runtime;
-import org.linqs.psl.util.ListUtils;
 import org.linqs.psl.util.Logger;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 /**
@@ -38,7 +34,7 @@ public class Launcher {
     private static final Logger log = Logger.getLogger(Launcher.class);
     private CommandLine parsedOptions;
 
-    private Launcher(CommandLine givenOptions) {
+    protected Launcher(CommandLine givenOptions) {
         this.parsedOptions = givenOptions;
     }
 
