@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import atexit
 import json
 import os
 import sys
@@ -40,8 +41,10 @@ def ground(config, base_path = '.', jvm_options = []):
     raw_output = GroundingAPI.serializedGround(json.dumps(config), base_path)
     return json.loads(str(raw_output))
 
+@atexit.register
 def _shutdown():
-    jpype.shutdownJVM()
+    if (jpype.isJVMStarted()):
+        jpype.shutdownJVM()
 
 def _init(jvm_options = []):
     if (not jpype.isJVMStarted()):
