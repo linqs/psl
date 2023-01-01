@@ -18,7 +18,8 @@
 package org.linqs.psl.runtime;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
@@ -38,12 +39,12 @@ import java.util.List;
  */
 public class RuntimeResult {
     private List<Rule> rules;
-    private List<RandomVariableAtom> atoms;
+    private List<GroundAtom> atoms;
     private List<String> evaluations;
 
     public RuntimeResult() {
         rules = new ArrayList<Rule>();
-        atoms = new ArrayList<RandomVariableAtom>();
+        atoms = new ArrayList<GroundAtom>();
         evaluations = new ArrayList<String>();
     }
 
@@ -51,7 +52,7 @@ public class RuntimeResult {
         rules.add(rule);
     }
 
-    public void addAtom(RandomVariableAtom atom) {
+    public void addAtom(GroundAtom atom) {
         atoms.add(atom);
     }
 
@@ -128,10 +129,12 @@ public class RuntimeResult {
         public String predicate;
         public String[] arguments;
         public float value;
+        public boolean observed;
 
-        public JSONAtom(RandomVariableAtom atom) {
+        public JSONAtom(GroundAtom atom) {
             predicate = atom.getPredicate().getName();
             value = atom.getValue();
+            observed = (atom instanceof ObservedAtom);
 
             arguments = new String[atom.getArity()];
             Term[] terms = atom.getArguments();

@@ -36,6 +36,7 @@ import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -420,8 +421,14 @@ public class Runtime {
         }
 
         if (result != null) {
-            for (RandomVariableAtom atom : targetDatabase.getAtomStore().getRandomVariableAtoms()) {
-                result.addAtom(atom);
+            if (RuntimeOptions.OUTPUT_ALL_ATOMS.getBoolean()) {
+                for (GroundAtom atom : targetDatabase.getAtomStore()) {
+                    result.addAtom(atom);
+                }
+            } else {
+                for (RandomVariableAtom atom : targetDatabase.getAtomStore().getRandomVariableAtoms()) {
+                    result.addAtom(atom);
+                }
             }
         }
 

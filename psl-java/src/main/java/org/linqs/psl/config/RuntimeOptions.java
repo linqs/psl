@@ -116,7 +116,7 @@ public class RuntimeOptions {
         "runtime.inference.output.groundrules",
         false,
         "Whether to output ground rules before inference."
-        + "The " + INFERENCE_OUTPUT_GROUNDRULES_PATH.name() + " option controls where ground rules are output."
+        + " The " + INFERENCE_OUTPUT_GROUNDRULES_PATH.name() + " option controls where ground rules are output."
     );
 
     public static final Option LEARN = new Option(
@@ -143,10 +143,11 @@ public class RuntimeOptions {
         "The logging level."
     );
 
-    public static final Option PROPERTIES_PATH = new Option(
-        "runtime.output.properties.path",
-        null,
-        "A path to an additional properties file."
+    public static final Option OUTPUT_ALL_ATOMS = new Option(
+        "runtime.output.atoms.all",
+        false,
+        "Instead of just outputting relevant atoms, output all atoms in the atom store."
+        + " The exact semantics depends on the process outputting atoms, e.g., inference of the grounding API."
     );
 
     public static final Option VERSION = new Option(

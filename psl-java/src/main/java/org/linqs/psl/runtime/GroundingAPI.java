@@ -18,6 +18,7 @@
 package org.linqs.psl.runtime;
 
 import org.linqs.psl.config.Config;
+import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -123,25 +124,38 @@ public final class GroundingAPI extends Runtime {
         Partition observationsPartition = dataStore.getPartition(Runtime.PARTITION_NAME_OBSERVATIONS);
 
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+        AtomStore atomStore = database.getAtomStore();
         TermStore store = new DummyTermStore(database);
 
         final List<GroundRuleInfo> groundRules = new ArrayList<GroundRuleInfo>();
-        final Map<Integer, AtomInfo> usedAtoms = new HashMap<Integer, AtomInfo>();
 
+        Map<Integer, AtomInfo> groundAtoms = null;
+        if (!RuntimeOptions.OUTPUT_ALL_ATOMS.getBoolean()) {
+            groundAtoms = new HashMap<Integer, AtomInfo>();
+        }
+
+        final Map<Integer, AtomInfo> finalGroundAtoms = groundAtoms;
         Grounding.setGroundRuleCallback(new Grounding.GroundRuleCallback() {
             public synchronized void call(GroundRule groundRule) {
-                groundRules.add(mapGroundRule(rules.indexOf(groundRule.getRule()), database.getAtomStore(), groundRule, usedAtoms));
+                groundRules.add(mapGroundRule(rules.indexOf(groundRule.getRule()), atomStore, groundRule, finalGroundAtoms));
             }
         });
 
         Grounding.groundAll(rules, store);
         Grounding.setGroundRuleCallback(null);
 
+        if (groundAtoms == null) {
+            groundAtoms = new HashMap<Integer, AtomInfo>(atomStore.size());
+            for (GroundAtom groundAtom : atomStore) {
+                groundAtoms.put(Integer.valueOf(groundAtom.getIndex()), new AtomInfo(groundAtom));
+            }
+        }
+
         store.close();
         database.close();
         dataStore.close();
 
-        return new GroundProgram(usedAtoms, groundRules);
+        return new GroundProgram(groundAtoms, groundRules);
     }
 
     private GroundRuleInfo mapGroundRule(int ruleIndex, AtomStore store, GroundRule groundRule, Map<Integer, AtomInfo> usedAtoms) {
@@ -174,9 +188,11 @@ public final class GroundingAPI extends Runtime {
             atoms[currentAtom] = atomIndex;
             currentAtom++;
 
-            Integer key = Integer.valueOf(atomIndex);
-            if (!usedAtoms.containsKey(key)) {
-                usedAtoms.put(key, new AtomInfo(atom));
+            if (usedAtoms != null) {
+                Integer key = Integer.valueOf(atomIndex);
+                if (!usedAtoms.containsKey(key)) {
+                    usedAtoms.put(key, new AtomInfo(atom));
+                }
             }
         }
 
@@ -187,9 +203,11 @@ public final class GroundingAPI extends Runtime {
             atoms[currentAtom] = atomIndex;
             currentAtom++;
 
-            Integer key = Integer.valueOf(atomIndex);
-            if (!usedAtoms.containsKey(key)) {
-                usedAtoms.put(key, new AtomInfo(atom));
+            if (usedAtoms != null) {
+                Integer key = Integer.valueOf(atomIndex);
+                if (!usedAtoms.containsKey(key)) {
+                    usedAtoms.put(key, new AtomInfo(atom));
+                }
             }
         }
 
@@ -205,9 +223,11 @@ public final class GroundingAPI extends Runtime {
             int atomIndex = store.getAtomIndex(rawAtoms[i]);
             atoms[i] = atomIndex;
 
-            Integer key = Integer.valueOf(atomIndex);
-            if (!usedAtoms.containsKey(key)) {
-                usedAtoms.put(key, new AtomInfo(rawAtoms[i]));
+            if (usedAtoms != null) {
+                Integer key = Integer.valueOf(atomIndex);
+                if (!usedAtoms.containsKey(key)) {
+                    usedAtoms.put(key, new AtomInfo(rawAtoms[i]));
+                }
             }
         }
 
