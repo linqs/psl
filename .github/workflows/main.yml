@@ -16,11 +16,11 @@ on:
 jobs:
   build-test:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     services:
       postgres:
-        image: postgres:13.4-buster
+        image: postgres:16.6
         env:
           POSTGRES_USER: runner  # Github runner default.
           POSTGRES_PASSWORD: postgres
