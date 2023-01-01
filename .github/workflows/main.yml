@@ -82,7 +82,7 @@ jobs:
 
   style-lint:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
@@ -125,7 +125,7 @@ jobs:
 
     needs: [build-test, style-lint]
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: ${{ github.event_name == 'push' && github.repository_owner == 'linqs' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) }}
 
@@ -202,7 +202,7 @@ jobs:
 
     needs: [build-test, style-lint]
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
