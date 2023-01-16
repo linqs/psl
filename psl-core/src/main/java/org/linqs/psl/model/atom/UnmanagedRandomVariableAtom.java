@@ -22,7 +22,8 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 
 /**
- * An unobserved atom that is not managed by an AtomStore (and thus may have more than one global instantiation).
+ * An unobserved atom that is not generally managed by an AtomStore
+ * (and thus may have more than one global instantiation).
  * These atoms are almost always the result of PAM exceptions.
  * UnmanagedRandomVariableAtoms should be very rare.
  */

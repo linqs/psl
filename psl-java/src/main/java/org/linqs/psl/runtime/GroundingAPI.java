@@ -18,6 +18,7 @@
 package org.linqs.psl.runtime;
 
 import org.linqs.psl.config.Config;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.config.RuntimeOptions;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.DataStore;
@@ -104,6 +105,9 @@ public final class GroundingAPI extends Runtime {
 
         log.info("PSL Grounding API Version {}", Version.getFull());
         config.validate();
+
+        // Ensure that all atoms are stored (unless overwritten).
+        Options.ATOM_STORE_STORE_ALL_ATOMS.set(true);
 
         // Apply top-level options again after validation (since options may have been changed or added).
         for (Map.Entry<String, String> entry : config.options.entrySet()) {

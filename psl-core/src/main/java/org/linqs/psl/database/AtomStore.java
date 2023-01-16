@@ -53,6 +53,9 @@ import java.util.Map;
  * A soft exception to this are ground atoms derived from functional predicates.
  * These are constructed as unmanaged (since they do not have a database partition),
  * but will be kept in the data store (so their values are not re-computed).
+ * Options.ATOM_STORE_STORE_ALL_ATOMS can be used to force all atoms to be stored.
+ * Using this option, ground atoms will still be created with their Unmanaged class,
+ * but will be stored anyways.
  *
  * Read operations are all thread-safe, but read and writes should not be intermixed.
  *
@@ -72,6 +75,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     private float[] atomValues;
     private GroundAtom[] atoms;
     private int maxRVAIndex;
+    private boolean storeAllAtoms;
 
     private Map<Atom, Integer> lookup;
 
@@ -84,6 +88,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         atomValues = null;
         atoms = null;
         maxRVAIndex = -1;
+        storeAllAtoms = false;
 
         lookup = null;
 
@@ -151,18 +156,24 @@ public class AtomStore implements Iterable<GroundAtom> {
             arguments[i] = (Constant)queryArguments[i];
         }
 
+        GroundAtom atom = null;
+        boolean storeAtom = false;
+
         if (query.getPredicate() instanceof FunctionalPredicate) {
             float value = ((FunctionalPredicate)query.getPredicate()).computeValue(database, arguments);
-            GroundAtom atom = new UnmanagedObservedAtom(query.getPredicate(), arguments, value);
+            atom = new UnmanagedObservedAtom(query.getPredicate(), arguments, value);
+            storeAtom = true;
+        } else if (database.isClosed(query.getPredicate())) {
+            atom = new UnmanagedObservedAtom(query.getPredicate(), arguments, 0.0f);
+        } else {
+            atom = new UnmanagedRandomVariableAtom((StandardPredicate)query.getPredicate(), arguments, 0.0f);
+        }
+
+        if (storeAtom || storeAllAtoms) {
             addAtom(atom);
-            return atom;
         }
 
-        if (database.isClosed(query.getPredicate())) {
-            return new UnmanagedObservedAtom(query.getPredicate(), arguments, 0.0f);
-        }
-
-        return new UnmanagedRandomVariableAtom((StandardPredicate)query.getPredicate(), arguments, 0.0f);
+        return atom;
     }
 
     public GroundAtom getAtom(Predicate predicate, Constant... args) {
@@ -372,6 +383,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         int databaseAtomCount = getDatabaseAtomCount();
         double overallocationFactor = Options.ATOM_STORE_OVERALLOCATION_FACTOR.getDouble();
         int allocationSize = (int)(Math.max(MIN_ALLOCATION, databaseAtomCount) * (1.0 + overallocationFactor));
+        storeAllAtoms = Options.ATOM_STORE_STORE_ALL_ATOMS.getBoolean();
 
         atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];

@@ -87,6 +87,12 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option ATOM_STORE_STORE_ALL_ATOMS = new Option(
+        "atomstore.storeallatoms",
+        false,
+        "Store all seen atoms in the atom store, even unmanaged atoms."
+    );
+
     public static final Option BOOLEAN_MAXWALKSAT_MAX_FLIPS = new Option(
         "booleanmaxwalksat.maxflips",
         50000,

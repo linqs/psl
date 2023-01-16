@@ -22,7 +22,8 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 
 /**
- * An observed atom that is not managed by an AtomStore (and thus may have more than one global instantiation).
+ * An observed atom that is not generally managed by an AtomStore
+ * (and thus may have more than one global instantiation).
  * This may have been created by a closed-world assumption.
  * An exception to this pattern are ground atoms from functional predicates.
  * These will be constructed as unmanaged, but stored in the AtomStore.
