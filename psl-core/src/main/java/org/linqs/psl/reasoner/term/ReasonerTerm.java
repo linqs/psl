@@ -26,12 +26,6 @@ public interface ReasonerTerm {
     public int size();
 
     /**
-     * Whether this term is convex.
-     * Reasoners may treat non-convex terms differently.
-     */
-    public boolean isConvex();
-
-    /**
      * Get the rule this term was generated from.
      */
     public Rule getRule();

@@ -138,11 +138,6 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
             objective = 0.0;
             learningRate = calculateAnnealedLearningRate(iteration);
 
-            boolean useNonConvex = false;
-            if ((iteration >= nonconvexPeriod) && (iteration % nonconvexPeriod < nonconvexRounds)) {
-                useNonConvex = true;
-            }
-
             if (iteration > 1) {
                 // Reset gradients for next round.
                 Arrays.fill(prevGradient, 0.0f);

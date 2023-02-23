@@ -18,8 +18,6 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -28,7 +26,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.RandUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -195,11 +192,6 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
 
     public boolean isConstraint() {
         return termType == TermType.LinearConstraintTerm;
-    }
-
-    @Override
-    public boolean isConvex() {
-        return true;
     }
 
     /**

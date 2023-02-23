@@ -73,10 +73,6 @@ public class SGDObjectiveTerm implements StreamingTerm {
         return size;
     }
 
-    public boolean isConvex() {
-        return true;
-    }
-
     @Override
     public float evaluate(float[] variableValues) {
         float dot = dot(variableValues);

@@ -145,16 +145,11 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
             lagrangePenalty = 0.0f;
             augmentedLagrangePenalty = 0.0f;
 
-            boolean useNonConvex = false;
-            if ((iteration >= nonconvexPeriod) && (iteration % nonconvexPeriod < nonconvexRounds)) {
-                useNonConvex = true;
-            }
-
             // Minimize all the terms.
-            Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize, useNonConvex));
+            Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
 
             // Compute new consensus values and residuals.
-            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize, useNonConvex, numVariables));
+            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize, numVariables));
 
             primalRes = Math.sqrt(primalRes);
             dualRes = stepSize * Math.sqrt(dualRes);
@@ -277,21 +272,19 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
         private final ADMMTermStore termStore;
         private final long blockSize;
         private final float[] consensusValues;
-        private final boolean useNonConvex;
 
-        public TermWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex) {
+        public TermWorker(ADMMTermStore termStore, long blockSize) {
             super();
 
             this.termStore = termStore;
             this.blockSize = blockSize;
-            this.useNonConvex = useNonConvex;
 
             this.consensusValues = termStore.getVariableValues();
         }
 
         @Override
         public Object clone() {
-            return new TermWorker(termStore, blockSize, useNonConvex);
+            return new TermWorker(termStore, blockSize);
         }
 
         @Override
@@ -306,10 +299,6 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                     break;
                 }
 
-                if (!useNonConvex && !termStore.get(termIndex).isConvex()) {
-                    continue;
-                }
-
                 termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
                 termStore.get(termIndex).minimize(stepSize, consensusValues);
             }
@@ -319,24 +308,22 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
     private class VariableWorker extends Parallel.Worker<Long> {
         private final ADMMTermStore termStore;
         private final long blockSize;
-        private final boolean useNonConvex;
         private final int numVariables;
 
         private final float[] consensusValues;
 
-        public VariableWorker(ADMMTermStore termStore, long blockSize, boolean useNonConvex, int numVariables) {
+        public VariableWorker(ADMMTermStore termStore, long blockSize, int numVariables) {
             super();
 
             this.termStore = termStore;
             this.blockSize = blockSize;
-            this.useNonConvex = useNonConvex;
             this.numVariables = numVariables;
 
             consensusValues = termStore.getVariableValues();
         }
 
         public Object clone() {
-            return new VariableWorker(termStore, blockSize, useNonConvex, numVariables);
+            return new VariableWorker(termStore, blockSize, numVariables);
         }
 
         @Override

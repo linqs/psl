@@ -564,24 +564,6 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
-    public static final Option REASONER_NONCONVEX = new Option(
-        "reasoner.nonconvex",
-        false,
-        "Allow non-convex optimization."
-    );
-
-    public static final Option REASONER_NONCONVEX_PERIOD = new Option(
-        "reasoner.nonconvex.period",
-        10,
-        "Do non-convex optimization once for each period."
-    );
-
-    public static final Option REASONER_NONCONVEX_ROUNDS = new Option(
-        "reasoner.nonconvex.rounds",
-        1,
-        "When initiated, do this many rounds of non-convex optimization."
-    );
-
     public static final Option REASONER_EVALUATE = new Option(
         "reasoner.evaluate",
         false,
