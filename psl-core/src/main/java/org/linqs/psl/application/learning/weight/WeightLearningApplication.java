@@ -24,7 +24,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
@@ -32,7 +31,6 @@ import org.linqs.psl.util.Reflection;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -196,32 +194,6 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         inference.inference(false, true);
         inMPEState = true;
-    }
-
-    /**
-     * A method for computing the incompatibility of rules with atoms values in their current state.
-     */
-    protected void computeCurrentIncompatibility(float[] incompatibilityArray) {
-        // Zero out the incompatibility first.
-        Arrays.fill(incompatibilityArray, 0.0f);
-
-        float[] atomValues = inference.getTermStore().getDatabase().getAtomStore().getAtomValues();
-
-        // Sums up the incompatibilities.
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Note that this cast should be unnecessary, but Java does not like the TermStore without a generic.
-            for (Object rawTerm : inference.getTermStore().getTerms(mutableRules.get(i))) {
-                @SuppressWarnings("unchecked")
-                ReasonerTerm term = (ReasonerTerm)rawTerm;
-
-                float value = term.evaluate(atomValues);
-                if (mutableRules.get(i).isSquared()) {
-                    value *= value;
-                }
-
-                incompatibilityArray[i] += value;
-            }
-        }
     }
 
     @Override

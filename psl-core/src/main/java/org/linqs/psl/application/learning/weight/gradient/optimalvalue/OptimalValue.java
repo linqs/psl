@@ -24,7 +24,9 @@ import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +56,32 @@ public abstract class OptimalValue extends GradientDescent {
         // This ensures that when the inference application is reset before computing the MAP state
         // the atom values that were fixed to their true labels are preserved.
         inference.setInitialValue(InitialValue.ATOM);
+    }
+
+    /**
+     * A method for computing the incompatibility of rules with atoms values in their current state.
+     */
+    protected void computeCurrentIncompatibility(float[] incompatibilityArray) {
+        // Zero out the incompatibility first.
+        Arrays.fill(incompatibilityArray, 0.0f);
+
+        float[] atomValues = inference.getTermStore().getDatabase().getAtomStore().getAtomValues();
+
+        // Sums up the incompatibilities.
+        for (int i = 0; i < mutableRules.size(); i++) {
+            // Note that this cast should be unnecessary, but Java does not like the TermStore without a generic.
+            for (Object rawTerm : inference.getTermStore().getTerms(mutableRules.get(i))) {
+                @SuppressWarnings("unchecked")
+                ReasonerTerm term = (ReasonerTerm)rawTerm;
+
+                float value = term.evaluate(atomValues);
+                if (mutableRules.get(i).isSquared()) {
+                    value *= value;
+                }
+
+                incompatibilityArray[i] += value;
+            }
+        }
     }
 
     /**
