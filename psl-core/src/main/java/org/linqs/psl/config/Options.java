@@ -282,6 +282,125 @@ public class Options {
         "The search space for a GaussianProcessKernel."
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_CLIP_GRADIENT = new Option(
+        "gradientdescent.clipweightgradient",
+        true,
+        "Clip weight gradients with a p norm greater than the maximum gradient magnitude."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_EXTENSION = new Option(
+    "gradientdescent.extension",
+        GradientDescent.GDExtension.MIRROR_DESCENT.toString(),
+        "The gradient descent extension to use for gradient descent weight learning."
+        + " MIRROR_DESCENT (Default): Use the mirror descent / normalized exponentiated gradient descent algorithm."
+        + " NONE: The standard gradient descent optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_L2_REGULARIZATION = new Option(
+        "gradientdescent.l2regularization",
+        0.0f,
+        "The L2 regularization parameter of gradient descent weight learning.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_MAX_GRADIENT = new Option(
+        "gradientdescent.maxgradientmagnitude",
+        100.0f,
+        "Gradient with a magnitude larger than this value are clipped"
+        + " to avoid overflow in gradient descent weight learning.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_MAX_GRADIENT_NORM = new Option(
+        "gradientdescent.maxgradientnorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the magnitude of gradients for clipping in gradient descent weight learning.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_LOG_REGULARIZATION = new Option(
+        "wla.gradientdescent.negativelogregularization",
+        0.0f,
+        "The negative log regularization parameter of gradient descent weight learning."
+        + " If this is not 0.0 then mirror descent gradient extension must be used.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_ENTROPY_REGULARIZATION = new Option(
+        "wla.gradientdescent.negativeentropyregularization",
+        0.1f,
+        "The negative entropy regularization parameter of gradient descent weight learning."
+        + " If this is not 0.0 then mirror descent gradient extension must be used.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_NORM_BREAK = new Option(
+        "gradientdescent.normbreak",
+        true,
+        "When the gradient norm is below the tolerance "
+        + " set by gradientdescent.normtolerance, gradient descent weight learning is stopped."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_NORM_TOLERANCE = new Option(
+        "gradientdescent.normtolerance",
+        1.0e-5f,
+        "If gradientdescent.runfulliterations=false and gradientdescent.normbreak=true,"
+        + " then when the norm of the gradient is below this tolerance "
+        + " gradient descent weight learning is stopped.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_NUM_STEPS = new Option(
+        "gradientdescent.numsteps",
+        500,
+        "The number of steps the gradient descent weight learner will take.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK = new Option(
+        "gradientdescent.objectivebreak",
+        false,
+        "When the objective change between iterates is below the tolerance "
+        + " set by gradientdescent.objectivetolerance, gradient descent weight learning is stopped."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_OBJECTIVE_TOLERANCE = new Option(
+        "gradientdescent.objectivetolerance",
+        1.0e-5f,
+        "If gradientdescent.runfulliterations=false and gradientdescent.objectivebreak=true,"
+        + " then when the objective change between iterates is below this tolerance"
+        + " gradient descent weight learning is stopped.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_RUN_FULL_ITERATIONS = new Option(
+        "gradientdescent.runfulliterations",
+        false,
+        "Ignore all other stopping criteria and run until the maximum number of iterations"
+        + " is reached for gradient descent weight learning."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_SCALE_STEP = new Option(
+        "gradientdescent.scalestepsize",
+        false,
+        "If true, then scale the step size by the iteration, i.e., at iteration k,"
+        + " the step size is alpha / k, where alpha is the base step size of the gradient descent weight learner."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_STEP_SIZE = new Option(
+        "gradientdescent.stepsize",
+        1.0f,
+        "The gradient descent weight learner step size.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_STOPPING_GRADIENT_NORM = new Option(
+        "gradientdescent.stoppinggradientnorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the magnitude of gradients for stopping criterion if gradientdescent.extension=NONE.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
         "gridsearch.weights",
         "0.001:0.01:0.1:1:10",

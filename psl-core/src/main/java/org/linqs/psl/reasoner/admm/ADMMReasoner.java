@@ -20,9 +20,8 @@ package org.linqs.psl.reasoner.admm;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -32,7 +31,6 @@ import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
@@ -311,6 +309,7 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
         private final int numVariables;
 
         private final float[] consensusValues;
+        private final GroundAtom[] consensusAtoms;
 
         public VariableWorker(ADMMTermStore termStore, long blockSize, int numVariables) {
             super();
@@ -320,6 +319,7 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
             this.numVariables = numVariables;
 
             consensusValues = termStore.getVariableValues();
+            consensusAtoms = termStore.getVariableAtoms();
         }
 
         public Object clone() {
@@ -364,8 +364,13 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                     AyNormInc += localLagrange * localLagrange;
                 }
 
-                float newConsensusValue = (float)(total / numLocalVariables);
-                newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
+                float newConsensusValue = 0.0f;
+                if (consensusAtoms[variableIndex] instanceof ObservedAtom) {
+                    newConsensusValue = consensusValues[variableIndex];
+                } else {
+                    newConsensusValue = (float)(total / numLocalVariables);
+                    newConsensusValue = Math.max(Math.min(newConsensusValue, UPPER_BOUND), LOWER_BOUND);
+                }
 
                 float diff = consensusValues[variableIndex] - newConsensusValue;
                 // Residual is diff^2 * number of local variables mapped to consensusValues element.

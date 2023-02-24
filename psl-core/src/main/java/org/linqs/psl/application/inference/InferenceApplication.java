@@ -227,6 +227,10 @@ public abstract class InferenceApplication implements ModelApplication {
         }
     }
 
+    public void setInitialValue(InitialValue initialValue) {
+        this.initialValue = initialValue;
+    }
+
     /**
      * Commit the results of inference to the database.
      */
