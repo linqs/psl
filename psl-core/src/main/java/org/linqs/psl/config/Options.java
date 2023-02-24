@@ -19,7 +19,6 @@ package org.linqs.psl.config;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
-import org.linqs.psl.application.learning.weight.gradient.optimalvalue.StructuredPerceptron;
 import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
@@ -517,12 +516,6 @@ public class Options {
         + " Variables will be set to their specified initial values, but no reasoning will take place."
     );
 
-    public static final Option WLA_IWHB_WLA = new Option(
-        "initialweighthyperband.internalwla",
-        StructuredPerceptron.class.getName(),
-        "The internal weight learning application (WLA) to use (should be a VotedPerceptron)."
-    );
-
     public static final Option MEMORY_TS_INITIAL_SIZE = new Option(
         "memorytermstore.initialsize",
         10000l,
@@ -669,12 +662,6 @@ public class Options {
         0.5,
         "The truth threshold.",
         Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option WLA_RS_SCALING_FACTORS = new Option(
-        "ranksearch.scalingfactors",
-        "1:2:10:100",
-        "A comma-separated list of scaling factors."
     );
 
     public static final Option RDBMS_FETCH_SIZE = new Option(
