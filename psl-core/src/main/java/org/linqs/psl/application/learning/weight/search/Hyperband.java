@@ -36,7 +36,7 @@ import java.util.PriorityQueue;
  * Some of the math has been adjusted to compute a budget (as a percentage) rather than a number of resources.
  *
  * Total amount of budget used: WLA_HB_BRACKET_SIZE * WLA_HB_NUM_BRACKETS
- * VotedPerceptron methods typically use a total budget of 25.
+ * StructuredPerceptron methods typically use a total budget of 25.
  * Number of configurations evaluated: \sum_{i = 0}^{WLA_HB_NUM_BRACKETS} (WLA_HB_BRACKET_SIZE * WLA_HB_SURVIVAL^i / (i + 1))
  *
  * TODO(eriq): Think about inital weights.

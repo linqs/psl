@@ -18,7 +18,8 @@
 package org.linqs.psl.config;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
+import org.linqs.psl.application.learning.weight.gradient.optimalvalue.StructuredPerceptron;
 import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
@@ -518,7 +519,7 @@ public class Options {
 
     public static final Option WLA_IWHB_WLA = new Option(
         "initialweighthyperband.internalwla",
-        MaxLikelihoodMPE.class.getName(),
+        StructuredPerceptron.class.getName(),
         "The internal weight learning application (WLA) to use (should be a VotedPerceptron)."
     );
 
@@ -853,77 +854,6 @@ public class Options {
         "streamingtermstore.warnunsupportedrules",
         true,
         "Warn on rules the streaming term store can't handle."
-    );
-
-    public static final Option WLA_VP_AVERAGE_STEPS = new Option(
-        "votedperceptron.averagesteps",
-        false,
-        "Whether to average all visited weights together for final output."
-    );
-
-    public static final Option WLA_VP_CLIP_NEGATIVE_WEIGHTS = new Option(
-        "votedperceptron.clipnegativeweights",
-        true,
-        "If true, then weights will not be allowed to go negative."
-    );
-
-    public static final Option WLA_VP_CUT_OBJECTIVE = new Option(
-        "votedperceptron.cutobjective",
-        false,
-        "If true, then cut the step size in half whenever the objective increases."
-    );
-
-    public static final Option WLA_VP_INERTIA = new Option(
-        "votedperceptron.inertia",
-        0.0,
-        "The inertia that is used for adaptive step sizes.",
-        Option.FLAG_NON_NEGATIVE | Option.FLAG_LT_ONE
-    );
-
-    public static final Option WLA_VP_L1 = new Option(
-        "votedperceptron.l1regularization",
-        0.0,
-        "The L1 regularizer.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option WLA_VP_L2 = new Option(
-        "votedperceptron.l2regularization",
-        0.0,
-        "The L2 regularizer.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option WLA_VP_NUM_STEPS = new Option(
-        "votedperceptron.numsteps",
-        25,
-        "The number of steps VotedPerceptron will take.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_VP_SCALE_GRADIENT = new Option(
-        "votedperceptron.scalegradient",
-        true,
-        "Whether to scale the gradient by the number of groundings."
-    );
-
-    public static final Option WLA_VP_STEP = new Option(
-        "votedperceptron.stepsize",
-        0.2,
-        "The gradient step size.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_VP_SCALE_STEP = new Option(
-        "votedperceptron.scalestepsize",
-        true,
-        "If true, then scale the step size down by the iteration."
-    );
-
-    public static final Option WLA_VP_ZERO_INITIAL_WEIGHTS = new Option(
-        "votedperceptron.zeroinitialweights",
-        false,
-        "If true, then start all weights at zero."
     );
 
     public static final Option WLA_EVAL = new Option(

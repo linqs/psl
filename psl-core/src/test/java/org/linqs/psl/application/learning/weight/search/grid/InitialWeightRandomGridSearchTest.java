@@ -17,10 +17,9 @@
  */
 package org.linqs.psl.application.learning.weight.search.grid;
 
-import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.gradient.optimalvalue.StructuredPerceptron;
 import org.linqs.psl.config.Options;
 
 public class InitialWeightRandomGridSearchTest extends WeightLearningTest {
@@ -36,12 +35,12 @@ public class InitialWeightRandomGridSearchTest extends WeightLearningTest {
         Options.WLA_GS_POSSIBLE_WEIGHTS.set("1:10:100");
         Options.WLA_RGS_MAX_LOCATIONS.set(50);
 
-        // Turn down the number of iterations of both ADMM and VotedPerceptron.
-        Options.WLA_VP_NUM_STEPS.set(3);
+        // Turn down the number of iterations of both ADMM and StructuredPerceptron.
+        Options.WLA_GRADIENT_DESCENT_NUM_STEPS.set(3);
         Options.ADMM_MAX_ITER.set(Integer.valueOf(25));
 
-        // Use the classic MLE.
-        WeightLearningApplication internalWLA = new MaxLikelihoodMPE(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        // Use StructuredPerceptron.
+        WeightLearningApplication internalWLA = new StructuredPerceptron(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
 
         return new InitialWeightRandomGridSearch(info.model.getRules(), internalWLA, weightLearningTrainDB, weightLearningTruthDB);
     }

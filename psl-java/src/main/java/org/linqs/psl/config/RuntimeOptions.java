@@ -18,7 +18,7 @@
 package org.linqs.psl.config;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.gradient.optimalvalue.StructuredPerceptron;
 import org.linqs.psl.runtime.Runtime;
 
 import org.linqs.psl.util.SystemUtils;
@@ -127,7 +127,7 @@ public class RuntimeOptions {
 
     public static final Option LEARN_METHOD = new Option(
         "runtime.learn.method",
-        MaxLikelihoodMPE.class.getName(),
+        StructuredPerceptron.class.getName(),
         "Use the specified WeightLearningApplication when running learning."
     );
 

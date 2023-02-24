@@ -18,7 +18,7 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.gradient.optimalvalue.StructuredPerceptron;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
@@ -45,7 +45,7 @@ public class InitialWeightRankSearch extends RankSearch {
     }
 
     public InitialWeightRankSearch(List<Rule> rules, Database rvDB, Database observedDB) {
-        this(rules, new MaxLikelihoodMPE(rules, rvDB, observedDB), rvDB, observedDB);
+        this(rules, new StructuredPerceptron(rules, rvDB, observedDB), rvDB, observedDB);
     }
 
     /**

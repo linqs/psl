@@ -17,8 +17,8 @@
  */
 package org.linqs.psl.application.learning.weight.search;
 
-import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.gradient.optimalvalue.StructuredPerceptron;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
@@ -33,7 +33,7 @@ import java.util.List;
 public class InitialWeightHyperband extends Hyperband {
     private static final Logger log = Logger.getLogger(InitialWeightHyperband.class);
 
-    private VotedPerceptron internalWLA;
+    private StructuredPerceptron internalWLA;
 
     public InitialWeightHyperband(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
@@ -44,7 +44,7 @@ public class InitialWeightHyperband extends Hyperband {
 
         // TODO(eriq): Can we generalizse to actual WLA?
         String wlaName = Options.WLA_IWHB_WLA.getString();
-        this.internalWLA = (VotedPerceptron)WeightLearningApplication.getWLA(wlaName, rules, rvDB, observedDB);
+        this.internalWLA = (StructuredPerceptron)WeightLearningApplication.getWLA(wlaName, rules, rvDB, observedDB);
     }
 
     @Override
