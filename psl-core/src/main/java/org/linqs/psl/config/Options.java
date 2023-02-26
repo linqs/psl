@@ -319,7 +319,7 @@ public class Options {
     );
 
     public static final Option WLA_GRADIENT_DESCENT_LOG_REGULARIZATION = new Option(
-        "wla.gradientdescent.negativelogregularization",
+        "gradientdescent.negativelogregularization",
         0.0f,
         "The negative log regularization parameter of gradient descent weight learning."
         + " If this is not 0.0 then mirror descent gradient extension must be used.",
@@ -327,7 +327,7 @@ public class Options {
     );
 
     public static final Option WLA_GRADIENT_DESCENT_ENTROPY_REGULARIZATION = new Option(
-        "wla.gradientdescent.negativeentropyregularization",
+        "gradientdescent.negativeentropyregularization",
         0.1f,
         "The negative entropy regularization parameter of gradient descent weight learning."
         + " If this is not 0.0 then mirror descent gradient extension must be used.",
