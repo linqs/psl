@@ -75,21 +75,25 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
     @Override
     public float evaluate(float[] variableValues) {
+        return getWeight() * evaluateIncompatibility(variableValues);
+    }
+
+    @Override
+    public float evaluateIncompatibility(float[] variableValues) {
         float dot = dot(variableValues);
-        float weight = getWeight();
 
         if (squared && hinge) {
-            // weight * [max(0.0, coeffs^T * x - constant)]^2
-            return weight * (float)Math.pow(Math.max(0.0f, dot), 2);
+            // [max(0.0, coeffs^T * x - constant)]^2
+            return (float)Math.pow(Math.max(0.0f, dot), 2);
         } else if (squared && !hinge) {
             // weight * [coeffs^T * x - constant]^2
-            return weight * (float)Math.pow(dot, 2);
+            return (float)Math.pow(dot, 2);
         } else if (!squared && hinge) {
             // weight * max(0.0, coeffs^T * x - constant)
-            return weight * Math.max(0.0f, dot);
+            return Math.max(0.0f, dot);
         } else {
             // weight * (coeffs^T * x - constant)
-            return weight * dot;
+            return dot;
         }
     }
 

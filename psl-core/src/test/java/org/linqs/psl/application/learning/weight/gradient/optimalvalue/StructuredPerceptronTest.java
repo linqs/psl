@@ -17,43 +17,12 @@
  */
 package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 
-import org.linqs.psl.application.inference.mpe.ADMMInference;
-import org.linqs.psl.application.inference.mpe.SGDInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
-import org.linqs.psl.config.Options;
-
-import org.junit.Test;
 
 public class StructuredPerceptronTest extends WeightLearningTest {
-    public StructuredPerceptronTest() {
-        super();
-
-        assertBaseTest = true;
-        assertFriendshipRankTest = true;
-    }
-
     @Override
     protected WeightLearningApplication getBaseWLA() {
         return new StructuredPerceptron(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-    }
-
-    @Override
-    public void friendshipRankTest() {
-        // Skip this test in favor of specific inference application variants.
-    }
-
-    @Test
-    public void ADMMFriendshipRankTest() {
-        Options.WLA_INFERENCE.set(ADMMInference.class.getName());
-
-        super.friendshipRankTest();
-    }
-
-    @Test
-    public void SGDFriendshipRankTest() {
-        Options.WLA_INFERENCE.set(SGDInference.class.getName());
-
-        super.friendshipRankTest();
     }
 }

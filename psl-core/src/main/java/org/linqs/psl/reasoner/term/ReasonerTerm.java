@@ -31,7 +31,12 @@ public interface ReasonerTerm {
     public Rule getRule();
 
     /**
-     * Evaluate the term using the given variable values (indexed according to the AtomStore).
+     * Evaluate the term's weighted value using the given variable values (indexed according to the AtomStore).
      */
     public float evaluate(float[] variableValues);
+
+    /**
+     * Evaluate the term's incompatibility using the given variable values (indexed according to the AtomStore).
+     */
+    public float evaluateIncompatibility(float[] variableValues);
 }

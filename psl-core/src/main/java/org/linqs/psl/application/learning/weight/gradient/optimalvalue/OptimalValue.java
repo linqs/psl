@@ -74,12 +74,7 @@ public abstract class OptimalValue extends GradientDescent {
                 @SuppressWarnings("unchecked")
                 ReasonerTerm term = (ReasonerTerm)rawTerm;
 
-                float value = term.evaluate(atomValues);
-                if (mutableRules.get(i).isSquared()) {
-                    value *= value;
-                }
-
-                incompatibilityArray[i] += value;
+                incompatibilityArray[i] += term.evaluateIncompatibility(atomValues);
             }
         }
     }

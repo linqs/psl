@@ -267,7 +267,15 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
      */
     @Override
     public float evaluate(float[] consensusValues) {
-        float weight = getWeight();
+        return getWeight() * evaluateIncompatibility(consensusValues);
+    }
+
+    /**
+     * Evaluate this potential's incompatibility using the given consensus values.
+     */
+    @Override
+    public float evaluateIncompatibility(float[] consensusValues) {
+        float weight = 1.0f;
 
         switch (termType) {
             case LinearConstraintTerm:

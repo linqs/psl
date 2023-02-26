@@ -328,7 +328,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_ENTROPY_REGULARIZATION = new Option(
         "gradientdescent.negativeentropyregularization",
-        0.1f,
+        10.0f,
         "The negative entropy regularization parameter of gradient descent weight learning."
         + " If this is not 0.0 then mirror descent gradient extension must be used.",
         Option.FLAG_NON_NEGATIVE
@@ -382,7 +382,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_SCALE_STEP = new Option(
         "gradientdescent.scalestepsize",
-        false,
+        true,
         "If true, then scale the step size by the iteration, i.e., at iteration k,"
         + " the step size is alpha / k, where alpha is the base step size of the gradient descent weight learner."
     );
