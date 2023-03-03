@@ -305,7 +305,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_MAX_GRADIENT = new Option(
         "gradientdescent.maxgradientmagnitude",
-        100.0f,
+        25.0f,
         "Gradient with a magnitude larger than this value are clipped"
         + " to avoid overflow in gradient descent weight learning.",
         Option.FLAG_POSITIVE
@@ -320,7 +320,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_LOG_REGULARIZATION = new Option(
         "gradientdescent.negativelogregularization",
-        0.0f,
+        1.0f,
         "The negative log regularization parameter of gradient descent weight learning."
         + " If this is not 0.0 then mirror descent gradient extension must be used.",
         Option.FLAG_NON_NEGATIVE
@@ -343,7 +343,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_NORM_TOLERANCE = new Option(
         "gradientdescent.normtolerance",
-        1.0e-5f,
+        1.0e-3f,
         "If gradientdescent.runfulliterations=false and gradientdescent.normbreak=true,"
         + " then when the norm of the gradient is below this tolerance "
         + " gradient descent weight learning is stopped.",
@@ -389,7 +389,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_STEP_SIZE = new Option(
         "gradientdescent.stepsize",
-        1.0f,
+        0.1f,
         "The gradient descent weight learner step size.",
         Option.FLAG_POSITIVE
     );
