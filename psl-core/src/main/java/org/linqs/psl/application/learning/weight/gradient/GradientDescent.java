@@ -43,6 +43,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     public static enum GDExtension {
         MIRROR_DESCENT,
+        PROJECTED_GRADIENT,
         NONE
     }
 
@@ -116,22 +117,23 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             long start = System.currentTimeMillis();
 
+            weightGradientStep(iteration);
+
             computeIterationStatistics();
             objective = computeTotalLoss();
             computeTotalWeightGradient();
             if (clipWeightGradient) {
                 clipWeightGradient();
             }
-            weightGradientStep(iteration);
 
             breakGD = breakOptimization(iteration, objective, oldObjective);
-            oldObjective = objective;
 
             long end = System.currentTimeMillis();
             totalTime += end - start;
+            oldObjective = objective;
 
             log.trace("Iteration {} -- Weight Learning Objective: {}, Weight Gradient Magnitude: {}, Iteration Time: {}",
-                    iteration, objective, computeGradientNorm(), (end - start));
+                    iteration - 1, objective, computeGradientNorm(), (end - start));
 
             iteration++;
         }
@@ -151,6 +153,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void initForLearning() {
         switch (gdExtension) {
             case MIRROR_DESCENT:
+            case PROJECTED_GRADIENT:
                 // Initialize weights to be centered on the unit simplex.
                 simplexScaleWeights();
                 inMPEState = false;
@@ -219,6 +222,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
 
                 break;
+            case PROJECTED_GRADIENT:
+                for (int j = 0; j < mutableRules.size(); j++) {
+                    mutableRules.get(j).setWeight(mutableRules.get(j).getWeight() - weightGradient[j] * stepSize);
+                }
+
+                // Project weights back onto the unit simplex.
+                simplexProjectWeights();
+
+                break;
             default:
                 for (int j = 0; j < mutableRules.size(); j++) {
                     // Clip negative weights.
@@ -246,34 +258,145 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         switch (gdExtension) {
             case MIRROR_DESCENT:
-                // The norm of simplex constrained weights is KL-Divergence between
-                // the distribution of the weight gradient in the dual space
-                // and the discrete uniform distribution.
-                float exponentiatedGradientSum = 0.0f;
-                for (int i = 0; i < mutableRules.size(); i ++) {
-                    exponentiatedGradientSum += Math.exp(weightGradient[i]);
-                }
-
-                for (int i = 0; i < mutableRules.size(); i ++) {
-                    float mappedWeightGradient = (float)Math.exp(weightGradient[i]) / exponentiatedGradientSum;
-                    norm += mappedWeightGradient * (float)Math.log(mappedWeightGradient * mutableRules.size());
-                }
-
+                norm = computeMirrorDescentNorm();
+                break;
+            case PROJECTED_GRADIENT:
+                norm = computeProjectedGradientDescentNorm();
                 break;
             default:
-                for (WeightedRule mutableRule : mutableRules) {
-                    norm += (float)Math.pow(mutableRule.getWeight(), stoppingGradientNorm);
-                }
-                norm = (float)Math.pow(norm, 1.0f / stoppingGradientNorm);
-
+                norm = computeGradientDescentNorm();
                 break;
         }
 
         return norm;
     }
 
+    /**
+     * The norm of strictly positive and simplex constrained weights is the KL-divergence between
+     * the distribution of the weight gradient in the dual space and the discrete uniform distribution.
+     */
+    private float computeMirrorDescentNorm() {
+        float norm = 0.0f;
+
+        float exponentiatedGradientSum = 0.0f;
+        for (int i = 0; i < mutableRules.size(); i ++) {
+            exponentiatedGradientSum += Math.exp(weightGradient[i]);
+        }
+
+        for (int i = 0; i < mutableRules.size(); i ++) {
+            float mappedWeightGradient = (float)Math.exp(weightGradient[i]) / exponentiatedGradientSum;
+            norm += mappedWeightGradient * (float)Math.log(mappedWeightGradient * mutableRules.size());
+        }
+
+        return norm;
+    }
+
+    /**
+     * The norm of simplex constrained weights is the KL-divergence between the distribution of the
+     * non-zero and boundary clipped weight gradient in the dual space and the discrete uniform distribution.
+     */
+    private float computeProjectedGradientDescentNorm() {
+        float norm = 0.0f;
+
+        int numNonZeroGradients = 0;
+        float[] simplexClippedGradients = weightGradient.clone();
+        for (int i = 0; i < simplexClippedGradients.length; i++) {
+            if (MathUtils.equals(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
+                simplexClippedGradients[i] = 0.0f;
+                continue;
+            }
+
+            if (MathUtils.equals(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
+                simplexClippedGradients[i] = 0.0f;
+                continue;
+            }
+
+            simplexClippedGradients[i] = weightGradient[i];
+
+            if (MathUtils.isZero(simplexClippedGradients[i])) {
+                continue;
+            }
+
+            numNonZeroGradients++;
+        }
+
+        float exponentiatedGradientSum = 0.0f;
+        for (int i = 0; i < mutableRules.size(); i ++) {
+            if (MathUtils.isZero(simplexClippedGradients[i])) {
+                continue;
+            }
+
+            exponentiatedGradientSum += Math.exp(weightGradient[i]);
+        }
+
+        for (int i = 0; i < mutableRules.size(); i ++) {
+            if (MathUtils.isZero(simplexClippedGradients[i])) {
+                continue;
+            }
+
+            float mappedWeightGradient = (float)Math.exp(weightGradient[i]) / exponentiatedGradientSum;
+            norm += mappedWeightGradient * (float)Math.log(mappedWeightGradient * numNonZeroGradients);
+        }
+
+        return norm;
+    }
+
+    /**
+     * The norm of non-negative weights is the norm of the lower boundary clipped weight gradient.
+     */
+    private float computeGradientDescentNorm() {
+        float norm = 0.0f;
+
+        float[] boundaryClippedGradients = weightGradient.clone();
+        for (int i = 0; i < boundaryClippedGradients.length; i++) {
+            if (MathUtils.equals(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
+                boundaryClippedGradients[i] = 0.0f;
+                continue;
+            }
+
+            boundaryClippedGradients[i] = weightGradient[i];
+        }
+
+        for (float boundaryClippedGradient: boundaryClippedGradients) {
+            norm += (float)Math.pow(boundaryClippedGradient, stoppingGradientNorm);
+        }
+        return (float)Math.pow(norm, 1.0f / stoppingGradientNorm);
+    }
+
+    /**
+     * Project the current weights onto the unit simplex.
+     * This function follows the algorithm presented in: https://optimization-online.org/2014/08/4498/
+     */
+    public void simplexProjectWeights() {
+        int numWeights = mutableRules.size();
+        float[] weights = new float[numWeights];
+        for (int i = 0; i < numWeights; i++) {
+            weights[i] = mutableRules.get(i).getWeight();
+        }
+
+        Arrays.sort(weights);
+
+        float cumulativeWeightSum = 0;
+        float tau = 0;
+        for (int i = 1; i <= numWeights; i++) {
+            float nextCumulativeWeightSum = cumulativeWeightSum + weights[numWeights - i];
+            float nextTau = (nextCumulativeWeightSum - 1.0f) / i;
+            if (nextTau >= weights[numWeights - i]) {
+                break;
+            }
+            cumulativeWeightSum = nextCumulativeWeightSum;
+            tau = nextTau;
+        }
+
+        for (WeightedRule mutableRule: mutableRules) {
+            mutableRule.setWeight(Math.max(0, mutableRule.getWeight() - tau));
+        }
+    }
+
+    /**
+     * Scale the weights to the unit simplex.
+     */
     private void simplexScaleWeights() {
-        // Initialize weights to be centered on the unit simplex.
         float totalWeight = 0.0f;
         for (WeightedRule mutableRule : mutableRules) {
             totalWeight += mutableRule.getWeight();
@@ -313,9 +436,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float computeRegularization() {
         float regularization = 0.0f;
         for (WeightedRule mutableRule : mutableRules) {
+            float logWeight = (float)Math.max(Math.log(mutableRule.getWeight()), Math.log(MathUtils.STRICT_EPSILON));
             regularization += l2Regularization * (float)Math.pow(mutableRule.getWeight(), 2)
-                    - logRegularization * (float)Math.log(mutableRule.getWeight())
-                    + entropyRegularization * mutableRule.getWeight() * (float)Math.log(mutableRule.getWeight());
+                    - logRegularization * logWeight
+                    + entropyRegularization * mutableRule.getWeight() * logWeight;
         }
 
         return regularization;
@@ -341,9 +465,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     protected void addRegularizationWeightGradient() {
         for (int i = 0; i < mutableRules.size(); i++) {
+            float logWeight = (float)Math.max(Math.log(mutableRules.get(i).getWeight()), Math.log(MathUtils.STRICT_EPSILON));
             weightGradient[i] += 2.0f * l2Regularization * mutableRules.get(i).getWeight()
-                    - logRegularization / mutableRules.get(i).getWeight()
-                    + entropyRegularization * ((float)Math.log(mutableRules.get(i).getWeight()) + 1);
+                    - logRegularization / Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON)
+                    + entropyRegularization * (logWeight + 1);
         }
     }
 }

@@ -292,8 +292,10 @@ public class Options {
     "gradientdescent.extension",
         GradientDescent.GDExtension.MIRROR_DESCENT.toString(),
         "The gradient descent extension to use for gradient descent weight learning."
-        + " MIRROR_DESCENT (Default): Use the mirror descent / normalized exponentiated gradient descent algorithm."
-        + " NONE: The standard gradient descent optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+        + " MIRROR_DESCENT (Default): Mirror descent / normalized exponentiated gradient descent over the unit simplex."
+        + " If this option is chosen then gradientdescent.negativelogregularization must be positive."
+        + " PROJECTED_GRADIENT: Projected gradient descent over the unit simplex."
+        + " NONE: Gradient descent over non-negative orthant."
     );
 
     public static final Option WLA_GRADIENT_DESCENT_L2_REGULARIZATION = new Option(
