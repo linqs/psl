@@ -19,9 +19,12 @@ package org.linqs.psl.application.learning.weight.gradient;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
@@ -51,6 +54,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected float[] weightGradient;
 
+    protected TermState[] mpeTermState;
+    protected float[] mpeAtomValueState;
+
     protected float baseStepSize;
     protected boolean scaleStepSize;
     protected float maxGradientMagnitude;
@@ -76,6 +82,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         weightGradient = new float[mutableRules.size()];
 
+        mpeTermState = null;
+        mpeAtomValueState = null;
+
         baseStepSize = Options.WLA_GRADIENT_DESCENT_STEP_SIZE.getFloat();
         scaleStepSize = Options.WLA_GRADIENT_DESCENT_SCALE_STEP.getBoolean();
         clipWeightGradient = Options.WLA_GRADIENT_DESCENT_CLIP_GRADIENT.getBoolean();
@@ -96,6 +105,21 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     @Override
+    protected void postInitGroundModel() {
+        super.postInitGroundModel();
+
+        // Set the initial value of atoms to be the current atom value.
+        // This ensures that when the inference application is reset before computing the MAP state
+        // the atom values that were fixed to their warm start or true labels are preserved.
+        inference.setInitialValue(InitialValue.ATOM);
+
+        // Initialize MPE warm start state objects.
+        mpeTermState = inference.getTermStore().saveState();
+        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
+        mpeAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+    }
+
+    @Override
     protected void doLearn() {
         boolean breakGD = false;
         float objective = 0.0f;
@@ -110,7 +134,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             log.trace("Model: {}", mutableRules);
             if (log.isTraceEnabled() && evaluation != null) {
                 // Compute the MAP state before evaluating so variables have assigned values.
-                computeMPEState();
+                computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
+
                 evaluation.compute(trainingMap);
                 log.trace("MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
             }
@@ -142,7 +167,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         log.info("Final Model {} ", mutableRules);
         if (evaluation != null) {
             // Compute the MAP state before evaluating so variables have assigned values.
-            computeMPEState();
+            computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
             evaluation.compute(trainingMap);
             log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
         }
@@ -405,6 +430,26 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (WeightedRule mutableRule : mutableRules) {
             mutableRule.setWeight(mutableRule.getWeight() / totalWeight);
         }
+    }
+
+    /**
+     * Use the provided warm start for MPE inference to save time in reasoner.
+     */
+    protected void computeMPEStateWithWarmStart(TermState[] termState, float[] atomValueState) {
+        // Warm start inference with previous termState.
+        inference.getTermStore().loadState(termState);
+        AtomStore atomStore = inference.getDatabase().getAtomStore();
+        System.arraycopy(atomValueState, 0,
+                atomStore.getAtomValues(), 0,
+                atomValueState.length);
+        atomStore.sync();
+
+        computeMPEState();
+
+        // Save the MPE state for future warm starts.
+        inference.getTermStore().saveState(termState);
+        float[] mpeAtomValues = inference.getDatabase().getAtomStore().getAtomValues();
+        System.arraycopy(mpeAtomValues, 0, atomValueState, 0, mpeAtomValues.length);
     }
 
     /**

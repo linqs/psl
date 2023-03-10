@@ -24,6 +24,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 import org.linqs.psl.util.MathUtils;
 
@@ -126,6 +127,27 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
     public int[] getVariableIndexes() {
         return variableIndexes;
+    }
+
+    /**
+     * SGD Objective terms hold no state information.
+     */
+    public void loadState(TermState termState) {
+        // Pass.
+    }
+
+    /**
+     * SGD Objective terms hold no state information.
+     */
+    public TermState saveState() {
+        return new TermState();
+    }
+
+    /**
+     * SGD Objective terms hold no state information.
+     */
+    public void saveState(TermState termState) {
+        // Pass.
     }
 
     /**

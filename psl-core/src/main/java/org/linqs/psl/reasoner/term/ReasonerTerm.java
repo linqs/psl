@@ -39,4 +39,19 @@ public interface ReasonerTerm {
      * Evaluate the term's incompatibility using the given variable values (indexed according to the AtomStore).
      */
     public float evaluateIncompatibility(float[] variableValues);
+
+    /**
+     * Load the provided state of the term.
+     */
+    public void loadState(TermState termState);
+
+    /**
+     * Save the current state of the term.
+     */
+    public TermState saveState();
+
+    /**
+     * Save the current state of the term using the provide TermState object.
+     */
+    public void saveState(TermState termState);
 }

@@ -25,6 +25,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.TermState;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,21 +42,25 @@ import java.util.Map;
  */
 public abstract class OptimalValue extends GradientDescent {
     protected float[] latentInferenceIncompatibility;
+    protected TermState[] latentInferenceTermState;
+    protected float[] latentInferenceAtomValueState;
 
     public OptimalValue(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
         latentInferenceIncompatibility = new float[mutableRules.size()];
+        latentInferenceTermState = null;
+        latentInferenceAtomValueState = null;
     }
 
     @Override
     protected void postInitGroundModel() {
         super.postInitGroundModel();
 
-        // Set the initial value of atoms to be the current atom value.
-        // This ensures that when the inference application is reset before computing the MAP state
-        // the atom values that were fixed to their true labels are preserved.
-        inference.setInitialValue(InitialValue.ATOM);
+        // Initialize latent inference warm start state objects.
+        latentInferenceTermState = inference.getTermStore().saveState();
+        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
+        latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
     }
 
     /**
@@ -65,7 +70,7 @@ public abstract class OptimalValue extends GradientDescent {
         // Zero out the incompatibility first.
         Arrays.fill(incompatibilityArray, 0.0f);
 
-        float[] atomValues = inference.getTermStore().getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
 
         // Sums up the incompatibilities.
         for (int i = 0; i < mutableRules.size(); i++) {
@@ -86,7 +91,7 @@ public abstract class OptimalValue extends GradientDescent {
     protected void computeLatentInferenceIncompatibility() {
         fixLabeledRandomVariables();
 
-        computeMPEState();
+        computeMPEStateWithWarmStart(latentInferenceTermState, latentInferenceAtomValueState);
         computeCurrentIncompatibility(latentInferenceIncompatibility);
 
         unfixLabeledRandomVariables();
@@ -107,6 +112,7 @@ public abstract class OptimalValue extends GradientDescent {
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
             atomStore.getAtoms()[atomIndex] = observedAtom;
             atomStore.getAtomValues()[atomIndex] = observedAtom.getValue();
+            latentInferenceAtomValueState[atomIndex] = observedAtom.getValue();
             randomVariableAtom.setValue(observedAtom.getValue());
         }
 
@@ -119,7 +125,7 @@ public abstract class OptimalValue extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void unfixLabeledRandomVariables() {
-        AtomStore atomStore = inference.getTermStore().getDatabase().getAtomStore();
+        AtomStore atomStore = inference.getDatabase().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();

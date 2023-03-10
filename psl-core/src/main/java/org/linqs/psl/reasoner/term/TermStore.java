@@ -151,6 +151,37 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
     }
 
     /**
+     * Load the provided state of the terms.
+     */
+    public void loadState(TermState[] termStates) {
+        for (int i = 0; i < termStates.length; i++) {
+            get(i).loadState(termStates[i]);
+        }
+    }
+
+    /**
+     * Create and return an array of the current term states.
+     */
+    public TermState[] saveState() {
+        TermState[] termStates = new TermState[(int)size()];
+
+        for (int i = 0; i < size(); i++) {
+            termStates[i] = get(i).saveState();
+        }
+
+        return termStates;
+    }
+
+    /**
+     * Populate the provided array of term states with the current state of the terms.
+     */
+    public void saveState(TermState[] termStates) {
+        for (int i = 0; i < size(); i++) {
+            get(i).saveState(termStates[i]);
+        }
+    }
+
+    /**
      * Get all the terms associated with this rule.
      */
     public Iterable<T> getTerms(Rule rule) {

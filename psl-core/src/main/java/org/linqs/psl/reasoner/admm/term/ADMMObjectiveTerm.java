@@ -23,10 +23,13 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.TermState;
+import org.linqs.psl.util.ArrayUtils;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.MathUtils;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -710,11 +713,44 @@ public class ADMMObjectiveTerm implements ReasonerTerm {
         return matrix;
     }
 
+    @Override
+    public void loadState(TermState termState) {
+        assert termState instanceof ADMMObjectiveTermState;
+        ADMMObjectiveTermState objectiveTermState = (ADMMObjectiveTermState)termState;
+
+        System.arraycopy(objectiveTermState.variableValues, 0, variableValues, 0, variableValues.length);
+        System.arraycopy(objectiveTermState.variableLagranges, 0, variableLagranges, 0, variableLagranges.length);
+    }
+
+    @Override
+    public TermState saveState() {
+        return new ADMMObjectiveTermState(variableValues, variableLagranges);
+    }
+
+    @Override
+    public void saveState(TermState termState) {
+        assert termState instanceof ADMMObjectiveTermState;
+        ADMMObjectiveTermState objectiveTermState = (ADMMObjectiveTermState)termState;
+
+        System.arraycopy(variableValues, 0, objectiveTermState.variableValues, 0, variableValues.length);
+        System.arraycopy(variableLagranges, 0, objectiveTermState.variableLagranges, 0, variableLagranges.length);
+    }
+
     private float getWeight() {
         if (rule != null && rule.isWeighted()) {
             return ((WeightedRule)rule).getWeight();
         }
 
         return Float.POSITIVE_INFINITY;
+    }
+
+    public static final class ADMMObjectiveTermState extends TermState {
+        public float[] variableValues;
+        public float[] variableLagranges;
+
+        public ADMMObjectiveTermState(float[] variableValues, float[] variableLagranges) {
+            this.variableValues = Arrays.copyOf(variableValues, variableValues.length);
+            this.variableLagranges = Arrays.copyOf(variableLagranges, variableLagranges.length);
+        }
     }
 }

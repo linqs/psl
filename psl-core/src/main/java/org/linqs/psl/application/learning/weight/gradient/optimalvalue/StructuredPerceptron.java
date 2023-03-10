@@ -45,7 +45,7 @@ public class StructuredPerceptron extends OptimalValue {
      * Compute the incompatibility of the MAP state.
      */
     private void computeFullInferenceIncompatibility() {
-        computeMPEState();
+        computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
         computeCurrentIncompatibility(MAPIncompatibility);
     }
 
