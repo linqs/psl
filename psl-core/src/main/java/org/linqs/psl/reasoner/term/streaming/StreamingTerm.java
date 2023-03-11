@@ -17,6 +17,9 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
@@ -24,20 +27,26 @@ import java.nio.ByteBuffer;
 /**
  * A term that may be used in a streaming term store
  */
-public interface StreamingTerm extends ReasonerTerm {
+public abstract class StreamingTerm extends ReasonerTerm {
+    public StreamingTerm(Hyperplane hyperplane, Rule rule,
+                         boolean squared, boolean hinge,
+                         FunctionComparator comparator) {
+        super(hyperplane, rule, squared, hinge, comparator);
+    }
+
     /**
      * The number of bytes that writeFixedValues() will need to represent this term.
      */
-    public int fixedByteSize();
+    public abstract int fixedByteSize();
 
     /**
      * Write a binary representation of the fixed values of this term to a buffer.
      * Note that the variableIndexes are written using the term store indexing.
      */
-    public void writeFixedValues(ByteBuffer fixedBuffer);
+    public abstract void writeFixedValues(ByteBuffer fixedBuffer);
 
     /**
      * Assume the term that will be next read from the buffer.
      */
-    public void read(ByteBuffer fixedBuffer);
+    public abstract void read(ByteBuffer fixedBuffer);
 }

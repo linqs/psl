@@ -48,6 +48,8 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
      */
     private final float stepSize;
 
+    private boolean primalDualBreak;
+
     private double epsilonRel;
     private double epsilonAbs;
 
@@ -59,44 +61,18 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
     private double AxNorm;
     private double AyNorm;
     private double BzNorm;
-    private double lagrangePenalty;
-    private double augmentedLagrangePenalty;
-
-    private int maxIterations;
 
     private long termBlockSize;
     private long variableBlockSize;
 
     public ADMMReasoner() {
         maxIterations = Options.ADMM_MAX_ITER.getInt();
+        primalDualBreak = Options.ADMM_PRIMAL_DUAL_BREAK.getBoolean();
+
         stepSize = Options.ADMM_STEP_SIZE.getFloat();
         computePeriod = Options.ADMM_COMPUTE_PERIOD.getInt();
         epsilonAbs = Options.ADMM_EPSILON_ABS.getDouble();
         epsilonRel = Options.ADMM_EPSILON_REL.getDouble();
-    }
-
-    public double getEpsilonRel() {
-        return epsilonRel;
-    }
-
-    public void setEpsilonRel(double epsilonRel) {
-        this.epsilonRel = epsilonRel;
-    }
-
-    public double getEpsilonAbs() {
-        return epsilonAbs;
-    }
-
-    public void setEpsilonAbs(double epsilonAbs) {
-        this.epsilonAbs = epsilonAbs;
-    }
-
-    public double getLagrangianPenalty() {
-        return this.lagrangePenalty;
-    }
-
-    public double getAugmentedLagrangianPenalty() {
-        return this.augmentedLagrangePenalty;
     }
 
     @Override
@@ -105,13 +81,11 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
             throw new IllegalArgumentException("ADMMReasoner requires an ADMMTermStore (found " + baseTermStore.getClass().getName() + ").");
         }
         ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
-
         termStore.initForOptimization();
+        initForOptimization(termStore);
 
         long numTerms = termStore.size();
         int numVariables = termStore.getNumVariables();
-
-        log.debug("Performing optimization with {} variables and {} terms.", termStore.getVariableCounts(), numTerms);
 
         termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
         variableBlockSize = numVariables / (Parallel.getNumThreads() * 4) + 1;
@@ -125,23 +99,17 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
         ObjectiveResult objective = null;
         ObjectiveResult oldObjective = null;
 
-        if (log.isTraceEnabled()) {
-            objective = computeObjective(termStore);
-            log.trace(
-                    "Iteration {} -- Objective: {}, Feasible: {}.",
-                    0, objective.objective, (objective.violatedConstraints == 0));
-        }
-
+        long totalTime = 0;
         int iteration = 1;
         while (true) {
+            long start = System.currentTimeMillis();
+
             // Zero out the iteration variables.
             primalRes = 0.0f;
             dualRes = 0.0f;
             AxNorm = 0.0f;
             AyNorm = 0.0f;
             BzNorm = 0.0f;
-            lagrangePenalty = 0.0f;
-            augmentedLagrangePenalty = 0.0f;
 
             // Minimize all the terms.
             Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
@@ -154,6 +122,9 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
 
             epsilonPrimal = epsilonAbsTerm + epsilonRel * Math.max(Math.sqrt(AxNorm), Math.sqrt(BzNorm));
             epsilonDual = epsilonAbsTerm + epsilonRel * Math.sqrt(AyNorm);
+
+            long end = System.currentTimeMillis();
+            totalTime += end - start;
 
             if (iteration % computePeriod == 0) {
                 if (!objectiveBreak) {
@@ -171,40 +142,29 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                 }
 
                 evaluate(termStore, iteration, evaluations, trainingMap);
-
-                termStore.iterationComplete();
             }
 
             iteration++;
 
-            if (breakOptimization(iteration, objective, oldObjective)) {
+            if (breakOptimization(iteration, termStore, objective, oldObjective)) {
                 // Before we break, compute the objective so we can look for violated constraints.
                 objective = computeObjective(termStore);
 
                 // Check one more time if we should actually break.
-                if (breakOptimization(iteration, objective, oldObjective)) {
+                if (breakOptimization(iteration, termStore, objective, oldObjective)) {
                     break;
                 }
             }
         }
 
-        log.info("Optimization completed in {} iterations. Objective: {}, Feasible: {}, Primal res.: {}, Dual res.: {}",
-                iteration - 1, objective.objective, (objective.violatedConstraints == 0), primalRes, dualRes);
-
-        if (objective.violatedConstraints > 0) {
-            log.warn("No feasible solution found. {} constraints violated.", objective.violatedConstraints);
-            computeObjective(termStore);
-        }
-
-        // Sync the consensus values back to the atoms.
-        termStore.sync();
-
+        optimizationComplete(termStore, objective, totalTime, iteration - 1);
         return objective.objective;
     }
 
-    private boolean breakOptimization(int iteration, ObjectiveResult objective, ObjectiveResult oldObjective) {
-        // Always break when the allocated iterations is up.
-        if (iteration > (int)(maxIterations * budget)) {
+    @Override
+    protected boolean breakOptimization(int iteration, TermStore<ADMMObjectiveTerm> termStore,
+                                        ObjectiveResult objective, ObjectiveResult oldObjective) {
+        if (super.breakOptimization(iteration, termStore, objective, oldObjective)) {
             return true;
         }
 
@@ -218,52 +178,24 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
             return false;
         }
 
-        // Break if we have converged.
-        if (iteration > 1 && primalRes < epsilonPrimal && dualRes < epsilonDual) {
-            return true;
-        }
-
-        // Break if the objective has not changed.
-        if (objectiveBreak && oldObjective != null && MathUtils.equals(objective.objective, oldObjective.objective, tolerance)) {
+        // Break if we have converged according to the primal dual residual stopping criterion.
+        if (primalDualBreak && (iteration > 1) && (primalRes < epsilonPrimal) && (dualRes < epsilonDual)) {
+            log.trace("Breaking optimization. Primal residual: {} below tolerance: {} and dual residual: {} below tolerance: {}.",
+                    primalRes, epsilonPrimal, dualRes, epsilonDual);
             return true;
         }
 
         return false;
     }
 
-    @Override
-    public void close() {
-    }
-
-    private ObjectiveResult computeObjective(ADMMTermStore termStore) {
-        double objective = 0.0f;
-        long violatedConstraints = 0;
-        float[] consensusValues = termStore.getVariableValues();
-
-        for (ADMMObjectiveTerm term : termStore) {
-            if (term.isConstraint()) {
-                if (term.evaluate(consensusValues) > 0.0f) {
-                    violatedConstraints++;
-                }
-            } else {
-                objective += term.evaluate(consensusValues);
-            }
-        }
-
-        return new ObjectiveResult(objective, violatedConstraints);
-    }
-
     private synchronized void updateIterationVariables(
             double primalRes, double dualRes,
-            double AxNorm, double BzNorm, double AyNorm,
-            double lagrangePenalty, double augmentedLagrangePenalty) {
+            double AxNorm, double BzNorm, double AyNorm) {
         this.primalRes += primalRes;
         this.dualRes += dualRes;
         this.AxNorm += AxNorm;
         this.AyNorm += AyNorm;
         this.BzNorm += BzNorm;
-        this.lagrangePenalty += lagrangePenalty;
-        this.augmentedLagrangePenalty += augmentedLagrangePenalty;
     }
 
     private class TermWorker extends Parallel.Worker<Long> {
@@ -333,8 +265,6 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
             double AxNormInc = 0.0f;
             double BzNormInc = 0.0f;
             double AyNormInc = 0.0f;
-            double lagrangePenaltyInc = 0.0f;
-            double augmentedLagrangePenaltyInc = 0.0f;
 
             // Instead of dividing up the work ahead of time,
             // get one job at a time so the threads will have more even workloads.
@@ -383,28 +313,13 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
 
                 for (ADMMTermStore.LocalRecord localRecord : localRecords) {
                     float localValue = termStore.get(localRecord.termIndex).getVariableValue(localRecord.variableIndex);
-                    float localLagrange = termStore.get(localRecord.termIndex).getVariableLagrange(localRecord.variableIndex);
 
                     diff = localValue - newConsensusValue;
                     primalResInc += diff * diff;
-
-                    // compute Lagrangian penalties
-                    lagrangePenaltyInc += localLagrange * (localValue - consensusValues[variableIndex]);
-                    augmentedLagrangePenaltyInc += 0.5 * stepSize * Math.pow(localValue - consensusValues[variableIndex], 2);
                 }
             }
 
-            updateIterationVariables(primalResInc, dualResInc, AxNormInc, BzNormInc, AyNormInc, lagrangePenaltyInc, augmentedLagrangePenaltyInc);
-        }
-    }
-
-    private static class ObjectiveResult {
-        public final double objective;
-        public final long violatedConstraints;
-
-        public ObjectiveResult(double objective, long violatedConstraints) {
-            this.objective = objective;
-            this.violatedConstraints = violatedConstraints;
+            updateIterationVariables(primalResInc, dualResInc, AxNormInc, BzNormInc, AyNormInc);
         }
     }
 }

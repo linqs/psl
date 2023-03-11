@@ -33,121 +33,13 @@ import java.nio.ByteBuffer;
 /**
  * A term in the objective to be optimized by a SGDReasoner.
  */
-public class SGDObjectiveTerm implements StreamingTerm {
-    private boolean squared;
-    private boolean hinge;
-
-    private WeightedRule rule;
-    private float constant;
-
-    private short size;
-    private float[] coefficients;
-    private int[] variableIndexes;
-
+public class SGDObjectiveTerm extends StreamingTerm {
     /**
      * Construct a SGD objective term by taking ownership of the hyperplane and all members of it.
      */
     public SGDObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge,
-            Hyperplane hyperplane) {
-        this.squared = squared;
-        this.hinge = hinge;
-
-        this.rule = rule;
-
-        size = (short)hyperplane.size();
-        coefficients = hyperplane.getCoefficients();
-        constant = hyperplane.getConstant();
-
-        variableIndexes = new int[size];
-        GroundAtom[] variables = hyperplane.getVariables();
-        for (int i = 0; i < size; i++) {
-            variableIndexes[i] = variables[i].getIndex();
-        }
-    }
-
-    public int getVariableIndex(int i) {
-        return variableIndexes[i];
-    }
-
-    @Override
-    public int size() {
-        return size;
-    }
-
-    @Override
-    public float evaluate(float[] variableValues) {
-        return getWeight() * evaluateIncompatibility(variableValues);
-    }
-
-    @Override
-    public float evaluateIncompatibility(float[] variableValues) {
-        float dot = dot(variableValues);
-
-        if (squared && hinge) {
-            // [max(0.0, coeffs^T * x - constant)]^2
-            return (float)Math.pow(Math.max(0.0f, dot), 2);
-        } else if (squared && !hinge) {
-            // weight * [coeffs^T * x - constant]^2
-            return (float)Math.pow(dot, 2);
-        } else if (!squared && hinge) {
-            // weight * max(0.0, coeffs^T * x - constant)
-            return Math.max(0.0f, dot);
-        } else {
-            // weight * (coeffs^T * x - constant)
-            return dot;
-        }
-    }
-
-    public float computePartial(int varId, float dot, float weight) {
-        if (hinge && dot <= 0.0f) {
-            return 0.0f;
-        }
-
-        if (squared) {
-            return weight * 2.0f * dot * coefficients[varId];
-        }
-
-        return weight * coefficients[varId];
-    }
-
-    public float dot(float[] variableValues) {
-        float value = 0.0f;
-
-        for (int i = 0; i < size; i++) {
-            value += coefficients[i] * variableValues[variableIndexes[i]];
-        }
-
-        return value - constant;
-    }
-
-    @Override
-    public Rule getRule() {
-        return rule;
-    }
-
-    public int[] getVariableIndexes() {
-        return variableIndexes;
-    }
-
-    /**
-     * SGD Objective terms hold no state information.
-     */
-    public void loadState(TermState termState) {
-        // Pass.
-    }
-
-    /**
-     * SGD Objective terms hold no state information.
-     */
-    public TermState saveState() {
-        return new TermState();
-    }
-
-    /**
-     * SGD Objective terms hold no state information.
-     */
-    public void saveState(TermState termState) {
-        // Pass.
+                            Hyperplane hyperplane) {
+        super(hyperplane, rule, squared, hinge, null);
     }
 
     /**
@@ -177,7 +69,7 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putInt(variableIndexes[i]);
+            fixedBuffer.putInt(atomIndexes[i]);
         }
     }
 
@@ -192,12 +84,12 @@ public class SGDObjectiveTerm implements StreamingTerm {
         // Make sure that there is enough room for all these variables.
         if (coefficients.length < size) {
             coefficients = new float[size];
-            variableIndexes = new int[size];
+            atomIndexes = new int[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            variableIndexes[i] = fixedBuffer.getInt();
+            atomIndexes[i] = fixedBuffer.getInt();
         }
     }
 
@@ -226,11 +118,11 @@ public class SGDObjectiveTerm implements StreamingTerm {
 
             if (atomStore == null) {
                 builder.append(" * <index:");
-                builder.append(variableIndexes[i]);
+                builder.append(atomIndexes[i]);
                 builder.append(">)");
             } else {
                 builder.append(" * ");
-                builder.append(atomStore.getAtomValue(variableIndexes[i]));
+                builder.append(atomStore.getAtomValue(atomIndexes[i]));
                 builder.append(")");
             }
 
@@ -249,13 +141,5 @@ public class SGDObjectiveTerm implements StreamingTerm {
         }
 
         return builder.toString();
-    }
-
-    private float getWeight() {
-        if (rule != null && rule.isWeighted()) {
-            return ((WeightedRule)rule).getWeight();
-        }
-
-        return Float.POSITIVE_INFINITY;
     }
 }

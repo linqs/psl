@@ -23,11 +23,13 @@ import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.MathUtils;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * An oprimizer to minimize the total weighted incompatibility
+ * An optimizer to minimize the total weighted incompatibility
  * of the terms provided by a TermStore.
  */
 public abstract class Reasoner<T extends ReasonerTerm> {
@@ -36,19 +38,30 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     protected double budget;
 
     protected boolean evaluate;
-    protected boolean objectiveBreak;
-    protected boolean runFullIterations;
 
-    protected float tolerance;
+    protected int maxIterations;
+    protected boolean runFullIterations;
+    protected boolean objectiveBreak;
+    protected float objectiveTolerance;
+    protected boolean variableMovementBreak;
+    protected float variableMovementTolerance;
+    protected float variableMovementNorm;
+
+    protected float[] prevVariableValues;
 
     public Reasoner() {
         budget = 1.0;
 
         evaluate = Options.REASONER_EVALUATE.getBoolean();
-        objectiveBreak = Options.REASONER_OBJECTIVE_BREAK.getBoolean();
-        runFullIterations = Options.REASONER_RUN_FULL_ITERATIONS.getBoolean();
 
-        tolerance = Options.REASONER_TOLERANCE.getFloat();
+        runFullIterations = Options.REASONER_RUN_FULL_ITERATIONS.getBoolean();
+        objectiveBreak = Options.REASONER_OBJECTIVE_BREAK.getBoolean();
+        objectiveTolerance = Options.REASONER_OBJECTIVE_TOLERANCE.getFloat();
+        variableMovementBreak = Options.REASONER_VARIABLE_MOVEMENT_BREAK.getBoolean();
+        variableMovementTolerance = Options.REASONER_VARIABLE_MOVEMENT_TOLERANCE.getFloat();
+        variableMovementNorm = Options.REASONER_VARIABLE_MOVEMENT_NORM.getFloat();
+
+        prevVariableValues = null;
     }
 
     /**
@@ -68,13 +81,109 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     /**
      * Releases all resources acquired by this Reasoner.
      */
-    public abstract void close();
+    public void close() {}
 
     /**
      * Set a budget (given as a proportion of the max budget).
      */
     public void setBudget(double budget) {
         this.budget = budget;
+    }
+
+    protected void initForOptimization(TermStore<T> termStore) {
+        log.debug("Performing optimization with {} variables and {} terms.",
+                termStore.getVariableCounts(), termStore.size());
+
+        if (log.isTraceEnabled()) {
+            // If a streaming term store is being used,
+            // then grounding will happen in this call to computeObjective().
+            ObjectiveResult objective = computeObjective(termStore);
+            log.trace("Iteration {} -- Objective: {}, Feasible: {}.",
+                    0, objective.objective, (objective.violatedConstraints == 0));
+        }
+    }
+
+    protected void optimizationComplete(TermStore<T> termStore, ObjectiveResult finalObjective,
+                                        long totalTime, int iteration) {
+        float change = (float)termStore.sync();
+
+        log.info("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}, Total Number of Iterations: {}",
+                finalObjective.objective, finalObjective.violatedConstraints, totalTime, iteration);
+        log.debug("Movement of variables from initial state: {}", change);
+    }
+
+    /**
+     * Determine if the stopping criterion has been met and optimization should be stopped.
+     */
+    protected boolean breakOptimization(int iteration, TermStore<T> termStore,
+                                        ObjectiveResult objective, ObjectiveResult oldObjective) {
+        // Always break when the allocated iterations is up.
+        if (iteration > (int)(maxIterations * budget)) {
+            log.trace("Breaking optimization. Max iterations exceeded.");
+            return true;
+        }
+
+        // Run through the maximum number of iterations.
+        if (runFullIterations) {
+            return false;
+        }
+
+        // Don't break if there are violated constraints.
+        if (objective != null && objective.violatedConstraints > 0) {
+            return false;
+        }
+
+        // Break if the objective has not changed.
+        if (objectiveBreak && (objective != null) && (oldObjective != null)
+                && MathUtils.equals(objective.objective, oldObjective.objective, objectiveTolerance)) {
+            log.trace("Breaking optimization. Objective change: {} below tolerance: {}.",
+                    Math.abs(objective.objective - oldObjective.objective), objectiveTolerance);
+            return true;
+        }
+
+        // Break if two consecutive iterates are less than the variable movement tolerance.
+        if (variableMovementBreak) {
+            float[] variableValues = termStore.getVariableValues();
+
+            if (prevVariableValues != null) {
+                float[] movement = Arrays.copyOf(prevVariableValues, prevVariableValues.length);
+                for (int i = 0; i < prevVariableValues.length; i++) {
+                    movement[i] = prevVariableValues[i] - variableValues[i];
+                }
+
+                float distance = MathUtils.pNorm(movement, variableMovementNorm);
+                if (distance < variableMovementTolerance) {
+                    log.trace("Breaking optimization. Movement of variables: {} below tolerance: {}.",
+                            distance, variableMovementTolerance);
+                    return true;
+                }
+            }
+
+            prevVariableValues = Arrays.copyOf(variableValues, variableValues.length);
+        }
+
+        return false;
+    }
+
+    /**
+     * Compute the total weighted objective of the terms in their current state.
+     */
+    protected ObjectiveResult computeObjective(TermStore<T> termStore) {
+        float objective = 0.0f;
+        long violatedConstraints = 0;
+        float[] variableValues = termStore.getVariableValues();
+
+        for (ReasonerTerm term : termStore) {
+            if (term.isConstraint()) {
+                if (term.evaluate(variableValues) > 0.0f) {
+                    violatedConstraints++;
+                }
+            } else {
+                objective += term.evaluate(variableValues);
+            }
+        }
+
+        return new ObjectiveResult(objective, violatedConstraints);
     }
 
     protected void evaluate(TermStore<T> termStore, int iteration, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
@@ -92,6 +201,16 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         for (EvaluationInstance evaluation : evaluations) {
             evaluation.compute(trainingMap);
             log.info("Iteration {} -- {}.", iteration, evaluation.getOutput());
+        }
+    }
+
+    protected static class ObjectiveResult {
+        public final float objective;
+        public final long violatedConstraints;
+
+        public ObjectiveResult(float objective, long violatedConstraints) {
+            this.objective = objective;
+            this.violatedConstraints = violatedConstraints;
         }
     }
 }

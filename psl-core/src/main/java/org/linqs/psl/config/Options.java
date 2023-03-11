@@ -87,6 +87,12 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option ADMM_PRIMAL_DUAL_BREAK = new Option(
+        "admmreasoner.primaldualbreak",
+        true,
+        "Stop ADMM when the primal dual stopping criterion is satisfied."
+    );
+
     public static final Option ATOM_STORE_STORE_ALL_ATOMS = new Option(
         "atomstore.storeallatoms",
         false,
@@ -507,7 +513,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
-        false,
+        true,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
     );
 
@@ -681,7 +687,7 @@ public class Options {
 
     public static final Option REASONER_OBJECTIVE_BREAK = new Option(
         "reasoner.objectivebreak",
-        true,
+        false,
         "Stop if the objective has not changed since the last iteration (or logging period)."
     );
 
@@ -691,10 +697,32 @@ public class Options {
         "Ignore all other stopping criteria and run until the maximum number of iterations."
     );
 
-    public static final Option REASONER_TOLERANCE = new Option(
-        "reasoner.tolerance",
+    public static final Option REASONER_OBJECTIVE_TOLERANCE = new Option(
+        "reasoner.objectivetolerance",
         1e-5f,
         "How close two objective values need to be to be considered the same.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option REASONER_VARIABLE_MOVEMENT_BREAK = new Option(
+        "reasoner.variablemovementbreak",
+        true,
+        "Stop reasoner if two consecutive iterates are within reasoner.variablemovementtolerance distance."
+    );
+
+    public static final Option REASONER_VARIABLE_MOVEMENT_NORM = new Option(
+        "reasoner.variablemovementnorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the variable movement optimality condition."
+        + " Default is the infinity-norm which is the absolute value of the maximum component of the movement vector."
+        + " Note that the infinity-norm can be explicitly set with the string literal: 'Infinity'.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option REASONER_VARIABLE_MOVEMENT_TOLERANCE = new Option(
+        "reasoner.variablemovementtolerance",
+        1e-4f,
+        "How close two iterates need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
     );
 
@@ -752,6 +780,12 @@ public class Options {
         + " NONE (Default): The standard SGD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
         + " ADAGRAD: Update the learning rate using the Adaptive Gradient (AdaGrad) algorithm."
         + " ADAM: Update the learning rate using the Adaptive Moment Estimation (Adam) algorithm."
+    );
+
+    public static final Option SGD_FIRST_ORDER_BREAK = new Option(
+        "sgd.firstorderbreak",
+        true,
+        "Stop stochastic gradient descent when the norm of the gradient is less than sgd.firstorderthreshold."
     );
 
     public static final Option SGD_FIRST_ORDER_NORM = new Option(

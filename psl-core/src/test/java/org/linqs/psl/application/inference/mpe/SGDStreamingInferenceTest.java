@@ -101,6 +101,7 @@ public class SGDStreamingInferenceTest extends InferenceTest {
 
     @Override
     public void testSimplexConstraints() {
+        Options.REASONER_VARIABLE_MOVEMENT_BREAK.set(false);
         Options.SGD_LEARNING_RATE.set(1.0);
         Options.SGD_INVERSE_TIME_EXP.set(2.0);
         Options.SGD_COORDINATE_STEP.set(false);

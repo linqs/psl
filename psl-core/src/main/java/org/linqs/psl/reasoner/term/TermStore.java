@@ -137,13 +137,6 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
     }
 
     /**
-     * A notification by the Reasoner that a single iteration is complete.
-     * TermStores may use this as a chance to update and data structures.
-     */
-    public void iterationComplete() {
-    }
-
-    /**
      * A notification by the Reasoner that optimization is about to begin.
      * TermStores may use this as a chance to finalize data structures.
      */
