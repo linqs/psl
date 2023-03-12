@@ -99,9 +99,10 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
         ObjectiveResult objective = null;
         ObjectiveResult oldObjective = null;
 
+        boolean breakADMM = false;
         long totalTime = 0;
         int iteration = 1;
-        while (true) {
+        while (!breakADMM) {
             long start = System.currentTimeMillis();
 
             // Zero out the iteration variables.
@@ -126,35 +127,25 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            if (iteration % computePeriod == 0) {
-                if (!objectiveBreak) {
-                    log.trace(
-                            "Iteration {} -- Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
-                            iteration, primalRes, dualRes, epsilonPrimal, epsilonDual);
-                } else {
-                    oldObjective = objective;
-                    objective = computeObjective(termStore);
+            breakADMM = breakOptimization(iteration, termStore, objective, oldObjective);
 
-                    log.trace(
-                            "Iteration {} -- Objective: {}, Feasible: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
-                            iteration, objective.objective, (objective.violatedConstraints == 0),
-                            primalRes, dualRes, epsilonPrimal, epsilonDual);
+            if ((iteration % computePeriod == 0) || breakADMM) {
+                oldObjective = objective;
+                objective = parallelComputeObjective(termStore);
+
+                if ((objective.violatedConstraints > 0) && (iteration <= (int)(maxIterations * budget))) {
+                    // Override the decision to break optimization if the current state is infeasible.
+                    breakADMM = false;
                 }
+
+                log.trace("Iteration {} -- Objective: {}, Violated Constraints: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}, Iteration Time: {}, Total Optimization Time: {}.",
+                        iteration, objective.objective, objective.violatedConstraints,
+                        primalRes, dualRes, epsilonPrimal, epsilonDual, (end - start), totalTime);
 
                 evaluate(termStore, iteration, evaluations, trainingMap);
             }
 
             iteration++;
-
-            if (breakOptimization(iteration, termStore, objective, oldObjective)) {
-                // Before we break, compute the objective so we can look for violated constraints.
-                objective = computeObjective(termStore);
-
-                // Check one more time if we should actually break.
-                if (breakOptimization(iteration, termStore, objective, oldObjective)) {
-                    break;
-                }
-            }
         }
 
         optimizationComplete(termStore, objective, totalTime, iteration - 1);

@@ -20,10 +20,13 @@ package org.linqs.psl.reasoner;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.Parallel;
 
 import java.util.Arrays;
 import java.util.List;
@@ -95,11 +98,15 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                 termStore.getVariableCounts(), termStore.size());
 
         if (log.isTraceEnabled()) {
-            // If a streaming term store is being used,
-            // then grounding will happen in this call to computeObjective().
-            ObjectiveResult objective = computeObjective(termStore);
-            log.trace("Iteration {} -- Objective: {}, Feasible: {}.",
-                    0, objective.objective, (objective.violatedConstraints == 0));
+            ObjectiveResult objective = null;
+            if (termStore instanceof StreamingTermStore) {
+                // Grounding will happen in this call to computeObjective().
+                objective = computeObjective(termStore);
+            } else {
+                objective = parallelComputeObjective(termStore);
+            }
+            log.trace("Iteration {} -- Objective: {}, Violated Constraints: {}, Total Optimization Time: {}, Total Number of Iterations: {}.",
+                    0, objective.objective, objective.violatedConstraints, 0, 0);
         }
     }
 
@@ -186,6 +193,31 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         return new ObjectiveResult(objective, violatedConstraints);
     }
 
+    /**
+     * Compute the total weighted objective of the terms in their current state in a distributed manner.
+     * This method cannot be called with a StreamingTermStore.
+     */
+    protected ObjectiveResult parallelComputeObjective(TermStore<T> termStore) {
+        assert !(termStore instanceof StreamingTermStore);
+
+        int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(termStore.size() / (double)blockSize);
+
+        float[] workerObjectives = new float[numTermBlocks];
+        int[] workerViolatedConstraints = new int[numTermBlocks];
+
+        Parallel.count(numTermBlocks, new ObjectiveWorker(termStore, workerObjectives, workerViolatedConstraints, blockSize));
+
+        float objective = 0.0f;
+        int violatedConstraints = 0;
+        for (int i = 0; i < numTermBlocks; i++) {
+            objective += workerObjectives[i];
+            violatedConstraints += workerViolatedConstraints[i];
+        }
+
+        return new ObjectiveResult(objective, violatedConstraints);
+    }
+
     protected void evaluate(TermStore<T> termStore, int iteration, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
         if (!evaluate) {
             return;
@@ -201,6 +233,57 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         for (EvaluationInstance evaluation : evaluations) {
             evaluation.compute(trainingMap);
             log.info("Iteration {} -- {}.", iteration, evaluation.getOutput());
+        }
+    }
+
+    private static class ObjectiveWorker extends Parallel.Worker<Long> {
+        private final TermStore<? extends ReasonerTerm> termStore;
+        private final int blockSize;
+        private final float[] variableValues;
+        private final float[] objectives;
+        private final int[] violatedConstraints;
+
+        public ObjectiveWorker(TermStore<? extends ReasonerTerm> termStore,
+                               float[] objectives, int[] violatedConstraints, int blockSize) {
+            super();
+
+            this.termStore = termStore;
+            this.variableValues = termStore.getVariableValues();
+            this.objectives = objectives;
+            this.violatedConstraints = violatedConstraints;
+            this.blockSize = blockSize;
+        }
+
+        @Override
+        public Object clone() {
+            return new ObjectiveWorker(termStore, objectives, violatedConstraints, blockSize);
+        }
+
+        @Override
+        public void work(long blockIndex, Long ignore) {
+            int numTerms = (int)termStore.size();
+            float objective = 0.0f;
+            int violatedConstraints = 0;
+
+            for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+                int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
+
+                if (termIndex >= numTerms) {
+                    break;
+                }
+
+                ReasonerTerm term = termStore.get(termIndex);
+
+                if (term.isConstraint()) {
+                    if(!MathUtils.isZero(term.evaluate(variableValues))) {
+                        violatedConstraints++;
+                    }
+                } else {
+                    objective += term.evaluate(variableValues);
+                }
+            }
+            objectives[(int)blockIndex] = objective;
+            this.violatedConstraints[(int)blockIndex] = violatedConstraints;
         }
     }
 

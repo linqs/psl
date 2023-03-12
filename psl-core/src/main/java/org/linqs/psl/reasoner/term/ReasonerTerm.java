@@ -126,13 +126,21 @@ public class ReasonerTerm {
      * Return a boolean indicating if this term represents a hard constraint.
      */
     public boolean isConstraint() {
-        return termType == TermType.LinearConstraintTerm;
+        return termType.equals(TermType.LinearConstraintTerm);
     }
 
     /**
      * Evaluate the term's (weighted) value using the given variable values (indexed according to the AtomStore).
+     * For constraints, the evaluation is the extended value extension of the constraint.
      */
     public float evaluate(float[] variableValues) {
+        float incompatibility = evaluateIncompatibility(variableValues);
+        if (isConstraint()) {
+            if (incompatibility > 0.0f) {
+                return Float.POSITIVE_INFINITY;
+            }
+            return 0.0f;
+        }
         return getWeight() * evaluateIncompatibility(variableValues);
     }
 

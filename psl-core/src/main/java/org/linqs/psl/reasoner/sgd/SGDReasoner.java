@@ -114,7 +114,6 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
         long totalTime = 0;
         boolean breakSGD = false;
         int iteration = 1;
-
         while(!breakSGD) {
             long start = System.currentTimeMillis();
 
@@ -162,8 +161,8 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            if (iteration > 1 && log.isTraceEnabled()) {
-                log.trace("Iteration {} -- Objective: {}, Gradient Norm: {}, Iteration Time: {}, Total Optimization Time: {}",
+            if (iteration > 1) {
+                log.trace("Iteration {} -- Objective: {}, Violated Constraints: 0, Gradient Norm: {}, Iteration Time: {}, Total Optimization Time: {}",
                         iteration - 1, objective, MathUtils.pNorm(prevGradient, firstOrderNorm), (end - start), totalTime);
             }
 
