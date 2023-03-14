@@ -174,6 +174,46 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option DUAL_LCQP_FIRST_ORDER_BREAK = new Option(
+        "duallcqp.firstorderbreak",
+        false,
+        "Stop the dual LCQP reasoner when the L-Infinity norm of the dual gradient is less than duallcqp.firstorderthreshold."
+    );
+
+    public static final Option DUAL_LCQP_FIRST_ORDER_THRESHOLD = new Option(
+        "duallcqp.firstorderthreshold",
+        0.001,
+        "Dual LCQP reasoners stop when the norm of the gradient is less than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option DUAL_LCQP_MAX_ITER = new Option(
+        "duallcqp.maxiterations",
+        5000,
+        "The maximum number of iterations a Dual LCQP reasoner can take to perform inference.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option DUAL_LCQP_PRIMAL_DUAL_BREAK = new Option(
+        "duallcqp.primaldualbreak",
+        true,
+        "Stop the dual LCQP reasoner when the primal dual gap is less than duallcqp.primaldualthreshold."
+    );
+
+    public static final Option DUAL_LCQP_PRIMAL_DUAL_THRESHOLD = new Option(
+        "duallcqp.primaldualthreshold",
+        0.01,
+        "Dual LCQP reasoners stop when the primal dual gap is less than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option DUAL_LCQP_REGULARIZATION = new Option(
+        "duallcqp.regularizationparameter",
+        0.01,
+        "The regularization parameter for the dual lcqp problem.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option WLA_EM_ITERATIONS = new Option(
         "em.iterations",
         10,
@@ -706,7 +746,7 @@ public class Options {
 
     public static final Option REASONER_VARIABLE_MOVEMENT_BREAK = new Option(
         "reasoner.variablemovementbreak",
-        true,
+        false,
         "Stop reasoner if two consecutive iterates are within reasoner.variablemovementtolerance distance."
     );
 

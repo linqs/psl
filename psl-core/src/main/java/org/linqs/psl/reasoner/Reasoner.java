@@ -288,8 +288,8 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     }
 
     protected static class ObjectiveResult {
-        public final float objective;
-        public final long violatedConstraints;
+        public float objective;
+        public long violatedConstraints;
 
         public ObjectiveResult(float objective, long violatedConstraints) {
             this.objective = objective;

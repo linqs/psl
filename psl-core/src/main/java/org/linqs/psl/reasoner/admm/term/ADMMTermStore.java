@@ -21,7 +21,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
-import org.linqs.psl.reasoner.term.TermState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,17 +121,6 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
                 }
             }
         }
-    }
-
-    @Override
-    public TermState[] saveState() {
-        ADMMObjectiveTerm.ADMMObjectiveTermState[] termStates = new ADMMObjectiveTerm.ADMMObjectiveTermState[(int)size()];
-
-        for (int i = 0; i < size(); i++) {
-            termStates[i] = (ADMMObjectiveTerm.ADMMObjectiveTermState)get(i).saveState();
-        }
-
-        return termStates;
     }
 
     private synchronized void init() {

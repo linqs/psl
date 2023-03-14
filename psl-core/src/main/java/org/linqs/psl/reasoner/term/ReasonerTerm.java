@@ -107,7 +107,7 @@ public class ReasonerTerm {
     /**
      * Get the weight of the rule this term was generated from.
      */
-    protected float getWeight() {
+    public float getWeight() {
         if (rule != null && rule.isWeighted()) {
             return ((WeightedRule)rule).getWeight();
         }
@@ -116,10 +116,26 @@ public class ReasonerTerm {
     }
 
     /**
+     * Get the constant defining this term.
+     */
+    public float getConstant() {
+        return constant;
+    }
+
+    /**
      * Get the indices of the atoms involved in this reasoner term.
      */
     public int[] getAtomIndexes() {
         return atomIndexes;
+    }
+
+    /**
+     * Get the coefficients of the atoms involved in this term.
+     * The coefficients are aligned with the atomIndexes array, i.e., the i'th entry in the coefficient array
+     * corresponds to the atom with the i'th atomIndex in the atomIndex array.
+     */
+    public float[] getCoefficients() {
+        return coefficients;
     }
 
     /**
@@ -169,7 +185,7 @@ public class ReasonerTerm {
      * if (coefficients^T * y [comparator] constant) { return 0.0 }
      * else { return infinity }
      */
-    private float evaluateConstraint(float[] variableValues) {
+    protected float evaluateConstraint(float[] variableValues) {
         float value = computeInnerPotential(variableValues);
 
         if (comparator.equals(FunctionComparator.EQ)) {
@@ -195,28 +211,28 @@ public class ReasonerTerm {
     /**
      * coefficients^T * y
      */
-    private float evaluateLinearLoss(float[] variableValues) {
+    protected float evaluateLinearLoss(float[] variableValues) {
         return computeInnerPotential(variableValues);
     }
 
     /**
      * max(0.0, coefficients^T * y - constant)
      */
-    private float evaluateHingeLoss(float[] variableValues) {
+    protected float evaluateHingeLoss(float[] variableValues) {
         return Math.max(0.0f, computeInnerPotential(variableValues));
     }
 
     /**
      * (coefficients^T * y - constant)^2
      */
-    private float evaluateSquaredLinearLoss(float[] variableValues) {
+    protected float evaluateSquaredLinearLoss(float[] variableValues) {
         return (float)Math.pow(computeInnerPotential(variableValues), 2.0f);
     }
 
     /**
      * [max(0, coefficients^T * y - constant)]^2
      */
-    private float evaluateSquaredHingeLoss(float[] variableValues) {
+    protected float evaluateSquaredHingeLoss(float[] variableValues) {
         return (float)Math.pow(Math.max(0.0f, computeInnerPotential(variableValues)), 2.0f);
     }
 
@@ -253,15 +269,15 @@ public class ReasonerTerm {
         }
     }
 
-    private float computeLinearConstraintPartial(int varId) {
+    protected float computeLinearConstraintPartial(int varId) {
         return coefficients[varId];
     }
 
-    private float computeLinearLossPartial(int varId) {
+    protected float computeLinearLossPartial(int varId) {
         return coefficients[varId];
     }
 
-    private float computeHingeLossPartial(int varId, float innerPotential) {
+    protected float computeHingeLossPartial(int varId, float innerPotential) {
         if (innerPotential <= 0.0f) {
             return 0.0f;
         }
@@ -269,11 +285,11 @@ public class ReasonerTerm {
         return coefficients[varId];
     }
 
-    private float computeSquaredLinearLossPartial(int varId, float innerPotential) {
+    protected float computeSquaredLinearLossPartial(int varId, float innerPotential) {
         return 2.0f * innerPotential * coefficients[varId];
     }
 
-    private float computeSquaredHingeLossPartial(int varId, float innerPotential) {
+    protected float computeSquaredHingeLossPartial(int varId, float innerPotential) {
         if (innerPotential <= 0.0f) {
             return 0.0f;
         }

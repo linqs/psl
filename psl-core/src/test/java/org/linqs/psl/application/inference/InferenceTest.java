@@ -385,6 +385,58 @@ public abstract class InferenceTest extends PSLBaseTest {
     }
 
     /**
+     * Run inference on simple models with expected MAP states.
+     */
+    @Test
+    public void testSimpleModels() {
+        // Negative prior model.
+        TestModel.ModelInformation info = TestModel.getNegativePriorModel();
+
+        // Create inference application.
+        Database inferDB = info.dataStore.getDatabase(info.targetPartition, new HashSet<StandardPredicate>(), info.observationPartition);
+        InferenceApplication inference = getInference(info.model.getRules(), inferDB);
+
+        // Test the inference application is able to find the MAP state.
+        assertEquals(0.0, inference.inference(), 0.1f);
+
+        inference.close();
+        inferDB.close();
+
+        // Prior model.
+        info = TestModel.getPriorModel();
+        inferDB = info.dataStore.getDatabase(info.targetPartition, new HashSet<StandardPredicate>(), info.observationPartition);
+        inference = getInference(info.model.getRules(), inferDB);
+
+        // Test the inference application is able to find the MAP state.
+        assertEquals(0.0, inference.inference(), 0.1f);
+
+        inference.close();
+        inferDB.close();
+
+        // Symmetry model.
+        info = TestModel.getSymmetryModel();
+        inferDB = info.dataStore.getDatabase(info.targetPartition, new HashSet<StandardPredicate>(), info.observationPartition);
+        inference = getInference(info.model.getRules(), inferDB);
+
+        // Test the inference application is able to find the MAP state.
+        assertEquals(0.0, inference.inference(), 0.1f);
+
+        inference.close();
+        inferDB.close();
+
+        // Exogenous model.
+        info = TestModel.getExogenousModel();
+        inferDB = info.dataStore.getDatabase(info.targetPartition, new HashSet<StandardPredicate>(), info.observationPartition);
+        inference = getInference(info.model.getRules(), inferDB);
+
+        // Test the inference application is able to find the MAP state.
+        assertEquals(0.0, inference.inference(), 0.1f);
+
+        inference.close();
+        inferDB.close();
+    }
+
+    /**
      * Test that inference using evaluation within optimization runs.
      */
     @Test
