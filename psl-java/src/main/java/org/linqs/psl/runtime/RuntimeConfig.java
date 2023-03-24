@@ -639,6 +639,10 @@ public class RuntimeConfig {
             options = new HashMap<String, String>();
         }
 
+        public void setType(String type) {
+            this.type = Reflection.getClass(type);
+        }
+
         public int dataSize() {
             return observations.size() + targets.size() + truth.size();
         }
