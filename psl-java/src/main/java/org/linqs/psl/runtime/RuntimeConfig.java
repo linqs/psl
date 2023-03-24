@@ -24,8 +24,6 @@ import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.predicate.model.ModelPredicate;
-import org.linqs.psl.model.predicate.model.SupportingModel;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.parser.ModelLoader;
@@ -48,7 +46,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -61,6 +58,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -289,11 +288,6 @@ public class RuntimeConfig {
 
         // Instantiate the actual predicate.
 
-        if (info.function != null && info.model != null) {
-            throw new IllegalArgumentException(String.format(
-                    "Predicate (%s) cannot be both functional and model.", name));
-        }
-
         if (info.function != null) {
             ExternalFunctionalPredicate.get(name, (ExternalFunction)(Reflection.newObject(info.function)));
 
@@ -301,11 +295,8 @@ public class RuntimeConfig {
                 throw new IllegalArgumentException(String.format(
                         "Predicate (%s) cannot be functional and have data.", name));
             }
-        } else if (info.model != null) {
-            SupportingModel model = (SupportingModel)Reflection.newObject(info.model);
-            ModelPredicate.get(name, model, types);
         } else {
-            StandardPredicate.get(name, types);
+            instantiatePredicate(info, name, types);
         }
 
         // Validate the evaluations.
@@ -328,6 +319,26 @@ public class RuntimeConfig {
         }
 
         return hasPrimaryEval;
+    }
+
+    private void instantiatePredicate(PredicateConfigInfo info, String name, ConstantType[] types) {
+        Method predicateMethod = null;
+        try {
+            predicateMethod = info.type.getMethod("get", String.class, ConstantType[].class);
+        } catch(NoSuchMethodException ex) {
+            throw new IllegalArgumentException(String.format(
+                    "Predicate (%s) with type (%s) does not have a static method with the name %s.",
+                    info.name, info.type, info.type.toString()));
+        }
+
+        try {
+            predicateMethod.invoke(null, name, types);
+        } catch(IllegalArgumentException | IllegalAccessException | InvocationTargetException ex) {
+            throw new IllegalArgumentException(String.format(
+                    "Predicate (%s) with type (%s) contains illegal arguments on static method with name %s." +
+                    " Found arguments: %s.",
+                    info.name, info.type, name, types.toString()), ex);
+        }
     }
 
     @Override
@@ -586,6 +597,7 @@ public class RuntimeConfig {
 
     public static class PredicateConfigInfo {
         public String name;
+        public Class<? extends StandardPredicate> type;
 
         public int arity;
         public List<String> types;
@@ -599,7 +611,6 @@ public class RuntimeConfig {
 
         // May be null.
         public String function;
-        public String model;
 
         public List<EvalInfo> evaluations;
 
@@ -622,7 +633,6 @@ public class RuntimeConfig {
             truth = new PartitionInfo();
 
             function = null;
-            model = null;
 
             evaluations = new ArrayList<EvalInfo>();
 
@@ -710,7 +720,6 @@ public class RuntimeConfig {
                     && this.targets.equals(otherInfo.targets)
                     && this.truth.equals(otherInfo.truth)
                     && ((this.function == null) ? (otherInfo.function == null) : this.function.equals(otherInfo.function))
-                    && ((this.model == null) ? (otherInfo.model == null) : this.model.equals(otherInfo.model))
                     && this.evaluations.equals(otherInfo.evaluations)
                     && this.options.equals(otherInfo.options);
         }
@@ -877,6 +886,7 @@ public class RuntimeConfig {
      */
     private static class JSONPredicate {
         public String name;
+        public String type;
 
         public Integer arity;
         public List<String> types;
@@ -889,7 +899,6 @@ public class RuntimeConfig {
         public PartitionInfo truth;
 
         public String function;
-        public String model;
 
         public List<EvalInfo> evaluations;
 
@@ -903,8 +912,8 @@ public class RuntimeConfig {
 
             // Properties that do not require any validation/modification.
             config.function = function;
-            config.model = model;
 
+            config.type = (type == null) ? StandardPredicate.class : Reflection.getClass(type);
             config.options = (options == null) ? new HashMap<String, String>() : options;
             config.types = (types == null) ? new ArrayList<String>() : types;
             config.evaluations = (evaluations == null) ? new ArrayList<EvalInfo>() : evaluations;
