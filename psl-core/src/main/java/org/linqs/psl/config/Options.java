@@ -584,44 +584,45 @@ public class Options {
         "Shuffle the terms before each return of iterator()."
     );
 
-    public static final Option MODEL_PREDICATE_BATCH_SIZE = new Option(
-        "modelpredicate.batchsize",
+    public static final Option PREDICATE_DEEP_BATCH_SIZE = new Option(
+        "predicate.deep.batchsize",
         32,
-        "The maximum size of batches for model updates.",
+        "The maximum size of batches for deep predicate updates.",
         Option.FLAG_POSITIVE
     );
 
-    public static final Option MODEL_PREDICATE_ENTITY_ARGS = new Option(
-        "modelpredicate.entityargs",
-        "0",
-        "A comma separated list of indexes to the predicate arguments that identity the data point (as opposed to the target label)."
+    public static final Option PREDICATE_DEEP_ALPHA = new Option(
+            "predicate.deep.alpha",
+            0.5f,
+            "The value of the alpha parameter balancing the neural loss and structure loss gradients."
+                    + " (1 - alpha) * neural_gradients + alpha * structure_gradients",
+            Option.FLAG_NON_NEGATIVE
     );
 
-    public static final Option MODEL_PREDICATE_ITERATIONS = new Option(
-        "modelpredicate.iterations",
-        100,
-        "The number of iterations for the internal model to go through for updates.",
-        Option.FLAG_POSITIVE
+    public static final Option PREDICATE_DEEP_LEARNING_RATE = new Option(
+            "predicate.deep.learningrate",
+            0.001f,
+            "The default deep predicate learning rate.",
+            Option.FLAG_NON_NEGATIVE
     );
 
-    public static final Option MODEL_PREDICATE_LABEL_ARGS = new Option(
-        "modelpredicate.labelargs",
-        "1",
-        "A comma separated list of indexes to the predicate arguments that identity the target label (as opposed to the identity of the data point)."
+    public static final Option PREDICATE_DEEP_PYTHON_PORT = new Option(
+            "predicate.deep.python.port",
+            12345,
+            "The port to connect to the Python model wrapper server.",
+            Option.FLAG_POSITIVE
     );
 
-    public static final Option MODEL_PREDICATE_INITIAL_BATCH_SIZE = new Option(
-        "modelpredicate.initialbatchsize",
-        32,
-        "The maximum size of batches for the initial fitting of model predicates.",
-        Option.FLAG_POSITIVE
+    public static final Option PREDICATE_DEEP_PYTHON_WRAPPER_MODULE = new Option(
+            "predicate.deep.python.module",
+            "pslpython.neural.server",
+            "The Python module to invoke for the neural wrapper."
     );
 
-    public static final Option MODEL_PREDICATE_INITIAL_ITERATIONS = new Option(
-        "modelpredicate.initialiterations",
-        100,
-        "The number of iterations for the internal model to go through for initial fitting.",
-        Option.FLAG_POSITIVE
+    public static final Option PREDICATE_DEEP_SHARED_MEMORY_PATH = new Option(
+            "predicate.deep.sharedmemory.path",
+            SystemUtils.getTempDir("neural_shared_memory.bin"),
+            "Where the place shared memory."
     );
 
     public static final Option WLA_PDL_ADMM_STEPS = new Option(
