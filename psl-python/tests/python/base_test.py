@@ -26,7 +26,7 @@ class PSLTest(unittest.TestCase):
     All PSL tests need a base for standard setup and teardown.
     """
 
-    DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+    DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'resources', 'data'))
 
     SIMPLE_ACQUAINTANCES_PSL_DIR = os.path.join(DATA_DIR, 'simple-acquaintances')
     SIMPLE_ACQUAINTANCES_DATA_DIR = os.path.join(SIMPLE_ACQUAINTANCES_PSL_DIR, 'data')

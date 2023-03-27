@@ -18,15 +18,15 @@ limitations under the License.
 
 import os
 
-import tests.data.models.simpleacquaintances
+import tests.resources.models.psl.simpleacquaintances
 from pslpython.model import Model
 from pslpython.predicate import Predicate
 from pslpython.predicate import PredicateError
-from tests.base_test import PSLTest
+from tests.python.base_test import PSLTest
 
 class TestModel(PSLTest):
     def test_simple_acquaintances(self):
-        results = tests.data.models.simpleacquaintances.run()
+        results = tests.resources.models.psl.simpleacquaintances.run()
 
         self.assertEquals(len(results), 1)
 
@@ -61,8 +61,8 @@ class TestModel(PSLTest):
             pass
 
     def test_numeric_data(self):
-        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'simple-acquaintances', 'numeric_data'))
-        results = tests.data.models.simpleacquaintances.run(data_dir)
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'resources', 'data', 'simple-acquaintances', 'numeric_data'))
+        results = tests.resources.models.psl.simpleacquaintances.run(data_dir)
 
         self.assertEquals(len(results), 1)
 

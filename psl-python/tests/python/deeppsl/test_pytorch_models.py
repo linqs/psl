@@ -20,16 +20,20 @@ import os
 import sys
 import tempfile
 
-import tests.base_test
-import tests.data.neupsl.sign
+import tests.python.base_test
+import tests.resources.models.deeppsl.sign.data
+import tests.resources.models.deeppsl.sign.tensorflow_model
 
-class TestNeuPSL(tests.base_test.PSLTest):
+THIS_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+DATA_DIR = os.path.join(THIS_DIR, '..', '..', 'resources', 'data')
+
+class TestTensorflowModels(tests.python.base_test.PSLTest):
     def setUp(self):
         global tensorflow
 
         # Skip these tests if tensorflow is not installed.
         try:
-            # Tensoflow has a bug when sys.argv is empty on import: https://github.com/tensorflow/tensorflow/issues/45994
+            # Tensorflow has a bug when sys.argv is empty on import: https://github.com/tensorflow/tensorflow/issues/45994
             sys.argv.append('__workaround__')
             import tensorflow
             sys.argv.pop()
@@ -43,23 +47,23 @@ class TestNeuPSL(tests.base_test.PSLTest):
     def tearDown(self):
         del os.environ['TF_CPP_MIN_LOG_LEVEL']
 
-    def test_wrapper_base(self):
-        wrapper, train_features, train_labels, test_features, test_labels = tests.data.neupsl.sign.fetch()
+    def test_sign_model(self):
+        sign_model = tests.resources.models.deeppsl.sign.tensorflow_model.SignModel()
+        x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_data(DATA_DIR)
+
         epochs = 20
 
-        pre_train_results = wrapper.evaluate(test_features, test_labels)
-
-        for epoch in range(epochs):
-            wrapper.fit(train_features, train_labels)
-
-        post_train_results = wrapper.evaluate(test_features, test_labels)
+        sign_model.internal_init_model()
+        pre_train_results = sign_model.internal_eval(x_test, y_test)
+        sign_model.internal_fit(x_train, y_train, epochs=epochs)
+        post_train_results = sign_model.internal_eval(x_test, y_test)
 
         with tempfile.TemporaryDirectory(suffix = '_TestNeuPSL') as temp_dir:
-            save_path = os.path.join(temp_dir, 'model')
-            wrapper.save(tfPath = save_path)
+            save_path = os.path.join(temp_dir, 'tensorflow_model')
+            sign_model.internal_save(options = {'save_path': save_path})
 
-            newWrapper = tensorflow.saved_model.load(save_path)
-            post_load_results = newWrapper.evaluate(test_features, test_labels)
+            new_sign_model = tensorflow.saved_model.load(save_path)
+            post_load_results = new_sign_model.evaluate(x_test, y_test)
 
         # First value is the objective, second value is the accuracy.
 

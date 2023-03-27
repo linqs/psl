@@ -10,7 +10,7 @@ from pslpython.rule import Rule
 MODEL_NAME = 'simple-acquaintances'
 ADDITIONAL_PSL_OPTIONS = {'runtime.log.level': 'ERROR'}
 
-DEFAULT_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'simple-acquaintances', 'data'))
+DEFAULT_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'simple-acquaintances', 'data'))
 
 def run(data_dir = DEFAULT_DATA_DIR):
     model = Model(MODEL_NAME)

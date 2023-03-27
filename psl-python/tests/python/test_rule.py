@@ -20,7 +20,7 @@ import os
 
 from pslpython.rule import Rule
 from pslpython.rule import RuleError
-from tests.base_test import PSLTest
+from tests.python.base_test import PSLTest
 
 class TestRule(PSLTest):
     def test_init_args(self):

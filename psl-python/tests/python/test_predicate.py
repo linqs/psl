@@ -23,7 +23,7 @@ import pandas
 from pslpython.partition import Partition
 from pslpython.predicate import Predicate
 from pslpython.predicate import PredicateError
-from tests.base_test import PSLTest
+from tests.python.base_test import PSLTest
 
 class TestPredicate(PSLTest):
     def test_name_normalization(self):
