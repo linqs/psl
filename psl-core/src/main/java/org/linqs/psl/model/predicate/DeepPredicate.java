@@ -52,7 +52,7 @@ public class DeepPredicate extends StandardPredicate {
     public static final String DELIM = "\t";
 
     public static final String CONFIG_MODEL_PATH = "model-path";
-    public static final String CONFIG_ENTITY_FEATURE_MAP = "entity-feature-map";
+    public static final String CONFIG_ENTITY_FEATURE_MAP_PATH = "entity-feature-map-path";
     public static final String CONFIG_CLASS_SIZE = "class-size";
     public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
     public static final String CONFIG_LABEL_ARGUMENT_INDEXES = "label-argument-indexes";
@@ -169,11 +169,11 @@ public class DeepPredicate extends StandardPredicate {
                     CONFIG_MODEL_PATH));
         }
 
-        String configEntityFeatureMapPath = FileUtils.makePath(relativeDir, config.get(CONFIG_ENTITY_FEATURE_MAP));
+        String configEntityFeatureMapPath = FileUtils.makePath(relativeDir, config.get(CONFIG_ENTITY_FEATURE_MAP_PATH));
         if (configEntityFeatureMapPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A DeepPredicate must have a id feature map path (\"%s\") specified in predicate config.",
-                    CONFIG_ENTITY_FEATURE_MAP));
+                    CONFIG_ENTITY_FEATURE_MAP_PATH));
         }
 
         String configClassSize = config.get(CONFIG_CLASS_SIZE);
