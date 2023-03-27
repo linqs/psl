@@ -155,14 +155,14 @@ public class DeepPredicate extends StandardPredicate {
 
     /**
      * Load a deep model.
-     * If any relative paths are supplied in the config, |relativeDir| can be used to resilve them.
+     * If any relative paths are supplied in the config, |relativeDir| can be used to resolve them.
      */
-    public void loadModel(Map<String, String> config, String relativeDir) {
+    public void loadDeepModel(Map<String, String> config, String relativeDir) {
         if (pythonServerProcess != null) {
             throw new RuntimeException("Cannot load a DeepPredicate that has already been loaded.");
         }
 
-        String configModelPath = config.get(CONFIG_MODEL_PATH);
+        String configModelPath = FileUtils.makePath(relativeDir, config.get(CONFIG_MODEL_PATH));
         if (configModelPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",

@@ -62,6 +62,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -323,21 +324,39 @@ public class RuntimeConfig {
 
     private void instantiatePredicate(PredicateConfigInfo info, String name, ConstantType[] types) {
         Method predicateMethod = null;
+        String methodName = "get";
         try {
-            predicateMethod = info.type.getMethod("get", String.class, ConstantType[].class);
+            predicateMethod = info.type.getMethod(methodName, String.class, ConstantType[].class);
         } catch(NoSuchMethodException ex) {
             throw new IllegalArgumentException(String.format(
-                    "Predicate (%s) with type (%s) does not have a static method with the name %s.",
-                    info.name, info.type, info.type.toString()));
+                "Predicate (%s) with type (%s) does not have a static method with the name %s.",
+                info.name, info.type, methodName));
         }
 
         try {
             predicateMethod.invoke(null, name, types);
         } catch(IllegalArgumentException | IllegalAccessException | InvocationTargetException ex) {
             throw new IllegalArgumentException(String.format(
-                    "Predicate (%s) with type (%s) contains illegal arguments on static method with name %s." +
-                    " Found arguments: %s.",
-                    info.name, info.type, name, types.toString()), ex);
+                "Predicate (%s) with type (%s) contains illegal arguments on static method with name %s." +
+                " Found arguments: %s.",
+                info.name, info.type, methodName, Arrays.toString(types)), ex);
+        }
+
+        // Try to load a deep model for this predicate.
+        methodName = "loadDeepModel";
+        try {
+            predicateMethod = info.type.getMethod(methodName, Map.class, String.class);
+        } catch(NoSuchMethodException ex) {
+            return;
+        }
+
+        try {
+            predicateMethod.invoke(null, info.options, relativeBasePath);
+        } catch(IllegalArgumentException | IllegalAccessException | InvocationTargetException ex) {
+            throw new IllegalArgumentException(String.format(
+                "Predicate (%s) with type (%s) contains illegal arguments on static method with name %s." +
+                " Found arguments: %s.",
+                info.name, info.type, methodName, Arrays.toString(types)), ex);
         }
     }
 
