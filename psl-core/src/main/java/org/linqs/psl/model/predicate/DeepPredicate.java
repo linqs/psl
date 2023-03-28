@@ -19,7 +19,9 @@ package org.linqs.psl.model.predicate;
 
 import org.json.JSONObject;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Logger;
@@ -34,6 +36,7 @@ import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,8 +49,9 @@ import java.util.Map;
 public class DeepPredicate extends StandardPredicate {
     private static final Logger log = Logger.getLogger(DeepPredicate.class);
 
-    private boolean modelLoaded;
-    private boolean modelRan;
+    private boolean initComplete;
+    private ArrayList<Integer> atomIndexes;
+    private ArrayList<Integer> featureIndexes;
 
     public static final String DELIM = "\t";
 
@@ -83,14 +87,15 @@ public class DeepPredicate extends StandardPredicate {
      * Includes both observed and unobserved data points.
      * [entities x labels]
      */
-    protected float[][] manualLabels;
-    protected float[][] manualGradients;
+    protected float[][] labels;
+    protected float[][] gradients;
 
     private int featuresSize;
     private int classSize;
     private int batchSize;
     private float learningRate;
     private float alpha;
+    private String entityFeatureMapPath;
 
     public static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
 
@@ -119,8 +124,9 @@ public class DeepPredicate extends StandardPredicate {
     protected DeepPredicate(String name, ConstantType[] types) {
         super(name, types);
 
-        modelLoaded = false;
-        modelRan = false;
+        initComplete = false;
+        atomIndexes = new ArrayList<>();
+        featureIndexes = new ArrayList<>();
 
         entityIndexMapping = null;
         labelIndexMapping = null;
@@ -128,9 +134,10 @@ public class DeepPredicate extends StandardPredicate {
         labelArgumentIndexes = null;
         featuresSize = -1;
         classSize = -1;
+        entityFeatureMapPath = null;
 
-        manualLabels = null;
-        manualGradients = null;
+        labels = null;
+        gradients = null;
 
         initStatic();
 
@@ -151,6 +158,75 @@ public class DeepPredicate extends StandardPredicate {
         alpha = Options.PREDICATE_DEEP_ALPHA.getFloat();
 
         deepOutput = null;
+    }
+
+    /**
+     * Load atom and feature indexes using the entity feature map file, which maps entity IDs to feature vectors.
+     */
+    public void init(AtomStore atomStore) {
+        loadAtomFeatureIndexes(atomStore);
+        initComplete = true;
+    }
+
+    private void loadAtomFeatureIndexes(AtomStore atomStore) {
+        log.debug("Loading features for {} from {}", this, entityFeatureMapPath);
+
+        Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
+        ConstantType type;
+        int featureIndex;
+
+        int width = -1;
+
+        try (BufferedReader reader = FileUtils.getBufferedReader(entityFeatureMapPath)) {
+            String line = null;
+            int lineNumber = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                String[] parts = line.split(DELIM);
+
+                if (width == -1) {
+                    width = parts.length;
+                    featuresSize = width - entityArgumentIndexes.length;
+
+                    if (featuresSize <= 0) {
+                        throw new RuntimeException(String.format(
+                                "Line too short (%d). Expected at least %d values, found %d.",
+                                lineNumber, entityArgumentIndexes.length + 1, width));
+                    }
+                } else if (parts.length != width) {
+                    throw new RuntimeException(String.format(
+                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
+                            lineNumber, width, parts.length));
+                }
+
+                // Get constant types for this entity.
+                for (int index = 0; index < arguments.length - 1; index++) {
+                    type = this.getArgumentType(index);
+                    arguments[index] = ConstantType.getConstant(parts[index], type);
+                }
+
+                // Add atom index and feature index for each class.
+                type = this.getArgumentType(arguments.length - 1);
+                featureIndex = featureIndexes.size() / classSize;
+
+                for (int index = 0; index < classSize; index++) {
+                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
+                    atomIndexes.add(atomStore.getAtomIndex(this, arguments));
+                    featureIndexes.add(featureIndex);
+                }
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to parse features file: " + entityFeatureMapPath, ex);
+        }
+
+        log.debug("Loaded features for {} [{} x {}]", this, entityIndexMapping.size(), featuresSize);
     }
 
     /**
@@ -197,25 +273,22 @@ public class DeepPredicate extends StandardPredicate {
                     CONFIG_LABEL_ARGUMENT_INDEXES));
         }
 
-        loadEntityFeatureMap(configEntityFeatureMapPath);
+        entityFeatureMapPath = configEntityFeatureMapPath;
         classSize = Integer.parseInt(configClassSize);
         entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
         labelArgumentIndexes = StringUtils.splitInt(configLabelArgumentIndexes, ",");
 
         deepOutput = new float[entityIndexMapping.size()][classSize];
-        manualLabels = new float[entityIndexMapping.size()][classSize];
-        manualGradients = new float[entityIndexMapping.size()][classSize];
+        labels = new float[entityIndexMapping.size()][classSize];
+        gradients = new float[entityIndexMapping.size()][classSize];
 
         loadModel(configModelPath, configEntityFeatureMapPath, config);
-        modelLoaded = true;
     }
 
     /**
-     * Save the model.
+     * Save the deep model.
      */
-    public void save() {
-        checkModel();
-
+    public void saveDeepModel() {
         JSONObject message = new JSONObject();
         message.put("task", "save");
 
@@ -223,10 +296,12 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     /**
-     * Run the model and store the result internally.
+     * Get deep model predictions and update atom values.
      */
-    public void runModel() {
-        checkModel();
+    public void predictDeepModel(AtomStore atomStore) {
+        if (!initComplete) {
+            init(atomStore);
+        }
 
         JSONObject message = new JSONObject();
         message.put("task", "predict");
@@ -243,30 +318,26 @@ public class DeepPredicate extends StandardPredicate {
                     count, deepOutput.length));
         }
 
-        for (int entityIndex = 0; entityIndex < deepOutput.length; entityIndex++) {
-            for (int labelIndex = 0; labelIndex < classSize; labelIndex++) {
-                deepOutput[entityIndex][labelIndex] = sharedBuffer.getFloat();
-            }
+        float[] atomValues = atomStore.getAtomValues();
+        for(int index = 0; index < atomIndexes.size(); index++) {
+            atomValues[atomIndexes.get(index)] = sharedBuffer.getFloat();
+            ((RandomVariableAtom)atomStore.getAtom(atomIndexes.get(index))).setValue(sharedBuffer.getFloat());
         }
-
-        modelRan = true;
     }
 
     /**
      * Fit the model using values set through setLabel().
      */
     public void fit() {
-        checkModel();
-
         log.trace("Fitting {}.", this);
 
         sharedBuffer.clear();
 
         // Write out the labels.
-        writeEntityData(manualLabels);
+        writeEntityData(labels);
 
         // Write out the gradients.
-        writeEntityData(manualGradients);
+        writeEntityData(gradients);
 
         sharedBuffer.force();
 
@@ -274,7 +345,7 @@ public class DeepPredicate extends StandardPredicate {
 
         Map<String, Object> options = new HashMap<String, Object>();
         options.put("epochs", 1);
-        options.put("batch_size", Math.min(batchSize, manualLabels.length));
+        options.put("batch_size", Math.min(batchSize, labels.length));
         options.put("learning_rate", learningRate);
         options.put("has_gradients", true);
         options.put("alpha", alpha);
@@ -307,8 +378,8 @@ public class DeepPredicate extends StandardPredicate {
         labelArgumentIndexes = null;
         featuresSize = -1;
 
-        manualLabels = null;
-        manualGradients = null;
+        labels = null;
+        gradients = null;
 
         if (socketOutput != null) {
             JSONObject message = new JSONObject();
@@ -368,12 +439,6 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
-    private void checkModel() {
-        if (!modelLoaded) {
-            throw new IllegalStateException("DeepPredicate (" + this + ") has not been initialized via loadModel().");
-        }
-    }
-
     private void loadModel(String modelDef, String featuresPath, Map<String, String> config) {
         // Do our best to make sure close() gets called.
         final DeepPredicate finalThis = this;
@@ -426,59 +491,6 @@ public class DeepPredicate extends StandardPredicate {
         message.put("options", config);
 
         sendSocketMessage(message);
-    }
-
-    /**
-     * Load the file that maps entities to features.
-     * The features themselves are not used or stored on the PSL side,
-     * but knowing the order and entity ids are important for communication with deep models.
-     * The mapping of entity to index will be placed in |entityIndexMapping| and |numFeatures| will be set.
-     * Each entity's identifier in |entityIndexMapping| will match their index in the feature file.
-     * Although not invoked directly by this class, this is made available to supporting models.
-     */
-    private void loadEntityFeatureMap(String path) {
-        log.debug("Loading features for {} from {}", this, path);
-
-        entityIndexMapping = new HashMap<String, Integer>();
-
-        int width = -1;
-
-        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
-            String line = null;
-            int lineNumber = 0;
-
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
-
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-
-                String[] parts = line.split(DELIM);
-
-                if (width == -1) {
-                    width = parts.length;
-                    featuresSize = width - entityArgumentIndexes.length;
-
-                    if (featuresSize <= 0) {
-                        throw new RuntimeException(String.format(
-                                "Line too short (%d). Expected at least %d values, found %d.",
-                                lineNumber, entityArgumentIndexes.length + 1, width));
-                    }
-                } else if (parts.length != width) {
-                    throw new RuntimeException(String.format(
-                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
-                            lineNumber, width, parts.length));
-                }
-
-                entityIndexMapping.put(getAtomIdentifier(parts, entityArgumentIndexes), entityIndexMapping.size());
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to parse features file: " + path, ex);
-        }
-
-        log.debug("Loaded features for {} [{} x {}]", this, entityIndexMapping.size(), featuresSize);
     }
 
     private AtomIndexes getAtomIndexes(RandomVariableAtom atom) {
@@ -669,18 +681,10 @@ public class DeepPredicate extends StandardPredicate {
      */
 
     public float getValue(int entityIndex, int labelIndex) {
-        checkModel();
-
         return deepOutput[entityIndex][labelIndex];
     }
 
     public float getValue(RandomVariableAtom atom) {
-        checkModel();
-
-        if (!modelRan) {
-            throw new IllegalStateException("Cannot invoke getValue() before runModel() has been called.");
-        }
-
         // TODO(eriq): Warn on out-of-range value?
         AtomIndexes indexes = getAtomIndexes(atom);
         if (indexes == null) {
@@ -693,57 +697,47 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     public float getLabel(RandomVariableAtom atom) {
-        checkModel();
-
         AtomIndexes indexes = getAtomIndexes(atom);
         if (indexes == null) {
             return 0.0f;
         }
 
-        return manualLabels[indexes.entityIndex][indexes.labelIndex];
+        return labels[indexes.entityIndex][indexes.labelIndex];
     }
 
     public void setLabel(RandomVariableAtom atom, float labelValue) {
-        checkModel();
-
         AtomIndexes indexes = getAtomIndexes(atom);
         if (indexes == null) {
             return;
         }
 
-        manualLabels[indexes.entityIndex][indexes.labelIndex] = labelValue;
+        labels[indexes.entityIndex][indexes.labelIndex] = labelValue;
     }
 
     public void resetGradients() {
-        checkModel();
-
-        for (int i = 0; i < manualGradients.length; i++) {
-            for (int j = 0; j < manualGradients[i].length; j++) {
-                manualGradients[i][j] = 0.0f;
+        for (int i = 0; i < gradients.length; i++) {
+            for (int j = 0; j < gradients[i].length; j++) {
+                gradients[i][j] = 0.0f;
             }
         }
     }
 
     public float getGradient(RandomVariableAtom atom) {
-        checkModel();
-
         AtomIndexes indexes = getAtomIndexes(atom);
         if (indexes == null) {
             return 0.0f;
         }
 
-        return manualGradients[indexes.entityIndex][indexes.labelIndex];
+        return gradients[indexes.entityIndex][indexes.labelIndex];
     }
 
     public void setGradient(RandomVariableAtom atom, float gradientValue) {
-        checkModel();
-
         AtomIndexes indexes = getAtomIndexes(atom);
         if (indexes == null) {
             return;
         }
 
-        manualGradients[indexes.entityIndex][indexes.labelIndex] = gradientValue;
+        gradients[indexes.entityIndex][indexes.labelIndex] = gradientValue;
     }
 
     /**

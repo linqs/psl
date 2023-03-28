@@ -21,6 +21,8 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.predicate.DeepPredicate;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
@@ -132,6 +134,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         int iteration = 1;
         while (!breakGD) {
             log.trace("Model: {}", mutableRules);
+
+            for (Predicate predicate : Predicate.getAll()) {
+                if (predicate instanceof DeepPredicate) {
+                    ((DeepPredicate)predicate).predictDeepModel(inference.getDatabase().getAtomStore());
+                }
+            }
+
             if (log.isTraceEnabled() && evaluation != null) {
                 // Compute the MAP state before evaluating so variables have assigned values.
                 computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);

@@ -38,6 +38,7 @@ import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -57,6 +58,8 @@ import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -503,6 +506,10 @@ public class Runtime {
                 targetDatabase, truthDatabase);
         learner.setEvaluation(primaryEvaluation);
         learner.learn();
+
+        for (RuntimeConfig.PredicateConfigInfo predicateInfo : config.predicates.values()) {
+            config.invokePredicateMethod("saveDeepModel", predicateInfo, false, null);
+        }
 
         learner.close();
         targetDatabase.close();
