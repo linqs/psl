@@ -313,20 +313,26 @@ public class DeepPredicate extends StandardPredicate {
     public synchronized void close() {
         super.close();
 
+        if (options != null) {
+            options.clear();
+            options = null;
+        }
+        entityDataMapPath = null;
+        entityArgumentIndexes = null;
+        classSize = -1;
+        dataSize = 0;
+
         if (atomIndexes != null) {
             atomIndexes.clear();
             atomIndexes = null;
         }
-
         if (dataIndexes != null) {
             dataIndexes.clear();
             dataIndexes = null;
         }
-
-        entityArgumentIndexes = null;
-        dataSize = -1;
-
         gradients = null;
+
+        initComplete = false;
 
         if (socketOutput != null) {
             JSONObject message = new JSONObject();
