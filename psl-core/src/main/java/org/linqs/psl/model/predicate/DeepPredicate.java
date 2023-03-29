@@ -151,9 +151,14 @@ public class DeepPredicate extends StandardPredicate {
         classSize = Integer.parseInt(configClassSize);
         options = config;
 
-        // Open data file and compute how many instances there are.
+        // Open data file and count how many data points there are.
         try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
-            while (reader.readLine() != null) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
                 dataSize++;
             }
         } catch (IOException ex) {
@@ -220,8 +225,8 @@ public class DeepPredicate extends StandardPredicate {
 
         sharedBuffer.clear();
 
-        for (int index = 0; index < atomIndexes.size(); index++) {
-            gradients[dataIndexes[index]] = newGradients[atomIndexes.get(dataIndexes.get(index))];
+        for (int index = 0; index < atomIndexes.length; index++) {
+            gradients[dataIndexes[index]] = newGradients[atomIndexes[dataIndexes[index / classSize]]];
         }
 
         writeEntityData(gradients);
@@ -247,7 +252,7 @@ public class DeepPredicate extends StandardPredicate {
         log.trace("Fitting {}.", this);
 
         sharedBuffer.clear();
-        writeIndexData(dataIndexes.size() / classSize);
+        writeIndexData(dataIndexes.length);
         sharedBuffer.force();
 
         JSONObject message = new JSONObject();
@@ -260,19 +265,19 @@ public class DeepPredicate extends StandardPredicate {
         sharedBuffer.clear();
 
         int count = sharedBuffer.getInt();
-        if (count != atomIndexes.size()) {
+        if (count != atomIndexes.length) {
             throw new RuntimeException(String.format(
                     "External model did not make the desired number of predictions, got %d, expected %d.",
-                    count, atomIndexes.size()));
+                    count, atomIndexes.length));
         }
 
         float[] atomValues = atomStore.getAtomValues();
         float deepPrediction = 0.0f;
         int atomIndex = 0;
 
-        for(int index = 0; index < atomIndexes.size(); index++) {
+        for(int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
-            atomIndex = atomIndexes.get(dataIndexes.get(index));
+            atomIndex = atomIndexes[dataIndexes[index / classSize]];
 
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
@@ -288,7 +293,7 @@ public class DeepPredicate extends StandardPredicate {
         log.trace("Fitting {}.", this);
 
         sharedBuffer.clear();
-        writeIndexData(dataIndexes.size() / classSize);
+        writeIndexData(dataIndexes.length);
         sharedBuffer.force();
 
         JSONObject message = new JSONObject();
@@ -329,14 +334,8 @@ public class DeepPredicate extends StandardPredicate {
         classSize = -1;
         dataSize = 0;
 
-        if (atomIndexes != null) {
-            atomIndexes.clear();
-            atomIndexes = null;
-        }
-        if (dataIndexes != null) {
-            dataIndexes.clear();
-            dataIndexes = null;
-        }
+        atomIndexes = null;
+        dataIndexes = null;
         gradients = null;
 
         initComplete = false;
@@ -410,7 +409,7 @@ public class DeepPredicate extends StandardPredicate {
         // Map data entities from file to atoms and indexes.
         Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
         ConstantType type;
-        int dataIndex;
+        int dataIndex = 0;
         int width = -1;
 
         try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
@@ -449,19 +448,20 @@ public class DeepPredicate extends StandardPredicate {
 
                 // Add atom index and data index for each class.
                 type = this.getArgumentType(arguments.length - 1);
-                dataIndex = dataIndexes.size() / classSize;
+                dataIndexes[dataIndex] = dataIndex;
 
                 for (int index = 0; index < classSize; index++) {
                     arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
-                    atomIndexes.add(atomStore.getAtomIndex(this, arguments));
-                    dataIndexes.add(dataIndex);
+                    atomIndexes[classSize * dataIndex + index] = atomStore.getAtomIndex(this, arguments);
                 }
+
+                dataIndex += 1;
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse entity data map file: " + entityDataMapPath, ex);
         }
 
-        gradients = new float[atomIndexes.size()];
+        gradients = new float[atomIndexes.length];
         initComplete = true;
     }
 
@@ -490,7 +490,7 @@ public class DeepPredicate extends StandardPredicate {
 
         // Write out the indexes.
         for (int i = 0; i < dataSize; i++) {
-            sharedBuffer.putInt(dataIndexes.get(i));
+            sharedBuffer.putInt(dataIndexes[i]);
         }
     }
 
