@@ -43,8 +43,6 @@ import java.util.Map;
 
 /**
  * A predicate that is backed by some deep model.
- *
- * Before a DeepPredicate can be used, loadModel() must be called.
  */
 public class DeepPredicate extends StandardPredicate {
     private static final Logger log = Logger.getLogger(DeepPredicate.class);
@@ -66,8 +64,8 @@ public class DeepPredicate extends StandardPredicate {
     private int classSize;
     private int dataSize;
 
-    private ArrayList<Integer> atomIndexes;
-    private ArrayList<Integer> dataIndexes;
+    private int[] atomIndexes;
+    private int[] dataIndexes;
     private float[] gradients;
 
     private boolean initComplete;
@@ -92,8 +90,8 @@ public class DeepPredicate extends StandardPredicate {
         classSize = -1;
         dataSize = 0;
 
-        atomIndexes = new ArrayList<>();
-        dataIndexes = new ArrayList<>();
+        atomIndexes = null;
+        dataIndexes = null;
         gradients = null;
 
         initComplete = false;
@@ -201,6 +199,9 @@ public class DeepPredicate extends StandardPredicate {
             throw new RuntimeException(ex);
         }
 
+        atomIndexes = new int[dataSize * classSize];
+        dataIndexes = new int[dataSize];
+
         JSONObject message = new JSONObject();
         message.put("task", "init");
         message.put("shared_memory_path", sharedMemoryPath);
@@ -212,7 +213,7 @@ public class DeepPredicate extends StandardPredicate {
     /**
      * Fit the model using values set through setLabel().
      */
-    public void fitDeepModel(AtomStore atomStore, Map<RandomVariableAtom, Float> gradientAtomMap) {
+    public void fitDeepModel(AtomStore atomStore, float[] newGradients) {
         finalizeInit(atomStore);
 
         log.trace("Fitting {}.", this);
@@ -220,7 +221,7 @@ public class DeepPredicate extends StandardPredicate {
         sharedBuffer.clear();
 
         for (int index = 0; index < atomIndexes.size(); index++) {
-            gradients[dataIndexes.get(index)] = gradientAtomMap.get(atomStore.getAtom(atomIndexes.get(dataIndexes.get(index))));
+            gradients[dataIndexes[index]] = newGradients[atomIndexes.get(dataIndexes.get(index))];
         }
 
         writeEntityData(gradients);
@@ -266,9 +267,15 @@ public class DeepPredicate extends StandardPredicate {
         }
 
         float[] atomValues = atomStore.getAtomValues();
+        float deepPrediction = 0.0f;
+        int atomIndex = 0;
+
         for(int index = 0; index < atomIndexes.size(); index++) {
-            atomValues[atomIndexes.get(dataIndexes.get(index))] = sharedBuffer.getFloat();
-            ((RandomVariableAtom)atomStore.getAtom(atomIndexes.get(index))).setValue(sharedBuffer.getFloat());
+            deepPrediction = sharedBuffer.getFloat();
+            atomIndex = atomIndexes.get(dataIndexes.get(index));
+
+            atomValues[atomIndex] = deepPrediction;
+            ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
         }
     }
 
@@ -291,7 +298,7 @@ public class DeepPredicate extends StandardPredicate {
         JSONObject response = sendSocketMessage(message);
 
         String resultString = getResultString(response);
-        log.debug("Eval Result: {}", resultString);
+        log.debug("Deep Eval Result for {} : {}", this, resultString);
     }
 
     /**

@@ -32,10 +32,7 @@ import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Learns weights for weighted rules in a model by optimizing an objective via Gradient Descent.
@@ -59,7 +56,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected GDExtension gdExtension;
 
     protected float[] weightGradient;
-    protected Map<RandomVariableAtom, Float> groundAtomGradient;
+    protected float[] atomGradient;
+    protected List<DeepPredicate> deepPredicates;
 
     protected TermState[] mpeTermState;
     protected float[] mpeAtomValueState;
@@ -88,7 +86,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
 
         weightGradient = new float[mutableRules.size()];
-        groundAtomGradient = new HashMap<RandomVariableAtom, Float>();
+        atomGradient = null;
+        deepPredicates = new ArrayList<DeepPredicate>();
 
         mpeTermState = null;
         mpeAtomValueState = null;
@@ -125,6 +124,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
         mpeTermState = inference.getTermStore().saveState();
         float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
         mpeAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+
+        atomGradient = new float[atomValues.length];
+
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                deepPredicates.add((DeepPredicate)predicate);
+            }
+        }
     }
 
     @Override
@@ -141,10 +148,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         while (!breakGD) {
             log.trace("Model: {}", mutableRules);
 
-            for (Predicate predicate : Predicate.getAll()) {
-                if (predicate instanceof DeepPredicate) {
-                    ((DeepPredicate)predicate).predictDeepModel(inference.getDatabase().getAtomStore());
-                }
+            for (DeepPredicate deepPredicate : deepPredicates) {
+                deepPredicate.predictDeepModel(inference.getDatabase().getAtomStore());
             }
 
             if (log.isTraceEnabled() && evaluation != null) {
@@ -152,6 +157,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
 
                 evaluation.compute(trainingMap);
+                for (DeepPredicate deepPredicate : deepPredicates) {
+                    deepPredicate.evalDeepModel(inference.getDatabase().getAtomStore());
+                }
                 log.trace("MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
             }
 
@@ -166,10 +174,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 clipWeightGradient();
             }
 
-            for (Predicate predicate : Predicate.getAll()) {
-                if (predicate instanceof DeepPredicate) {
-                    ((DeepPredicate)predicate).fitDeepModel(inference.getDatabase().getAtomStore(), groundAtomGradient);
-                }
+            for (DeepPredicate deepPredicate : deepPredicates) {
+                deepPredicate.fitDeepModel(inference.getDatabase().getAtomStore(), atomGradient);
             }
 
             breakGD = breakOptimization(iteration, objective, oldObjective);
@@ -190,6 +196,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
             // Compute the MAP state before evaluating so variables have assigned values.
             computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
             evaluation.compute(trainingMap);
+            for (DeepPredicate deepPredicate : deepPredicates) {
+                deepPredicate.evalDeepModel(inference.getDatabase().getAtomStore());
+            }
             log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
         }
         log.info("Final Weight Learning Loss: {}, Final Gradient Magnitude: {}, Total optimization time: {}",
