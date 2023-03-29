@@ -298,7 +298,7 @@ public class RuntimeConfig {
             }
         } else {
             invokePredicateMethod("get", info, true, name, types);
-            invokePredicateMethod("loadDeepModel", info, false, name, types);
+            invokePredicateMethod("initDeepModel", info, false, name, types);
         }
 
         // Validate the evaluations.

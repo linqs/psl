@@ -49,35 +49,32 @@ import java.util.Map;
 public class DeepPredicate extends StandardPredicate {
     private static final Logger log = Logger.getLogger(DeepPredicate.class);
 
-    private boolean initComplete;
-    private ArrayList<Integer> atomIndexes;
-    private ArrayList<Integer> featureIndexes;
+    private static final String DELIM = "\t";
 
-    public static final String DELIM = "\t";
+    private static final String CONFIG_MODEL_PATH = "model-path";
+    private static final String CONFIG_ENTITY_DATA_MAP_PATH = "entity-data-map-path";
+    private static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
+    private static final String CONFIG_CLASS_SIZE = "class-size";
 
-    public static final String CONFIG_MODEL_PATH = "model-path";
-    public static final String CONFIG_ENTITY_DATA_MAP_PATH = "entity-data-map-path";
-    public static final String CONFIG_CLASS_SIZE = "class-size";
-    public static final String CONFIG_DATA_SIZE = "data-size";
-    public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
-
-    protected int[] entityArgumentIndexes;
-    protected float[] gradients;
-
-    private int featuresSize;
-    private int classSize;
-    private int dataSize;
-    private String entityDataMapPath;
-
-    public static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
-
+    private static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
     private static int startingPort = -1;
     private static Map<Integer, DeepPredicate> usedPorts = null;
+
+    private Map<String, String> options;
+    private String entityDataMapPath;
+    private int[] entityArgumentIndexes;
+    private int classSize;
+    private int dataSize;
+
+    private ArrayList<Integer> atomIndexes;
+    private ArrayList<Integer> dataIndexes;
+    private float[] gradients;
+
+    private boolean initComplete;
 
     private int port;
     private String pythonModule;
     private String sharedMemoryPath;
-
     private Process pythonServerProcess;
     private RandomAccessFile sharedFile;
     private MappedByteBuffer sharedBuffer;
@@ -89,24 +86,23 @@ public class DeepPredicate extends StandardPredicate {
     protected DeepPredicate(String name, ConstantType[] types) {
         super(name, types);
 
-        initComplete = false;
-        atomIndexes = new ArrayList<>();
-        featureIndexes = new ArrayList<>();
-
-        entityArgumentIndexes = null;
-        featuresSize = -1;
-        classSize = -1;
-        dataSize = -1;
+        options = null;
         entityDataMapPath = null;
+        entityArgumentIndexes = null;
+        classSize = -1;
+        dataSize = 0;
 
+        atomIndexes = new ArrayList<>();
+        dataIndexes = new ArrayList<>();
         gradients = null;
+
+        initComplete = false;
 
         initStatic();
 
         port = getOpenPort(this);
         pythonModule = Options.PREDICATE_DEEP_PYTHON_WRAPPER_MODULE.getString();
         sharedMemoryPath = Options.PREDICATE_DEEP_SHARED_MEMORY_PATH.getString();
-
         pythonServerProcess = null;
         sharedFile = null;
         sharedBuffer = null;
@@ -117,81 +113,9 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     /**
-     * Load atom and feature indexes using the entity feature map file, which maps entity IDs to feature vectors.
+     * Initialize a deep model. If any relative paths are supplied in the config, |relativeDir| will resolve them.
      */
-    public void init(AtomStore atomStore) {
-        loadIndexes(atomStore);
-
-        gradients = new float[atomIndexes.size()];
-        initComplete = true;
-    }
-
-    public int getGradientSize() {
-        return gradients.length;
-    }
-
-    private void loadIndexes(AtomStore atomStore) {
-        Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
-        ConstantType type;
-        int featureIndex;
-
-        int width = -1;
-
-        try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
-            String line = null;
-            int lineNumber = 0;
-
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
-
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-
-                String[] parts = line.split(DELIM);
-
-                if (width == -1) {
-                    width = parts.length;
-                    featuresSize = width - entityArgumentIndexes.length;
-
-                    if (featuresSize <= 0) {
-                        throw new RuntimeException(String.format(
-                                "Line too short (%d). Expected at least %d values, found %d.",
-                                lineNumber, entityArgumentIndexes.length + 1, width));
-                    }
-                } else if (parts.length != width) {
-                    throw new RuntimeException(String.format(
-                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
-                            lineNumber, width, parts.length));
-                }
-
-                // Get constant types for this entity.
-                for (int index = 0; index < arguments.length - 1; index++) {
-                    type = this.getArgumentType(index);
-                    arguments[index] = ConstantType.getConstant(parts[index], type);
-                }
-
-                // Add atom index and feature index for each class.
-                type = this.getArgumentType(arguments.length - 1);
-                featureIndex = featureIndexes.size() / classSize;
-
-                for (int index = 0; index < classSize; index++) {
-                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
-                    atomIndexes.add(atomStore.getAtomIndex(this, arguments));
-                    featureIndexes.add(featureIndex);
-                }
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to parse features file: " + entityDataMapPath, ex);
-        }
-    }
-
-    /**
-     * Load a deep model.
-     * If any relative paths are supplied in the config, |relativeDir| can be used to resolve them.
-     */
-    public void loadDeepModel(Map<String, String> config, String relativeDir) {
+    public void initDeepModel(Map<String, String> config, String relativeDir) {
         if (pythonServerProcess != null) {
             throw new RuntimeException("Cannot load a DeepPredicate that has already been loaded.");
         }
@@ -210,20 +134,6 @@ public class DeepPredicate extends StandardPredicate {
                     CONFIG_ENTITY_DATA_MAP_PATH));
         }
 
-        String configClassSize = config.get(CONFIG_CLASS_SIZE);
-        if (configClassSize == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a class size (\"%s\") specified in predicate config.",
-                    CONFIG_CLASS_SIZE));
-        }
-
-        String configDataSize = config.get(CONFIG_DATA_SIZE);
-        if (configDataSize == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a data size (\"%s\") specified in predicate config.",
-                    CONFIG_DATA_SIZE));
-        }
-
         String configEntityArgumentIndexes = config.get(CONFIG_ENTITY_ARGUMENT_INDEXES);
         if (configEntityArgumentIndexes == null) {
             throw new IllegalArgumentException(String.format(
@@ -231,38 +141,117 @@ public class DeepPredicate extends StandardPredicate {
                     CONFIG_ENTITY_ARGUMENT_INDEXES));
         }
 
+        String configClassSize = config.get(CONFIG_CLASS_SIZE);
+        if (configClassSize == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have a class size (\"%s\") specified in predicate config.",
+                    CONFIG_CLASS_SIZE));
+        }
+
         entityDataMapPath = configEntityDataMapPath;
-        classSize = Integer.parseInt(configClassSize);
-        dataSize = Integer.parseInt(configDataSize);
         entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
+        classSize = Integer.parseInt(configClassSize);
+        options = config;
 
-        loadModel(configModelPath, configEntityDataMapPath, config);
-    }
+        // Open data file and compute how many instances there are.
+        try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
+            while (reader.readLine() != null) {
+                dataSize++;
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to parse entity data map file: " + entityDataMapPath, ex);
+        }
 
-    /**
-     * Save the deep model.
-     */
-    public void saveDeepModel() {
-        if (!initComplete) {
-            throw new RuntimeException(String.format("Deep predicate not initialized, run init before save."));
+        // Do our best to make sure close() gets called.
+        final DeepPredicate finalThis = this;
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                finalThis.close();
+            }
+        });
+
+        // Compute exactly how much memory we will need ahead of time.
+        // The most memory we will need is on a full fit():
+        // = 2 * (sizeof(int) + (num_entities * num_labels * sizeof(float)))
+        int bufferLength = 2 * dataSize * classSize * Float.SIZE;
+
+        try {
+            sharedFile = new RandomAccessFile(sharedMemoryPath, "rw");
+        } catch (FileNotFoundException ex) {
+            throw new RuntimeException("Could not open random access file: " + sharedMemoryPath, ex);
+        }
+
+        try {
+            sharedBuffer = sharedFile.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, bufferLength);
+            sharedBuffer.clear();
+
+            ProcessBuilder builder = new ProcessBuilder("python3", "-m", pythonModule, "" + port);
+            builder.inheritIO();
+            pythonServerProcess = builder.start();
+
+            sleepForServer();
+            serverOpen = true;
+
+            // TODO: Set encoding?
+            socket = new Socket("127.0.0.1", port);
+            socketInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            socketOutput = new PrintWriter(socket.getOutputStream(), true);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
 
         JSONObject message = new JSONObject();
-        message.put("task", "save");
+        message.put("task", "init");
+        message.put("shared_memory_path", sharedMemoryPath);
+        message.put("options", options);
+
+        sendSocketMessage(message);
+    }
+
+    /**
+     * Fit the model using values set through setLabel().
+     */
+    public void fitDeepModel(AtomStore atomStore, Map<RandomVariableAtom, Float> gradientAtomMap) {
+        finalizeInit(atomStore);
+
+        log.trace("Fitting {}.", this);
+
+        sharedBuffer.clear();
+
+        for (int index = 0; index < atomIndexes.size(); index++) {
+            gradients[dataIndexes.get(index)] = gradientAtomMap.get(atomStore.getAtom(atomIndexes.get(dataIndexes.get(index))));
+        }
+
+        writeEntityData(gradients);
+
+        sharedBuffer.force();
+
+        JSONObject message = new JSONObject();
+        message.put("task", "fit");
+        message.put("options", options);
 
         JSONObject response = sendSocketMessage(message);
+
+        String resultString = getResultString(response);
+        log.debug("Fit Result: {}", resultString);
     }
 
     /**
      * Get deep model predictions and update atom values.
      */
     public void predictDeepModel(AtomStore atomStore) {
-        if (!initComplete) {
-            throw new RuntimeException(String.format("Deep predicate not initialized, run init before predict."));
-        }
+        finalizeInit(atomStore);
+
+        log.trace("Fitting {}.", this);
+
+        sharedBuffer.clear();
+        writeIndexData(dataIndexes.size() / classSize);
+        sharedBuffer.force();
 
         JSONObject message = new JSONObject();
         message.put("task", "predict");
+        message.put("options", options);
 
         JSONObject response = sendSocketMessage(message);
 
@@ -278,48 +267,46 @@ public class DeepPredicate extends StandardPredicate {
 
         float[] atomValues = atomStore.getAtomValues();
         for(int index = 0; index < atomIndexes.size(); index++) {
-            atomValues[atomIndexes.get(featureIndexes.get(index))] = sharedBuffer.getFloat();
+            atomValues[atomIndexes.get(dataIndexes.get(index))] = sharedBuffer.getFloat();
             ((RandomVariableAtom)atomStore.getAtom(atomIndexes.get(index))).setValue(sharedBuffer.getFloat());
         }
     }
 
     /**
-     * Fit the model using values set through setLabel().
+     * Evaluate using deep model.
      */
-    public void fitDeepModel(AtomStore atomStore, Map<RandomVariableAtom, Float> gradientAtomMap) {
-        if (!initComplete) {
-            throw new RuntimeException(String.format("Deep predicate not initialized, run init before fit."));
-        }
+    public void evalDeepModel(AtomStore atomStore) {
+        finalizeInit(atomStore);
 
         log.trace("Fitting {}.", this);
 
         sharedBuffer.clear();
-
-        for (int index = 0; index < atomIndexes.size(); index++) {
-            gradients[featureIndexes.get(index)] = gradientAtomMap.get(atomStore.getAtom(atomIndexes.get(featureIndexes.get(index))));
-        }
-
-        writeEntityData(gradients);
-
+        writeIndexData(dataIndexes.size() / classSize);
         sharedBuffer.force();
 
-        String resultString = null;
-
-        Map<String, Object> options = new HashMap<String, Object>();
-        options.put("epochs", 1);
-        options.put("batch_size", batchSize);
-        options.put("learning_rate", learningRate);
-        options.put("has_gradients", true);
-        options.put("alpha", alpha);
-
         JSONObject message = new JSONObject();
-        message.put("task", "fit");
+        message.put("task", "eval");
         message.put("options", options);
 
         JSONObject response = sendSocketMessage(message);
 
-        resultString = getResultString(response);
-        log.debug("Result: {}", resultString);
+        String resultString = getResultString(response);
+        log.debug("Eval Result: {}", resultString);
+    }
+
+    /**
+     * Save the deep model.
+     */
+    public void saveDeepModel() {
+        if (!initComplete) {
+            throw new RuntimeException(String.format("Deep predicate not initialized, run init before save."));
+        }
+
+        JSONObject message = new JSONObject();
+        message.put("task", "save");
+        message.put("options", options);
+
+        JSONObject response = sendSocketMessage(message);
     }
 
     @Override
@@ -331,13 +318,13 @@ public class DeepPredicate extends StandardPredicate {
             atomIndexes = null;
         }
 
-        if (featureIndexes != null) {
-            featureIndexes.clear();
-            featureIndexes = null;
+        if (dataIndexes != null) {
+            dataIndexes.clear();
+            dataIndexes = null;
         }
 
         entityArgumentIndexes = null;
-        featuresSize = -1;
+        dataSize = -1;
 
         gradients = null;
 
@@ -399,52 +386,70 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
-    private void loadModel(String modelDef, String featuresPath, Map<String, String> config) {
-        // Do our best to make sure close() gets called.
-        final DeepPredicate finalThis = this;
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                finalThis.close();
+    /**
+     * Load atom and data indexes using the entity data map file, which maps entity IDs to data vectors.
+     */
+    private void finalizeInit(AtomStore atomStore) {
+        if (initComplete) {
+            return;
+        }
+
+        // Map data entities from file to atoms and indexes.
+        Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
+        ConstantType type;
+        int dataIndex;
+        int width = -1;
+
+        try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
+            String line = null;
+            int lineNumber = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                String[] parts = line.split(DELIM);
+
+                if (width == -1) {
+                    width = parts.length;
+
+                    if (width - entityArgumentIndexes.length <= 0) {
+                        throw new RuntimeException(String.format(
+                                "Line too short (%d). Expected at least %d values, found %d.",
+                                lineNumber, entityArgumentIndexes.length + 1, width));
+                    }
+                } else if (parts.length != width) {
+                    throw new RuntimeException(String.format(
+                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
+                            lineNumber, width, parts.length));
+                }
+
+                // Get constant types for this entity.
+                for (int index = 0; index < arguments.length - 1; index++) {
+                    type = this.getArgumentType(index);
+                    arguments[index] = ConstantType.getConstant(parts[index], type);
+                }
+
+                // Add atom index and data index for each class.
+                type = this.getArgumentType(arguments.length - 1);
+                dataIndex = dataIndexes.size() / classSize;
+
+                for (int index = 0; index < classSize; index++) {
+                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
+                    atomIndexes.add(atomStore.getAtomIndex(this, arguments));
+                    dataIndexes.add(dataIndex);
+                }
             }
-        });
-
-        // Compute exactly how much memory we will need ahead of time.
-        // The most memory we will need is on a full fit():
-        // = 2 * (sizeof(int) + (num_entities * num_labels * sizeof(float)))
-        int bufferLength = 2 * dataSize * classSize * Float.SIZE;
-
-        try {
-            sharedFile = new RandomAccessFile(sharedMemoryPath, "rw");
-        } catch (FileNotFoundException ex) {
-            throw new RuntimeException("Could not open random access file: " + sharedMemoryPath, ex);
-        }
-
-        try {
-            sharedBuffer = sharedFile.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, bufferLength);
-            sharedBuffer.clear();
-
-            ProcessBuilder builder = new ProcessBuilder("python3", "-m", pythonModule, "" + port);
-            builder.inheritIO();
-            pythonServerProcess = builder.start();
-
-            sleepForServer();
-            serverOpen = true;
-
-            // TODO: Set encoding?
-            socket = new Socket("127.0.0.1", port);
-            socketInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            socketOutput = new PrintWriter(socket.getOutputStream(), true);
         } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            throw new RuntimeException("Unable to parse entity data map file: " + entityDataMapPath, ex);
         }
 
-        JSONObject message = new JSONObject();
-        message.put("task", "init");
-        message.put("shared_memory_path", sharedMemoryPath);
-        message.put("options", config);
-
-        sendSocketMessage(message);
+        gradients = new float[atomIndexes.size()];
+        initComplete = true;
     }
 
     private String getResultString(JSONObject response) {
@@ -457,17 +462,22 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     private void writeEntityData(float[] data) {
-        // Write out the number of values.
-        sharedBuffer.putInt(data.length / classSize);
-
-        // Write out the indexes.
-        for (int i = 0; i < data.length / classSize; i++) {
-            sharedBuffer.putInt(featureIndexes.get(i));
-        }
+        // Write out the number of values and indexes.
+        writeIndexData(data.length / classSize);
 
         // Write out the actual data.
         for (int i = 0; i < data.length; i++) {
             sharedBuffer.putFloat(data[i]);
+        }
+    }
+
+    private void writeIndexData(int dataSize) {
+        // Write out the number of values.
+        sharedBuffer.putInt(dataSize);
+
+        // Write out the indexes.
+        for (int i = 0; i < dataSize; i++) {
+            sharedBuffer.putInt(dataIndexes.get(i));
         }
     }
 
