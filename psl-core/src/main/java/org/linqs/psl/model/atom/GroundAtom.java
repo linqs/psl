@@ -32,6 +32,7 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
     protected int index;
     protected float value;
     protected short partition;
+    protected boolean fixed;
 
     protected GroundAtom(Predicate predicate, Constant[] args, float value, short partition) {
         super(predicate, args);
@@ -45,6 +46,7 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
 
         this.index = -1;
         this.partition = partition;
+        this.fixed = true;
     }
 
     @Override
@@ -67,6 +69,8 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
     public int getIndex() {
         return index;
     }
+
+    public boolean isFixed() { return fixed; }
 
     public void setIndex(int index) {
         this.index = index;

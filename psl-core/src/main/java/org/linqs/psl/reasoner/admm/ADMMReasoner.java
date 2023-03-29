@@ -21,7 +21,6 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
@@ -285,7 +284,7 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                 }
 
                 float newConsensusValue = 0.0f;
-                if (consensusAtoms[variableIndex] instanceof ObservedAtom) {
+                if (consensusAtoms[variableIndex].isFixed()) {
                     newConsensusValue = consensusValues[variableIndex];
                 } else {
                     newConsensusValue = (float)(total / numLocalVariables);
