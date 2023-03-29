@@ -56,7 +56,7 @@ public class DeepPredicate extends StandardPredicate {
     public static final String DELIM = "\t";
 
     public static final String CONFIG_MODEL_PATH = "model-path";
-    public static final String CONFIG_ENTITY_FEATURE_MAP_PATH = "entity-feature-map-path";
+    public static final String CONFIG_ENTITY_DATA_MAP_PATH = "entity-data-map-path";
     public static final String CONFIG_CLASS_SIZE = "class-size";
     public static final String CONFIG_DATA_SIZE = "data-size";
     public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
@@ -67,10 +67,7 @@ public class DeepPredicate extends StandardPredicate {
     private int featuresSize;
     private int classSize;
     private int dataSize;
-    private int batchSize;
-    private float learningRate;
-    private float alpha;
-    private String entityFeatureMapPath;
+    private String entityDataMapPath;
 
     public static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
 
@@ -100,7 +97,7 @@ public class DeepPredicate extends StandardPredicate {
         featuresSize = -1;
         classSize = -1;
         dataSize = -1;
-        entityFeatureMapPath = null;
+        entityDataMapPath = null;
 
         gradients = null;
 
@@ -117,10 +114,6 @@ public class DeepPredicate extends StandardPredicate {
         socketInput = null;
         socketOutput = null;
         serverOpen = false;
-
-        batchSize = Options.PREDICATE_DEEP_BATCH_SIZE.getInt();
-        learningRate = Options.PREDICATE_DEEP_LEARNING_RATE.getFloat();
-        alpha = Options.PREDICATE_DEEP_ALPHA.getFloat();
     }
 
     /**
@@ -144,7 +137,7 @@ public class DeepPredicate extends StandardPredicate {
 
         int width = -1;
 
-        try (BufferedReader reader = FileUtils.getBufferedReader(entityFeatureMapPath)) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
             String line = null;
             int lineNumber = 0;
 
@@ -190,7 +183,7 @@ public class DeepPredicate extends StandardPredicate {
                 }
             }
         } catch (IOException ex) {
-            throw new RuntimeException("Unable to parse features file: " + entityFeatureMapPath, ex);
+            throw new RuntimeException("Unable to parse features file: " + entityDataMapPath, ex);
         }
     }
 
@@ -210,11 +203,11 @@ public class DeepPredicate extends StandardPredicate {
                     CONFIG_MODEL_PATH));
         }
 
-        String configEntityFeatureMapPath = FileUtils.makePath(relativeDir, config.get(CONFIG_ENTITY_FEATURE_MAP_PATH));
-        if (configEntityFeatureMapPath == null) {
+        String configEntityDataMapPath = FileUtils.makePath(relativeDir, config.get(CONFIG_ENTITY_DATA_MAP_PATH));
+        if (configEntityDataMapPath == null) {
             throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a id feature map path (\"%s\") specified in predicate config.",
-                    CONFIG_ENTITY_FEATURE_MAP_PATH));
+                    "A DeepPredicate must have an entity to data map path (\"%s\") specified in predicate config.",
+                    CONFIG_ENTITY_DATA_MAP_PATH));
         }
 
         String configClassSize = config.get(CONFIG_CLASS_SIZE);
@@ -238,12 +231,12 @@ public class DeepPredicate extends StandardPredicate {
                     CONFIG_ENTITY_ARGUMENT_INDEXES));
         }
 
-        entityFeatureMapPath = configEntityFeatureMapPath;
+        entityDataMapPath = configEntityDataMapPath;
         classSize = Integer.parseInt(configClassSize);
         dataSize = Integer.parseInt(configDataSize);
         entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
 
-        loadModel(configModelPath, configEntityFeatureMapPath, config);
+        loadModel(configModelPath, configEntityDataMapPath, config);
     }
 
     /**
@@ -448,10 +441,6 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "init");
-        message.put("model", modelDef);
-        message.put("features", featuresPath);
-        message.put("num_labels", classSize);
-        message.put("entity_argument_length", entityArgumentIndexes.length);
         message.put("shared_memory_path", sharedMemoryPath);
         message.put("options", config);
 
