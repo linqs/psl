@@ -25,160 +25,148 @@ import numpy
 FLOAT_SIZE_BYTES = 4
 INT_SIZE_BYTES = 4
 
-DEFAULT_EPOCHS = 1
-DEFAULT_BATCH_SIZE = 32
-DEFAULT_LEARNING_RATE = 0.001
-DEFAULT_ALPHA = 0.0
-
 class DeepModel(abc.ABC):
     def __init__(self):
         self._shared_file = None
         self._shared_buffer = None
 
-        self._num_labels = None
-        self._entity_ids = None
-        self._features = None
+        self._class_size = None
 
-    # Higher-level methods that are passed nicely-formatted data for implementing classes to extend.
+        self._data = None
+        self._entity_ids = None
+
+    """
+    Higher-level methods that are passed nicely-formatted data for implementing classes to extend.
+    """
 
     def internal_init_model(self, options = {}):
-        """
-        Returns a response that will be passed to the Java side.
-        """
+        raise NotImplementedError("internal_init_model")
 
-        return {}
+    def internal_fit(self, data, gradients, options = {}):
+        raise NotImplementedError("internal_fit")
 
-    def internal_fit(self, features, labels,
-                     alpha = DEFAULT_ALPHA, gradients = None,
-                     batch_size = DEFAULT_BATCH_SIZE, epochs = DEFAULT_EPOCHS, learning_rate = DEFAULT_LEARNING_RATE,
-                     options = {}):
-        return {}
-
-    def internal_predict(self, options = {}):
-        """
-        Returns predictions and a response.
-
-        The predictions must be an index match to the features and each element must be |self._num_labels| wide.
-        E.g.: [[0, 0, 1], [0, 1, 0], ...].
-        """
-
+    def internal_predict(self, data, options = {}):
         raise NotImplementedError("internal_predict")
 
-    def internal_eval(self, options = {}):
-        return {}
+    def internal_eval(self, data, options = {}):
+        raise NotImplementedError("internal_eval")
 
-    def internal_save(self, path, options = {}):
-        return {}
+    def internal_save(self, options = {}):
+        raise NotImplementedError("internal_save")
 
-    # Low-level methods that take care of moving around data.
+    """
+    Low-level methods that take care of moving around data.
+    """
 
-    def init_model(self, features_path, shared_memory_path, entity_argument_length, num_labels, options = {}):
+    def init_model(self, shared_memory_path, options = {}):
         """
         Initialize the underlying model/network.
 
-        The features file will have one row per entity and start with an identifier for the entity.
-        The idenfier will be |entity_argument_length| columns long.
-        The order that entities appear in the features will be the order that PSL transmits values for entities.
-        The index for this ordering will be referred to as "entity index".
+        The data file must have one row per entity and start with an identifier for the entity.
+        The identifier will be |entity-argument-indexes| columns long.
         """
 
         self._shared_file = open(shared_memory_path, 'rb+')
         self._shared_buffer = mmap.mmap(self._shared_file.fileno(), 0)
 
-        self._num_labels = num_labels
-        self._features = []
+        self._class_size = options['class-size']
+        self._data = []
         self._entity_ids = []
 
-        with open(features_path, 'r') as file:
+        entity_argument_length = len(options['entity-argument-indexes'].split(","))
+
+        with open(options['entity-data-map-path'], 'r') as file:
             for row in file:
                 parts = row.split("\t")
 
                 entity_id = parts[0:entity_argument_length]
-                features = parts[entity_argument_length:len(parts)]
+                data = parts[entity_argument_length:len(parts)]
 
                 self._entity_ids.append(entity_id)
-                self._features.append([float(value) for value in features])
+                self._data.append([float(value) for value in data])
 
-        self._features = numpy.array(self._features)
+        self._data = numpy.array(self._data)
 
         return self.internal_init_model(options = options)
 
     def fit(self, options = {}):
-        epochs = options.get('epochs', DEFAULT_EPOCHS)
-        batch_size = options.get('batch_size', DEFAULT_BATCH_SIZE)
-        learning_rate = options.get('learning_rate', DEFAULT_LEARNING_RATE)
-        alpha = options.get('alpha', DEFAULT_ALPHA)
-
         self._shared_buffer.seek(0)
 
-        entity_indexes, labels = self._read_entity_values()
+        entity_indexes, gradients = self._read_entity_values()
+        data = numpy.array([self._data[index] for index in entity_indexes])
 
-        gradients = None
-        if (options.get('has_gradients', False)):
-            entity_indexes_gradients, gradients = self._read_entity_values()
-
-            if (not numpy.array_equal(entity_indexes, entity_indexes_gradients)):
-                raise RuntimeError("Gradients were passed that do not have the exact same layout as the passed labels.")
-
-        used_features = numpy.array([self._features[index] for index in entity_indexes])
-
-        return self.internal_fit(used_features, labels,
-                                 alpha = alpha, gradients = gradients,
-                                 epochs = epochs, batch_size = batch_size, learning_rate = learning_rate,
-                                 options = options)
+        return self.internal_fit(data, gradients = gradients, options = options)
 
     def predict(self, options = {}):
-        predictions, response = self.internal_predict()
+        self._shared_buffer.seek(0)
 
-        if (len(predictions) != len(self._features)):
-            raise RuntimeError("Mismatch in the number of prefictions. Wanted %d, got %d." % (len(self._features), len(predictions)))
+        entity_indexes = self._read_indexes()
+        data = numpy.array([self._data[index] for index in entity_indexes])
+
+        predictions, response = self.internal_predict(data, options=options)
 
         self._shared_buffer.seek(0)
 
         self._write_int(len(predictions))
-
         predictions = numpy.array(predictions, dtype = '>f4', copy = False)
         self._shared_buffer.write(predictions.tobytes(order = 'C'))
 
         return response
 
     def eval(self, options = {}):
-        return self.internal_eval()
+        self._shared_buffer.seek(0)
 
-    def save(self, path, options = {}):
-        return self.internal_save(path)
+        entity_indexes = self._read_indexes()
+        data = numpy.array([self._data[index] for index in entity_indexes])
 
-    # Helper methods.
+        return self.internal_eval(data, options=options)
+
+    def save(self, options = {}):
+        return self.internal_save(options=options)
+
+    """
+    Helper methods.
+    """
 
     def close(self):
-        if (self._shared_buffer is not None):
+        if self._shared_buffer is not None:
             self._shared_buffer.close()
             self._shared_buffer = None
 
-        if (self._shared_file is not None):
+        if self._shared_file is not None:
             self._shared_file.close()
             self._shared_file = None
 
-        self._num_labels = None
+        self._class_size = None
+        self._data = None
         self._entity_ids = None
-        self._features = None
 
-    # Read entity values (typically labels or gradients, always floats) off the buffer.
-    # On the buffer, entity values are laid out in the format:
-    # <count><entity index, ...><value, ...>
-    # Returns: numpy.ndarray([entity index, ...]), numpy.ndarray([[entity1_value1, ...], [entity2_value1, ...], ...])
+    """
+    Read entity values (typically gradients, always floats) off the buffer.
+    On the buffer, entity values are laid out in the format:
+    <count><entity index, ...><value, ...>
+    Returns: numpy.ndarray([entity index, ...]), numpy.ndarray([[entity1_value1, ...], [entity2_value1, ...], ...])
+    """
     def _read_entity_values(self):
         count = self._read_int()
 
         indexes_buffer = self._shared_buffer.read(count * INT_SIZE_BYTES)
-        values_buffer = self._shared_buffer.read(count * self._num_labels * FLOAT_SIZE_BYTES)
+        values_buffer = self._shared_buffer.read(count * self._class_size * FLOAT_SIZE_BYTES)
 
         indexes = numpy.frombuffer(indexes_buffer, dtype = '>i4', count = count)
-        values = numpy.frombuffer(values_buffer, dtype = '>f4', count = (count * self._num_labels))
+        values = numpy.frombuffer(values_buffer, dtype = '>f4', count = (count * self._class_size))
 
-        values = values.reshape((count, self._num_labels))
+        values = values.reshape((count, self._class_size))
 
         return indexes, values
+
+    def _read_indexes(self):
+        count = self._read_int()
+
+        indexes_buffer = self._shared_buffer.read(count * INT_SIZE_BYTES)
+        indexes = numpy.frombuffer(indexes_buffer, dtype = '>i4', count = count)
+
+        return indexes
 
     def _read_int(self):
         return struct.unpack('>i', self._shared_buffer.read(INT_SIZE_BYTES))[0]

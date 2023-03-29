@@ -48,7 +48,7 @@ class ConnectionHandler(object):
 
             response = {
                 'status': 'failed',
-                'message': "Server encountered an error: '%s'" % (ex),
+                'message': "Server encountered an error: '%s'" % (ex,),
             }
 
         connection.sendall((json.dumps(response) + "\n").encode(ENCODING))
@@ -64,17 +64,17 @@ class ConnectionHandler(object):
 
         keep_open = True
 
-        if (request['task'] == 'init'):
+        if request['task'] == 'init':
             result = self._init_model(request)
-        elif (request['task'] == 'fit'):
+        elif request['task'] == 'fit':
             result = self._fit(request)
-        elif (request['task'] == 'predict'):
+        elif request['task'] == 'predict':
             result = self._predict(request)
-        elif (request['task'] == 'eval'):
+        elif request['task'] == 'eval':
             result = self._eval(request)
-        elif (request['task'] == 'save'):
+        elif request['task'] == 'save':
             result = self._save(request)
-        elif (request['task'] == 'close'):
+        elif request['task'] == 'close':
             result = self._close()
             keep_open = False
         else:
@@ -89,46 +89,42 @@ class ConnectionHandler(object):
         return response, keep_open
 
     def _init_model(self, request):
-        model_info = request['model']
-        features_path = request['features']
-        num_labels = request['num_labels']
-        entity_argument_length = request['entity_argument_length']
         shared_memory_path = request['shared_memory_path']
-
         options = request.get('options', {})
 
-        self._model = self._load_model(model_info)
-        return self._model.init_model(features_path, shared_memory_path,
-                                      entity_argument_length, num_labels, options = options)
+        self._model = self._load_model(options['model-path'])
+        return self._model.init_model(shared_memory_path, options=options)
 
     def _fit(self, request):
         options = request.get('options', {})
-        return self._model.fit(options = options)
+        return self._model.fit(options=options)
 
     def _predict(self, request):
-        return self._model.predict()
+        options = request.get('options', {})
+        return self._model.predict(options=options)
 
     def _eval(self, request):
-        return self._model.eval()
+        options = request.get('options', {})
+        return self._model.eval(options=options)
 
     def _save(self, request):
-        path = request['path']
-        return self._model.save(path)
+        options = request.get('options', {})
+        return self._model.save(options=options)
 
     def _close(self):
-        if (self._model is not None):
+        if self._model is not None:
             self._model.close()
         return True
 
     def _load_model(self, model_info):
         model_parts = model_info.split('::')
-        if (len(model_parts) > 2):
+        if len(model_parts) > 2:
             raise ValueError("Bad format for model definition. Got: '%s'. Should be: '<qualified class name>' or '<path>::<class name>'." % (model_info))
 
-        if (len(model_parts) == 1):
+        if len(model_parts) == 1:
             # Info is a qualified class name.
             parts = model_parts[0].split('.')
-            if (len(parts) <= 1):
+            if len(parts) <= 1:
                 raise ValueError("Class definition not qualified: '%s'." % (model_parts[0]))
 
             module_name = '.'.join(parts[0:-1])
@@ -166,11 +162,11 @@ def main(port):
 
     while True:
         data = connection.recv(MAX_MESSAGE_SIZE_BYTES)
-        if (not data):
+        if not data:
             break
 
         keep_open = handler.handle_request(connection, data)
-        if (not keep_open):
+        if not keep_open:
             connection.shutdown(socket.SHUT_RDWR)
             sock.shutdown(socket.SHUT_RDWR)
             break
@@ -183,11 +179,11 @@ def _close(resource):
 
 def _load_args(args):
     exe = args.pop(0)
-    if (len(args) != 1 or ({'h', 'help'} & {arg.lower().strip().replace('-', '') for arg in args})):
+    if len(args) != 1 or ({'h', 'help'} & {arg.lower().strip().replace('-', '') for arg in args}):
         print("USAGE: python3 %s <port>" % (exe), file = sys.stderr)
         sys.exit(1)
 
     return int(args.pop(0))
 
-if (__name__ == '__main__'):
+if __name__ == '__main__':
     main(_load_args(list(sys.argv)))
