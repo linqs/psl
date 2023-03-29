@@ -18,15 +18,10 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.util.IteratorUtils;
-import org.linqs.psl.util.Parallel;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * A straightforward term store.

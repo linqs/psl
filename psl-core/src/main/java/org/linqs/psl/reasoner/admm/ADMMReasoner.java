@@ -27,7 +27,6 @@ import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import java.util.List;
