@@ -53,9 +53,7 @@ class TestTensorflowModels(tests.python.base_test.PSLTest):
         x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_data(SIGN_DIR)
 
         epochs = 20
-        options = {
-            'input_shape':
-        }
+        options = {}
 
         sign_model.internal_init_model()
         pre_train_results = sign_model.internal_eval(x_test, y_test)

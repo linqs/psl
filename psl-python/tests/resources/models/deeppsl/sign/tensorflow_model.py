@@ -46,18 +46,16 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         self._model = model
         return {}
 
-    def internal_fit(self, features, labels, alpha = 0.0, gradients = None,
-                     batch_size = 32, epochs = 10, learning_rate = 0.001,
-                     options = {}):
-        self._model.fit(features, labels, epochs = epochs)
+    def internal_fit(self, data, gradients, options = {}):
+        self._model.fit(data[0], data[1], epochs = options['epochs'])
         return {}
 
-    def internal_predict(self, options = {}):
-        predictions = self._model.predict(self._features)
+    def internal_predict(self, data, options = {}):
+        predictions = self._model.predict(data[0])
         return predictions, {}
 
-    def internal_eval(self, features, labels, options = {}):
-        return self._model.evaluate(features, labels, return_dict = True)
+    def internal_eval(self, data, options = {}):
+        return self._model.evaluate(data[0], data[1], return_dict = True)
 
     def internal_save(self, options = {}):
         self._model.save(options['save_path'], save_format = 'tf')

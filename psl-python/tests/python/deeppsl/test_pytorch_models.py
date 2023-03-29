@@ -26,8 +26,9 @@ import tests.resources.models.deeppsl.sign.tensorflow_model
 
 THIS_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 DATA_DIR = os.path.join(THIS_DIR, '..', '..', 'resources', 'data')
+SIGN_DIR = os.path.join(THIS_DIR, 'sign')
 
-class TestTensorflowModels(tests.python.base_test.PSLTest):
+class TestPytorchModels(tests.python.base_test.PSLTest):
     def setUp(self):
         global tensorflow
 
@@ -49,9 +50,10 @@ class TestTensorflowModels(tests.python.base_test.PSLTest):
 
     def test_sign_model(self):
         sign_model = tests.resources.models.deeppsl.sign.tensorflow_model.SignModel()
-        x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_data(DATA_DIR)
+        x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_data(SIGN_DIR)
 
         epochs = 20
+        options = {}
 
         sign_model.internal_init_model()
         pre_train_results = sign_model.internal_eval(x_test, y_test)
