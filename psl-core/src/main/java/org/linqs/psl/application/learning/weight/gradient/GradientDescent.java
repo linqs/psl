@@ -21,17 +21,21 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Learns weights for weighted rules in a model by optimizing an objective via Gradient Descent.
@@ -55,6 +59,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected GDExtension gdExtension;
 
     protected float[] weightGradient;
+    protected Map<RandomVariableAtom, Float> groundAtomGradient;
 
     protected TermState[] mpeTermState;
     protected float[] mpeAtomValueState;
@@ -83,6 +88,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
 
         weightGradient = new float[mutableRules.size()];
+        groundAtomGradient = new HashMap<RandomVariableAtom, Float>();
 
         mpeTermState = null;
         mpeAtomValueState = null;
@@ -158,6 +164,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
             computeTotalWeightGradient();
             if (clipWeightGradient) {
                 clipWeightGradient();
+            }
+
+            for (Predicate predicate : Predicate.getAll()) {
+                if (predicate instanceof DeepPredicate) {
+                    ((DeepPredicate)predicate).fitDeepModel(inference.getDatabase().getAtomStore(), groundAtomGradient);
+                }
             }
 
             breakGD = breakOptimization(iteration, objective, oldObjective);
