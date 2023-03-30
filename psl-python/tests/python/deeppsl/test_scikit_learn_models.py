@@ -50,7 +50,7 @@ class TestPytorchModels(tests.python.base_test.PSLTest):
 
     def test_sign_model(self):
         sign_model = tests.resources.models.deeppsl.sign.tensorflow_model.SignModel()
-        x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_neural_data(SIGN_DIR)
+        x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_deep_data(SIGN_DIR)
 
         train_data = [x_train, y_train]
         test_data = [x_test, y_test]

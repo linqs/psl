@@ -54,18 +54,18 @@ def get_psl_data(out_dir):
     return _load_data(out_dir)
 
 
-def get_neural_data(out_dir):
+def get_deep_data(out_dir):
     entity_data_map, x_train, y_train, x_test, y_test = get_psl_data(out_dir)
 
     entity_data_dict = {example[0]: example[0:] for example in entity_data_map}
 
-    neural_x_train, neural_y_train = _convert_to_neural_data(entity_data_dict, x_train)
-    neural_x_test, neural_y_test = _convert_to_neural_data(entity_data_dict, x_test)
+    deep_x_train, deep_y_train = _convert_to_deep_data(entity_data_dict, x_train)
+    deep_x_test, deep_y_test = _convert_to_deep_data(entity_data_dict, x_test)
 
-    return neural_x_train, neural_y_train, neural_x_test, neural_y_test
+    return deep_x_train, deep_y_train, deep_x_test, deep_y_test
 
 
-def _convert_to_neural_data(entity_data_dict, data):
+def _convert_to_deep_data(entity_data_dict, data):
     x_train = [[int(feature) for feature in entity_data_dict[example[0]][1:-1]] for example in data]
     y_train = [[1,0] if int(entity_data_dict[example[0]][-1:][0]) == 0 else [0,1] for example in data]
     return x_train, y_train
