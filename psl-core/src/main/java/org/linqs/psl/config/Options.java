@@ -584,28 +584,6 @@ public class Options {
         "Shuffle the terms before each return of iterator()."
     );
 
-    public static final Option PREDICATE_DEEP_BATCH_SIZE = new Option(
-        "predicate.deep.batchsize",
-        32,
-        "The maximum size of batches for deep predicate updates.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option PREDICATE_DEEP_ALPHA = new Option(
-            "predicate.deep.alpha",
-            0.5f,
-            "The value of the alpha parameter balancing the neural loss and structure loss gradients."
-                    + " (1 - alpha) * neural_gradients + alpha * structure_gradients",
-            Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option PREDICATE_DEEP_LEARNING_RATE = new Option(
-            "predicate.deep.learningrate",
-            0.001f,
-            "The default deep predicate learning rate.",
-            Option.FLAG_NON_NEGATIVE
-    );
-
     public static final Option PREDICATE_DEEP_PYTHON_PORT = new Option(
             "predicate.deep.python.port",
             12345,
@@ -615,13 +593,13 @@ public class Options {
 
     public static final Option PREDICATE_DEEP_PYTHON_WRAPPER_MODULE = new Option(
             "predicate.deep.python.module",
-            "pslpython.neural.server",
-            "The Python module to invoke for the neural wrapper."
+            "pslpython.deep.server",
+            "The Python module to invoke for the deep wrapper."
     );
 
     public static final Option PREDICATE_DEEP_SHARED_MEMORY_PATH = new Option(
             "predicate.deep.sharedmemory.path",
-            SystemUtils.getTempDir("neural_shared_memory.bin"),
+            SystemUtils.getTempDir("deep_shared_memory.bin"),
             "Where the place shared memory."
     );
 
