@@ -37,16 +37,17 @@ public class StructuredPerceptron extends OptimalValue {
 
     @Override
     protected void computeIterationStatistics() {
-        computeLatentInferenceIncompatibility();
-        computeFullInferenceIncompatibility();
+        computeLatentStatistics();
+        computeFullStatistics();
     }
 
     /**
      * Compute the incompatibility of the MAP state.
      */
-    private void computeFullInferenceIncompatibility() {
+    private void computeFullStatistics() {
         computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
         computeCurrentIncompatibility(MAPIncompatibility);
+        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), rvAtomGradient, deepAtomGradient);
     }
 
     @Override
@@ -64,5 +65,11 @@ public class StructuredPerceptron extends OptimalValue {
         for (int i = 0; i < mutableRules.size(); i++) {
             weightGradient[i] += latentInferenceIncompatibility[i] - MAPIncompatibility[i];
         }
+    }
+
+    @Override
+    protected void computeTotalAtomGradient() {
+        rvAtomGradient = rvAtomGradient + rvLatentAtomGradient;
+        deepAtomGradient = deepAtomGradient + deepLatentAtomGradient;
     }
 }

@@ -56,7 +56,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected GDExtension gdExtension;
 
     protected float[] weightGradient;
-    protected float[] atomGradient;
+    protected float[] rvAtomGradient;
+    protected float[] deepAtomGradient;
     protected List<DeepPredicate> deepPredicates;
 
     protected TermState[] mpeTermState;
@@ -86,7 +87,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
 
         weightGradient = new float[mutableRules.size()];
-        atomGradient = null;
+        rvAtomGradient = null;
+        deepAtomGradient = null;
         deepPredicates = new ArrayList<DeepPredicate>();
 
         mpeTermState = null;
@@ -125,7 +127,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
         mpeAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
 
-        atomGradient = new float[atomValues.length];
+        rvAtomGradient = new float[atomValues.length];
+        deepAtomGradient = new float[atomValues.length];
 
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
@@ -166,16 +169,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
             long start = System.currentTimeMillis();
 
             weightGradientStep(iteration);
+            atomGradientStep();
 
             computeIterationStatistics();
             objective = computeTotalLoss();
             computeTotalWeightGradient();
+            computeTotalAtomGradient();
+
             if (clipWeightGradient) {
                 clipWeightGradient();
-            }
-
-            for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.fitDeepModel(inference.getDatabase().getAtomStore(), atomGradient);
             }
 
             breakGD = breakOptimization(iteration, objective, oldObjective);
@@ -296,6 +298,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         inMPEState = false;
+    }
+
+    private void atomGradientStep() {
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.fitDeepModel(inference.getDatabase().getAtomStore(), deepAtomGradient);
+        }
     }
 
     private float computeStepSize(int iteration) {
@@ -546,4 +554,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     + entropyRegularization * (logWeight + 1);
         }
     }
+
+    protected abstract void computeTotalAtomGradient();
 }

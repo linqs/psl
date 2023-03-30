@@ -186,7 +186,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      * to be the subgradient with the smallest magnitude.
      * Gradients will be clipped to capture the minimum and maximum values of the variables.
      */
-    protected void parallelComputeGradient(TermStore<? extends ReasonerTerm> termStore,
+    public void parallelComputeGradient(TermStore termStore,
                                            float[] rvAtomGradient, float[] deepAtomGradient) {
         int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
         int numTermBlocks = (int)Math.ceil(termStore.size() / (double)blockSize);

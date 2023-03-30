@@ -45,6 +45,9 @@ public abstract class OptimalValue extends GradientDescent {
     protected TermState[] latentInferenceTermState;
     protected float[] latentInferenceAtomValueState;
 
+    protected float[] rvLatentAtomGradient;
+    protected float[] deepLatentAtomGradient;
+
     public OptimalValue(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB);
 
@@ -61,6 +64,9 @@ public abstract class OptimalValue extends GradientDescent {
         latentInferenceTermState = inference.getTermStore().saveState();
         float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+
+        rvLatentAtomGradient = new float[atomValues.length];
+        deepLatentAtomGradient = new float[atomValues.length];
     }
 
     /**
@@ -88,11 +94,12 @@ public abstract class OptimalValue extends GradientDescent {
      * Compute the latent inference problem solution incompatibility.
      * RandomVariableAtoms with labels are fixed to their observed (truth) value.
      */
-    protected void computeLatentInferenceIncompatibility() {
+    protected void computeLatentStatistics() {
         fixLabeledRandomVariables();
 
         computeMPEStateWithWarmStart(latentInferenceTermState, latentInferenceAtomValueState);
         computeCurrentIncompatibility(latentInferenceIncompatibility);
+        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
 
         unfixLabeledRandomVariables();
     }

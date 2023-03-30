@@ -44,7 +44,7 @@ public class Energy extends OptimalValue {
 
     @Override
     protected void computeIterationStatistics() {
-        computeLatentInferenceIncompatibility();
+        computeLatentStatistics();
     }
 
     @Override
@@ -52,5 +52,10 @@ public class Energy extends OptimalValue {
         for (int i = 0; i < mutableRules.size(); i++) {
             weightGradient[i] += latentInferenceIncompatibility[i];
         }
+    }
+
+    @Override
+    protected void computeTotalAtomGradient() {
+        copy rvLatentAtomGradient into rvAtomGradient
     }
 }
