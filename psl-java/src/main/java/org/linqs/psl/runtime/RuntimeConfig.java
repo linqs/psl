@@ -325,8 +325,14 @@ public class RuntimeConfig {
 
     public void invokePredicateMethod(String methodName, PredicateConfigInfo info, Boolean errorOnMissingMethod, Object... parameters){
         Method method = null;
+        Class<?>[] paramtersClass = new Class[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            paramtersClass[i] = parameters[i].getClass();
+        }
+
         try {
-            method = info.type.getMethod(methodName, parameters.getClass());
+            method = info.type.getMethod(methodName, paramtersClass);
         } catch(NoSuchMethodException ex) {
             if (!errorOnMissingMethod) {
                 return;
