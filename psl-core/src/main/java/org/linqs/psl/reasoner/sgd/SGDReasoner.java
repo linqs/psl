@@ -141,7 +141,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
                 prevVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
                 lowestVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
             } else {
-                clipGradient(prevGradient, prevVariableValues);
+                clipGradient(prevVariableValues, prevGradient);
                 breakSGD = breakOptimization(iteration, termStore,
                         new ObjectiveResult(objective, 0),
                         new ObjectiveResult(oldObjective, 0));
