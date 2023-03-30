@@ -39,23 +39,23 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
         model.compile(
             optimizer = tensorflow.keras.optimizers.Adam(learning_rate = options['learning_rate']),
-            loss = tensorflow.keras.losses.CategoricalCrossentropy(from_logits = False),
-            metrics = ['categorical_accuracy']
+            loss = options['loss'],
+            metrics = options['metrics']
         )
 
         self._model = model
         return {}
 
-    def internal_fit(self, data, gradients, options = {}):
+    def internal_fit(self, data, gradients, options = {}, verbose=0):
         self._model.fit(data[0], data[1], epochs = options['epochs'])
         return {}
 
-    def internal_predict(self, data, options = {}):
+    def internal_predict(self, data, options = {}, verbose=0):
         predictions = self._model.predict(data[0])
         return predictions, {}
 
     def internal_eval(self, data, options = {}):
-        return self._model.evaluate(data[0], data[1], return_dict = True)
+        return self._model.evaluate(data[0], data[1], return_dict = True, verbose=0)
 
     def internal_save(self, options = {}):
         self._model.save(options['save_path'], save_format = 'tf')

@@ -26,9 +26,9 @@ import tests.resources.models.deeppsl.sign.tensorflow_model
 
 THIS_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 DATA_DIR = os.path.join(THIS_DIR, '..', '..', 'resources', 'data')
-SIGN_DIR = os.path.join(THIS_DIR, 'sign')
+SIGN_DIR = os.path.join(DATA_DIR, 'sign')
 
-class TestScikitLearnModels(tests.python.base_test.PSLTest):
+class TestPytorchModels(tests.python.base_test.PSLTest):
     def setUp(self):
         global tensorflow
 
@@ -41,7 +41,7 @@ class TestScikitLearnModels(tests.python.base_test.PSLTest):
         except ImportError:
             self.skipTest("Tensorflow is not installed.")
 
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
         tensorflow.random.set_seed(4)
 
@@ -50,29 +50,37 @@ class TestScikitLearnModels(tests.python.base_test.PSLTest):
 
     def test_sign_model(self):
         sign_model = tests.resources.models.deeppsl.sign.tensorflow_model.SignModel()
-        x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_data(SIGN_DIR)
+        x_train, y_train, x_test, y_test = tests.resources.models.deeppsl.sign.data.get_neural_data(SIGN_DIR)
 
-        epochs = 20
-        options = {}
+        train_data = [x_train, y_train]
+        test_data = [x_test, y_test]
+        options = {'input_shape': tests.resources.models.deeppsl.sign.data.FEATURE_SIZE,
+                   'output_shape': tests.resources.models.deeppsl.sign.data.CLASS_SIZE,
+                   'learning_rate': 0.01,
+                   'epochs': 20,
+                   'loss': tensorflow.keras.losses.CategoricalCrossentropy(from_logits = False),
+                   'metrics': ['categorical_accuracy'],
+                   'save_path': None}
 
-        sign_model.internal_init_model()
-        pre_train_results = sign_model.internal_eval(x_test, y_test)
-        sign_model.internal_fit(x_train, y_train, epochs=epochs)
-        post_train_results = sign_model.internal_eval(x_test, y_test)
+        sign_model.internal_init_model(options=options)
+        pre_train_results = sign_model.internal_eval(test_data)
+        sign_model.internal_fit(train_data, None, options=options)
+        post_train_results = sign_model.internal_eval(test_data)
 
         with tempfile.TemporaryDirectory(suffix = '_TestNeuPSL') as temp_dir:
             save_path = os.path.join(temp_dir, 'tensorflow_model')
-            sign_model.internal_save(options = {'save_path': save_path})
+            options['save_path'] = save_path
+            sign_model.internal_save(options=options)
 
-            new_sign_model = tensorflow.saved_model.load(save_path)
-            post_load_results = new_sign_model.evaluate(x_test, y_test)
+            new_sign_model = tensorflow.keras.models.load_model(save_path)
+            post_load_results = new_sign_model.evaluate(x_test, y_test, verbose=0)
 
         # First value is the objective, second value is the accuracy.
 
         # Assert that training helped.
-        self.assertTrue(pre_train_results[0] >= post_train_results[0])
-        self.assertTrue(pre_train_results[1] <= post_train_results[1])
+        self.assertTrue(pre_train_results['loss'] >= post_train_results['loss'])
+        self.assertTrue(pre_train_results['categorical_accuracy'] <= post_train_results['categorical_accuracy'])
 
         # Assert that the model produces the same results after being reloaded.
-        self.assertClose(post_train_results[0], post_load_results[0])
-        self.assertClose(post_train_results[1], post_load_results[1])
+        self.assertClose(post_train_results['loss'], post_load_results[0])
+        self.assertClose(post_train_results['categorical_accuracy'], post_load_results[1])
