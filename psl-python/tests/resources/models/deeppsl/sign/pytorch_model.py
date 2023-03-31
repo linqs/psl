@@ -27,48 +27,66 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
         _import()
 
+        self._loss = None
         self._model = None
+        self._optimizer = None
 
     def internal_init_model(self, options = {}):
-        layers = [
-            tensorflow.keras.layers.Input(options['input_shape']),
-            tensorflow.keras.layers.Dense(options['output_shape'], activation = 'softmax'),
-        ]
+        class SignPytorchNetwork(torch.nn.Module):
+            def __init__(self, input_size, output_size):
+                _import()
+                super(SignPytorchNetwork, self).__init__()
+                self.layer = torch.nn.Linear(input_size, output_size)
+                self.output_size = output_size
 
-        model = tensorflow.keras.Sequential(layers)
+            def forward(self, x):
+                x = self.layer(x)
+                x = torch.nn.functional.softmax(x, dim=self.output_size)
+                return x
 
-        model.compile(
-            optimizer = tensorflow.keras.optimizers.Adam(learning_rate = options['learning_rate']),
-            loss = options['loss'],
-            metrics = options['metrics']
-        )
+        self._model = SignPytorchNetwork(options['input_shape'], options['output_shape'])
 
-        self._model = model
+        self._loss = torch.nn.CrossEntropyLoss()
+        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=options['learning_rate'])
+
         return {}
 
     def internal_fit(self, data, gradients, options = {}, verbose=0):
-        self._model.fit(data[0], data[1], epochs = options['epochs'])
+        features = torch.FloatTensor(data[0])
+        labels = torch.LongTensor(data[1])
+
+        for epoch in range(options['epochs']):
+            y_pred = self._model(features)
+            torch.print(y_pred, labels)
+            loss = self._loss(y_pred, labels)
+
+            self._model.zero_grad()
+            loss.backward()
+
+            self._optimizer.step()
         return {}
 
     def internal_predict(self, data, options = {}, verbose=0):
-        predictions = self._model.predict(data[0])
+        features = torch.FloatTensor(data[0])
+        predictions = self._model(features)
         return predictions, {}
 
     def internal_eval(self, data, options = {}):
-        return self._model.evaluate(data[0], data[1], return_dict = True, verbose=0)
+        features = torch.FloatTensor(data[0])
+        labels = torch.LongTensor(data[1])
+        return self._loss(self._model(features), labels).item(), torch.sum(torch.eq(self._model(features), labels)).item() / len(features)
 
     def internal_save(self, options = {}):
         self._model.save(options['save_path'], save_format = 'tf')
         return {}
 
 '''
-Handle importing tensorflow and pslpython into the global scope.
-Will raise if tensorflow is not installed.
+Handle importing pytorch and pslpython into the global scope.
+Will raise if pytorch is not installed.
 '''
 def _import():
-    global tensorflow
+    global torch
 
-    # Tensoflow has a bug when sys.argv is empty on import: https://github.com/tensorflow/tensorflow/issues/45994
     sys.argv.append('__workaround__')
-    import tensorflow
+    import torch
     sys.argv.pop()

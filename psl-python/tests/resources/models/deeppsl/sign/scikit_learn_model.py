@@ -16,8 +16,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import sys
+
+import numpy
 
 import pslpython.deeppsl.model
 
@@ -30,45 +31,35 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         self._model = None
 
     def internal_init_model(self, options = {}):
-        layers = [
-            tensorflow.keras.layers.Input(options['input_shape']),
-            tensorflow.keras.layers.Dense(options['output_shape'], activation = 'softmax'),
-        ]
-
-        model = tensorflow.keras.Sequential(layers)
-
-        model.compile(
-            optimizer = tensorflow.keras.optimizers.Adam(learning_rate = options['learning_rate']),
-            loss = options['loss'],
-            metrics = options['metrics']
-        )
-
-        self._model = model
+        self._model = tree.DecisionTreeClassifier()
         return {}
 
     def internal_fit(self, data, gradients, options = {}):
-        self._model.fit(data[0], data[1], epochs = options['epochs'], verbose=0)
+        self._model.fit(numpy.array(data[0]), numpy.array(data[1]))
         return {}
 
     def internal_predict(self, data, options = {}):
-        predictions = self._model.predict(data[0], verbose=0)
+        predictions = self._model.predict(data[0])
         return predictions, {}
 
     def internal_eval(self, data, options = {}):
-        return self._model.evaluate(data[0], data[1], return_dict = True, verbose=0)
+        predictions, results = self.internal_predict(data);
+        return metrics.accuracy_score(data[1], predictions)
 
     def internal_save(self, options = {}):
-        self._model.save(options['save_path'], save_format = 'tf')
         return {}
 
 '''
-Handle importing tensorflow and pslpython into the global scope.
-Will raise if tensorflow is not installed.
+Handle importing sklearn and pslpython into the global scope.
+Will raise if sklearn is not installed.
 '''
 def _import():
-    global tensorflow
+    global sklearn
+    global tree
+    global metrics
 
-    # Tensoflow has a bug when sys.argv is empty on import: https://github.com/tensorflow/tensorflow/issues/45994
     sys.argv.append('__workaround__')
-    import tensorflow
+    import sklearn
+    from sklearn import tree
+    from sklearn import metrics
     sys.argv.pop()
