@@ -28,7 +28,7 @@ THIS_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 DATA_DIR = os.path.join(THIS_DIR, '..', '..', 'resources', 'data')
 SIGN_DIR = os.path.join(DATA_DIR, 'sign')
 
-class TestPytorchModels(tests.python.base_test.PSLTest):
+class TestTensorflowModels(tests.python.base_test.PSLTest):
     def setUp(self):
         global tensorflow
 
@@ -56,31 +56,32 @@ class TestPytorchModels(tests.python.base_test.PSLTest):
         test_data = [x_test, y_test]
         options = {'input_shape': tests.resources.models.deeppsl.sign.data.FEATURE_SIZE,
                    'output_shape': tests.resources.models.deeppsl.sign.data.CLASS_SIZE,
-                   'learning_rate': 0.01,
+                   'learning_rate': 1.0e-0,
                    'epochs': 20,
-                   'loss': tensorflow.keras.losses.CategoricalCrossentropy(from_logits = False),
                    'metrics': ['categorical_accuracy'],
                    'save_path': None}
 
         sign_model.internal_init_model(options=options)
-        pre_train_results = sign_model.internal_eval(test_data)
+        pre_train_results = sign_model.internal_eval(test_data, options=options)
         sign_model.internal_fit(train_data, None, options=options)
-        post_train_results = sign_model.internal_eval(test_data)
+        post_train_results = sign_model.internal_eval(test_data, options=options)
 
         with tempfile.TemporaryDirectory(suffix = '_TestNeuPSL') as temp_dir:
             save_path = os.path.join(temp_dir, 'tensorflow_model')
             options['save_path'] = save_path
+            options['load_path'] = save_path
             sign_model.internal_save(options=options)
 
-            new_sign_model = tensorflow.keras.models.load_model(save_path)
-            post_load_results = new_sign_model.evaluate(x_test, y_test, verbose=0)
+            saved_sign_model = tests.resources.models.deeppsl.sign.tensorflow_model.SignModel()
+            saved_sign_model.load(options=options)
+            post_load_results = saved_sign_model.internal_eval(test_data, options=options)
 
         # First value is the objective, second value is the accuracy.
 
         # Assert that training helped.
-        self.assertTrue(pre_train_results['loss'] >= post_train_results['loss'])
-        self.assertTrue(pre_train_results['categorical_accuracy'] <= post_train_results['categorical_accuracy'])
+        self.assertTrue(pre_train_results['loss'] > post_train_results['loss'])
+        self.assertTrue(pre_train_results['metrics']['categorical_accuracy'] < post_train_results['metrics']['categorical_accuracy'])
 
         # Assert that the model produces the same results after being reloaded.
-        self.assertClose(post_train_results['loss'], post_load_results[0])
-        self.assertClose(post_train_results['categorical_accuracy'], post_load_results[1])
+        self.assertClose(post_train_results['loss'], post_load_results['loss'])
+        self.assertClose(post_train_results['metrics']['categorical_accuracy'], post_load_results['metrics']['categorical_accuracy'])

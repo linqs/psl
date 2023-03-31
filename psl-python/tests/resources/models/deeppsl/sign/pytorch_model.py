@@ -20,6 +20,7 @@ limitations under the License.
 import sys
 
 import pslpython.deeppsl.model
+import tests.resources.models.deeppsl.util
 
 class SignModel(pslpython.deeppsl.model.DeepModel):
     def __init__(self):
@@ -41,7 +42,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
             def forward(self, x):
                 x = self.layer(x)
-                x = torch.nn.functional.softmax(x, dim=self.output_size)
+                x = torch.nn.functional.softmax(x, dim=1)
                 return x
 
         self._model = SignPytorchNetwork(options['input_shape'], options['output_shape'])
@@ -53,11 +54,10 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
     def internal_fit(self, data, gradients, options = {}, verbose=0):
         features = torch.FloatTensor(data[0])
-        labels = torch.LongTensor(data[1])
+        labels = torch.FloatTensor(data[1])
 
         for epoch in range(options['epochs']):
             y_pred = self._model(features)
-            torch.print(y_pred, labels)
             loss = self._loss(y_pred, labels)
 
             self._model.zero_grad()
@@ -72,13 +72,21 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         return predictions, {}
 
     def internal_eval(self, data, options = {}):
-        features = torch.FloatTensor(data[0])
-        labels = torch.LongTensor(data[1])
-        return self._loss(self._model(features), labels).item(), torch.sum(torch.eq(self._model(features), labels)).item() / len(features)
+        predictions, _ = self.internal_predict(data, options=options)
+        results = {'loss': self._loss(self._model(torch.FloatTensor(data[0])), torch.FloatTensor(data[1])).item(),
+                   'metrics': tests.resources.models.deeppsl.util.calculate_metrics(predictions.detach().numpy(), data[1], options['metrics'])}
+
+        return results
 
     def internal_save(self, options = {}):
-        self._model.save(options['save_path'], save_format = 'tf')
+        torch.save(self._model.state_dict(), options['save_path'])
         return {}
+
+    def load(self, options = {}):
+        self.internal_init_model(options=options)
+        self._model.load_state_dict(torch.load(options['load_path']))
+        return {}
+
 
 '''
 Handle importing pytorch and pslpython into the global scope.

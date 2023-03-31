@@ -40,7 +40,7 @@ CONFIG_FILENAME = 'config.json'
 TRAIN_SIZE = 100
 TEST_SIZE = 100
 FEATURE_RANGE = 2 ** 10
-FEATURE_SIZE = 3
+FEATURE_SIZE = 5
 CLASS_SIZE = 2
 
 SEED = 4
@@ -74,7 +74,7 @@ def _convert_to_deep_data(entity_data_dict, data):
 def _generate_data():
     '''
     A simple sign dataset for classifying positive and negative entities. A label
-    of [1, 0] means all values will be positive, [0, 1] is all negative.
+    of [1, 0] means majority values will be positive, [0, 1] is majority negative.
     '''
     random.seed(SEED)
 
@@ -85,8 +85,16 @@ def _generate_data():
     y_test = []
 
     for features, labels, size in ((x_train, y_train, TRAIN_SIZE), (x_test, y_test, TEST_SIZE)):
+        # Make sure the number of features is odd for easier generation.
+        if FEATURE_SIZE % 2 != 1:
+            raise ValueError('Feature size must be odd.')
+
         for index in range(size):
+            # Flip the sign of a minority of the features.
             point = [random.randint(0, FEATURE_RANGE) for _ in range(FEATURE_SIZE)]
+            flip_sign_indexes = random.sample(list(range(len(point))), random.randint(0, FEATURE_SIZE // 2))
+            point = [-1 * point[index] if index in flip_sign_indexes else point[index] for index in range(len(point))]
+
             label = [1, 0]
 
             if random.random() < 0.5:

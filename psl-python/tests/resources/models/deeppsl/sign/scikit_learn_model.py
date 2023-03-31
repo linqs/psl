@@ -21,6 +21,7 @@ import sys
 import numpy
 
 import pslpython.deeppsl.model
+import tests.resources.models.deeppsl.util
 
 class SignModel(pslpython.deeppsl.model.DeepModel):
     def __init__(self):
@@ -43,11 +44,14 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         return predictions, {}
 
     def internal_eval(self, data, options = {}):
-        predictions, results = self.internal_predict(data);
-        return metrics.accuracy_score(data[1], predictions)
+        predictions, _ = self.internal_predict(data);
+        results = {'metrics': tests.resources.models.deeppsl.util.calculate_metrics(predictions, data[1], options['metrics'])}
+
+        return results
 
     def internal_save(self, options = {}):
         return {}
+
 
 '''
 Handle importing sklearn and pslpython into the global scope.

@@ -20,6 +20,7 @@ limitations under the License.
 import sys
 
 import pslpython.deeppsl.model
+import tests.resources.models.deeppsl.util
 
 class SignModel(pslpython.deeppsl.model.DeepModel):
     def __init__(self):
@@ -39,7 +40,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
         model.compile(
             optimizer = tensorflow.keras.optimizers.Adam(learning_rate = options['learning_rate']),
-            loss = options['loss'],
+            loss = tensorflow.keras.losses.CategoricalCrossentropy(from_logits = False),
             metrics = options['metrics']
         )
 
@@ -55,10 +56,18 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         return predictions, {}
 
     def internal_eval(self, data, options = {}):
-        return self._model.evaluate(data[0], data[1], return_dict = True, verbose=0)
+        predictions, _ = self.internal_predict(data, options=options)
+        results = {'loss': self._model.compiled_loss(tensorflow.constant(predictions, dtype=tensorflow.float32), tensorflow.constant(data[1], dtype=tensorflow.float32)),
+                   'metrics': tests.resources.models.deeppsl.util.calculate_metrics(predictions, data[1], options['metrics'])}
+
+        return results
 
     def internal_save(self, options = {}):
         self._model.save(options['save_path'], save_format = 'tf')
+        return {}
+
+    def load(self, options = {}):
+        self._model = tensorflow.keras.models.load_model(options['load_path'])
         return {}
 
 '''

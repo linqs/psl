@@ -19,6 +19,26 @@ limitations under the License.
 import json
 import os
 
+import numpy
+
+
+def calculate_metrics(y_pred, y_truth, metrics):
+    results = {}
+    for metric in metrics:
+        if metric == 'categorical_accuracy':
+            results['categorical_accuracy'] = _categorical_accuracy(y_pred, y_truth)
+        else:
+            raise ValueError('Unknown metric: {}'.format(metric))
+    return results
+
+
+def _categorical_accuracy(y_pred, y_truth):
+    correct = 0
+    for i in range(len(y_truth)):
+        if numpy.argmax(y_pred[i]) == numpy.argmax(y_truth[i]):
+            correct += 1
+    return correct / len(y_truth)
+
 
 def write_json(data, path, indent=4):
     os.makedirs(os.path.dirname(path), exist_ok=True)
