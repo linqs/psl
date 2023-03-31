@@ -90,7 +90,11 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
             return 0.0f;
         }
 
-        return (getWeight() * evaluateIncompatibility(variableValues)
+        if (getWeight() == 0.0f) {
+            return 0.0f;
+        }
+
+        return (getWeight() * incompatibility
                 + regularizationParameter * evaluateSquaredHingeLoss(variableValues));
     }
 
