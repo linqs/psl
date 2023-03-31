@@ -58,7 +58,6 @@ def get_deep_data(out_dir):
     entity_data_map, x_train, y_train, x_test, y_test = get_psl_data(out_dir)
 
     entity_data_dict = {example[0]: example[0:] for example in entity_data_map}
-
     deep_x_train, deep_y_train = _convert_to_deep_data(entity_data_dict, x_train)
     deep_x_test, deep_y_test = _convert_to_deep_data(entity_data_dict, x_test)
 
@@ -66,9 +65,12 @@ def get_deep_data(out_dir):
 
 
 def _convert_to_deep_data(entity_data_dict, data):
-    x_train = [[int(feature) for feature in entity_data_dict[example[0]][1:-1]] for example in data]
-    y_train = [[1,0] if int(entity_data_dict[example[0]][-1:][0]) == 0 else [0,1] for example in data]
-    return x_train, y_train
+    features = []
+    labels = []
+    for example in data:
+        features.append([int(feature) for feature in entity_data_dict[example[0]][1:-1]])
+        labels.append([1,0] if int(entity_data_dict[example[0]][-1:][0]) == 0 else [0,1])
+    return features, labels
 
 
 def _generate_data():
@@ -110,22 +112,31 @@ def _generate_data():
 def _write_data(out_dir, x_train, y_train, x_test, y_test):
     os.makedirs(out_dir, exist_ok=True)
 
+    targets_train = []
+    truth_train = []
+    targets_test = []
+    truth_test = []
+
     x_data = x_train + x_test
     y_data = y_train + y_test
 
     entity_data_map = [[index] + x_data[index] + [y_data[index][1]] for index in range(len(x_data))]
     tests.resources.models.deeppsl.util.write_psl_file(os.path.join(out_dir, ENTITY_DATA_MAP_FILENAME), entity_data_map)
 
-    targets_train = [[index] for index in range(len(x_train))]
+
+    for entity_index in range(len(x_train)):
+        for class_index in range(CLASS_SIZE):
+            targets_train.append([entity_index, class_index])
+            truth_train.append([entity_index, class_index, y_train[entity_index][class_index]])
+
+    for entity_index in range(len(x_test)):
+        for class_index in range(CLASS_SIZE):
+            targets_test.append([entity_index + len(x_train), class_index])
+            truth_test.append([entity_index + len(y_train), class_index, y_test[entity_index][class_index]])
+
     tests.resources.models.deeppsl.util.write_psl_file(os.path.join(out_dir, TARGETS_TRAIN_FILENAME), targets_train)
-
-    truth_train = [[index, y_train[index][1]] for index in range(len(y_train))]
     tests.resources.models.deeppsl.util.write_psl_file(os.path.join(out_dir, TRUTH_TRAIN_FILENAME), truth_train)
-
-    targets_test = [[index + len(x_train)] for index in range(len(x_test))]
     tests.resources.models.deeppsl.util.write_psl_file(os.path.join(out_dir, TARGETS_TEST_FILENAME), targets_test)
-
-    truth_test = [[index + len(y_train), y_test[index][1]] for index in range(len(y_test))]
     tests.resources.models.deeppsl.util.write_psl_file(os.path.join(out_dir, TRUTH_TEST_FILENAME), truth_test)
 
     config = {
