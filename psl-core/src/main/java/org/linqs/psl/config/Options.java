@@ -182,7 +182,7 @@ public class Options {
 
     public static final Option DUAL_LCQP_FIRST_ORDER_THRESHOLD = new Option(
         "duallcqp.firstorderthreshold",
-        0.001,
+        0.01,
         "Dual LCQP reasoners stop when the norm of the gradient is less than this threshold.",
         Option.FLAG_NON_NEGATIVE
     );
@@ -202,7 +202,7 @@ public class Options {
 
     public static final Option DUAL_LCQP_PRIMAL_DUAL_THRESHOLD = new Option(
         "duallcqp.primaldualthreshold",
-        0.1,
+        0.01,
         "Dual LCQP reasoners stop when the primal dual gap is less than this threshold.",
         Option.FLAG_NON_NEGATIVE
     );
@@ -624,6 +624,13 @@ public class Options {
         "minimizer.proxruleweight",
         1.0f,
         "The weight of the proximity rules added to the objective function for augmented inference subproblem.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_TRUTH_ENERGY_OBJECTIVE_WEIGHT = new Option(
+        "minimizer.truthenergyobjectiveweight",
+        1.0f,
+        "The weight of the energy loss in the objective function for minimizer-based learning.",
         Option.FLAG_NON_NEGATIVE
     );
 

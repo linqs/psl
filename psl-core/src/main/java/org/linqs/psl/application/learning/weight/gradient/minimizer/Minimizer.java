@@ -23,6 +23,7 @@ import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.UnmanagedObservedAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
@@ -32,22 +33,31 @@ import org.linqs.psl.model.rule.arithmetic.WeightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.reasoner.duallcqp.DualBCDReasoner;
+import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.TermState;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Minimizer-based weight learning losses are functions of the MAP predictions made by PSL.
  */
 public abstract class Minimizer extends GradientDescent {
+    private static final Logger log = Logger.getLogger(Minimizer.class);
+
     protected float[] mapIncompatibility;
 
     protected float[] augmentedInferenceIncompatibility;
     protected TermState[] augmentedInferenceTermState;
     protected float[] augmentedInferenceAtomValueState;
+
+    protected float[] latentInferenceIncompatibility;
+    protected TermState[] latentInferenceTermState;
+    protected float[] latentInferenceAtomValueState;
 
     protected WeightedArithmeticRule[] proxRules;
     protected UnmanagedObservedAtom[] proxRuleObservedAtoms;
@@ -58,6 +68,7 @@ public abstract class Minimizer extends GradientDescent {
     protected int internalIteration;
     protected int outerIteration;
 
+    protected final float truthEnergyObjectiveWeight;
     protected final float initialSquaredPenaltyCoefficient;
     protected float squaredPenaltyCoefficient;
     protected final float initialLinearPenaltyCoefficient;
@@ -76,6 +87,10 @@ public abstract class Minimizer extends GradientDescent {
         augmentedInferenceTermState = null;
         augmentedInferenceAtomValueState = null;
 
+        latentInferenceIncompatibility = new float[mutableRules.size()];
+        latentInferenceTermState = null;
+        latentInferenceAtomValueState = null;
+
         proxRules = null;
         proxRuleObservedAtoms = null;
         proxRuleObservedAtomValueGradient = null;
@@ -84,6 +99,7 @@ public abstract class Minimizer extends GradientDescent {
         internalIteration = 0;
         outerIteration = 0;
 
+        truthEnergyObjectiveWeight = Options.MINIMIZER_TRUTH_ENERGY_OBJECTIVE_WEIGHT.getFloat();
         initialSquaredPenaltyCoefficient = Options.MINIMIZER_INITIAL_SQUARED_PENALTY.getFloat();
         squaredPenaltyCoefficient = initialSquaredPenaltyCoefficient;
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
@@ -113,8 +129,7 @@ public abstract class Minimizer extends GradientDescent {
             // Create a new predicate for the proximity terms prefixed with the hashcode.
             // Users cannot create predicates prefixed with digits so this should be safe.
             Predicate proxPredicate = StandardPredicate.get(
-                    String.format("%d%s", Math.abs(atomStore.getAtom(i).hashCode()),
-                            atomStore.getAtom(i).getPredicate().getName()),
+                    String.format("augmented%s", atomStore.getAtom(i).getPredicate().getName()),
                             atomStore.getAtom(i).getPredicate().getArgumentTypes());
             Predicate.registerPredicate(proxPredicate);
 
@@ -153,10 +168,13 @@ public abstract class Minimizer extends GradientDescent {
 
         super.postInitGroundModel();
 
-        // Initialize latent inference warm start state objects.
+        // Initialize augmented and latent inference warm start state objects.
         augmentedInferenceTermState = inference.getTermStore().saveState();
         float[] atomValues = atomStore.getAtomValues();
         augmentedInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+
+        latentInferenceTermState = inference.getTermStore().saveState();
+        latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
     }
 
     @Override
@@ -216,7 +234,11 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void computeIterationStatistics() {
+        log.trace("Running Augmented Inference.");
         computeAugmentedInferenceStatistics();
+        log.trace("Running Latent Inference.");
+        computeLatentInferenceStatistics();
+        log.trace("Running Full Inference.");
         computeFullInferenceStatistics();
 
         computeProxRuleObservedAtomValueGradient();
@@ -232,8 +254,8 @@ public abstract class Minimizer extends GradientDescent {
     protected abstract void addSupervisedProxRuleObservedAtomValueGradient();
 
     /**
-     * Compute the latent inference problem solution incompatibility.
-     * RandomVariableAtoms with labels are fixed to their observed (truth) value.
+     * Compute the augmented inference problem solution incompatibility.
+     * The weights of the proximity terms augmenting the MAP inference problem are set to a positive value.
      */
     protected void computeAugmentedInferenceStatistics() {
         setAugmentedInferenceProxTerms();
@@ -267,6 +289,59 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     /**
+     * Compute the latent inference problem solution incompatibility.
+     * RandomVariableAtoms with labels are fixed to their observed (truth) value.
+     */
+    protected void computeLatentInferenceStatistics() {
+        fixLabeledRandomVariables();
+
+        computeMPEStateWithWarmStart(latentInferenceTermState, latentInferenceAtomValueState);
+        computeCurrentIncompatibility(latentInferenceIncompatibility);
+
+        unfixLabeledRandomVariables();
+    }
+
+    /**
+     * Set RandomVariableAtoms with labels to their observed (truth) value.
+     * This method relies on random variable atoms and observed atoms
+     * with the same predicates and arguments having the same hash.
+     */
+    protected void fixLabeledRandomVariables() {
+        AtomStore atomStore = inference.getTermStore().getDatabase().getAtomStore();
+
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
+            RandomVariableAtom randomVariableAtom = entry.getKey();
+            ObservedAtom observedAtom = entry.getValue();
+
+            int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            atomStore.getAtoms()[atomIndex] = observedAtom;
+            atomStore.getAtomValues()[atomIndex] = observedAtom.getValue();
+            latentInferenceAtomValueState[atomIndex] = observedAtom.getValue();
+            randomVariableAtom.setValue(observedAtom.getValue());
+        }
+
+        inMPEState = false;
+    }
+
+    /**
+     * Set RandomVariableAtoms with labels to their unobserved state.
+     * This method relies on random variable atoms and observed atoms
+     * with the same predicates and arguments having the same hash.
+     */
+    protected void unfixLabeledRandomVariables() {
+        AtomStore atomStore = inference.getDatabase().getAtomStore();
+
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
+            RandomVariableAtom randomVariableAtom = entry.getKey();
+
+            int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            atomStore.getAtoms()[atomIndex] = randomVariableAtom;
+        }
+
+        inMPEState = false;
+    }
+
+    /**
      * Compute the incompatibility of the MAP state.
      */
     private void computeFullInferenceStatistics() {
@@ -277,10 +352,20 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected float computeLearningLoss() {
         float totalObjectiveDifference = computeObjectiveDifference();
+        float truthEnergy = computeTruthEnergy();
         float supervisedLoss = computeSupervisedLoss();
 
         return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(totalObjectiveDifference, 2.0f)
-                + linearPenaltyCoefficient * (totalObjectiveDifference) + supervisedLoss;
+                + linearPenaltyCoefficient * (totalObjectiveDifference) + truthEnergyObjectiveWeight * truthEnergy + supervisedLoss;
+    }
+
+    protected float computeTruthEnergy() {
+        float energy = 0.0f;
+        for (int i = 0; i < mutableRules.size(); i++) {
+            energy += mutableRules.get(i).getWeight() * latentInferenceIncompatibility[i];
+        }
+
+        return energy;
     }
 
     private float computeObjectiveDifference() {
@@ -386,6 +471,7 @@ public abstract class Minimizer extends GradientDescent {
         for (int i = 0; i < mutableRules.size(); i++) {
             weightGradient[i] += linearPenaltyCoefficient * incompatibilityDifference[i];
             weightGradient[i] += squaredPenaltyCoefficient * (totalEnergyDifference + totalProxValue) * incompatibilityDifference[i];
+            weightGradient[i] += truthEnergyObjectiveWeight * latentInferenceIncompatibility[i];
         }
     }
 
