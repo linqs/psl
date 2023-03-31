@@ -29,6 +29,7 @@ import org.linqs.psl.reasoner.duallcqp.term.DualLCQPObjectiveTerm;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
@@ -89,10 +90,14 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
             oldObjective = objective;
             objective = parallelComputeObjective(termStore);
 
-            breakDualBCD = breakOptimization(iteration, termStore, objective, oldObjective);
+            ObjectiveResult dualObjectiveResult = new ObjectiveResult(0.0f, 0);
+            float dualGradientNorm = parallelComputeDualObjectiveAndGradientNorm((DualLCQPTermStore)termStore, dualObjectiveResult);
+            breakDualBCD = breakOptimization(iteration, termStore, objective, oldObjective, dualObjectiveResult, dualGradientNorm);
 
-            log.trace("Iteration {} -- Objective: {}, Violated Constraints: {}, Iteration Time: {}, Total Optimization Time: {}.",
-                    iteration, objective.objective, objective.violatedConstraints, (end - start), totalTime);
+            log.trace("Iteration {} -- Primal Objective: {}, Violated Constraints: {}, Dual Objective: {}, Primal-dual gap: {}, Iteration Time: {}, Total Optimization Time: {}.",
+                    iteration, objective.objective, objective.violatedConstraints,
+                    dualObjectiveResult.objective, objective.objective - dualObjectiveResult.objective,
+                    (end - start), totalTime);
 
             evaluate(termStore, iteration, evaluations, trainingMap);
 
@@ -123,12 +128,9 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         }
     }
 
-    @Override
     protected boolean breakOptimization(int iteration, TermStore<DualLCQPObjectiveTerm> termStore,
-                                        ObjectiveResult objective, ObjectiveResult oldObjective) {
-        ObjectiveResult dualObjectiveResult = new ObjectiveResult(0.0f, 0);
-        float dualGradientNorm = parallelComputeDualObjectiveAndGradientNorm((DualLCQPTermStore)termStore, dualObjectiveResult);
-
+                                        ObjectiveResult objective, ObjectiveResult oldObjective,
+                                        ObjectiveResult dualObjectiveResult, float dualGradientNorm) {
         if (super.breakOptimization(iteration, termStore, objective, oldObjective)) {
             return true;
         }
@@ -432,8 +434,10 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
     @Override
     protected ObjectiveResult parallelComputeObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
-        ObjectiveResult objectiveResult = super.parallelComputeObjective(termStore);
+        ObjectiveResult objectiveResult = parallelComputePrimalObjective(termStore);
+        log.trace("Primal Energy Function Value: {}", objectiveResult.objective);
         objectiveResult.objective += computePrimalVariableRegularization(termStore);
+        log.trace("Primal Regularized Objective Value: {}", objectiveResult.objective);
         return objectiveResult;
     }
 
@@ -452,6 +456,29 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         }
 
         return atomValueRegularization;
+    }
+
+    /**
+     * Compute the total weighted objective of the terms in their current state in a distributed manner.
+     * This method adds the LCQP regularization to the primal objective.
+     */
+    protected Reasoner.ObjectiveResult parallelComputePrimalObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
+        int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(termStore.size() / (double)blockSize);
+
+        float[] workerObjectives = new float[numTermBlocks];
+        int[] workerViolatedConstraints = new int[numTermBlocks];
+
+        Parallel.count(numTermBlocks, new PrimalObjectiveWorker(termStore, regularizationParameter, workerObjectives, workerViolatedConstraints, blockSize));
+
+        float objective = 0.0f;
+        int violatedConstraints = 0;
+        for (int i = 0; i < numTermBlocks; i++) {
+            objective += workerObjectives[i];
+            violatedConstraints += workerViolatedConstraints[i];
+        }
+
+        return new Reasoner.ObjectiveResult(objective, violatedConstraints);
     }
 
     protected float parallelComputeDualObjectiveAndGradientNorm(DualLCQPTermStore termStore, ObjectiveResult objectiveResult) {
@@ -551,6 +578,60 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                     maxAbsGradients[blockIntIndex] = slackLowerBoundDualVariable;
                 }
             }
+        }
+    }
+
+    private static class PrimalObjectiveWorker extends Parallel.Worker<Long> {
+        private final TermStore<DualLCQPObjectiveTerm> termStore;
+        private final int blockSize;
+        private final float regularizationParameter;
+        private final float[] variableValues;
+        private final float[] objectives;
+        private final int[] violatedConstraints;
+
+        public PrimalObjectiveWorker(TermStore<DualLCQPObjectiveTerm> termStore, float regularizationParameter,
+                               float[] objectives, int[] violatedConstraints, int blockSize) {
+            super();
+
+            this.termStore = termStore;
+            this.regularizationParameter = regularizationParameter;
+            this.variableValues = termStore.getVariableValues();
+            this.objectives = objectives;
+            this.violatedConstraints = violatedConstraints;
+            this.blockSize = blockSize;
+        }
+
+        @Override
+        public Object clone() {
+            return new PrimalObjectiveWorker(termStore, regularizationParameter, objectives, violatedConstraints, blockSize);
+        }
+
+        @Override
+        public void work(long blockIndex, Long ignore) {
+            int numTerms = (int)termStore.size();
+            float objective = 0.0f;
+            int violatedConstraints = 0;
+
+            for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+                int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
+
+                if (termIndex >= numTerms) {
+                    break;
+                }
+
+                DualLCQPObjectiveTerm term = termStore.get(termIndex);
+
+                if (term.isConstraint()) {
+                    if(!MathUtils.isZero(term.evaluate(variableValues))) {
+                        violatedConstraints++;
+                    }
+                } else {
+                    objective += term.evaluate(variableValues);
+                    objective += regularizationParameter * Math.pow(Math.max(0.0f, term.computeInnerPotential(variableValues)), 2.0f);
+                }
+            }
+            objectives[(int)blockIndex] = objective;
+            this.violatedConstraints[(int)blockIndex] = violatedConstraints;
         }
     }
 }
