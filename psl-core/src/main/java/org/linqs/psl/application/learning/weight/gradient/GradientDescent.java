@@ -24,6 +24,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
@@ -129,10 +130,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         initForLearning();
 
         long totalTime = 0;
-        int iteration = 1;
+        int iteration = 0;
         while (!breakGD) {
             log.trace("Model: {}", mutableRules);
-            if (log.isTraceEnabled() && evaluation != null) {
+            if (evaluation != null) {
                 // Compute the MAP state before evaluating so variables have assigned values.
                 computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
 
@@ -142,7 +143,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             long start = System.currentTimeMillis();
 
-            weightGradientStep(iteration);
+            gradientStep(iteration);
 
             computeIterationStatistics();
             objective = computeTotalLoss();
@@ -158,7 +159,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             oldObjective = objective;
 
             log.trace("Iteration {} -- Weight Learning Objective: {}, Weight Gradient Magnitude: {}, Iteration Time: {}",
-                    iteration - 1, objective, computeGradientNorm(), (end - start));
+                    iteration, objective, computeGradientNorm(), (end - start));
 
             iteration++;
         }
@@ -190,7 +191,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    private boolean breakOptimization(int iteration, float objective, float oldObjective) {
+    protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
         // Always break when the allocated iterations is up.
         if (iteration > maxNumSteps) {
             return true;
@@ -227,9 +228,23 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     /**
+     * Take a step in the direction of the negative gradient.
+     *
+     * This method will call the gradient step methods for each parameter group: weights and internal parameters.
+     */
+    protected void gradientStep(int iteration) {
+        weightGradientStep(iteration);
+        internalParameterGradientStep(iteration);
+    }
+
+    protected void internalParameterGradientStep(int iteration) {
+        // Do nothing.
+    }
+
+    /**
      * Take a step in the direction of the negative gradient of the weights.
      */
-    private void weightGradientStep(int iteration) {
+    protected void weightGradientStep(int iteration) {
         float stepSize = computeStepSize(iteration);
 
         switch (gdExtension) {
@@ -268,11 +283,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         inMPEState = false;
     }
 
-    private float computeStepSize(int iteration) {
+    protected float computeStepSize(int iteration) {
         float stepSize = baseStepSize;
 
         if (scaleStepSize) {
-            stepSize /= iteration;
+            stepSize /= (iteration + 1);
         }
 
         return stepSize;
@@ -370,8 +385,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * The norm of non-negative weights is the norm of the lower boundary clipped weight gradient.
      */
     private float computeGradientDescentNorm() {
-        float norm = 0.0f;
-
         float[] boundaryClippedGradients = weightGradient.clone();
         for (int i = 0; i < boundaryClippedGradients.length; i++) {
             if (MathUtils.equals(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
@@ -382,10 +395,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             boundaryClippedGradients[i] = weightGradient[i];
         }
 
-        for (float boundaryClippedGradient: boundaryClippedGradients) {
-            norm += (float)Math.pow(boundaryClippedGradient, stoppingGradientNorm);
-        }
-        return (float)Math.pow(norm, 1.0f / stoppingGradientNorm);
+        return MathUtils.pNorm(boundaryClippedGradients, stoppingGradientNorm);
     }
 
     /**
@@ -450,6 +460,27 @@ public abstract class GradientDescent extends WeightLearningApplication {
         inference.getTermStore().saveState(termState);
         float[] mpeAtomValues = inference.getDatabase().getAtomStore().getAtomValues();
         System.arraycopy(mpeAtomValues, 0, atomValueState, 0, mpeAtomValues.length);
+    }
+
+    /**
+     * A method for computing the incompatibility of rules with atoms values in their current state.
+     */
+    protected void computeCurrentIncompatibility(float[] incompatibilityArray) {
+        // Zero out the incompatibility first.
+        Arrays.fill(incompatibilityArray, 0.0f);
+
+        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
+
+        // Sums up the incompatibilities.
+        for (int i = 0; i < mutableRules.size(); i++) {
+            // Note that this cast should be unnecessary, but Java does not like the TermStore without a generic.
+            for (Object rawTerm : inference.getTermStore().getTerms(mutableRules.get(i))) {
+                @SuppressWarnings("unchecked")
+                ReasonerTerm term = (ReasonerTerm)rawTerm;
+
+                incompatibilityArray[i] += term.evaluateIncompatibility(atomValues);
+            }
+        }
     }
 
     /**

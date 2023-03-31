@@ -29,7 +29,7 @@ import org.linqs.psl.util.IteratorUtils;
 import java.util.List;
 
 public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule implements WeightedGroundRule {
-    protected WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
+    public WeightedGroundLogicalRule(WeightedLogicalRule rule, List<GroundAtom> posLiterals,
             List<GroundAtom> negLiterals) {
         super(rule, posLiterals, negLiterals);
         dissatisfaction.setSquared(rule.isSquared());

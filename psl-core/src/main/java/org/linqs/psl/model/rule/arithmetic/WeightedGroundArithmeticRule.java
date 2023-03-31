@@ -27,13 +27,13 @@ import org.linqs.psl.reasoner.function.GeneralFunction;
 import java.util.List;
 
 public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule implements WeightedGroundRule {
-    protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Float> coefficients,
+    public WeightedGroundArithmeticRule(WeightedArithmeticRule rule, List<Float> coefficients,
             List<GroundAtom> atoms, FunctionComparator comparator, float constant) {
         super(rule, coefficients, atoms, comparator, constant);
         validate();
     }
 
-    protected WeightedGroundArithmeticRule(WeightedArithmeticRule rule, float[] coefficients, GroundAtom[] atoms,
+    public WeightedGroundArithmeticRule(WeightedArithmeticRule rule, float[] coefficients, GroundAtom[] atoms,
             FunctionComparator comparator, float constant) {
         super(rule, coefficients, atoms, comparator, constant);
         validate();

@@ -46,6 +46,10 @@ public abstract class TermGenerator<T extends ReasonerTerm> {
         this.mergeConstants = mergeConstants;
     }
 
+    public boolean getMergeConstants() {
+        return mergeConstants;
+    }
+
     public void setMergeConstants(boolean mergeConstants) {
         this.mergeConstants = mergeConstants;
     }

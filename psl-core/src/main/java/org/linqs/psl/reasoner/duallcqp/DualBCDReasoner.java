@@ -42,12 +42,12 @@ import java.util.List;
 public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     private static final org.linqs.psl.util.Logger log = Logger.getLogger(DualBCDReasoner.class);
 
-    float regularizationParameter;
+    public final float regularizationParameter;
 
-    private boolean firstOrderBreak;
-    private float firstOrderTolerance;
-    private boolean primalDualBreak;
-    private float primalDualTolerance;
+    private final boolean firstOrderBreak;
+    private final float firstOrderTolerance;
+    private final boolean primalDualBreak;
+    private final float primalDualTolerance;
 
     public DualBCDReasoner() {
         regularizationParameter = Options.DUAL_LCQP_REGULARIZATION.getFloat();

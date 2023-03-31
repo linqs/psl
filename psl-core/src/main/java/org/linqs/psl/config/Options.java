@@ -202,7 +202,7 @@ public class Options {
 
     public static final Option DUAL_LCQP_PRIMAL_DUAL_THRESHOLD = new Option(
         "duallcqp.primaldualthreshold",
-        0.01,
+        0.1,
         "Dual LCQP reasoners stop when the primal dual gap is less than this threshold.",
         Option.FLAG_NON_NEGATIVE
     );
@@ -400,7 +400,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_NUM_STEPS = new Option(
         "gradientdescent.numsteps",
-        500,
+        1000,
         "The number of steps the gradient descent weight learner will take.",
         Option.FLAG_POSITIVE
     );
@@ -589,6 +589,42 @@ public class Options {
         32,
         "The maximum size of batches for model updates.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option MINIMIZER_INITIAL_LAGRANGIAN_GRADIENT_TOLERANCE = new Option(
+        "minimizer.initiallagrangiangradienttolerance",
+        1.0f,
+        "The initial value for the squared penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_INITIAL_LINEAR_PENALTY = new Option(
+        "minimizer.initiallinearpenalty",
+        0.1f,
+        "The initial value for the linear penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_INITIAL_SQUARED_PENALTY = new Option(
+        "minimizer.initialsquaredpenalty",
+        1.0f,
+        "The initial value for the squared penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE = new Option(
+        "minimizer.objectivedifferencetolerance",
+        0.001f,
+        "The tolerance of the violation of value of the lower level objective function difference constraint"
+        + " in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_PROX_RULE_WEIGHT = new Option(
+        "minimizer.proxruleweight",
+        1.0f,
+        "The weight of the proximity rules added to the objective function for augmented inference subproblem.",
+        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option MODEL_PREDICATE_ENTITY_ARGS = new Option(

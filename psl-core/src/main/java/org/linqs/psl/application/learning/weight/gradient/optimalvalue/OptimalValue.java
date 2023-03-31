@@ -64,27 +64,6 @@ public abstract class OptimalValue extends GradientDescent {
     }
 
     /**
-     * A method for computing the incompatibility of rules with atoms values in their current state.
-     */
-    protected void computeCurrentIncompatibility(float[] incompatibilityArray) {
-        // Zero out the incompatibility first.
-        Arrays.fill(incompatibilityArray, 0.0f);
-
-        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
-
-        // Sums up the incompatibilities.
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Note that this cast should be unnecessary, but Java does not like the TermStore without a generic.
-            for (Object rawTerm : inference.getTermStore().getTerms(mutableRules.get(i))) {
-                @SuppressWarnings("unchecked")
-                ReasonerTerm term = (ReasonerTerm)rawTerm;
-
-                incompatibilityArray[i] += term.evaluateIncompatibility(atomValues);
-            }
-        }
-    }
-
-    /**
      * Compute the latent inference problem solution incompatibility.
      * RandomVariableAtoms with labels are fixed to their observed (truth) value.
      */

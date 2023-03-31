@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.reasoner.duallcqp.term.DualLCQPAtom;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
@@ -58,6 +59,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     @Override
     protected synchronized int add(GroundRule groundRule, ADMMObjectiveTerm term, Hyperplane hyperplane) {
         init();
+        ensureLocalRecordsCapacity();
 
         long termIndex = size();
         super.add(groundRule, term, hyperplane);
@@ -66,7 +68,6 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
         for (int i = 0; i < hyperplane.size(); i++) {
             int atomIndex = hyperplane.getVariable(i).getIndex();
 
-            // All atoms should be unobserved here (obs should have been merged).
             if (localRecords[atomIndex] == null) {
                 localRecords[atomIndex] = new ArrayList();
             }
@@ -78,6 +79,14 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
         }
 
         return 1;
+    }
+
+    private synchronized void ensureLocalRecordsCapacity() {
+        if (localRecords.length < database.getAtomStore().size()) {
+            List[] newLocalRecords = new List[database.getAtomStore().size()];
+            System.arraycopy(localRecords, 0, newLocalRecords, 0, localRecords.length);
+            localRecords = newLocalRecords;
+        }
     }
 
     @Override
@@ -125,7 +134,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
 
     private synchronized void init() {
         if (localRecords == null) {
-            localRecords = new List[database.getAtomStore().getMaxRVAIndex() + 1];
+            localRecords = new List[database.getAtomStore().size()];
         }
     }
 

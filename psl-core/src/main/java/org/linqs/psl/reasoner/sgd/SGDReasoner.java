@@ -142,7 +142,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
                 prevVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
                 lowestVariableValues = Arrays.copyOf(termStore.getVariableValues(), termStore.getVariableValues().length);
             } else {
-                clipGradient(prevGradient, prevVariableValues);
+                clipGradient(prevVariableValues, prevGradient);
                 breakSGD = breakOptimization(iteration, termStore,
                         new ObjectiveResult(objective, 0),
                         new ObjectiveResult(oldObjective, 0));
@@ -239,16 +239,6 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
         }
 
         return false;
-    }
-
-    private void clipGradient(float[] gradient, float[] variableValues) {
-        for (int i = 0; i < gradient.length; i++) {
-            if (MathUtils.equals(variableValues[i], 0.0f) && gradient[i] > 0.0f) {
-                gradient[i] = 0.0f;
-            } else if (MathUtils.equals(variableValues[i], 1.0f) && gradient[i] < 0.0f) {
-                gradient[i] = 0.0f;
-            }
-        }
     }
 
     private void addTermGradient(SGDObjectiveTerm term, float[] gradient, float[] variableValues, GroundAtom[] variableAtoms) {
