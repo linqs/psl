@@ -17,10 +17,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import numpy
 import sys
 
 import pslpython.deeppsl.model
-import tests.resources.models.deeppsl.util
+
 
 class SignModel(pslpython.deeppsl.model.DeepModel):
     def __init__(self):
@@ -58,7 +59,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
     def internal_eval(self, data, options = {}):
         predictions, _ = self.internal_predict(data, options=options)
         results = {'loss': self._model.compiled_loss(tensorflow.constant(predictions, dtype=tensorflow.float32), tensorflow.constant(data[1], dtype=tensorflow.float32)),
-                   'metrics': tests.resources.models.deeppsl.util.calculate_metrics(predictions, data[1], options['metrics'])}
+                   'metrics': calculate_metrics(predictions, data[1], options['metrics'])}
 
         return results
 
@@ -69,6 +70,25 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
     def load(self, options = {}):
         self._model = tensorflow.keras.models.load_model(options['load_path'])
         return {}
+
+
+def calculate_metrics(y_pred, y_truth, metrics):
+    results = {}
+    for metric in metrics:
+        if metric == 'categorical_accuracy':
+            results['categorical_accuracy'] = _categorical_accuracy(y_pred, y_truth)
+        else:
+            raise ValueError('Unknown metric: {}'.format(metric))
+    return results
+
+
+def _categorical_accuracy(y_pred, y_truth):
+    correct = 0
+    for i in range(len(y_truth)):
+        if numpy.argmax(y_pred[i]) == numpy.argmax(y_truth[i]):
+            correct += 1
+    return correct / len(y_truth)
+
 
 '''
 Handle importing tensorflow and pslpython into the global scope.

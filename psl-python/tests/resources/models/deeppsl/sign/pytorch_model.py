@@ -17,10 +17,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import numpy
 import sys
 
 import pslpython.deeppsl.model
-import tests.resources.models.deeppsl.util
+
 
 class SignModel(pslpython.deeppsl.model.DeepModel):
     def __init__(self):
@@ -74,7 +75,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
     def internal_eval(self, data, options = {}):
         predictions, _ = self.internal_predict(data, options=options)
         results = {'loss': self._loss(self._model(torch.FloatTensor(data[0])), torch.FloatTensor(data[1])).item(),
-                   'metrics': tests.resources.models.deeppsl.util.calculate_metrics(predictions.detach().numpy(), data[1], options['metrics'])}
+                   'metrics': calculate_metrics(predictions.detach().numpy(), data[1], options['metrics'])}
 
         return results
 
@@ -86,6 +87,24 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         self.internal_init_model(options=options)
         self._model.load_state_dict(torch.load(options['load_path']))
         return {}
+
+
+def calculate_metrics(y_pred, y_truth, metrics):
+    results = {}
+    for metric in metrics:
+        if metric == 'categorical_accuracy':
+            results['categorical_accuracy'] = _categorical_accuracy(y_pred, y_truth)
+        else:
+            raise ValueError('Unknown metric: {}'.format(metric))
+    return results
+
+
+def _categorical_accuracy(y_pred, y_truth):
+    correct = 0
+    for i in range(len(y_truth)):
+        if numpy.argmax(y_pred[i]) == numpy.argmax(y_truth[i]):
+            correct += 1
+    return correct / len(y_truth)
 
 
 '''

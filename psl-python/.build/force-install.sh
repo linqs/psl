@@ -18,7 +18,7 @@ function main() {
     cd "${PSLPYTHON_DIR}"
 
     "${THIS_DIR}/package.sh"
-    pip3 install --upgrade --no-deps --force-reinstall "${PSLPYTHON_DIR}"/dist/pslpython-*.whl
+    pip3 install --user --upgrade --no-deps --force-reinstall "${PSLPYTHON_DIR}"/dist/pslpython-*.whl
 }
 
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"

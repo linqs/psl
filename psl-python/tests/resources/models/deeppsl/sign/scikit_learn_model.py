@@ -16,12 +16,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import sys
 
 import numpy
+import sys
 
 import pslpython.deeppsl.model
-import tests.resources.models.deeppsl.util
+
 
 class SignModel(pslpython.deeppsl.model.DeepModel):
     def __init__(self):
@@ -45,12 +45,30 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
     def internal_eval(self, data, options = {}):
         predictions, _ = self.internal_predict(data);
-        results = {'metrics': tests.resources.models.deeppsl.util.calculate_metrics(predictions, data[1], options['metrics'])}
+        results = {'metrics': calculate_metrics(predictions, data[1], options['metrics'])}
 
         return results
 
     def internal_save(self, options = {}):
         return {}
+
+
+def calculate_metrics(y_pred, y_truth, metrics):
+    results = {}
+    for metric in metrics:
+        if metric == 'categorical_accuracy':
+            results['categorical_accuracy'] = _categorical_accuracy(y_pred, y_truth)
+        else:
+            raise ValueError('Unknown metric: {}'.format(metric))
+    return results
+
+
+def _categorical_accuracy(y_pred, y_truth):
+    correct = 0
+    for i in range(len(y_truth)):
+        if numpy.argmax(y_pred[i]) == numpy.argmax(y_truth[i]):
+            correct += 1
+    return correct / len(y_truth)
 
 
 '''

@@ -62,14 +62,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A configuration container that describes how a runtime should operate.
@@ -106,7 +99,7 @@ public class RuntimeConfig {
      * The path that other relative paths are resolved against.
      */
     @JsonIgnore
-    private String relativeBasePath;
+    protected String relativeBasePath;
 
     public RuntimeConfig() {
         rules = new RuleList();
@@ -297,8 +290,7 @@ public class RuntimeConfig {
                         "Predicate (%s) cannot be functional and have data.", name));
             }
         } else {
-            invokePredicateMethod("get", info, true, name, types);
-            invokePredicateMethod("initDeepModel", info, false, name, types);
+            getPredicateMethod(info, name, types);
         }
 
         // Validate the evaluations.
@@ -323,7 +315,7 @@ public class RuntimeConfig {
         return hasPrimaryEval;
     }
 
-    public void invokePredicateMethod(String methodName, PredicateConfigInfo info, Boolean errorOnMissingMethod, Object... parameters){
+    public void getPredicateMethod(PredicateConfigInfo info, Object... parameters){
         Method method = null;
         Class<?>[] paramtersClass = new Class[parameters.length];
 
@@ -332,14 +324,11 @@ public class RuntimeConfig {
         }
 
         try {
-            method = info.type.getMethod(methodName, paramtersClass);
+            method = info.type.getMethod("get", paramtersClass);
         } catch(NoSuchMethodException ex) {
-            if (!errorOnMissingMethod) {
-                return;
-            }
             throw new IllegalArgumentException(String.format(
                 "Predicate (%s) with type (%s) does not have a static method with the name %s.",
-                info.name, info.type, methodName));
+                info.name, info.type, "get"));
         }
 
         try {
@@ -348,7 +337,7 @@ public class RuntimeConfig {
             throw new IllegalArgumentException(String.format(
                 "Predicate (%s) with type (%s) contains illegal arguments on static method with name %s." +
                 " Found arguments: %s.",
-                info.name, info.type, methodName, Arrays.toString(parameters)), ex);
+                info.name, info.type, "get", Arrays.toString(parameters)), ex);
         }
     }
 

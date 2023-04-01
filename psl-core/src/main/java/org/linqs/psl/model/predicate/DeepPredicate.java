@@ -18,6 +18,7 @@
 package org.linqs.psl.model.predicate;
 
 import org.json.JSONObject;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -36,7 +37,6 @@ import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,16 +49,16 @@ public class DeepPredicate extends StandardPredicate {
 
     private static final String DELIM = "\t";
 
-    private static final String CONFIG_MODEL_PATH = "model-path";
-    private static final String CONFIG_ENTITY_DATA_MAP_PATH = "entity-data-map-path";
-    private static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
-    private static final String CONFIG_CLASS_SIZE = "class-size";
+    public static final String CONFIG_MODEL_PATH = "model-path";
+    public static final String CONFIG_ENTITY_DATA_MAP_PATH = "entity-data-map-path";
+    public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
+    public static final String CONFIG_CLASS_SIZE = "class-size";
 
     private static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
     private static int startingPort = -1;
     private static Map<Integer, DeepPredicate> usedPorts = null;
 
-    private Map<String, String> options;
+    private Map<String, String> stringOptions;
     private String entityDataMapPath;
     private int[] entityArgumentIndexes;
     private int classSize;
@@ -84,7 +84,7 @@ public class DeepPredicate extends StandardPredicate {
     protected DeepPredicate(String name, ConstantType[] types) {
         super(name, types);
 
-        options = null;
+        stringOptions = new HashMap<String, String>();
         entityDataMapPath = null;
         entityArgumentIndexes = null;
         classSize = -1;
@@ -113,33 +113,44 @@ public class DeepPredicate extends StandardPredicate {
     /**
      * Initialize a deep model. If any relative paths are supplied in the config, |relativeDir| will resolve them.
      */
-    public void initDeepModel(Map<String, String> config, String relativeDir) {
+    public void initDeepModel(AtomStore atomStore) {
+        if (initComplete) {
+            return;
+        }
+
         if (pythonServerProcess != null) {
             throw new RuntimeException("Cannot load a DeepPredicate that has already been loaded.");
         }
 
-        String configModelPath = FileUtils.makePath(relativeDir, config.get(CONFIG_MODEL_PATH));
+        String relativeDir = Config.getString("runtime.relativebasepath", null);
+        stringOptions.put("relative_dir", relativeDir);
+
+        for (Map.Entry<String, Object> entry : this.getPredicateOptions().entrySet()) {
+            stringOptions.put(entry.getKey(), (String) entry.getValue());
+        }
+
+        String configModelPath = stringOptions.get(CONFIG_MODEL_PATH);
         if (configModelPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",
                     CONFIG_MODEL_PATH));
         }
 
-        String configEntityDataMapPath = FileUtils.makePath(relativeDir, config.get(CONFIG_ENTITY_DATA_MAP_PATH));
+        String configEntityDataMapPath = FileUtils.makePath(relativeDir, stringOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
         if (configEntityDataMapPath == null) {
             throw new IllegalArgumentException(String.format(
                     "A DeepPredicate must have an entity to data map path (\"%s\") specified in predicate config.",
                     CONFIG_ENTITY_DATA_MAP_PATH));
         }
 
-        String configEntityArgumentIndexes = config.get(CONFIG_ENTITY_ARGUMENT_INDEXES);
+        String configEntityArgumentIndexes = stringOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES);
         if (configEntityArgumentIndexes == null) {
             throw new IllegalArgumentException(String.format(
                     "A DeepPredicate must have entity argument indexes (\"%s\") specified in predicate config.",
                     CONFIG_ENTITY_ARGUMENT_INDEXES));
         }
 
-        String configClassSize = config.get(CONFIG_CLASS_SIZE);
+        String configClassSize = stringOptions.get(CONFIG_CLASS_SIZE);
         if (configClassSize == null) {
             throw new IllegalArgumentException(String.format(
                     "A DeepPredicate must have a class size (\"%s\") specified in predicate config.",
@@ -149,17 +160,62 @@ public class DeepPredicate extends StandardPredicate {
         entityDataMapPath = configEntityDataMapPath;
         entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
         classSize = Integer.parseInt(configClassSize);
-        options = config;
+        dataSize = countDataLines(entityDataMapPath);
 
-        // Open data file and count how many data points there are.
+        atomIndexes = new int[dataSize * classSize];
+        dataIndexes = new int[dataSize];
+        gradients = new float[dataSize * classSize];
+
         try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
-            String line;
+            // Map data entities from file to atoms and indexes.
+            Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
+            ConstantType type;
+
+            String line = null;
+            int lineNumber = 0;
+            int dataIndex = 0;
+            int width = -1;
+
             while ((line = reader.readLine()) != null) {
+                lineNumber++;
+
                 line = line.trim();
                 if (line.isEmpty()) {
                     continue;
                 }
-                dataSize++;
+
+                String[] parts = line.split(DELIM);
+
+                if (width == -1) {
+                    width = parts.length;
+
+                    if (width - entityArgumentIndexes.length <= 0) {
+                        throw new RuntimeException(String.format(
+                                "Line too short (%d). Expected at least %d values, found %d.",
+                                lineNumber, entityArgumentIndexes.length + 1, width));
+                    }
+                } else if (parts.length != width) {
+                    throw new RuntimeException(String.format(
+                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
+                            lineNumber, width, parts.length));
+                }
+
+                // Get constant types for this entity.
+                for (int index = 0; index < arguments.length - 1; index++) {
+                    type = this.getArgumentType(index);
+                    arguments[index] = ConstantType.getConstant(parts[index], type);
+                }
+
+                // Add atom index and data index for each class.
+                type = this.getArgumentType(arguments.length - 1);
+                dataIndexes[dataIndex] = dataIndex;
+
+                for (int index = 0; index < classSize; index++) {
+                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
+                    atomIndexes[classSize * dataIndex + index] = atomStore.getAtomIndex(this, arguments);
+                }
+
+                dataIndex += 1;
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse entity data map file: " + entityDataMapPath, ex);
@@ -204,22 +260,20 @@ public class DeepPredicate extends StandardPredicate {
             throw new RuntimeException(ex);
         }
 
-        atomIndexes = new int[dataSize * classSize];
-        dataIndexes = new int[dataSize];
-
         JSONObject message = new JSONObject();
         message.put("task", "init");
         message.put("shared_memory_path", sharedMemoryPath);
-        message.put("options", options);
+        message.put("options", stringOptions);
 
         sendSocketMessage(message);
+        initComplete = true;
     }
 
     /**
      * Fit the model using values set through setLabel().
      */
     public void fitDeepModel(AtomStore atomStore, float[] newGradients) {
-        finalizeInit(atomStore);
+        initDeepModel(atomStore);
 
         log.trace("Fitting {}.", this);
 
@@ -235,7 +289,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "fit");
-        message.put("options", options);
+        message.put("options", stringOptions);
 
         JSONObject response = sendSocketMessage(message);
 
@@ -247,7 +301,7 @@ public class DeepPredicate extends StandardPredicate {
      * Get deep model predictions and update atom values.
      */
     public void predictDeepModel(AtomStore atomStore) {
-        finalizeInit(atomStore);
+        initDeepModel(atomStore);
 
         log.trace("Fitting {}.", this);
 
@@ -257,7 +311,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "predict");
-        message.put("options", options);
+        message.put("options", stringOptions);
 
         JSONObject response = sendSocketMessage(message);
 
@@ -288,7 +342,7 @@ public class DeepPredicate extends StandardPredicate {
      * Evaluate using deep model.
      */
     public void evalDeepModel(AtomStore atomStore) {
-        finalizeInit(atomStore);
+        initDeepModel(atomStore);
 
         log.trace("Fitting {}.", this);
 
@@ -298,7 +352,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "eval");
-        message.put("options", options);
+        message.put("options", stringOptions);
 
         JSONObject response = sendSocketMessage(message);
 
@@ -316,7 +370,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "save");
-        message.put("options", options);
+        message.put("options", stringOptions);
 
         JSONObject response = sendSocketMessage(message);
     }
@@ -325,9 +379,9 @@ public class DeepPredicate extends StandardPredicate {
     public synchronized void close() {
         super.close();
 
-        if (options != null) {
-            options.clear();
-            options = null;
+        if (stringOptions != null) {
+            stringOptions.clear();
+            stringOptions = null;
         }
         entityDataMapPath = null;
         entityArgumentIndexes = null;
@@ -398,73 +452,6 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
-    /**
-     * Load atom and data indexes using the entity data map file, which maps entity IDs to data vectors.
-     */
-    private void finalizeInit(AtomStore atomStore) {
-        if (initComplete) {
-            return;
-        }
-
-        // Map data entities from file to atoms and indexes.
-        Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
-        ConstantType type;
-        int dataIndex = 0;
-        int width = -1;
-
-        try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
-            String line = null;
-            int lineNumber = 0;
-
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
-
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-
-                String[] parts = line.split(DELIM);
-
-                if (width == -1) {
-                    width = parts.length;
-
-                    if (width - entityArgumentIndexes.length <= 0) {
-                        throw new RuntimeException(String.format(
-                                "Line too short (%d). Expected at least %d values, found %d.",
-                                lineNumber, entityArgumentIndexes.length + 1, width));
-                    }
-                } else if (parts.length != width) {
-                    throw new RuntimeException(String.format(
-                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
-                            lineNumber, width, parts.length));
-                }
-
-                // Get constant types for this entity.
-                for (int index = 0; index < arguments.length - 1; index++) {
-                    type = this.getArgumentType(index);
-                    arguments[index] = ConstantType.getConstant(parts[index], type);
-                }
-
-                // Add atom index and data index for each class.
-                type = this.getArgumentType(arguments.length - 1);
-                dataIndexes[dataIndex] = dataIndex;
-
-                for (int index = 0; index < classSize; index++) {
-                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
-                    atomIndexes[classSize * dataIndex + index] = atomStore.getAtomIndex(this, arguments);
-                }
-
-                dataIndex += 1;
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to parse entity data map file: " + entityDataMapPath, ex);
-        }
-
-        gradients = new float[atomIndexes.length];
-        initComplete = true;
-    }
-
     private String getResultString(JSONObject response) {
         JSONObject result = response.optJSONObject("result");
         if (result == null) {
@@ -492,6 +479,25 @@ public class DeepPredicate extends StandardPredicate {
         for (int i = 0; i < dataSize; i++) {
             sharedBuffer.putInt(dataIndexes[i]);
         }
+    }
+
+    private int countDataLines(String path) {
+        int count = 0;
+        String line = null;
+
+        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+                count++;
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to parse data file: " + path, ex);
+        }
+
+        return count;
     }
 
     /**

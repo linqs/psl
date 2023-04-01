@@ -593,7 +593,7 @@ public class Options {
 
     public static final Option PREDICATE_DEEP_PYTHON_WRAPPER_MODULE = new Option(
             "predicate.deep.python.module",
-            "pslpython.deep.server",
+            "pslpython.deeppsl.server",
             "The Python module to invoke for the deep wrapper."
     );
 

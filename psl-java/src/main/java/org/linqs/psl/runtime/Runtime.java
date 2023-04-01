@@ -159,6 +159,17 @@ public class Runtime {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
         }
 
+        // Set the relative base path for all other paths.
+        Config.setProperty("runtime.relativebasepath", config.relativeBasePath, false);
+
+        // Set all predicate options inside each predicate.
+        for (RuntimeConfig.PredicateConfigInfo info : config.predicates.values()) {
+            Predicate predicate = Predicate.get(info.name);
+            for (Map.Entry<String, String> entry : info.options.entrySet()) {
+                predicate.setPredicateOption(entry.getKey(), entry.getValue());
+            }
+        }
+
         Model model = null;
         if (RuntimeOptions.LEARN.getBoolean()) {
             model = runLearning(config, result);
@@ -506,10 +517,6 @@ public class Runtime {
                 targetDatabase, truthDatabase);
         learner.setEvaluation(primaryEvaluation);
         learner.learn();
-
-        for (RuntimeConfig.PredicateConfigInfo predicateInfo : config.predicates.values()) {
-            config.invokePredicateMethod("saveDeepModel", predicateInfo, false, null);
-        }
 
         learner.close();
         targetDatabase.close();

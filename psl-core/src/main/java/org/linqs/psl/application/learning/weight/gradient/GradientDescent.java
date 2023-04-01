@@ -192,6 +192,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
             iteration++;
         }
 
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.saveDeepModel();
+        }
+
         log.info("Gradient Descent Weight Learning Finished.");
         log.info("Final Model {} ", mutableRules);
         if (evaluation != null) {

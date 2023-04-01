@@ -28,6 +28,7 @@ A TCP server that acts as a bridge between PSL (Java) and deep learning models (
 import atexit
 import importlib
 import json
+import os
 import socket
 import sys
 import traceback
@@ -92,7 +93,7 @@ class ConnectionHandler(object):
         shared_memory_path = request['shared_memory_path']
         options = request.get('options', {})
 
-        self._model = self._load_model(options['model-path'])
+        self._model = self._load_model(os.path.join(options['relative_dir'], options['model-path']))
         return self._model.init_model(shared_memory_path, options=options)
 
     def _fit(self, request):
