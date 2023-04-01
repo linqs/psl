@@ -58,7 +58,6 @@ class TestTensorflowModels(tests.python.base_test.PSLTest):
                    'output_shape': tests.resources.models.deeppsl.sign.data.CLASS_SIZE,
                    'learning_rate': 1.0e-0,
                    'epochs': 20,
-                   'metrics': ['categorical_accuracy'],
                    'save_path': None}
 
         sign_model.internal_init_model(options=options)

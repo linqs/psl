@@ -30,6 +30,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         _import()
 
         self._model = None
+        self._metrics = ['categorical_accuracy']
 
     def internal_init_model(self, options = {}):
         self._model = tree.DecisionTreeClassifier()
@@ -45,7 +46,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
     def internal_eval(self, data, options = {}):
         predictions, _ = self.internal_predict(data);
-        results = {'metrics': calculate_metrics(predictions, data[1], options['metrics'])}
+        results = {'metrics': calculate_metrics(predictions, data[1], self._metrics)}
 
         return results
 

@@ -29,8 +29,9 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
         _import()
 
-        self._loss = None
         self._model = None
+        self._metrics = ['categorical_accuracy']
+        self._loss = None
         self._optimizer = None
 
     def internal_init_model(self, options = {}):
@@ -75,7 +76,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
     def internal_eval(self, data, options = {}):
         predictions, _ = self.internal_predict(data, options=options)
         results = {'loss': self._loss(self._model(torch.FloatTensor(data[0])), torch.FloatTensor(data[1])).item(),
-                   'metrics': calculate_metrics(predictions.detach().numpy(), data[1], options['metrics'])}
+                   'metrics': calculate_metrics(predictions.detach().numpy(), data[1], self._metrics)}
 
         return results
 

@@ -272,7 +272,7 @@ public class DeepPredicate extends StandardPredicate {
     /**
      * Fit the model using values set through setLabel().
      */
-    public void fitDeepModel(AtomStore atomStore, float[] newGradients) {
+    public void fitDeepModel(AtomStore atomStore, float[] symbolicGradients) {
         initDeepModel(atomStore);
 
         log.trace("Fitting {}.", this);
@@ -280,7 +280,7 @@ public class DeepPredicate extends StandardPredicate {
         sharedBuffer.clear();
 
         for (int index = 0; index < atomIndexes.length; index++) {
-            gradients[dataIndexes[index]] = newGradients[atomIndexes[dataIndexes[index / classSize]]];
+            gradients[dataIndexes[index]] = symbolicGradients[atomIndexes[dataIndexes[index / classSize]]];
         }
 
         writeEntityData(gradients);

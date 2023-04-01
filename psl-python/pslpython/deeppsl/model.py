@@ -108,7 +108,7 @@ class DeepModel(abc.ABC):
 
         self._shared_buffer.seek(0)
 
-        self._write_int(len(predictions))
+        self._write_int(int(options['class-size']) * len(predictions))
         predictions = numpy.array(predictions, dtype = '>f4', copy = False)
         self._shared_buffer.write(predictions.tobytes(order = 'C'))
 
