@@ -630,7 +630,7 @@ public class Options {
 
     public static final Option MINIMIZER_PROX_RULE_WEIGHT = new Option(
         "minimizer.proxruleweight",
-        1.0f,
+        0.001f,
         "The weight of the proximity rules added to the objective function for augmented inference subproblem.",
         Option.FLAG_NON_NEGATIVE
     );
