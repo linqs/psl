@@ -33,7 +33,6 @@ import org.linqs.psl.model.rule.arithmetic.WeightedGroundArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.reasoner.duallcqp.DualBCDReasoner;
-import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
@@ -97,7 +96,7 @@ public abstract class Minimizer extends GradientDescent {
         proxRuleWeight = Options.MINIMIZER_PROX_RULE_WEIGHT.getFloat();
 
         internalIteration = 0;
-        outerIteration = 0;
+        outerIteration = 1;
 
         truthEnergyObjectiveWeight = Options.MINIMIZER_TRUTH_ENERGY_OBJECTIVE_WEIGHT.getFloat();
         initialSquaredPenaltyCoefficient = Options.MINIMIZER_INITIAL_SQUARED_PENALTY.getFloat();
@@ -213,9 +212,12 @@ public abstract class Minimizer extends GradientDescent {
             // Update the penalty coefficients and tolerance.
             float totalObjectiveDifference = computeObjectiveDifference();
 
+            log.trace("Outer iteration: {}, Objective Difference: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Lagrangian Gradient Tolerance: {}, ",
+                    outerIteration, totalObjectiveDifference, squaredPenaltyCoefficient, linearPenaltyCoefficient, lagrangianGradientTolerance);
+
             linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
             squaredPenaltyCoefficient = 2.0f * squaredPenaltyCoefficient;
-            lagrangianGradientTolerance = initialLagrangianGradientTolerance / (outerIteration + 1);
+            lagrangianGradientTolerance = initialLagrangianGradientTolerance / (outerIteration);
 
             internalIteration = 1;
             outerIteration++;
@@ -234,12 +236,23 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void computeIterationStatistics() {
+        log.trace("Running Full Inference.");
+        computeFullInferenceStatistics();
+
+        if ((internalIteration == 1) && (outerIteration == 1)) {
+            // Initialize the prox rule constants to the full inference values.
+            float[] atomValues = inference.getTermStore().getDatabase().getAtomStore().getAtomValues();
+            for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
+                proxRuleObservedAtoms[i]._assumeValue(mpeAtomValueState[i]);
+                atomValues[proxRuleObservedAtomIndexes[i]] = proxRuleObservedAtoms[i].getValue();
+                augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = proxRuleObservedAtoms[i].getValue();
+            }
+        }
+
         log.trace("Running Augmented Inference.");
         computeAugmentedInferenceStatistics();
         log.trace("Running Latent Inference.");
         computeLatentInferenceStatistics();
-        log.trace("Running Full Inference.");
-        computeFullInferenceStatistics();
 
         computeProxRuleObservedAtomValueGradient();
     }
@@ -355,6 +368,9 @@ public abstract class Minimizer extends GradientDescent {
         float truthEnergy = computeTruthEnergy();
         float supervisedLoss = computeSupervisedLoss();
 
+        log.trace("Total objective difference: {}, Truth Energy: {}, Supervised Loss: {}",
+                totalObjectiveDifference, truthEnergy, supervisedLoss);
+
         return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(totalObjectiveDifference, 2.0f)
                 + linearPenaltyCoefficient * (totalObjectiveDifference) + truthEnergyObjectiveWeight * truthEnergy + supervisedLoss;
     }
@@ -374,7 +390,7 @@ public abstract class Minimizer extends GradientDescent {
             totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
         }
 
-        // LCQP reasoners add an additional regularization to the energy function to ensure strong convexity.
+        // LCQP reasoners add a regularization to the energy function to ensure strong convexity.
         GroundAtom[] atoms = inference.getDatabase().getAtomStore().getAtoms();
         float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
         float augmentedInferenceLCQPRegularization = 0.0f;
@@ -406,7 +422,7 @@ public abstract class Minimizer extends GradientDescent {
             totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
         }
 
-        // LCQP reasoners add an additional regularization to the energy function to ensure strong convexity.
+        // LCQP reasoners add a regularization to the energy function to ensure strong convexity.
         GroundAtom[] atoms = inference.getDatabase().getAtomStore().getAtoms();
         float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
         float augmentedInferenceLCQPRegularization = 0.0f;
@@ -447,7 +463,7 @@ public abstract class Minimizer extends GradientDescent {
             totalEnergyDifference += mutableRules.get(i).getWeight() * incompatibilityDifference[i];
         }
 
-        // LCQP reasoners add an additional regularization to the energy function to ensure strong convexity.
+        // LCQP reasoners add a regularization to the energy function to ensure strong convexity.
         GroundAtom[] atoms = inference.getDatabase().getAtomStore().getAtoms();
         float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
         float augmentedInferenceLCQPRegularization = 0.0f;
@@ -488,10 +504,16 @@ public abstract class Minimizer extends GradientDescent {
     protected float computeGradientNorm() {
         float gradientNorm = super.computeGradientNorm();
 
+        log.trace("Weight gradient: {}", weightGradient);
+        log.trace("Weight gradient norm: {}", gradientNorm);
+
         float[] boxClippedProxRuleObservedAtomValueGradient = proxRuleObservedAtomValueGradient.clone();
         clipProxRuleObservedAtomValueGradient(boxClippedProxRuleObservedAtomValueGradient);
+        float boxClippedProxRuleObservedAtomValueGradientNorm = MathUtils.pNorm(boxClippedProxRuleObservedAtomValueGradient, stoppingGradientNorm);
 
-        gradientNorm += MathUtils.pNorm(boxClippedProxRuleObservedAtomValueGradient, stoppingGradientNorm);
+        log.trace("Proximity variable gradient norm: {}", boxClippedProxRuleObservedAtomValueGradientNorm);
+
+        gradientNorm += boxClippedProxRuleObservedAtomValueGradientNorm;
 
         return gradientNorm;
     }

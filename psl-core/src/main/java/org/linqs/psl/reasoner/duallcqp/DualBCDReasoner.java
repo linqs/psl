@@ -44,6 +44,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
     public final float regularizationParameter;
 
+    private final int computePeriod;
     private final boolean firstOrderBreak;
     private final float firstOrderTolerance;
     private final boolean primalDualBreak;
@@ -53,6 +54,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         regularizationParameter = Options.DUAL_LCQP_REGULARIZATION.getFloat();
 
         maxIterations = Options.DUAL_LCQP_MAX_ITER.getInt();
+        computePeriod = Options.DUAL_LCQP_COMPUTE_PERIOD.getInt();
         firstOrderBreak = Options.DUAL_LCQP_FIRST_ORDER_BREAK.getBoolean();
         firstOrderTolerance = Options.DUAL_LCQP_FIRST_ORDER_THRESHOLD.getFloat();
         primalDualBreak = Options.DUAL_LCQP_PRIMAL_DUAL_BREAK.getBoolean();
@@ -88,21 +90,23 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            primalVariableUpdate(termStore);
+            if (iteration % computePeriod == 0) {
+                primalVariableUpdate(termStore);
 
-            oldObjective = objective;
-            objective = computeObjective(termStore);
+                oldObjective = objective;
+                objective = computeObjective(termStore);
 
-            ObjectiveResult dualObjectiveResult = new ObjectiveResult(0.0f, 0);
-            float dualGradientNorm = parallelComputeDualObjectiveAndGradientNorm(termStore, dualObjectiveResult);
-            breakDualBCD = breakOptimization(iteration, termStore, objective, oldObjective, dualObjectiveResult, dualGradientNorm);
+                ObjectiveResult dualObjectiveResult = new ObjectiveResult(0.0f, 0);
+                float dualGradientNorm = parallelComputeDualObjectiveAndGradientNorm(termStore, dualObjectiveResult);
+                breakDualBCD = breakOptimization(iteration, termStore, objective, oldObjective, dualObjectiveResult, dualGradientNorm);
 
-            log.trace("Iteration {} -- Primal Objective: {}, Violated Constraints: {}, Dual Objective: {}, Primal-dual gap: {}, Iteration Time: {}, Total Optimization Time: {}.",
-                    iteration, objective.objective, objective.violatedConstraints,
-                    dualObjectiveResult.objective, objective.objective - dualObjectiveResult.objective,
-                    (end - start), totalTime);
+                log.trace("Iteration {} -- Primal Objective: {}, Violated Constraints: {}, Dual Objective: {}, Primal-dual gap: {}, Iteration Time: {}, Total Optimization Time: {}.",
+                        iteration, objective.objective, objective.violatedConstraints,
+                        dualObjectiveResult.objective, objective.objective - dualObjectiveResult.objective,
+                        (end - start), totalTime);
 
-            evaluate(termStore, iteration, evaluations, trainingMap);
+                evaluate(termStore, iteration, evaluations, trainingMap);
+            }
 
             iteration++;
         }

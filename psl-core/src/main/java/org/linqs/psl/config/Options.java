@@ -174,6 +174,14 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option DUAL_LCQP_COMPUTE_PERIOD = new Option(
+        "duallcqp.computeperiod",
+        50,
+        "Compute some stats about the optimization and log them to TRACE once for each period."
+        + " Note that gathering the information takes about an iteration's worth of time.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option DUAL_LCQP_FIRST_ORDER_BREAK = new Option(
         "duallcqp.firstorderbreak",
         false,
@@ -614,7 +622,7 @@ public class Options {
 
     public static final Option MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE = new Option(
         "minimizer.objectivedifferencetolerance",
-        0.001f,
+        1.0f,
         "The tolerance of the violation of value of the lower level objective function difference constraint"
         + " in the augmented Lagrangian minimizer-based learning framework.",
         Option.FLAG_NON_NEGATIVE
@@ -629,7 +637,7 @@ public class Options {
 
     public static final Option MINIMIZER_TRUTH_ENERGY_OBJECTIVE_WEIGHT = new Option(
         "minimizer.truthenergyobjectiveweight",
-        1.0f,
+        0.0f,
         "The weight of the energy loss in the objective function for minimizer-based learning.",
         Option.FLAG_NON_NEGATIVE
     );
