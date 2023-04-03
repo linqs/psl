@@ -63,7 +63,6 @@ public class DeepPredicate extends StandardPredicate {
     private String entityDataMapPath;
     private int[] entityArgumentIndexes;
     private int classSize;
-    private int dataSize;
 
     private int[] atomIndexes;
     private int[] dataIndexes;
@@ -89,7 +88,6 @@ public class DeepPredicate extends StandardPredicate {
         entityDataMapPath = null;
         entityArgumentIndexes = null;
         classSize = -1;
-        dataSize = 0;
 
         atomIndexes = null;
         dataIndexes = null;
@@ -161,7 +159,6 @@ public class DeepPredicate extends StandardPredicate {
         entityDataMapPath = configEntityDataMapPath;
         entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
         classSize = Integer.parseInt(configClassSize);
-        dataSize = countDataLines(entityDataMapPath);
 
         ArrayList<Integer> validAtomIndexes = new ArrayList<Integer>();
         ArrayList<Integer> validDataIndexes = new ArrayList<Integer>();
@@ -233,8 +230,8 @@ public class DeepPredicate extends StandardPredicate {
 
         // Switch arraylists to arrays for faster access.
         atomIndexes = new int[validAtomIndexes.size()];
-        dataIndexes = new int[validDataIndexes.size()];
         gradients = new float[validAtomIndexes.size()];
+        dataIndexes = new int[validDataIndexes.size()];
 
         for (int i = 0; i < atomIndexes.length; i++) {
             atomIndexes[i] = validAtomIndexes.get(i);
@@ -256,7 +253,7 @@ public class DeepPredicate extends StandardPredicate {
         // Compute exactly how much memory we will need ahead of time.
         // The most memory we will need is on a full fit():
         // = 2 * (sizeof(int) + (num_entities * num_labels * sizeof(float)))
-        int bufferLength = 2 * dataSize * classSize * Float.SIZE;
+        int bufferLength = 2 * validDataIndexes.size() * classSize * Float.SIZE;
 
         try {
             sharedFile = new RandomAccessFile(sharedMemoryPath, "rw");
@@ -302,6 +299,7 @@ public class DeepPredicate extends StandardPredicate {
 
         sharedBuffer.clear();
 
+        // Todo(Connor) - Gradients are not aligned based on dataIndexes.
         for (int index = 0; index < gradients.length; index++) {
             gradients[index] = symbolicGradients[atomIndexes[index]];
         }
@@ -354,7 +352,7 @@ public class DeepPredicate extends StandardPredicate {
 
         for(int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
-            atomIndex = atomIndexes[index];
+            atomIndex = atomIndexes[dataIndexes[index / classSize] + index % classSize];
 
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
@@ -409,7 +407,6 @@ public class DeepPredicate extends StandardPredicate {
         entityDataMapPath = null;
         entityArgumentIndexes = null;
         classSize = -1;
-        dataSize = 0;
 
         atomIndexes = null;
         dataIndexes = null;
@@ -494,33 +491,14 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
-    private void writeIndexData(int dataSize) {
+    private void writeIndexData(int size) {
         // Write out the number of values.
-        sharedBuffer.putInt(dataSize);
+        sharedBuffer.putInt(size);
 
         // Write out the indexes.
-        for (int i = 0; i < dataSize; i++) {
+        for (int i = 0; i < size; i++) {
             sharedBuffer.putInt(dataIndexes[i]);
         }
-    }
-
-    private int countDataLines(String path) {
-        int count = 0;
-        String line = null;
-
-        try (BufferedReader reader = FileUtils.getBufferedReader(path)) {
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-                count++;
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to parse data file: " + path, ex);
-        }
-
-        return count;
     }
 
     /**
