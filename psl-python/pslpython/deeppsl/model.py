@@ -70,7 +70,7 @@ class DeepModel(abc.ABC):
         self._shared_file = open(shared_memory_path, 'rb+')
         self._shared_buffer = mmap.mmap(self._shared_file.fileno(), 0)
 
-        self._class_size = options['class-size']
+        self._class_size = int(options['class-size'])
         self._data = []
         self._entity_ids = []
 

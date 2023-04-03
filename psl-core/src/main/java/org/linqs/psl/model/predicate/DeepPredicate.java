@@ -37,6 +37,7 @@ import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -162,10 +163,8 @@ public class DeepPredicate extends StandardPredicate {
         classSize = Integer.parseInt(configClassSize);
         dataSize = countDataLines(entityDataMapPath);
 
-        atomIndexes = new int[dataSize * classSize];
-        dataIndexes = new int[dataSize];
-        gradients = new float[dataSize * classSize];
-
+        ArrayList<Integer> validAtomIndexes = new ArrayList<Integer>();
+        ArrayList<Integer> validDataIndexes = new ArrayList<Integer>();
         try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
             // Map data entities from file to atoms and indexes.
             Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
@@ -173,7 +172,7 @@ public class DeepPredicate extends StandardPredicate {
 
             String line = null;
             int lineNumber = 0;
-            int dataIndex = 0;
+            int atomIndex = 0;
             int width = -1;
 
             while ((line = reader.readLine()) != null) {
@@ -208,17 +207,41 @@ public class DeepPredicate extends StandardPredicate {
 
                 // Add atom index and data index for each class.
                 type = this.getArgumentType(arguments.length - 1);
-                dataIndexes[dataIndex] = dataIndex;
 
                 for (int index = 0; index < classSize; index++) {
                     arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
-                    atomIndexes[classSize * dataIndex + index] = atomStore.getAtomIndex(this, arguments);
+                    atomIndex = atomStore.getAtomIndex(this, arguments);
+                    if (atomIndex == -1) {
+                        break;
+                    }
+                    validAtomIndexes.add(atomStore.getAtomIndex(this, arguments));
                 }
 
-                dataIndex += 1;
+                if (validAtomIndexes.size() % classSize != 0) {
+                    throw new RuntimeException(String.format(
+                            "Entity found on line (%d) has unspecified class values for predicate %s.",
+                            lineNumber, this.getName()));
+                }
+
+                if (atomIndex != -1) {
+                    validDataIndexes.add(validDataIndexes.size());
+                }
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse entity data map file: " + entityDataMapPath, ex);
+        }
+
+        // Switch arraylists to arrays for faster access.
+        atomIndexes = new int[validAtomIndexes.size()];
+        dataIndexes = new int[validDataIndexes.size()];
+        gradients = new float[validAtomIndexes.size()];
+
+        for (int i = 0; i < atomIndexes.length; i++) {
+            atomIndexes[i] = validAtomIndexes.get(i);
+            gradients[i] = 0.0f;
+            if (i % classSize == 0) {
+                dataIndexes[i / classSize] = validDataIndexes.get(i / classSize);
+            }
         }
 
         // Do our best to make sure close() gets called.
@@ -279,8 +302,8 @@ public class DeepPredicate extends StandardPredicate {
 
         sharedBuffer.clear();
 
-        for (int index = 0; index < atomIndexes.length; index++) {
-            gradients[dataIndexes[index]] = symbolicGradients[atomIndexes[dataIndexes[index / classSize]]];
+        for (int index = 0; index < gradients.length; index++) {
+            gradients[index] = symbolicGradients[atomIndexes[index]];
         }
 
         writeEntityData(gradients);
@@ -331,7 +354,7 @@ public class DeepPredicate extends StandardPredicate {
 
         for(int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
-            atomIndex = atomIndexes[dataIndexes[index / classSize]];
+            atomIndex = atomIndexes[index];
 
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);

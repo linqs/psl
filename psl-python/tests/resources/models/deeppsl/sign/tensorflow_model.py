@@ -68,6 +68,9 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         return results
 
     def internal_save(self, options = {}):
+        if 'save_path' not in options:
+            return {}
+
         self._model.save(options['save_path'], save_format = 'tf')
         return {}
 
@@ -79,7 +82,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         if len(data) == 2:
             return data
 
-        return [data[:,:-1], data[:,-1]]
+        return [numpy.asarray(data[:,:-1]), numpy.asarray([[1, 0] if label == 0 else [0, 1] for label in data[:,-1]])]
 
 
 def calculate_metrics(y_pred, y_truth, metrics):
