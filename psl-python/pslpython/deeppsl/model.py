@@ -76,7 +76,7 @@ class DeepModel(abc.ABC):
 
         entity_argument_length = len(options['entity-argument-indexes'].split(","))
 
-        with open(os.path.join(options['relative_dir'], options['entity-data-map-path']), 'r') as file:
+        with open(os.path.join(options['relative-dir'], options['entity-data-map-path']), 'r') as file:
             for row in file:
                 parts = row.split("\t")
 

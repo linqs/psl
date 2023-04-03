@@ -54,14 +54,13 @@ public class DeepPredicate extends StandardPredicate {
     public static final String CONFIG_ENTITY_DATA_MAP_PATH = "entity-data-map-path";
     public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
     public static final String CONFIG_CLASS_SIZE = "class-size";
+    public static final String CONFIG_REALTIVE_DIR = "relative-dir";
 
     private static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
     private static int startingPort = -1;
     private static Map<Integer, DeepPredicate> usedPorts = null;
 
-    private Map<String, String> stringOptions;
-    private String entityDataMapPath;
-    private int[] entityArgumentIndexes;
+    private Map<String, String> pythonOptions;
     private int classSize;
 
     private int[] atomIndexes;
@@ -84,9 +83,7 @@ public class DeepPredicate extends StandardPredicate {
     protected DeepPredicate(String name, ConstantType[] types) {
         super(name, types);
 
-        stringOptions = new HashMap<String, String>();
-        entityDataMapPath = null;
-        entityArgumentIndexes = null;
+        pythonOptions = new HashMap<String, String>();
         classSize = -1;
 
         atomIndexes = null;
@@ -110,6 +107,41 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     /**
+     * Load predicate options that will be sent to python as strings and verify certain all required options exist.
+     */
+    private void validateOptions() {
+        for (Map.Entry<String, Object> entry : this.getPredicateOptions().entrySet()) {
+            pythonOptions.put(entry.getKey(), (String) entry.getValue());
+        }
+
+        pythonOptions.put(CONFIG_REALTIVE_DIR, Config.getString("runtime.relativebasepath", null));
+
+        if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",
+                    CONFIG_MODEL_PATH));
+        }
+
+        if (FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have an entity to data map path (\"%s\") specified in predicate config.",
+                    CONFIG_ENTITY_DATA_MAP_PATH));
+        }
+
+        if (pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have entity argument indexes (\"%s\") specified in predicate config.",
+                    CONFIG_ENTITY_ARGUMENT_INDEXES));
+        }
+
+        if (pythonOptions.get(CONFIG_CLASS_SIZE) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have a class size (\"%s\") specified in predicate config.",
+                    CONFIG_CLASS_SIZE));
+        }
+    }
+
+    /**
      * Initialize a deep model. If any relative paths are supplied in the config, |relativeDir| will resolve them.
      */
     public void initDeepModel(AtomStore atomStore) {
@@ -121,50 +153,15 @@ public class DeepPredicate extends StandardPredicate {
             throw new RuntimeException("Cannot load a DeepPredicate that has already been loaded.");
         }
 
-        String relativeDir = Config.getString("runtime.relativebasepath", null);
-        stringOptions.put("relative_dir", relativeDir);
-
-        for (Map.Entry<String, Object> entry : this.getPredicateOptions().entrySet()) {
-            stringOptions.put(entry.getKey(), (String) entry.getValue());
-        }
-
-        String configModelPath = stringOptions.get(CONFIG_MODEL_PATH);
-        if (configModelPath == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",
-                    CONFIG_MODEL_PATH));
-        }
-
-        String configEntityDataMapPath = FileUtils.makePath(relativeDir, stringOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
-        if (configEntityDataMapPath == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have an entity to data map path (\"%s\") specified in predicate config.",
-                    CONFIG_ENTITY_DATA_MAP_PATH));
-        }
-
-        String configEntityArgumentIndexes = stringOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES);
-        if (configEntityArgumentIndexes == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have entity argument indexes (\"%s\") specified in predicate config.",
-                    CONFIG_ENTITY_ARGUMENT_INDEXES));
-        }
-
-        String configClassSize = stringOptions.get(CONFIG_CLASS_SIZE);
-        if (configClassSize == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a class size (\"%s\") specified in predicate config.",
-                    CONFIG_CLASS_SIZE));
-        }
-
-        entityDataMapPath = configEntityDataMapPath;
-        entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
-        classSize = Integer.parseInt(configClassSize);
+        validateOptions();
+        classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
+        //entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
 
         ArrayList<Integer> validAtomIndexes = new ArrayList<Integer>();
         ArrayList<Integer> validDataIndexes = new ArrayList<Integer>();
-        try (BufferedReader reader = FileUtils.getBufferedReader(entityDataMapPath)) {
+        try (BufferedReader reader = FileUtils.getBufferedReader(FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)))) {
             // Map data entities from file to atoms and indexes.
-            Constant[] arguments = new Constant[entityArgumentIndexes.length + 1];
+            Constant[] arguments = new Constant[pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES).length() + 1];
             ConstantType type;
 
             String line = null;
@@ -185,10 +182,10 @@ public class DeepPredicate extends StandardPredicate {
                 if (width == -1) {
                     width = parts.length;
 
-                    if (width - entityArgumentIndexes.length <= 0) {
+                    if (width - pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES).length() <= 0) {
                         throw new RuntimeException(String.format(
                                 "Line too short (%d). Expected at least %d values, found %d.",
-                                lineNumber, entityArgumentIndexes.length + 1, width));
+                                lineNumber, pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES).length() + 1, width));
                     }
                 } else if (parts.length != width) {
                     throw new RuntimeException(String.format(
@@ -225,7 +222,7 @@ public class DeepPredicate extends StandardPredicate {
                 }
             }
         } catch (IOException ex) {
-            throw new RuntimeException("Unable to parse entity data map file: " + entityDataMapPath, ex);
+            throw new RuntimeException("Unable to parse entity data map file: " + FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)), ex);
         }
 
         // Switch arraylists to arrays for faster access.
@@ -283,7 +280,7 @@ public class DeepPredicate extends StandardPredicate {
         JSONObject message = new JSONObject();
         message.put("task", "init");
         message.put("shared_memory_path", sharedMemoryPath);
-        message.put("options", stringOptions);
+        message.put("options", pythonOptions);
 
         sendSocketMessage(message);
         initComplete = true;
@@ -310,7 +307,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "fit");
-        message.put("options", stringOptions);
+        message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
 
@@ -332,7 +329,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "predict");
-        message.put("options", stringOptions);
+        message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
 
@@ -373,7 +370,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "eval");
-        message.put("options", stringOptions);
+        message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
 
@@ -391,7 +388,7 @@ public class DeepPredicate extends StandardPredicate {
 
         JSONObject message = new JSONObject();
         message.put("task", "save");
-        message.put("options", stringOptions);
+        message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
     }
@@ -400,12 +397,10 @@ public class DeepPredicate extends StandardPredicate {
     public synchronized void close() {
         super.close();
 
-        if (stringOptions != null) {
-            stringOptions.clear();
-            stringOptions = null;
+        if (pythonOptions != null) {
+            pythonOptions.clear();
+            pythonOptions = null;
         }
-        entityDataMapPath = null;
-        entityArgumentIndexes = null;
         classSize = -1;
 
         atomIndexes = null;
