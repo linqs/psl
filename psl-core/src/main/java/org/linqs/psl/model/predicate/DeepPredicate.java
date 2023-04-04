@@ -118,12 +118,13 @@ public class DeepPredicate extends StandardPredicate {
             throw new RuntimeException("Cannot load a DeepPredicate that has already been loaded.");
         }
 
+        // Make sure all python options exist in the predicate.
         validateOptions();
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
 
+        // Map entities from file to atoms.
         String entityDataMapPath = FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
         int numEntityArgs = StringUtils.splitInt(pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES), ",").length;
-
         ArrayList<Integer> validAtomIndexes = mapEntitiesFromFileToAtoms(entityDataMapPath, atomStore, numEntityArgs);
 
         // Switch arraylists to arrays for faster access.
@@ -139,8 +140,10 @@ public class DeepPredicate extends StandardPredicate {
             }
         }
 
+        // Start shared memory server.
         initServer();
 
+        // Set up python model.
         JSONObject message = new JSONObject();
         message.put("task", "init");
         message.put("shared_memory_path", sharedMemoryPath);
@@ -160,6 +163,7 @@ public class DeepPredicate extends StandardPredicate {
 
         sharedBuffer.clear();
 
+        // Populate gradients.
         for (int index = 0; index < gradients.length; index++) {
             gradients[index] = symbolicGradients[atomIndexes[index]];
         }
