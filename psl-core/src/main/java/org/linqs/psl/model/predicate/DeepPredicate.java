@@ -107,41 +107,6 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     /**
-     * Load predicate options that will be sent to python as strings and verify certain all required options exist.
-     */
-    private void validateOptions() {
-        for (Map.Entry<String, Object> entry : this.getPredicateOptions().entrySet()) {
-            pythonOptions.put(entry.getKey(), (String) entry.getValue());
-        }
-
-        pythonOptions.put(CONFIG_REALTIVE_DIR, Config.getString("runtime.relativebasepath", null));
-
-        if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",
-                    CONFIG_MODEL_PATH));
-        }
-
-        if (FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)) == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have an entity to data map path (\"%s\") specified in predicate config.",
-                    CONFIG_ENTITY_DATA_MAP_PATH));
-        }
-
-        if (pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES) == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have entity argument indexes (\"%s\") specified in predicate config.",
-                    CONFIG_ENTITY_ARGUMENT_INDEXES));
-        }
-
-        if (pythonOptions.get(CONFIG_CLASS_SIZE) == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a class size (\"%s\") specified in predicate config.",
-                    CONFIG_CLASS_SIZE));
-        }
-    }
-
-    /**
      * Initialize a deep model. If any relative paths are supplied in the config, |relativeDir| will resolve them.
      */
     public void initDeepModel(AtomStore atomStore) {
@@ -155,127 +120,26 @@ public class DeepPredicate extends StandardPredicate {
 
         validateOptions();
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
-        //entityArgumentIndexes = StringUtils.splitInt(configEntityArgumentIndexes, ",");
 
-        ArrayList<Integer> validAtomIndexes = new ArrayList<Integer>();
-        ArrayList<Integer> validDataIndexes = new ArrayList<Integer>();
-        try (BufferedReader reader = FileUtils.getBufferedReader(FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)))) {
-            // Map data entities from file to atoms and indexes.
-            Constant[] arguments = new Constant[pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES).length() + 1];
-            ConstantType type;
+        String entityDataMapPath = FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
+        int numEntityArgs = StringUtils.splitInt(pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES), ",").length;
 
-            String line = null;
-            int lineNumber = 0;
-            int atomIndex = 0;
-            int width = -1;
-
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
-
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-
-                String[] parts = line.split(DELIM);
-
-                if (width == -1) {
-                    width = parts.length;
-
-                    if (width - pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES).length() <= 0) {
-                        throw new RuntimeException(String.format(
-                                "Line too short (%d). Expected at least %d values, found %d.",
-                                lineNumber, pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES).length() + 1, width));
-                    }
-                } else if (parts.length != width) {
-                    throw new RuntimeException(String.format(
-                            "Incorrectly sized line (%d). Expected: %d values, found: %d.",
-                            lineNumber, width, parts.length));
-                }
-
-                // Get constant types for this entity.
-                for (int index = 0; index < arguments.length - 1; index++) {
-                    type = this.getArgumentType(index);
-                    arguments[index] = ConstantType.getConstant(parts[index], type);
-                }
-
-                // Add atom index and data index for each class.
-                type = this.getArgumentType(arguments.length - 1);
-
-                for (int index = 0; index < classSize; index++) {
-                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
-                    atomIndex = atomStore.getAtomIndex(this, arguments);
-                    if (atomIndex == -1) {
-                        break;
-                    }
-                    validAtomIndexes.add(atomStore.getAtomIndex(this, arguments));
-                }
-
-                if (validAtomIndexes.size() % classSize != 0) {
-                    throw new RuntimeException(String.format(
-                            "Entity found on line (%d) has unspecified class values for predicate %s.",
-                            lineNumber, this.getName()));
-                }
-
-                if (atomIndex != -1) {
-                    validDataIndexes.add(validDataIndexes.size());
-                }
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Unable to parse entity data map file: " + FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)), ex);
-        }
+        ArrayList<Integer> validAtomIndexes = mapEntitiesFromFileToAtoms(entityDataMapPath, atomStore, numEntityArgs);
 
         // Switch arraylists to arrays for faster access.
         atomIndexes = new int[validAtomIndexes.size()];
         gradients = new float[validAtomIndexes.size()];
-        dataIndexes = new int[validDataIndexes.size()];
+        dataIndexes = new int[validAtomIndexes.size() / classSize];
 
         for (int i = 0; i < atomIndexes.length; i++) {
             atomIndexes[i] = validAtomIndexes.get(i);
             gradients[i] = 0.0f;
             if (i % classSize == 0) {
-                dataIndexes[i / classSize] = validDataIndexes.get(i / classSize);
+                dataIndexes[i / classSize] = i / classSize;
             }
         }
 
-        // Do our best to make sure close() gets called.
-        final DeepPredicate finalThis = this;
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                finalThis.close();
-            }
-        });
-
-        // Compute exactly how much memory we will need ahead of time.
-        // The most memory we will need is on a full fit():
-        // = 2 * (sizeof(int) + (num_entities * num_labels * sizeof(float)))
-        int bufferLength = 2 * validDataIndexes.size() * classSize * Float.SIZE;
-
-        try {
-            sharedFile = new RandomAccessFile(sharedMemoryPath, "rw");
-        } catch (FileNotFoundException ex) {
-            throw new RuntimeException("Could not open random access file: " + sharedMemoryPath, ex);
-        }
-
-        try {
-            sharedBuffer = sharedFile.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, bufferLength);
-            sharedBuffer.clear();
-
-            ProcessBuilder builder = new ProcessBuilder("python3", "-m", pythonModule, "" + port);
-            builder.inheritIO();
-            pythonServerProcess = builder.start();
-
-            sleepForServer();
-            serverOpen = true;
-
-            // TODO: Set encoding?
-            socket = new Socket("127.0.0.1", port);
-            socketInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            socketOutput = new PrintWriter(socket.getOutputStream(), true);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        initServer();
 
         JSONObject message = new JSONObject();
         message.put("task", "init");
@@ -296,7 +160,6 @@ public class DeepPredicate extends StandardPredicate {
 
         sharedBuffer.clear();
 
-        // Todo(Connor) - Gradients are not aligned based on dataIndexes.
         for (int index = 0; index < gradients.length; index++) {
             gradients[index] = symbolicGradients[atomIndexes[index]];
         }
@@ -409,6 +272,177 @@ public class DeepPredicate extends StandardPredicate {
 
         initComplete = false;
 
+        closeServer();
+    }
+
+    /**
+     * Load predicate options that will be sent to python as strings and verify certain all required options exist.
+     */
+    private void validateOptions() {
+        for (Map.Entry<String, Object> entry : this.getPredicateOptions().entrySet()) {
+            pythonOptions.put(entry.getKey(), (String) entry.getValue());
+        }
+
+        pythonOptions.put(CONFIG_REALTIVE_DIR, Config.getString("runtime.relativebasepath", null));
+
+        if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",
+                    CONFIG_MODEL_PATH));
+        }
+
+        if (FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have an entity to data map path (\"%s\") specified in predicate config.",
+                    CONFIG_ENTITY_DATA_MAP_PATH));
+        }
+
+        if (pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have entity argument indexes (\"%s\") specified in predicate config.",
+                    CONFIG_ENTITY_ARGUMENT_INDEXES));
+        }
+
+        if (pythonOptions.get(CONFIG_CLASS_SIZE) == null) {
+            throw new IllegalArgumentException(String.format(
+                    "A DeepPredicate must have a class size (\"%s\") specified in predicate config.",
+                    CONFIG_CLASS_SIZE));
+        }
+    }
+
+    /**
+     * Read the entities from a file and map to atom indexes.
+     */
+    private ArrayList<Integer> mapEntitiesFromFileToAtoms(String filePath, AtomStore atomStore, int numEntityArgs) {
+        ArrayList<Integer> atomIndexes = new ArrayList<Integer>();
+        Constant[] arguments = new Constant[numEntityArgs + 1];
+        ConstantType type;
+
+        String line = null;
+        int lineNumber = 0;
+        int atomIndex = 0;
+
+        try (BufferedReader reader = FileUtils.getBufferedReader(filePath)) {
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                String[] parts = line.split(DELIM);
+
+                // Check that the entity has enough arguments.
+                if (parts.length < numEntityArgs) {
+                    throw new RuntimeException(String.format(
+                            "Entity found on line (%d) must contain %d arguments for predicate %s.",
+                            lineNumber, numEntityArgs, this.getName()));
+                }
+
+                // Get constant types for this entity.
+                for (int index = 0; index < arguments.length - 1; index++) {
+                    type = this.getArgumentType(index);
+                    arguments[index] = ConstantType.getConstant(parts[index], type);
+                }
+
+                // Add atom index and data index for each class.
+                type = this.getArgumentType(arguments.length - 1);
+
+                for (int index = 0; index < classSize; index++) {
+                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
+                    atomIndex = atomStore.getAtomIndex(this, arguments);
+                    if (atomIndex == -1) {
+                        break;
+                    }
+                    atomIndexes.add(atomStore.getAtomIndex(this, arguments));
+                }
+
+                // Verify that the entities have atoms for all classes.
+                if (atomIndexes.size() % classSize != 0) {
+                    throw new RuntimeException(String.format(
+                            "Entity found on line (%d) has unspecified class values for predicate %s.",
+                            lineNumber, this.getName()));
+                }
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to parse entity data map file: " + filePath, ex);
+        }
+
+        return atomIndexes;
+    }
+
+    private String getResultString(JSONObject response) {
+        JSONObject result = response.optJSONObject("result");
+        if (result == null) {
+            return "<No Result Provided>";
+        }
+
+        return result.toString();
+    }
+
+    private void writeEntityData(float[] data) {
+        // Write out the number of values and indexes.
+        writeIndexData(data.length / classSize);
+
+        // Write out the actual data.
+        for (int i = 0; i < data.length; i++) {
+            sharedBuffer.putFloat(data[i]);
+        }
+    }
+
+    private void writeIndexData(int size) {
+        // Write out the number of values.
+        sharedBuffer.putInt(size);
+
+        // Write out the indexes.
+        for (int i = 0; i < size; i++) {
+            sharedBuffer.putInt(dataIndexes[i]);
+        }
+    }
+
+    private void initServer() {
+        // Do our best to make sure close() gets called.
+        final DeepPredicate finalThis = this;
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                finalThis.close();
+            }
+        });
+
+        // Compute exactly how much memory we will need ahead of time.
+        // The most memory we will need is on a full fit():
+        // = 2 * (sizeof(int) + (num_entities * num_labels * sizeof(float)))
+        int bufferLength = 2 * dataIndexes.length * classSize * Float.SIZE;
+
+        try {
+            sharedFile = new RandomAccessFile(sharedMemoryPath, "rw");
+        } catch (FileNotFoundException ex) {
+            throw new RuntimeException("Could not open random access file: " + sharedMemoryPath, ex);
+        }
+
+        try {
+            sharedBuffer = sharedFile.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, bufferLength);
+            sharedBuffer.clear();
+
+            ProcessBuilder builder = new ProcessBuilder("python3", "-m", pythonModule, "" + port);
+            builder.inheritIO();
+            pythonServerProcess = builder.start();
+
+            sleepForServer();
+            serverOpen = true;
+
+            // TODO: Set encoding?
+            socket = new Socket("127.0.0.1", port);
+            socketInput = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            socketOutput = new PrintWriter(socket.getOutputStream(), true);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private synchronized void closeServer() {
         if (socketOutput != null) {
             JSONObject message = new JSONObject();
             message.put("task", "close");
@@ -464,35 +498,6 @@ public class DeepPredicate extends StandardPredicate {
             }
 
             pythonServerProcess = null;
-        }
-    }
-
-    private String getResultString(JSONObject response) {
-        JSONObject result = response.optJSONObject("result");
-        if (result == null) {
-            return "<No Result Provided>";
-        }
-
-        return result.toString();
-    }
-
-    private void writeEntityData(float[] data) {
-        // Write out the number of values and indexes.
-        writeIndexData(data.length / classSize);
-
-        // Write out the actual data.
-        for (int i = 0; i < data.length; i++) {
-            sharedBuffer.putFloat(data[i]);
-        }
-    }
-
-    private void writeIndexData(int size) {
-        // Write out the number of values.
-        sharedBuffer.putInt(size);
-
-        // Write out the indexes.
-        for (int i = 0; i < size; i++) {
-            sharedBuffer.putInt(dataIndexes[i]);
         }
     }
 
