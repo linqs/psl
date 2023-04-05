@@ -176,7 +176,7 @@ public class Options {
 
     public static final Option DUAL_LCQP_COMPUTE_PERIOD = new Option(
         "duallcqp.computeperiod",
-        50,
+        10,
         "Compute some stats about the optimization and log them to TRACE once for each period."
         + " Note that gathering the information takes about an iteration's worth of time.",
         Option.FLAG_NON_NEGATIVE
@@ -445,7 +445,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_STEP_SIZE = new Option(
         "gradientdescent.stepsize",
-        0.1f,
+        1.0f,
         "The gradient descent weight learner step size.",
         Option.FLAG_POSITIVE
     );
@@ -599,30 +599,30 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option MINIMIZER_INITIAL_LAGRANGIAN_GRADIENT_TOLERANCE = new Option(
-        "minimizer.initiallagrangiangradienttolerance",
-        1.0f,
-        "The initial value for the squared penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
     public static final Option MINIMIZER_INITIAL_LINEAR_PENALTY = new Option(
         "minimizer.initiallinearpenalty",
-        0.1f,
+        1.0f,
         "The initial value for the linear penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
         Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option MINIMIZER_INITIAL_SQUARED_PENALTY = new Option(
         "minimizer.initialsquaredpenalty",
-        1.0f,
+        10.0f,
         "The initial value for the squared penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_NUM_INTERNAL_ITERATIONS = new Option(
+        "minimizer.numinternaliterations",
+        10,
+        "The number of internal iterations to perform before updating the augmented Lagrangian parameters.",
         Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE = new Option(
         "minimizer.objectivedifferencetolerance",
-        1.0f,
+        0.01f,
         "The tolerance of the violation of value of the lower level objective function difference constraint"
         + " in the augmented Lagrangian minimizer-based learning framework.",
         Option.FLAG_NON_NEGATIVE
@@ -635,10 +635,11 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
-    public static final Option MINIMIZER_TRUTH_ENERGY_OBJECTIVE_WEIGHT = new Option(
-        "minimizer.truthenergyobjectiveweight",
-        0.0f,
-        "The weight of the energy loss in the objective function for minimizer-based learning.",
+
+    public static final Option MINIMIZER_SQUARED_PENALTY_DELTA = new Option(
+        "minimizer.squaredpenaltydelta",
+        10.0f,
+        "The amount to increase the squared penalty coefficient each outer iteration.",
         Option.FLAG_NON_NEGATIVE
     );
 
