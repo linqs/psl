@@ -213,9 +213,6 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                 deepAtomGradient[i] += workerDeepGradients[j][i];
             }
         }
-
-        clipGradient(termStore.getVariableValues(), rvAtomGradient);
-        clipGradient(termStore.getVariableValues(), deepAtomGradient);
     }
 
     /**
