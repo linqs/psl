@@ -98,6 +98,17 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
                 + regularizationParameter * evaluateSquaredHingeLoss(variableValues));
     }
 
+    @Override
+    public float computeVariablePartial(int varId, float innerPotential) {
+        float unregularizedPartial = super.computeVariablePartial(varId, innerPotential);
+
+        if (isConstraint()) {
+            return unregularizedPartial;
+        }
+
+        return unregularizedPartial + regularizationParameter * computeSquaredHingeLossPartial(varId, innerPotential);
+    }
+
     public boolean isEqualityConstraint() {
         return isEqualityConstraint;
     }

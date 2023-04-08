@@ -54,6 +54,9 @@ public abstract class Minimizer extends GradientDescent {
     protected TermState[] augmentedInferenceTermState;
     protected float[] augmentedInferenceAtomValueState;
 
+    protected float[] augmentedRVAtomGradient;
+    protected float[] augmentedDeepAtomGradient;
+
     protected WeightedArithmeticRule[] proxRules;
     protected UnmanagedObservedAtom[] proxRuleObservedAtoms;
     protected int[] proxRuleObservedAtomIndexes;
@@ -110,6 +113,7 @@ public abstract class Minimizer extends GradientDescent {
 
         // Create and add the augmented inference proximity terms.
         int originalAtomCount = atomStore.size();
+
         proxRules = new WeightedArithmeticRule[originalAtomCount];
         proxRuleObservedAtoms = new UnmanagedObservedAtom[originalAtomCount];
         proxRuleObservedAtomIndexes = new int[originalAtomCount];
@@ -161,6 +165,9 @@ public abstract class Minimizer extends GradientDescent {
         augmentedInferenceTermState = inference.getTermStore().saveState();
         float[] atomValues = atomStore.getAtomValues();
         augmentedInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+
+        augmentedRVAtomGradient = new float[atomValues.length];
+        augmentedDeepAtomGradient = new float[atomValues.length];
     }
 
     @Override
@@ -214,7 +221,6 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void computeIterationStatistics() {
-        log.trace("Running Full Inference.");
         computeFullInferenceStatistics();
 
         if ((internalIteration == 1) && (outerIteration == 1)) {
@@ -238,10 +244,23 @@ public abstract class Minimizer extends GradientDescent {
             }
         }
 
-        log.trace("Running Augmented Inference.");
         computeAugmentedInferenceStatistics();
 
         computeProxRuleObservedAtomValueGradient();
+    }
+
+    @Override
+    protected void computeTotalAtomGradient() {
+        float[] incompatibilityDifference = new float[mutableRules.size()];
+        float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
+
+        for (int i = 0; i < rvAtomGradient.length; i++) {
+            float rvGradientDifference = augmentedRVAtomGradient[i] - rvAtomGradient[i];
+            float deepGradientDifference = augmentedDeepAtomGradient[i] - deepAtomGradient[i];
+
+            rvAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * rvGradientDifference + linearPenaltyCoefficient * rvGradientDifference;
+            deepAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * deepGradientDifference + linearPenaltyCoefficient * deepGradientDifference;
+        }
     }
 
     protected void computeProxRuleObservedAtomValueGradient() {
@@ -251,17 +270,29 @@ public abstract class Minimizer extends GradientDescent {
         addAugmentedLagrangianProxRuleConstantsGradient();
     }
 
-    protected abstract void addSupervisedProxRuleObservedAtomValueGradient();
+    /**
+     * Compute the incompatibility of the MAP state and the gradient of the energy function at the MAP state.
+     */
+    private void computeFullInferenceStatistics() {
+        log.trace("Running Full Inference.");
+        computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
+        computeCurrentIncompatibility(mapIncompatibility);
+        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), rvAtomGradient, deepAtomGradient);
+    }
 
     /**
-     * Compute the augmented inference problem solution incompatibility.
-     * The weights of the proximity terms augmenting the MAP inference problem are set to a positive value.
+     * Compute the augmented inference problem solution incompatibility and the gradient of the energy function at the augment inference MAP state.
+     * The weights of the proximity terms augmenting the MAP inference problem are first set to a positive value and then reset after inference is completed.
      */
     protected void computeAugmentedInferenceStatistics() {
         setAugmentedInferenceProxTerms();
 
+        log.trace("Running Augmented Inference.");
         computeMPEStateWithWarmStart(augmentedInferenceTermState, augmentedInferenceAtomValueState);
         computeCurrentIncompatibility(augmentedInferenceIncompatibility);
+        // TODO(Charles): This gradient does not include the gradient of the regularization on individual random variable atoms.
+        //  This is okay for now since we are only using the gradient of the deep atoms.
+        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), augmentedRVAtomGradient, augmentedDeepAtomGradient);
 
         resetAugmentedInferenceProxTerms();
     }
@@ -286,14 +317,6 @@ public abstract class Minimizer extends GradientDescent {
         }
 
         inMPEState = false;
-    }
-
-    /**
-     * Compute the incompatibility of the MAP state.
-     */
-    private void computeFullInferenceStatistics() {
-        computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
-        computeCurrentIncompatibility(mapIncompatibility);
     }
 
     @Override
@@ -338,6 +361,8 @@ public abstract class Minimizer extends GradientDescent {
                     * proxRuleObservedAtomValueMoreauGradient[i];
         }
     }
+
+    protected abstract void addSupervisedProxRuleObservedAtomValueGradient();
 
     @Override
     protected void addLearningLossWeightGradient() {
