@@ -191,7 +191,7 @@ public abstract class Minimizer extends GradientDescent {
             // Update the penalty coefficients and tolerance.
             float totalObjectiveDifference = computeObjectiveDifference();
 
-            log.trace("Outer iteration: {}, Objective Difference: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Lagrangian Gradient Tolerance: {}, ",
+            log.trace("Outer iteration: {}, Objective Difference: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}.",
                     outerIteration, totalObjectiveDifference, squaredPenaltyCoefficient, linearPenaltyCoefficient);
 
             linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
@@ -201,8 +201,7 @@ public abstract class Minimizer extends GradientDescent {
             outerIteration++;
         }
 
-        // Take a step in the direction of the negative gradient of the proximity rule constants
-        // and project back onto box constraints.
+        // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
         float stepSize = computeStepSize(iteration);
         float[] atomValues = inference.getTermStore().getDatabase().getAtomStore().getAtomValues();
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
@@ -310,37 +309,10 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     private float computeObjectiveDifference() {
-        // LCQP reasoners add a regularization to the energy function to ensure strong convexity.
-        float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
+        float[] incompatibilityDifference = new float[mutableRules.size()];
+        float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
 
-        float totalEnergyDifference = 0.0f;
-        for (int i = 0; i < mutableRules.size(); i++) {
-            if (mutableRules.get(i).isSquared()) {
-                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-            } else {
-                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-                totalEnergyDifference += regularizationParameter * (Math.pow(augmentedInferenceIncompatibility[i], 2.0f) - Math.pow(mapIncompatibility[i], 2.0f));
-            }
-        }
-
-        GroundAtom[] atoms = inference.getDatabase().getAtomStore().getAtoms();
-        float augmentedInferenceLCQPRegularization = 0.0f;
-        float fullInferenceLCQPRegularization = 0.0f;
-        for (int i = 0; i < augmentedInferenceAtomValueState.length; i++) {
-            if (atoms[i] instanceof ObservedAtom) {
-                continue;
-            }
-
-            augmentedInferenceLCQPRegularization += regularizationParameter * Math.pow(augmentedInferenceAtomValueState[i], 2.0f);
-            fullInferenceLCQPRegularization += regularizationParameter * Math.pow(mpeAtomValueState[i], 2.0f);
-        }
-        totalEnergyDifference += augmentedInferenceLCQPRegularization - fullInferenceLCQPRegularization;
-
-        float totalProxValue = 0.0f;
-        for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
-            totalProxValue += Math.pow(proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[i], 2.0f);
-        }
-        totalProxValue = proxRuleWeight * totalProxValue;
+        float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
 
         return totalEnergyDifference + totalProxValue;
     }
@@ -348,40 +320,16 @@ public abstract class Minimizer extends GradientDescent {
     protected abstract float computeSupervisedLoss();
 
     protected void addAugmentedLagrangianProxRuleConstantsGradient() {
-        // LCQP reasoners add a regularization to the energy function to ensure strong convexity.
-        float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
+        float[] incompatibilityDifference = new float[mutableRules.size()];
+        float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
 
-        float totalEnergyDifference = 0.0f;
-        for (int i = 0; i < mutableRules.size(); i++) {
-            if (mutableRules.get(i).isSquared()) {
-                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-            } else {
-                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-                totalEnergyDifference += regularizationParameter * (Math.pow(augmentedInferenceIncompatibility[i], 2.0f) - Math.pow(mapIncompatibility[i], 2.0f));
-            }
-        }
-
-        GroundAtom[] atoms = inference.getDatabase().getAtomStore().getAtoms();
-        float augmentedInferenceLCQPRegularization = 0.0f;
-        float fullInferenceLCQPRegularization = 0.0f;
-        for (int i = 0; i < augmentedInferenceAtomValueState.length; i++) {
-            if (atoms[i] instanceof ObservedAtom) {
-                continue;
-            }
-
-            augmentedInferenceLCQPRegularization += regularizationParameter * Math.pow(augmentedInferenceAtomValueState[i], 2.0f);
-            fullInferenceLCQPRegularization += regularizationParameter * Math.pow(mpeAtomValueState[i], 2.0f);
-        }
-        totalEnergyDifference += augmentedInferenceLCQPRegularization - fullInferenceLCQPRegularization;
+        float[] proxRuleIncompatibility = new float[proxRuleObservedAtoms.length];
+        float totalProxValue = computeTotalProxValue(proxRuleIncompatibility);
 
         float[] proxRuleObservedAtomValueMoreauGradient = new float[proxRuleObservedAtoms.length];
-        float totalProxValue = 0.0f;
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
-            float proxRuleIncompatibility = proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[i];
-            proxRuleObservedAtomValueMoreauGradient[i] = 2.0f * proxRuleWeight * proxRuleIncompatibility;
-            totalProxValue += Math.pow(proxRuleIncompatibility, 2.0f);
+            proxRuleObservedAtomValueMoreauGradient[i] = 2.0f * proxRuleWeight * proxRuleIncompatibility[i];
         }
-        totalProxValue = proxRuleWeight * totalProxValue;
 
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
             proxRuleObservedAtomValueGradient[i] += linearPenaltyCoefficient * proxRuleObservedAtomValueMoreauGradient[i];
@@ -393,11 +341,22 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void addLearningLossWeightGradient() {
+        float[] incompatibilityDifference = new float[mutableRules.size()];
+        float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
+
+        float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weightGradient[i] += linearPenaltyCoefficient * incompatibilityDifference[i];
+            weightGradient[i] += squaredPenaltyCoefficient * (totalEnergyDifference + totalProxValue) * incompatibilityDifference[i];
+        }
+    }
+
+    private float computeTotalEnergyDifference(float[] incompatibilityDifference){
         // LCQP reasoners add a regularization to the energy function to ensure strong convexity.
         float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
 
         float totalEnergyDifference = 0.0f;
-        float[] incompatibilityDifference = new float[mutableRules.size()];
         for (int i = 0; i < mutableRules.size(); i++) {
             incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
             if (mutableRules.get(i).isSquared()) {
@@ -421,16 +380,18 @@ public abstract class Minimizer extends GradientDescent {
         }
         totalEnergyDifference += augmentedInferenceLCQPRegularization - fullInferenceLCQPRegularization;
 
+        return totalEnergyDifference;
+    }
+
+    private float computeTotalProxValue(float[] proxRuleIncompatibility) {
         float totalProxValue = 0.0f;
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
-            totalProxValue += Math.pow(proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[i], 2.0f);
+            proxRuleIncompatibility[i] = proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[i];
+            totalProxValue += Math.pow(proxRuleIncompatibility[i], 2.0f);
         }
         totalProxValue = proxRuleWeight * totalProxValue;
 
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weightGradient[i] += linearPenaltyCoefficient * incompatibilityDifference[i];
-            weightGradient[i] += squaredPenaltyCoefficient * (totalEnergyDifference + totalProxValue) * incompatibilityDifference[i];
-        }
+        return totalProxValue;
     }
 
     private void clipProxRuleObservedAtomValueGradient(float[] gradient) {
