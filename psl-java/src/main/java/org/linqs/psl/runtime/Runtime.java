@@ -38,6 +38,7 @@ import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -57,6 +58,8 @@ import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -154,6 +157,17 @@ public class Runtime {
         // Apply top-level options again after validation (since options may have been changed or added).
         for (Map.Entry<String, String> entry : config.options.entrySet()) {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
+        }
+
+        // Set the relative base path for all other paths.
+        Config.setProperty("runtime.relativebasepath", config.relativeBasePath, false);
+
+        // Set all predicate options inside each predicate.
+        for (RuntimeConfig.PredicateConfigInfo info : config.predicates.values()) {
+            Predicate predicate = Predicate.get(info.name);
+            for (Map.Entry<String, String> entry : info.options.entrySet()) {
+                predicate.setPredicateOption(entry.getKey(), entry.getValue());
+            }
         }
 
         Model model = null;

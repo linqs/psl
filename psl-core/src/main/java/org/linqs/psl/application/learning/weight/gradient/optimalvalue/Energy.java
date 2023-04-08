@@ -20,6 +20,7 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -44,7 +45,7 @@ public class Energy extends OptimalValue {
 
     @Override
     protected void computeIterationStatistics() {
-        computeLatentInferenceIncompatibility();
+        computeLatentStatistics();
     }
 
     @Override
@@ -52,5 +53,10 @@ public class Energy extends OptimalValue {
         for (int i = 0; i < mutableRules.size(); i++) {
             weightGradient[i] += latentInferenceIncompatibility[i];
         }
+    }
+
+    @Override
+    protected void computeTotalAtomGradient() {
+        System.arraycopy(rvLatentAtomGradient, 0, rvAtomGradient, 0, rvLatentAtomGradient.length);
     }
 }

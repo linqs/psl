@@ -1,0 +1,1 @@
+../../../../../psl-python/tests/resources/models/deeppsl/sign/tensorflow_model.py

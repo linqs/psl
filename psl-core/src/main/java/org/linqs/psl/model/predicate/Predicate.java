@@ -39,6 +39,7 @@ public abstract class Predicate implements Serializable {
     private final String name;
     private final ConstantType[] types;
     private final int hashcode;
+    private final Map<String, Object> options;
 
     protected Predicate(String name, ConstantType[] types) {
         this(name, types, true);
@@ -60,6 +61,7 @@ public abstract class Predicate implements Serializable {
         this.name = name.toUpperCase();
         this.types = types;
         hashcode = this.name.hashCode();
+        options = new HashMap<String, Object>();
 
         if (predicates.containsKey(this.name)) {
             throw new RuntimeException("Predicate with name '" + name + "' already exists.");
@@ -99,6 +101,20 @@ public abstract class Predicate implements Serializable {
      */
     public ConstantType[] getArgumentTypes() {
         return types;
+    }
+
+    /**
+     * Returns the options for this predicate.
+     */
+    public Map<String, Object> getPredicateOptions() {
+        return options;
+    }
+
+    /**
+     * Sets an option for this predicate.
+     */
+    public void setPredicateOption(String name, Object option) {
+        options.put(name, option);
     }
 
     /**
