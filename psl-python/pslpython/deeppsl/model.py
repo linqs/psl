@@ -40,7 +40,7 @@ class DeepModel(abc.ABC):
     Higher-level methods that are passed nicely-formatted data for implementing classes to extend.
     """
 
-    def internal_init_model(self, options = {}):
+    def internal_init_model(self, application, options = {}):
         raise NotImplementedError("internal_init_model")
 
     def internal_fit(self, data, gradients, options = {}):
@@ -59,7 +59,7 @@ class DeepModel(abc.ABC):
     Low-level methods that take care of moving around data.
     """
 
-    def init_model(self, shared_memory_path, options = {}):
+    def init_model(self, shared_memory_path, application, options = {}):
         """
         Initialize the underlying model/network.
 
@@ -88,7 +88,7 @@ class DeepModel(abc.ABC):
 
         self._data = numpy.array(self._data)
 
-        return self.internal_init_model(options = options)
+        return self.internal_init_model(application, options = options)
 
     def fit(self, options = {}):
         self._shared_buffer.seek(0)

@@ -91,10 +91,11 @@ class ConnectionHandler(object):
 
     def _init_model(self, request):
         shared_memory_path = request['shared_memory_path']
+        application = request['application']
         options = request.get('options', {})
 
         self._model = self._load_model(os.path.join(options['relative-dir'], options['model-path']))
-        return self._model.init_model(shared_memory_path, options=options)
+        return self._model.init_model(shared_memory_path, application, options=options)
 
     def _fit(self, request):
         options = request.get('options', {})
