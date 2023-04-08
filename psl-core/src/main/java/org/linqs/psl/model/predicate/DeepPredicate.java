@@ -67,7 +67,8 @@ public class DeepPredicate extends StandardPredicate {
     private int[] dataIndexes;
     private float[] gradients;
 
-    private boolean initComplete;
+    private boolean initDeepInference;
+    private boolean initDeepWeightLearning;
 
     private int port;
     private String pythonModule;
@@ -90,7 +91,8 @@ public class DeepPredicate extends StandardPredicate {
         dataIndexes = null;
         gradients = null;
 
-        initComplete = false;
+        initDeepInference = true;
+        initDeepWeightLearning = true;
 
         initStatic();
 
@@ -107,57 +109,53 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     /**
-     * Initialize a deep model. If any relative paths are supplied in the config, |relativeDir| will resolve them.
+     * Initialize a deep model for inference.
      */
-    public void initDeepModel(AtomStore atomStore) {
-        if (initComplete) {
+    public void initDeepModelInference(AtomStore atomStore){
+        if (!initDeepInference) {
             return;
         }
 
-        if (pythonServerProcess != null) {
-            throw new RuntimeException("Cannot load a DeepPredicate that has already been loaded.");
-        }
-
-        // Make sure all python options exist in the predicate.
-        validateOptions();
-        classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
-
-        // Map entities from file to atoms.
-        String entityDataMapPath = FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
-        int numEntityArgs = StringUtils.splitInt(pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES), ",").length;
-        ArrayList<Integer> validAtomIndexes = mapEntitiesFromFileToAtoms(entityDataMapPath, atomStore, numEntityArgs);
-
-        // Switch arraylists to arrays for faster access.
-        atomIndexes = new int[validAtomIndexes.size()];
-        gradients = new float[validAtomIndexes.size()];
-        dataIndexes = new int[validAtomIndexes.size() / classSize];
-
-        for (int i = 0; i < atomIndexes.length; i++) {
-            atomIndexes[i] = validAtomIndexes.get(i);
-            gradients[i] = 0.0f;
-            if (i % classSize == 0) {
-                dataIndexes[i / classSize] = i / classSize;
-            }
-        }
-
-        // Start shared memory server.
-        initServer();
+        initDeepModel(atomStore);
 
         // Set up python model.
         JSONObject message = new JSONObject();
         message.put("task", "init");
         message.put("shared_memory_path", sharedMemoryPath);
+        message.put("application", "inference");
         message.put("options", pythonOptions);
 
         sendSocketMessage(message);
-        initComplete = true;
+        initDeepInference = false;
+    }
+
+    /**
+     * Initialize a deep model for weight learning.
+     */
+    public void initDeepModelWeightLearning(AtomStore atomStore) {
+        if (!initDeepWeightLearning) {
+            return;
+        }
+
+        initDeepModel(atomStore);
+        pythonOptions.put("application", "learning");
+
+        // Set up python model.
+        JSONObject message = new JSONObject();
+        message.put("task", "init");
+        message.put("shared_memory_path", sharedMemoryPath);
+        message.put("application", "learning");
+        message.put("options", pythonOptions);
+
+        sendSocketMessage(message);
+        initDeepWeightLearning = false;
     }
 
     /**
      * Fit the model using values set through setLabel().
      */
     public void fitDeepModel(AtomStore atomStore, float[] symbolicGradients) {
-        initDeepModel(atomStore);
+        checkModel();
 
         log.trace("Fitting {}.", this);
 
@@ -186,7 +184,7 @@ public class DeepPredicate extends StandardPredicate {
      * Get deep model predictions and update atom values.
      */
     public void predictDeepModel(AtomStore atomStore) {
-        initDeepModel(atomStore);
+        checkModel();
 
         log.trace("Fitting {}.", this);
 
@@ -216,7 +214,7 @@ public class DeepPredicate extends StandardPredicate {
 
         for(int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
-            atomIndex = atomIndexes[dataIndexes[index / classSize] + index % classSize];
+            atomIndex = atomIndexes[dataIndexes[index / classSize] * classSize + index % classSize];
 
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
@@ -227,7 +225,7 @@ public class DeepPredicate extends StandardPredicate {
      * Evaluate using deep model.
      */
     public void evalDeepModel(AtomStore atomStore) {
-        initDeepModel(atomStore);
+        checkModel();
 
         log.trace("Fitting {}.", this);
 
@@ -249,9 +247,7 @@ public class DeepPredicate extends StandardPredicate {
      * Save the deep model.
      */
     public void saveDeepModel() {
-        if (!initComplete) {
-            throw new RuntimeException(String.format("Deep predicate not initialized, run init before save."));
-        }
+        checkModel();
 
         JSONObject message = new JSONObject();
         message.put("task", "save");
@@ -263,6 +259,7 @@ public class DeepPredicate extends StandardPredicate {
     @Override
     public synchronized void close() {
         super.close();
+        checkModel();
 
         if (pythonOptions != null) {
             pythonOptions.clear();
@@ -274,9 +271,52 @@ public class DeepPredicate extends StandardPredicate {
         dataIndexes = null;
         gradients = null;
 
-        initComplete = false;
+        initDeepInference = true;
+        initDeepWeightLearning = true;
 
         closeServer();
+    }
+
+    private void checkModel() {
+        if (initDeepInference && initDeepWeightLearning) {
+            throw new IllegalStateException(
+                    "DeepPredicate (" + this + ") has not been initialized via " +
+                            "initDeepModelInference() or initDeepModelWeightLearning().");
+        }
+    }
+
+    /**
+     * Initialize deep model variables and python server.
+     */
+    private void initDeepModel(AtomStore atomStore) {
+        // Make sure all python options exist in the predicate.
+        validateOptions();
+        classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
+
+        // Map entities from file to atoms.
+        String entityDataMapPath = FileUtils.makePath(pythonOptions.get(CONFIG_REALTIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
+        int numEntityArgs = StringUtils.splitInt(pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES), ",").length;
+        ArrayList<Integer> validAtomIndexes = mapEntitiesFromFileToAtoms(entityDataMapPath, atomStore, numEntityArgs);
+
+        // Switch arraylists to arrays for faster access.
+        atomIndexes = new int[validAtomIndexes.size()];
+        gradients = new float[validAtomIndexes.size()];
+        dataIndexes = new int[validAtomIndexes.size() / classSize];
+
+        for (int i = 0; i < atomIndexes.length; i++) {
+            atomIndexes[i] = validAtomIndexes.get(i);
+            gradients[i] = 0.0f;
+            if (i % classSize == 0) {
+                dataIndexes[i / classSize] = i / classSize;
+            }
+        }
+
+        if (pythonServerProcess != null) {
+            log.debug("DeepPredicate server already running.");
+            return;
+        }
+
+        initServer();
     }
 
     /**

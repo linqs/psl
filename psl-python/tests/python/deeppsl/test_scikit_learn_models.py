@@ -53,8 +53,10 @@ class TestSciKitLearnModels(tests.python.base_test.PSLTest):
         train_data = [x_train, [label[1] for label in y_train]]
         test_data = [x_test, [label[1] for label in y_test]]
 
-        sign_model.internal_init_model()
-        sign_model.internal_fit(train_data, None)
-        results = sign_model.internal_eval(test_data)
+        options = {}
+
+        sign_model.internal_init_model(None, options=options)
+        sign_model.internal_fit(train_data, None, options=options)
+        results = sign_model.internal_eval(test_data, options=options)
 
         self.assertTrue(results['metrics']['categorical_accuracy'] > 0.5)

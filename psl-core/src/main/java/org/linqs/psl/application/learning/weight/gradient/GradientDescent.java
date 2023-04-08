@@ -146,6 +146,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         log.info("Gradient Descent Weight Learning Start.");
         initForLearning();
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.initDeepModelWeightLearning(inference.getDatabase().getAtomStore());
+        }
 
         long totalTime = 0;
         int iteration = 0;

@@ -32,7 +32,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         self._model = None
         self._metrics = ['categorical_accuracy']
 
-    def internal_init_model(self, options = {}):
+    def internal_init_model(self, application, options = {}):
         layers = [
             tensorflow.keras.layers.Input(int(options['input_shape'])),
             tensorflow.keras.layers.Dense(int(options['output_shape']), activation = 'softmax'),

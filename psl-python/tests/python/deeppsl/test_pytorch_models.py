@@ -57,7 +57,7 @@ class TestPytorchModels(tests.python.base_test.PSLTest):
                    'epochs': 20,
                    'save_path': None}
 
-        sign_model.internal_init_model(options=options)
+        sign_model.internal_init_model(None, options=options)
         pre_train_results = sign_model.internal_eval(test_data, options=options)
         sign_model.internal_fit(train_data, None, options=options)
         post_train_results = sign_model.internal_eval(test_data, options=options)
