@@ -179,6 +179,13 @@ public class Runtime {
             runInference(config, model, result);
         }
 
+        // TODO(Connor): Closing DeepPredicates needs to occur after both learning and inference.
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                predicate.close();
+            }
+        }
+
         return result;
     }
 
