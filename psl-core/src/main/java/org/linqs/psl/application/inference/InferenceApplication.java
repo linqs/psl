@@ -163,16 +163,16 @@ public abstract class InferenceApplication implements ModelApplication {
         if (reset) {
             initializeAtoms();
 
+            if (termStore != null) {
+                termStore.reset();
+            }
+        } else {
             // TODO(Connor): This is a hack to initDeepModel for Inference only when weight learning is not run.
             for (Predicate predicate : Predicate.getAll()) {
                 if (predicate instanceof DeepPredicate) {
                     ((DeepPredicate)predicate).initDeepModelInference(database.getAtomStore());
                     ((DeepPredicate)predicate).predictDeepModel(database.getAtomStore());
                 }
-            }
-
-            if (termStore != null) {
-                termStore.reset();
             }
         }
 
