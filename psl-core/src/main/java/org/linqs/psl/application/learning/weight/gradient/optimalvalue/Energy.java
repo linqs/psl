@@ -57,6 +57,6 @@ public class Energy extends OptimalValue {
 
     @Override
     protected void computeTotalAtomGradient() {
-        System.arraycopy(rvLatentAtomGradient, 0, rvAtomGradient, 0, rvLatentAtomGradient.length);
+        System.arraycopy(deepLatentAtomGradient, 0, deepAtomGradient, 0, deepLatentAtomGradient.length);
     }
 }
