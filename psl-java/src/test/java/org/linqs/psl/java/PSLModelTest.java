@@ -17,13 +17,9 @@
  */
 package org.linqs.psl.java;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.SQLiteDriver;
-import org.linqs.psl.java.PSLModel;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.test.PSLTest;
 

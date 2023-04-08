@@ -19,7 +19,6 @@ package org.linqs.psl.test;
 
 import static org.junit.Assert.assertEquals;
 
-import org.linqs.psl.java.PSLModel;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 
