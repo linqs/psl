@@ -78,7 +78,7 @@ public abstract class OptimalValue extends GradientDescent {
 
         computeMPEStateWithWarmStart(latentInferenceTermState, latentInferenceAtomValueState);
         computeCurrentIncompatibility(latentInferenceIncompatibility);
-        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
+        inference.getReasoner().computeOptimalValueGradient(inference.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
 
         unfixLabeledRandomVariables();
     }

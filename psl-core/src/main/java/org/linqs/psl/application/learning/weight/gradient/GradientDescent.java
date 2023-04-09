@@ -153,8 +153,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         long totalTime = 0;
         int iteration = 0;
         while (!breakGD) {
-            log.trace("Model: {}", mutableRules);
-
             for (DeepPredicate deepPredicate : deepPredicates) {
                 deepPredicate.predictDeepModel(inference.getDatabase().getAtomStore());
             }
@@ -175,6 +173,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             gradientStep(iteration);
             weightGradientStep(iteration);
             atomGradientStep();
+
+            log.trace("Model: {}", mutableRules);
 
             computeIterationStatistics();
             objective = computeTotalLoss();

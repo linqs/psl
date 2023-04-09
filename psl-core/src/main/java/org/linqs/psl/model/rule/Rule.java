@@ -40,6 +40,16 @@ import java.util.Set;
 public interface Rule extends Serializable {
     public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback);
 
+    /**
+     * A boolean indicating whether this rule is active.
+     */
+    public boolean isActive();
+
+    /**
+     * Set the active state of the rule.
+     */
+    public void setActive(boolean active);
+
     public boolean isWeighted();
 
     public String getName();

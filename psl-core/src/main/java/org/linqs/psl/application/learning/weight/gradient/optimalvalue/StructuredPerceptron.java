@@ -47,7 +47,7 @@ public class StructuredPerceptron extends OptimalValue {
     private void computeFullStatistics() {
         computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
         computeCurrentIncompatibility(MAPIncompatibility);
-        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), rvAtomGradient, deepAtomGradient);
+        inference.getReasoner().computeOptimalValueGradient(inference.getTermStore(), rvAtomGradient, deepAtomGradient);
     }
 
     @Override

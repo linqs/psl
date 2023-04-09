@@ -22,6 +22,8 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPAtom;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPObjectiveTerm;
@@ -32,6 +34,7 @@ import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -79,7 +82,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
             long start = System.currentTimeMillis();
 
             for (DualLCQPObjectiveTerm term : termStore) {
-                if (term.getWeight() == 0.0f) {
+                if (!term.getRule().isActive()) {
                     continue;
                 }
 
@@ -455,6 +458,34 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         return atomValueRegularization;
     }
 
+    @Override
+    public void computeOptimalValueGradient(TermStore<DualLCQPObjectiveTerm> termStore, float[] rvAtomGradient, float[] deepAtomGradient) {
+        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        GroundAtom[] atoms = atomStore.getAtoms();
+
+        Arrays.fill(rvAtomGradient, 0.0f);
+        Arrays.fill(deepAtomGradient, 0.0f);
+
+        for (DualLCQPObjectiveTerm term : termStore) {
+            if (!term.getRule().isActive()) {
+                continue;
+            }
+
+            float[] coefficients = term.getCoefficients();
+            for (int atomIndex : term.getAtomIndexes()) {
+                GroundAtom atom = atoms[atomIndex];
+
+                if (atom instanceof ObservedAtom) {
+                    continue;
+                }
+
+                if (atoms[atomIndex].getPredicate() instanceof DeepPredicate) {
+                    deepAtomGradient[atomIndex] += term.getDualVariable() * coefficients[atomIndex];
+                }
+            }
+        }
+    }
+
     protected float parallelComputeDualObjectiveAndGradientNorm(DualLCQPTermStore termStore, ObjectiveResult objectiveResult) {
         int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
         int numTermBlocks = (int)Math.ceil(termStore.size() / (float)blockSize);
@@ -541,7 +572,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
                 DualLCQPObjectiveTerm term = termStore.get(termIndex);
 
-                if (term.getWeight() == 0.0f) {
+                if (!term.getRule().isActive()) {
                     continue;
                 }
 

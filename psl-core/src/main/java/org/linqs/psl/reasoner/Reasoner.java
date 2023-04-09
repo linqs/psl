@@ -181,10 +181,17 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     }
 
     /**
+     * Compute the (sub)gradient of the optimal value of the energy function with respect to the variables.
+     * This method does not consider the constraints and it is therefore not guaranteed the smallest magnitude subgradient.
+     * This method assumes that the terms and variables are already optimized.
+     */
+    public void computeOptimalValueGradient(TermStore<T> termStore, float[] rvAtomGradient, float[] deepAtomGradient) {
+        parallelComputeGradient(termStore, rvAtomGradient, deepAtomGradient);
+    }
+
+    /**
      * Compute the (sub)gradient of the energy function with respect to the variables.
-     * This method does not consider the constraints and it is therefore not guaranteed
-     * to be the subgradient with the smallest magnitude.
-     * Gradients will be clipped to capture the minimum and maximum values of the variables.
+     * This method does not consider the constraints and it is therefore not guaranteed the smallest magnitude subgradient.
      */
     public void parallelComputeGradient(TermStore termStore, float[] rvAtomGradient, float[] deepAtomGradient) {
         int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
@@ -236,6 +243,10 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         float[] variableValues = termStore.getVariableValues();
 
         for (ReasonerTerm term : termStore) {
+            if (!term.getRule().isActive()) {
+                continue;
+            }
+
             if (term.isConstraint()) {
                 if (term.evaluate(variableValues) > 0.0f) {
                     violatedConstraints++;
@@ -332,6 +343,10 @@ public abstract class Reasoner<T extends ReasonerTerm> {
 
                 ReasonerTerm term = termStore.get(termIndex);
 
+                if (!term.getRule().isActive()) {
+                    continue;
+                }
+
                 if (term.isConstraint()) {
                     continue;
                 }
@@ -391,6 +406,10 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                 }
 
                 ReasonerTerm term = termStore.get(termIndex);
+
+                if (!term.getRule().isActive()) {
+                    continue;
+                }
 
                 if (term.isConstraint()) {
                     if(!MathUtils.isZero(term.evaluate(variableValues))) {

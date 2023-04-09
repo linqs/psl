@@ -28,6 +28,7 @@ public abstract class AbstractRule implements Rule {
     private static final Map<Integer, Rule> rules = new HashMap<Integer, Rule>();
 
     protected String name;
+    protected Boolean active;
     protected int hashcode;
 
     public static Rule getRule(int hashcode) {
@@ -42,6 +43,7 @@ public abstract class AbstractRule implements Rule {
     protected AbstractRule() {
         this.name = null;
         this.hashcode = 0;
+        this.active = true;
     }
 
     protected AbstractRule(String name, int hashcode) {
@@ -49,6 +51,15 @@ public abstract class AbstractRule implements Rule {
         this.hashcode = hashcode;
 
         ensureRegistration();
+    }
+
+    @Override
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public String getName() {

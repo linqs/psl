@@ -20,7 +20,6 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**

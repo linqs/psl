@@ -64,7 +64,7 @@ public class BinaryCrossEntropy extends Minimizer {
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
             proxRuleObservedAtomValueGradient[atomIndex] += -1.0f * (observedAtom.getValue() / Math.max(proxRuleObservedAtoms[atomIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT)
-                    + (1.0f - observedAtom.getValue()) / Math.max(1.0f - proxRuleObservedAtoms[atomIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT));
+                    - (1.0f - observedAtom.getValue()) / Math.max(1.0f - proxRuleObservedAtoms[atomIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT));
         }
     }
 }

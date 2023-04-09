@@ -145,7 +145,9 @@ public abstract class Minimizer extends GradientDescent {
             proxRules[i] = new WeightedArithmeticRule(new ArithmeticRuleExpression(
                     Arrays.asList(new ConstantNumber(1.0f), (new ConstantNumber(-1.0f))),
                     Arrays.asList(atomStore.getAtom(i), proxRuleObservedAtoms[i]),
-                    FunctionComparator.EQ, new ConstantNumber(0.0f)), 0.0f, true);
+                    FunctionComparator.EQ, new ConstantNumber(0.0f)), proxRuleWeight, true);
+
+            proxRules[i].setActive(false);
 
             inference.getTermStore().add(new WeightedGroundArithmeticRule(
                     proxRules[i], Arrays.asList(1.0f, -1.0f),
@@ -179,6 +181,10 @@ public abstract class Minimizer extends GradientDescent {
         }
 
         if (runFullIterations) {
+            return false;
+        }
+
+        if (outerIteration == 1) {
             return false;
         }
 
@@ -277,7 +283,7 @@ public abstract class Minimizer extends GradientDescent {
         log.trace("Running Full Inference.");
         computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
         computeCurrentIncompatibility(mapIncompatibility);
-        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), rvAtomGradient, deepAtomGradient);
+        inference.getReasoner().computeOptimalValueGradient(inference.getTermStore(), rvAtomGradient, deepAtomGradient);
     }
 
     /**
@@ -292,7 +298,7 @@ public abstract class Minimizer extends GradientDescent {
         computeCurrentIncompatibility(augmentedInferenceIncompatibility);
         // TODO(Charles): This gradient does not include the gradient of the regularization on individual random variable atoms.
         //  This is okay for now since we are only using the gradient of the deep atoms.
-        inference.getReasoner().parallelComputeGradient(inference.getTermStore(), augmentedRVAtomGradient, augmentedDeepAtomGradient);
+        inference.getReasoner().computeOptimalValueGradient(inference.getTermStore(), augmentedRVAtomGradient, augmentedDeepAtomGradient);
 
         resetAugmentedInferenceProxTerms();
     }
@@ -302,7 +308,7 @@ public abstract class Minimizer extends GradientDescent {
      */
     private void setAugmentedInferenceProxTerms() {
         for (WeightedArithmeticRule augmentedInferenceProxRule : proxRules) {
-            augmentedInferenceProxRule.setWeight(proxRuleWeight);
+            augmentedInferenceProxRule.setActive(true);
         }
 
         inMPEState = false;
@@ -313,7 +319,7 @@ public abstract class Minimizer extends GradientDescent {
      */
     private void resetAugmentedInferenceProxTerms() {
         for (WeightedArithmeticRule augmentedInferenceProxRule : proxRules) {
-            augmentedInferenceProxRule.setWeight(0.0f);
+            augmentedInferenceProxRule.setActive(false);
         }
 
         inMPEState = false;
