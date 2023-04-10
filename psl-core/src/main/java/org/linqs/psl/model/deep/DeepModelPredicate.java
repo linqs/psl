@@ -1,6 +1,5 @@
 package org.linqs.psl.model.deep;
 
-import org.linqs.psl.config.Config;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
@@ -46,7 +45,7 @@ public class DeepModelPredicate extends DeepModel {
         this.symbolicGradients = null;
     }
 
-    public void initSpecific() {
+    public int initSpecific() {
         validateOptions();
 
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
@@ -68,6 +67,8 @@ public class DeepModelPredicate extends DeepModel {
                 dataIndexes[i / classSize] = i / classSize;
             }
         }
+
+        return 2 * dataIndexes.length * classSize * Float.SIZE;
     }
 
     public void writeFitData() {
@@ -113,6 +114,17 @@ public class DeepModelPredicate extends DeepModel {
 
     public void setSymbolicGradients(float[] symbolicGradients) {
         this.symbolicGradients = symbolicGradients;
+    }
+
+    @Override
+    public synchronized void close() {
+        super.close();
+
+        classSize = -1;
+
+        atomIndexes = null;
+        dataIndexes = null;
+        gradients = null;
     }
 
     /**

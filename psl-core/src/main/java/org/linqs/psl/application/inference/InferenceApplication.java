@@ -26,8 +26,6 @@ import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.UnweightedRule;
@@ -39,15 +37,12 @@ import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.Reflection;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * All the tools necessary to perform inference.
@@ -170,8 +165,8 @@ public abstract class InferenceApplication implements ModelApplication {
             // TODO(Connor): This is a hack to initDeepModel for Inference only when weight learning is not run.
             for (Predicate predicate : Predicate.getAll()) {
                 if (predicate instanceof DeepPredicate) {
-                    ((DeepPredicate)predicate).initDeepModelInference(database.getAtomStore());
-                    ((DeepPredicate)predicate).predictDeepModel(database.getAtomStore());
+                    ((DeepPredicate)predicate).initDeepPredicateInference(database.getAtomStore());
+                    ((DeepPredicate)predicate).predictDeepModel();
                 }
             }
         }

@@ -147,14 +147,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
         log.info("Gradient Descent Weight Learning Start.");
         initForLearning();
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.initDeepModelWeightLearning(inference.getDatabase().getAtomStore());
+            deepPredicate.initDeepPredicateWeightLearning(inference.getDatabase().getAtomStore());
         }
 
         long totalTime = 0;
         int iteration = 0;
         while (!breakGD) {
             for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.predictDeepModel(inference.getDatabase().getAtomStore());
+                deepPredicate.predictDeepModel();
             }
 
             if (log.isTraceEnabled() && evaluation != null) {
@@ -163,7 +163,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 evaluation.compute(trainingMap);
                 for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.evalDeepModel(inference.getDatabase().getAtomStore());
+                    deepPredicate.evalDeepModel();
                 }
                 log.trace("MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
             }
@@ -208,7 +208,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
             evaluation.compute(trainingMap);
             for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.evalDeepModel(inference.getDatabase().getAtomStore());
+                deepPredicate.evalDeepModel();
             }
             log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
         }
@@ -325,7 +325,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     private void atomGradientStep() {
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.fitDeepModel(inference.getDatabase().getAtomStore(), deepAtomGradient);
+            deepPredicate.fitDeepPredicate(deepAtomGradient);
         }
     }
 

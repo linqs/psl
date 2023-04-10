@@ -82,8 +82,9 @@ public abstract class DeepModel {
 
     /**
      * Abstract class for initializing the model.
+     * Return the length of the shared buffer.
      */
-    public abstract void initSpecific();
+    public abstract int initSpecific();
 
     /**
      * Abstract class for writing the fit data to the shared buffer.
@@ -105,10 +106,12 @@ public abstract class DeepModel {
      */
     public abstract void writeEvalData();
 
-    public void init(String application, int bufferLength){
+    public void init(String application){
         log.debug("Init {}.", this);
 
         pythonOptions.put(CONFIG_RELATIVE_DIR, Config.getString("runtime.relativebasepath", null));
+
+        int bufferLength = initSpecific();
 
         if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
             throw new IllegalArgumentException(String.format(
@@ -120,8 +123,6 @@ public abstract class DeepModel {
             log.debug("Deep server not found (\"{}\") starting server.", this);
             initServer(bufferLength);
         }
-
-        initSpecific();
 
         JSONObject message = new JSONObject();
         message.put("task", "init");
@@ -203,12 +204,15 @@ public abstract class DeepModel {
     }
 
     public synchronized void close() {
+        log.debug("Closing {}.", this);
+
         if (pythonOptions != null) {
             pythonOptions.clear();
             pythonOptions = null;
         }
 
         closeServer();
+        log.debug("Closed {}.", this);
     }
 
     private String getResultString(JSONObject response) {
@@ -256,7 +260,7 @@ public abstract class DeepModel {
         }
     }
 
-    private synchronized void closeServer() {
+    protected synchronized void closeServer() {
         if (socketOutput != null) {
             JSONObject message = new JSONObject();
             message.put("task", "close");
