@@ -608,7 +608,7 @@ public class Options {
 
     public static final Option MINIMIZER_INITIAL_SQUARED_PENALTY = new Option(
         "minimizer.initialsquaredpenalty",
-        10.0f,
+        1.0f,
         "The initial value for the squared penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
         Option.FLAG_NON_NEGATIVE
     );
