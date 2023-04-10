@@ -49,6 +49,7 @@ public abstract class AbstractRule implements Rule {
     protected AbstractRule(String name, int hashcode) {
         this.name = name;
         this.hashcode = hashcode;
+        this.active = true;
 
         ensureRegistration();
     }
