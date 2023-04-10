@@ -70,8 +70,6 @@ public abstract class InferenceApplication implements ModelApplication {
     protected float relaxationMultiplier;
     protected boolean relaxationSquared;
 
-    protected List<DeepPredicate> deepPredicates;
-
     protected TermStore termStore;
 
     private boolean atomsCommitted;
@@ -91,13 +89,6 @@ public abstract class InferenceApplication implements ModelApplication {
         this.relaxHardConstraints = relaxHardConstraints;
         this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getFloat();
         this.relaxationSquared = Options.INFERENCE_RELAX_SQUARED.getBoolean();
-
-        this.deepPredicates = new ArrayList<DeepPredicate>();
-        for (Predicate predicate : Predicate.getAll()) {
-            if (predicate instanceof DeepPredicate) {
-                deepPredicates.add((DeepPredicate)predicate);
-            }
-        }
 
         initialize();
     }
@@ -175,15 +166,19 @@ public abstract class InferenceApplication implements ModelApplication {
             if (termStore != null) {
                 termStore.reset();
             }
+        } else {
+            // TODO(Connor): This is a hack to initDeepModel for Inference only when weight learning is not run.
+            for (Predicate predicate : Predicate.getAll()) {
+                if (predicate instanceof DeepPredicate) {
+                    ((DeepPredicate)predicate).initDeepModelInference(database.getAtomStore());
+                    ((DeepPredicate)predicate).predictDeepModel(database.getAtomStore());
+                }
+            }
         }
 
         if (skipInference) {
             log.info("Skipping inference.");
             return -1.0;
-        }
-
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.initDeepModelInference(database.getAtomStore());
         }
 
         TrainingMap trainingMap = null;
@@ -192,9 +187,6 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         log.info("Beginning inference.");
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.predictDeepModel(database.getAtomStore());
-        }
         double objective = internalInference(evaluations, trainingMap);
         log.info("Inference complete.");
         atomsCommitted = false;

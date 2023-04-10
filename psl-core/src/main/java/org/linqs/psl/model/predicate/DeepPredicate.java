@@ -138,7 +138,6 @@ public class DeepPredicate extends StandardPredicate {
         }
 
         initDeepModel(atomStore);
-        pythonOptions.put("application", "learning");
 
         // Set up python model.
         JSONObject message = new JSONObject();
@@ -259,7 +258,6 @@ public class DeepPredicate extends StandardPredicate {
     @Override
     public synchronized void close() {
         super.close();
-        checkModel();
 
         if (pythonOptions != null) {
             pythonOptions.clear();
@@ -312,7 +310,7 @@ public class DeepPredicate extends StandardPredicate {
         }
 
         if (pythonServerProcess != null) {
-            log.debug("DeepPredicate server already running.");
+            log.debug("DeepPredicate (\"{}\") has server running.", this);
             return;
         }
 
