@@ -115,6 +115,14 @@ public class ReasonerTerm {
         return Float.POSITIVE_INFINITY;
     }
 
+    public boolean isActive() {
+        if (rule != null) {
+            return rule.isActive();
+        }
+
+        return true;
+    }
+
     /**
      * Get the constant defining this term.
      */
@@ -157,7 +165,7 @@ public class ReasonerTerm {
             }
             return 0.0f;
         }
-        return getWeight() * evaluateIncompatibility(variableValues);
+        return getWeight() * incompatibility;
     }
 
     /**

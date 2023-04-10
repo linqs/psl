@@ -82,7 +82,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
             long start = System.currentTimeMillis();
 
             for (DualLCQPObjectiveTerm term : termStore) {
-                if (!term.getRule().isActive()) {
+                if (!term.isActive()) {
                     continue;
                 }
 
@@ -467,7 +467,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         Arrays.fill(deepAtomGradient, 0.0f);
 
         for (DualLCQPObjectiveTerm term : termStore) {
-            if (!term.getRule().isActive()) {
+            if (!term.isActive()) {
                 continue;
             }
 
@@ -572,7 +572,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
                 DualLCQPObjectiveTerm term = termStore.get(termIndex);
 
-                if (!term.getRule().isActive()) {
+                if (!term.isActive()) {
                     continue;
                 }
 

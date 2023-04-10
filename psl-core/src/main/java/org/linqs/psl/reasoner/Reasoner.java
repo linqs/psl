@@ -243,7 +243,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         float[] variableValues = termStore.getVariableValues();
 
         for (ReasonerTerm term : termStore) {
-            if (!term.getRule().isActive()) {
+            if (!term.isActive()) {
                 continue;
             }
 
@@ -343,7 +343,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
 
                 ReasonerTerm term = termStore.get(termIndex);
 
-                if (!term.getRule().isActive()) {
+                if (!term.isActive()) {
                     continue;
                 }
 
@@ -407,7 +407,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
 
                 ReasonerTerm term = termStore.get(termIndex);
 
-                if (!term.getRule().isActive()) {
+                if (!term.isActive()) {
                     continue;
                 }
 

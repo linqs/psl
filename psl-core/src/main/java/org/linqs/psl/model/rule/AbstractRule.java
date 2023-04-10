@@ -53,7 +53,6 @@ public abstract class AbstractRule implements Rule {
         ensureRegistration();
     }
 
-    @Override
     public boolean isActive() {
         return active;
     }
