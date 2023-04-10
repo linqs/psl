@@ -18,20 +18,12 @@
 package org.linqs.psl.application.learning.weight.gradient.minimizer;
 
 import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.application.inference.mpe.DualBCDInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Options;
 
 public class MeanSquaredErrorTest extends WeightLearningTest {
-    public MeanSquaredErrorTest() {
-        super();
-
-        assertBaseTest = true;
-        assertFriendshipRankTest = false;
-    }
-
     @Before
     public void setup() {
         super.setup();
@@ -42,17 +34,5 @@ public class MeanSquaredErrorTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getBaseWLA() {
         return new MeanSquaredError(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-    }
-
-    @Override
-    public void friendshipRankTest() {
-        // Skip this test in favor of specific inference application variants.
-    }
-
-    @Test
-    public void DualBCDFriendshipRankTest() {
-        Options.WLA_INFERENCE.set(DualBCDInference.class.getName());
-
-        super.friendshipRankTest();
     }
 }

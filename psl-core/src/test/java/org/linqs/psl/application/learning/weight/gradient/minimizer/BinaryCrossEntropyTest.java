@@ -18,20 +18,12 @@
 package org.linqs.psl.application.learning.weight.gradient.minimizer;
 
 import org.junit.Before;
-import org.junit.Test;
 import org.linqs.psl.application.inference.mpe.DualBCDInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Options;
 
 public class BinaryCrossEntropyTest extends WeightLearningTest {
-    public BinaryCrossEntropyTest() {
-        super();
-
-        assertBaseTest = true;
-        assertFriendshipRankTest = false;
-    }
-
     @Before
     public void setup() {
         super.setup();
@@ -42,15 +34,5 @@ public class BinaryCrossEntropyTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getBaseWLA() {
         return new BinaryCrossEntropy(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
-    }
-
-    @Override
-    public void friendshipRankTest() {
-        // Skip this test in favor of specific inference application variants.
-    }
-
-    @Test
-    public void DualBCDFriendshipRankTest() {
-        super.friendshipRankTest();
     }
 }
