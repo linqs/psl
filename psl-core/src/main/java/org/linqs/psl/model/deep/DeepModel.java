@@ -43,21 +43,21 @@ import java.util.Map;
 public abstract class DeepModel {
     private static final Logger log = Logger.getLogger(DeepModel.class);
 
-    public static final String CONFIG_MODEL_PATH = "model-path";
-    public static final String CONFIG_REALTIVE_DIR = "relative-dir";
+    protected static final String CONFIG_MODEL_PATH = "model-path";
+    protected static final String CONFIG_RELATIVE_DIR = "relative-dir";
 
     private static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
     private static int startingPort = -1;
     private static Map<Integer, DeepModel> usedPorts = null;
 
-    private Map<String, String> pythonOptions;
+    protected Map<String, String> pythonOptions;
 
     private int port;
     private String pythonModule;
     private String sharedMemoryPath;
     private Process pythonServerProcess;
     private RandomAccessFile sharedFile;
-    private MappedByteBuffer sharedBuffer;
+    protected MappedByteBuffer sharedBuffer;
     private Socket socket;
     private BufferedReader socketInput;
     private PrintWriter socketOutput;
@@ -83,32 +83,32 @@ public abstract class DeepModel {
     /**
      * Abstract class for initializing the model.
      */
-    public abstract void initSpecific(Object ... initArgs);
+    public abstract void initSpecific();
 
     /**
      * Abstract class for writing the fit data to the shared buffer.
      */
-    public abstract void writeFitData(Object ... fitArgs);
+    public abstract void writeFitData();
 
     /**
      * Abstract class for writing the predict data to the shared buffer.
      */
-    public abstract void writePredictData(Object ... predictArgs);
+    public abstract void writePredictData();
 
     /**
      * Abstract class for reading the predict data from the shared buffer.
      */
-    public abstract void readPredictData(Object ... predictArgs);
+    public abstract void readPredictData();
 
     /**
      * Abstract class for writing the eval data to the shared buffer.
      */
-    public abstract void writeEvalData(Object ... evalArgs);
+    public abstract void writeEvalData();
 
-    public void init(String application, int bufferLength, Object ... initArgs){
+    public void init(String application, int bufferLength){
         log.debug("Init {}.", this);
 
-        pythonOptions.put(CONFIG_REALTIVE_DIR, Config.getString("runtime.relativebasepath", null));
+        pythonOptions.put(CONFIG_RELATIVE_DIR, Config.getString("runtime.relativebasepath", null));
 
         if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
             throw new IllegalArgumentException(String.format(
@@ -121,7 +121,7 @@ public abstract class DeepModel {
             initServer(bufferLength);
         }
 
-        initSpecific(initArgs);
+        initSpecific();
 
         JSONObject message = new JSONObject();
         message.put("task", "init");
@@ -135,11 +135,11 @@ public abstract class DeepModel {
         log.debug("Deep init result for {} : {}", this, resultString);
     }
 
-    public void fitDeepModel(Object ... fitArgs) {
+    public void fitDeepModel() {
         log.debug("Fitting {}.", this);
 
         sharedBuffer.clear();
-        writeFitData(fitArgs);
+        writeFitData();
         sharedBuffer.force();
 
         JSONObject message = new JSONObject();
@@ -152,11 +152,11 @@ public abstract class DeepModel {
         log.debug("Deep fit result for {} : {}", this, resultString);
     }
 
-    public void predictDeepModel(Object ... predictArgs) {
+    public void predictDeepModel() {
         log.debug("Predicting {}.", this);
 
         sharedBuffer.clear();
-        writePredictData(predictArgs);
+        writePredictData();
         sharedBuffer.force();
 
         JSONObject message = new JSONObject();
@@ -166,20 +166,17 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         sharedBuffer.clear();
-        readPredictData(predictArgs);
+        readPredictData();
 
         String resultString = getResultString(response);
         log.debug("Deep predict result for {} : {}", this, resultString);
     }
 
-    /**
-     * Evaluate using deep model.
-     */
-    public void evalDeepModel(Object ... evalArgs) {
+    public void evalDeepModel() {
         log.debug("Evaluating {}.", this);
 
         sharedBuffer.clear();
-        writeEvalData(evalArgs);
+        writeEvalData();
         sharedBuffer.force();
 
         JSONObject message = new JSONObject();
@@ -192,9 +189,6 @@ public abstract class DeepModel {
         log.debug("Deep eval result for {} : {}", this, resultString);
     }
 
-    /**
-     * Save the deep model.
-     */
     public void saveDeepModel() {
         log.debug("Saving {}.", this);
 
