@@ -46,6 +46,8 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public int init() {
+        log.debug("Initializing deep model predicate: {}", predicate.getName());
+
         validateOptions();
 
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
@@ -70,6 +72,7 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public void writeFitData() {
+        log.debug("Writing fit data for deep model predicate: {}", predicate.getName());
         for (int index = 0; index < gradients.length; index++) {
             gradients[index] = symbolicGradients[atomIndexes[index]];
         }
@@ -78,10 +81,12 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public void writePredictData() {
+        log.debug("Writing predict data for deep model predicate: {}", predicate.getName());
         writeIndexData(dataIndexes.length);
     }
 
     public void readPredictData() {
+        log.debug("Reading predict data for deep model predicate: {}", predicate.getName());
         int count = sharedBuffer.getInt();
         if (count != atomIndexes.length) {
             throw new RuntimeException(String.format(
@@ -103,15 +108,8 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public void writeEvalData() {
+        log.debug("Writing eval data for deep model predicate: {}", predicate.getName());
         writeIndexData(dataIndexes.length);
-    }
-
-    public void setAtomStore(AtomStore atomStore) {
-        this.atomStore = atomStore;
-    }
-
-    public void setSymbolicGradients(float[] symbolicGradients) {
-        this.symbolicGradients = symbolicGradients;
     }
 
     @Override
@@ -123,6 +121,15 @@ public class DeepModelPredicate extends DeepModel {
         atomIndexes = null;
         dataIndexes = null;
         gradients = null;
+        symbolicGradients = null;
+    }
+
+    public void setAtomStore(AtomStore atomStore) {
+        this.atomStore = atomStore;
+    }
+
+    public void setSymbolicGradients(float[] symbolicGradients) {
+        this.symbolicGradients = symbolicGradients;
     }
 
     /**
