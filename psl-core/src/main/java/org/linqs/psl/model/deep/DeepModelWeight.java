@@ -2,8 +2,8 @@ package org.linqs.psl.model.deep;
 
 import org.apache.commons.lang.NotImplementedException;
 
-public class DeepModelWeight {
-    public int initSpecific(){
+public class DeepModelWeight extends DeepModel {
+    public int init(){
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 

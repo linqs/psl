@@ -38,12 +38,12 @@ public class DeepPredicate extends StandardPredicate {
 
     public void initDeepPredicateInference(AtomStore atomStore){
         deepModel.setAtomStore(atomStore);
-        deepModel.init("inference");
+        deepModel.initDeepModel("inference");
     }
 
     public void initDeepPredicateWeightLearning(AtomStore atomStore) {
         deepModel.setAtomStore(atomStore);
-        deepModel.init("learning");
+        deepModel.initDeepModel("learning");
     }
 
     public void fitDeepPredicate(float[] symbolicGradients) {

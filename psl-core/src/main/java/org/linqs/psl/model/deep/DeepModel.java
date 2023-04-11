@@ -82,10 +82,10 @@ public abstract class DeepModel {
     }
 
     /**
-     * Abstract class for initializing the model.
-     * Return the length of the shared buffer.
+     * Abstract class for initializing specific deep model parameters.
+     * Return the length of the shared buffer for the specific deep model.
      */
-    public abstract int initSpecific();
+    public abstract int init();
 
     /**
      * Abstract class for writing the fit data to the shared buffer.
@@ -107,12 +107,12 @@ public abstract class DeepModel {
      */
     public abstract void writeEvalData();
 
-    public void init(String application){
-        log.debug("Init {}.", this);
+    public void initDeepModel(String application){
+        log.debug("Init deep model {}.", this);
 
         pythonOptions.put(CONFIG_RELATIVE_DIR, Config.getString("runtime.relativebasepath", null));
 
-        int bufferLength = initSpecific();
+        int bufferLength = init();
 
         if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
             throw new IllegalArgumentException(String.format(
@@ -121,7 +121,7 @@ public abstract class DeepModel {
         }
 
         if (pythonServerProcess == null) {
-            log.debug("DeepModel server not found (\"{}\") starting server.", this);
+            log.debug("DeepModel server not found for {}. Starting server.", this);
             initServer(bufferLength);
         }
 
@@ -134,11 +134,11 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         String resultString = getResultString(response);
-        log.debug("Deep init result for {} : {}", this, resultString);
+        log.debug("Init deep model results for {} : {}", this, resultString);
     }
 
     public void fitDeepModel() {
-        log.debug("Fitting {}.", this);
+        log.debug("Fit deep model {}.", this);
 
         sharedBuffer.clear();
         writeFitData();
@@ -151,11 +151,11 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         String resultString = getResultString(response);
-        log.debug("Deep fit result for {} : {}", this, resultString);
+        log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
     public void predictDeepModel() {
-        log.debug("Predicting {}.", this);
+        log.debug("Predict deep model {}.", this);
 
         sharedBuffer.clear();
         writePredictData();
@@ -171,11 +171,11 @@ public abstract class DeepModel {
         readPredictData();
 
         String resultString = getResultString(response);
-        log.debug("Deep predict result for {} : {}", this, resultString);
+        log.debug("Predict deep model result for {} : {}", this, resultString);
     }
 
     public void evalDeepModel() {
-        log.debug("Evaluating {}.", this);
+        log.debug("Eval deep model {}.", this);
 
         sharedBuffer.clear();
         writeEvalData();
@@ -188,11 +188,11 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         String resultString = getResultString(response);
-        log.debug("Deep eval result for {} : {}", this, resultString);
+        log.debug("Eval deep model result for {} : {}", this, resultString);
     }
 
     public void saveDeepModel() {
-        log.debug("Saving {}.", this);
+        log.debug("Save deep model {}.", this);
 
         JSONObject message = new JSONObject();
         message.put("task", "save");
@@ -201,19 +201,27 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         String resultString = getResultString(response);
-        log.debug("Deep save result for {} : {}", this, resultString);
+        log.debug("Save deep model result for {} : {}", this, resultString);
     }
 
     public synchronized void close() {
-        log.debug("Closing {}.", this);
+        log.debug("Close deep model {}.", this);
 
         if (pythonOptions != null) {
             pythonOptions.clear();
             pythonOptions = null;
         }
 
+        if (socketOutput != null) {
+            JSONObject message = new JSONObject();
+            message.put("task", "close");
+            JSONObject response = sendSocketMessage(message);
+
+            String resultString = getResultString(response);
+            log.debug("Close deep model result for {} : {}", this, resultString);
+        }
+
         closeServer();
-        log.debug("Closed {}.", this);
     }
 
     private String getResultString(JSONObject response) {
@@ -261,11 +269,8 @@ public abstract class DeepModel {
         }
     }
 
-    protected synchronized void closeServer() {
+    private synchronized void closeServer() {
         if (socketOutput != null) {
-            JSONObject message = new JSONObject();
-            message.put("task", "close");
-            sendSocketMessage(message);
             serverOpen = false;
             sleepForServer();
             freePort(port);
@@ -389,17 +394,5 @@ public abstract class DeepModel {
 
     private static synchronized void freePort(int port) {
         usedPorts.remove(Integer.valueOf(port));
-    }
-
-    /**
-     * Close all open models (according to the ports).
-     * Mainly for testing.
-     */
-    public static synchronized void closeModels() {
-        for (Map.Entry<Integer, DeepModel> entry : usedPorts.entrySet()) {
-            entry.getValue().close();
-        }
-
-        usedPorts.clear();
     }
 }

@@ -45,7 +45,7 @@ public class DeepModelPredicate extends DeepModel {
         this.symbolicGradients = null;
     }
 
-    public int initSpecific() {
+    public int init() {
         validateOptions();
 
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
