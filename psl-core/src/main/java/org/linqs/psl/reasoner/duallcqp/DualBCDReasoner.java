@@ -46,7 +46,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
     public final float regularizationParameter;
 
-    private final int computePeriod;
+    protected final int computePeriod;
     private final boolean firstOrderBreak;
     private final float firstOrderTolerance;
     private final boolean primalDualBreak;
@@ -80,15 +80,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         int iteration = 1;
         while(!breakDualBCD) {
             long start = System.currentTimeMillis();
-
-            for (DualLCQPObjectiveTerm term : termStore) {
-                if (!term.isActive()) {
-                    continue;
-                }
-
-                dualBlockUpdate(term, termStore, regularizationParameter);
-            }
-
+            internalOptimize(termStore);
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
@@ -96,7 +88,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                 primalVariableUpdate(termStore);
 
                 oldObjective = objective;
-                objective = computeObjective(termStore);
+                objective = parallelComputeObjective(termStore);
 
                 ObjectiveResult dualObjectiveResult = new ObjectiveResult(0.0f, 0);
                 float dualGradientNorm = parallelComputeDualObjectiveAndGradientNorm(termStore, dualObjectiveResult);
@@ -118,6 +110,16 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         // Return the un-regularized quantification of the objective for consistency with
         // weight learning objectives and test assertions.
         return super.parallelComputeObjective(termStore).objective;
+    }
+
+    protected void internalOptimize(DualLCQPTermStore termStore) {
+        for (DualLCQPObjectiveTerm term : termStore) {
+            if (!term.isActive()) {
+                continue;
+            }
+
+            dualBlockUpdate(term, termStore, regularizationParameter);
+        }
     }
 
     /**
@@ -435,8 +437,8 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     }
 
     @Override
-    protected ObjectiveResult computeObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
-        ObjectiveResult objectiveResult = super.computeObjective(termStore);
+    protected ObjectiveResult parallelComputeObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
+        ObjectiveResult objectiveResult = super.parallelComputeObjective(termStore);
         objectiveResult.objective += computePrimalVariableRegularization(termStore);
         return objectiveResult;
     }

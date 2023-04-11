@@ -49,7 +49,7 @@ public final class DualLCQPAtom {
      * Update the DualLCQPAtom's bound dual variables and its message given the change
      * a dual variable of a term the atom is involved in.
      */
-    public void update(float termDualDelta, float coefficient,
+    public synchronized void update(float termDualDelta, float coefficient,
                                     float regularizationParameter, float stepSize) {
         float lowerBoundPartial = getLowerBoundPartial(regularizationParameter);
         float upperBoundPartial = getUpperBoundPartial(regularizationParameter);
@@ -60,7 +60,7 @@ public final class DualLCQPAtom {
         setUpperBoundDualVariable(Math.max(0.0f, upperBoundDualVariable - stepSize * upperBoundPartial));
     }
 
-    private void addToMessage(float value) {
+    private synchronized void addToMessage(float value) {
         message += value;
     }
 
@@ -80,13 +80,13 @@ public final class DualLCQPAtom {
         return upperBoundDualVariable;
     }
 
-    public void setLowerBoundDualVariable(float lowerBoundDualVariable) {
+    public synchronized void setLowerBoundDualVariable(float lowerBoundDualVariable) {
         float dualVariableChange = lowerBoundDualVariable - this.lowerBoundDualVariable;
         addToMessage(-1.0f * dualVariableChange);
         this.lowerBoundDualVariable = lowerBoundDualVariable;
     }
 
-    public void setUpperBoundDualVariable(float upperBoundDualVariable) {
+    public synchronized void setUpperBoundDualVariable(float upperBoundDualVariable) {
         float dualVariableChange = upperBoundDualVariable - this.upperBoundDualVariable;
         addToMessage(dualVariableChange);
         this.upperBoundDualVariable = upperBoundDualVariable;
@@ -116,7 +116,7 @@ public final class DualLCQPAtom {
         return upperBoundPartial;
     }
 
-    public void loadState(TermState termState) {
+    public synchronized void loadState(TermState termState) {
         assert termState instanceof DualLCQPAtomState;
         DualLCQPAtomState dualLCQPAtomState = (DualLCQPAtomState)termState;
 
