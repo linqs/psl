@@ -90,7 +90,7 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
             return 0.0f;
         }
 
-        if (getWeight() == 0.0f) {
+        if (!isActive()) {
             return 0.0f;
         }
 
