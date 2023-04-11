@@ -39,6 +39,7 @@ import java.util.Map;
 /**
  * Abstract class for deep models.
  * Contains socket communication with python server, and shared memory.
+ * Extending classes only need to implement read/write methods for shared memory.
  */
 public abstract class DeepModel {
     private static final Logger log = Logger.getLogger(DeepModel.class);
@@ -115,12 +116,12 @@ public abstract class DeepModel {
 
         if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
             throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",
+                    "A DeepModel must have a model path (\"%s\") specified in predicate config.",
                     CONFIG_MODEL_PATH));
         }
 
         if (pythonServerProcess == null) {
-            log.debug("Deep server not found (\"{}\") starting server.", this);
+            log.debug("DeepModel server not found (\"{}\") starting server.", this);
             initServer(bufferLength);
         }
 

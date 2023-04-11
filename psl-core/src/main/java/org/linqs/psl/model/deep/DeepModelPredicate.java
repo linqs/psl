@@ -49,8 +49,6 @@ public class DeepModelPredicate extends DeepModel {
         validateOptions();
 
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
-
-        // Map entities from file to atoms.
         String entityDataMapPath = FileUtils.makePath(pythonOptions.get(CONFIG_RELATIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
         int numEntityArgs = StringUtils.splitInt(pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES), ",").length;
         ArrayList<Integer> validAtomIndexes = mapEntitiesFromFileToAtoms(entityDataMapPath, atomStore, numEntityArgs);
@@ -133,12 +131,6 @@ public class DeepModelPredicate extends DeepModel {
     private void validateOptions() {
         for (Map.Entry<String, Object> entry : predicate.getPredicateOptions().entrySet()) {
             pythonOptions.put(entry.getKey(), (String) entry.getValue());
-        }
-
-        if (pythonOptions.get(CONFIG_MODEL_PATH) == null) {
-            throw new IllegalArgumentException(String.format(
-                    "A DeepPredicate must have a model path (\"%s\") specified in predicate config.",
-                    CONFIG_MODEL_PATH));
         }
 
         if (FileUtils.makePath(pythonOptions.get(CONFIG_RELATIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)) == null) {
