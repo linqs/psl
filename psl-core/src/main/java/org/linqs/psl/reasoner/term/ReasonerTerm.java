@@ -197,7 +197,7 @@ public class ReasonerTerm {
         float value = computeInnerPotential(variableValues);
 
         if (comparator.equals(FunctionComparator.EQ)) {
-            if (MathUtils.isZero(value, MathUtils.RELAXED_EPSILON)) {
+            if (MathUtils.isZero(value, MathUtils.RELAXED_EPSILON_FLOAT)) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;

@@ -57,6 +57,7 @@ import org.linqs.psl.test.TestModel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -378,7 +379,7 @@ public abstract class InferenceTest extends PSLBaseTest {
             sum += atom.getValue();
         }
 
-        assertEquals(1.0f, sum, 0.1f);
+        assertEquals(1.0f, sum, MathUtils.RELAXED_EPSILON_FLOAT);
 
         inference.close();
         inferDB.close();
