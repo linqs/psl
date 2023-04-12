@@ -165,7 +165,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         // Break if we have converged according to the primal dual gap stopping criterion.
         if (primalDualBreak && (objective != null)
-                && MathUtils.isZero(objective.objective - dualObjectiveResult.objective, primalDualTolerance)) {
+                && MathUtils.compare(objective.objective, dualObjectiveResult.objective, primalDualTolerance) <= 0) {
             log.trace("Breaking optimization. Primal-dual gap: {} below tolerance: {}.",
                     objective.objective - dualObjectiveResult.objective, primalDualTolerance);
             return true;
