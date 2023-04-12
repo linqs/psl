@@ -498,9 +498,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // Warm start inference with previous termState.
         inference.getTermStore().loadState(termState);
         AtomStore atomStore = inference.getDatabase().getAtomStore();
-        System.arraycopy(atomValueState, 0,
-                atomStore.getAtomValues(), 0,
-                atomValueState.length);
+        float[] atomValues = atomStore.getAtomValues();
+        for (int i = 0; i < atomStore.size(); i++) {
+            if (atomStore.getAtom(i).isFixed()) {
+                continue;
+            }
+            atomValues[i] = atomValueState[i];
+        }
+
         atomStore.sync();
 
         computeMPEState();
