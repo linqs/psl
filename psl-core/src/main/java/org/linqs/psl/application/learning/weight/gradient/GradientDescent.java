@@ -269,7 +269,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     /**
      * Take a step in the direction of the negative gradient.
-     *
      * This method will call the gradient step methods for each parameter group: weights and internal parameters.
      */
     protected void gradientStep(int iteration) {
@@ -277,6 +276,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         internalParameterGradientStep(iteration);
     }
 
+    /**
+     * Take a step in the direction of the negative gradient of the internal parameters.
+     * This method is a no-op for the abstract class. Children should override this method if they have internal parameters.
+     */
     protected void internalParameterGradientStep(int iteration) {
         // Do nothing.
     }
@@ -387,19 +390,19 @@ public abstract class GradientDescent extends WeightLearningApplication {
         int numNonZeroGradients = 0;
         float[] simplexClippedGradients = weightGradient.clone();
         for (int i = 0; i < simplexClippedGradients.length; i++) {
-            if (MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
+            if ((logRegularization == 0.0f) && MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
 
-            if (MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
+            if ((logRegularization == 0.0f) && MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
 
             simplexClippedGradients[i] = weightGradient[i];
 
-            if (MathUtils.isZero(simplexClippedGradients[i])) {
+            if ((logRegularization == 0.0f) && MathUtils.isZero(simplexClippedGradients[i], MathUtils.STRICT_EPSILON)) {
                 continue;
             }
 
@@ -408,7 +411,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         float exponentiatedGradientSum = 0.0f;
         for (int i = 0; i < mutableRules.size(); i ++) {
-            if (MathUtils.isZero(simplexClippedGradients[i])) {
+            if ((logRegularization == 0.0f) && MathUtils.isZero(simplexClippedGradients[i], MathUtils.STRICT_EPSILON)) {
                 continue;
             }
 
@@ -416,7 +419,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         for (int i = 0; i < mutableRules.size(); i ++) {
-            if (MathUtils.isZero(simplexClippedGradients[i])) {
+            if ((logRegularization == 0.0f) && MathUtils.isZero(simplexClippedGradients[i], MathUtils.STRICT_EPSILON)) {
                 continue;
             }
 
@@ -587,7 +590,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     protected void addRegularizationWeightGradient() {
         for (int i = 0; i < mutableRules.size(); i++) {
-            float logWeight = (float)Math.max(Math.log(mutableRules.get(i).getWeight()), Math.log(MathUtils.STRICT_EPSILON));
+            float logWeight = (float)Math.log(Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON));
             weightGradient[i] += 2.0f * l2Regularization * mutableRules.get(i).getWeight()
                     - logRegularization / Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON)
                     + entropyRegularization * (logWeight + 1);
