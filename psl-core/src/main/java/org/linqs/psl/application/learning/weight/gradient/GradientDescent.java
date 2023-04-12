@@ -387,12 +387,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
         int numNonZeroGradients = 0;
         float[] simplexClippedGradients = weightGradient.clone();
         for (int i = 0; i < simplexClippedGradients.length; i++) {
-            if (MathUtils.equals(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
+            if (MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
 
-            if (MathUtils.equals(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
+            if (MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
