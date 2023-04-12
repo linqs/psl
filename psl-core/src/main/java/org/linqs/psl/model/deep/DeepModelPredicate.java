@@ -32,6 +32,9 @@ public class DeepModelPredicate extends DeepModel {
     private float[] gradients;
     private float[] symbolicGradients;
 
+    private ArrayList<Integer> validAtomIndexes;
+    private ArrayList<Integer> validDataIndexes;
+
     public DeepModelPredicate(Predicate predicate) {
         super();
 
@@ -43,6 +46,9 @@ public class DeepModelPredicate extends DeepModel {
         this.dataIndexes = null;
         this.gradients = null;
         this.symbolicGradients = null;
+
+        this.validAtomIndexes = new ArrayList<Integer>();
+        this.validDataIndexes = new ArrayList<Integer>();
     }
 
     public int init() {
@@ -53,22 +59,26 @@ public class DeepModelPredicate extends DeepModel {
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
         String entityDataMapPath = FileUtils.makePath(pythonOptions.get(CONFIG_RELATIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH));
         int numEntityArgs = StringUtils.splitInt(pythonOptions.get(CONFIG_ENTITY_ARGUMENT_INDEXES), ",").length;
-        ArrayList<Integer> validAtomIndexes = mapEntitiesFromFileToAtoms(entityDataMapPath, atomStore, numEntityArgs);
+        int maxDataIndex = mapEntitiesFromFileToAtoms(entityDataMapPath, atomStore, numEntityArgs);
 
         // Switch arraylists to arrays for faster access.
         atomIndexes = new int[validAtomIndexes.size()];
         gradients = new float[validAtomIndexes.size()];
-        dataIndexes = new int[validAtomIndexes.size() / classSize];
+        dataIndexes = new int[validDataIndexes.size()];
 
         for (int i = 0; i < atomIndexes.length; i++) {
             atomIndexes[i] = validAtomIndexes.get(i);
             gradients[i] = 0.0f;
-            if (i % classSize == 0) {
-                dataIndexes[i / classSize] = i / classSize;
-            }
         }
 
-        return 2 * dataIndexes.length * classSize * Float.SIZE;
+        for (int i = 0; i < dataIndexes.length; i++) {
+            dataIndexes[i] = validDataIndexes.get(i);
+        }
+
+        validAtomIndexes.clear();
+        validDataIndexes.clear();
+
+        return Integer.SIZE + maxDataIndex * Integer.SIZE + maxDataIndex * classSize * Float.SIZE;
     }
 
     public void writeFitData() {
@@ -77,12 +87,13 @@ public class DeepModelPredicate extends DeepModel {
             gradients[index] = symbolicGradients[atomIndexes[index]];
         }
 
-        writeEntityData(gradients);
+        writeDataIndexData();
+        writeGradientData(gradients);
     }
 
     public void writePredictData() {
         log.debug("Writing predict data for deep model predicate: {}", predicate.getName());
-        writeIndexData(dataIndexes.length);
+        writeDataIndexData();
     }
 
     public void readPredictData() {
@@ -100,7 +111,7 @@ public class DeepModelPredicate extends DeepModel {
 
         for(int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
-            atomIndex = atomIndexes[dataIndexes[index / classSize] * classSize + index % classSize];
+            atomIndex = atomIndexes[index];
 
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
@@ -109,7 +120,7 @@ public class DeepModelPredicate extends DeepModel {
 
     public void writeEvalData() {
         log.debug("Writing eval data for deep model predicate: {}", predicate.getName());
-        writeIndexData(dataIndexes.length);
+        writeDataIndexData();
     }
 
     @Override
@@ -122,6 +133,9 @@ public class DeepModelPredicate extends DeepModel {
         dataIndexes = null;
         gradients = null;
         symbolicGradients = null;
+
+        validAtomIndexes.clear();
+        validDataIndexes.clear();
     }
 
     public void setAtomStore(AtomStore atomStore) {
@@ -162,14 +176,14 @@ public class DeepModelPredicate extends DeepModel {
     /**
      * Read the entities from a file and map to atom indexes.
      */
-    private ArrayList<Integer> mapEntitiesFromFileToAtoms(String filePath, AtomStore atomStore, int numEntityArgs) {
-        ArrayList<Integer> atomIndexes = new ArrayList<Integer>();
+    private int mapEntitiesFromFileToAtoms(String filePath, AtomStore atomStore, int numEntityArgs) {
         Constant[] arguments = new Constant[numEntityArgs + 1];
         ConstantType type;
 
         String line = null;
         int lineNumber = 0;
         int atomIndex = 0;
+        int dataIndex = 0;
 
         try (BufferedReader reader = FileUtils.getBufferedReader(filePath)) {
             while ((line = reader.readLine()) != null) {
@@ -204,39 +218,38 @@ public class DeepModelPredicate extends DeepModel {
                     if (atomIndex == -1) {
                         break;
                     }
-                    atomIndexes.add(atomStore.getAtomIndex(predicate, arguments));
+                    validAtomIndexes.add(atomIndex);
                 }
 
                 // Verify that the entities have atoms for all classes.
-                if (atomIndexes.size() % classSize != 0) {
+                if (validAtomIndexes.size() % classSize != 0) {
                     throw new RuntimeException(String.format(
                             "Entity found on line (%d) has unspecified class values for predicate %s.",
                             lineNumber, predicate.getName()));
                 }
+
+                if (atomIndex != -1) {
+                    validDataIndexes.add(dataIndex);
+                }
+                dataIndex++;
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse entity data map file: " + filePath, ex);
         }
 
-        return atomIndexes;
+        return dataIndex;
     }
 
-    private void writeEntityData(float[] data) {
-        // Write out the number of values and indexes.
-        writeIndexData(data.length / classSize);
-
-        // Write out the actual data.
+    private void writeGradientData(float[] data) {
         for (int i = 0; i < data.length; i++) {
             sharedBuffer.putFloat(data[i]);
         }
     }
 
-    private void writeIndexData(int size) {
-        // Write out the number of values.
-        sharedBuffer.putInt(size);
+    private void writeDataIndexData() {
+        sharedBuffer.putInt(dataIndexes.length);
 
-        // Write out the indexes.
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < dataIndexes.length; i++) {
             sharedBuffer.putInt(dataIndexes[i]);
         }
     }

@@ -161,14 +161,6 @@ public abstract class InferenceApplication implements ModelApplication {
             if (termStore != null) {
                 termStore.reset();
             }
-        } else {
-            // TODO(Connor): This is a hack to initDeepModel for Inference only when weight learning is not run.
-            for (Predicate predicate : Predicate.getAll()) {
-                if (predicate instanceof DeepPredicate) {
-                    ((DeepPredicate)predicate).initDeepPredicateInference(database.getAtomStore());
-                    ((DeepPredicate)predicate).predictDeepModel();
-                }
-            }
         }
 
         if (skipInference) {
@@ -182,6 +174,15 @@ public abstract class InferenceApplication implements ModelApplication {
         }
 
         log.info("Beginning inference.");
+        if (!reset) {
+            // TODO(Connor): This is a hack to initDeepModel for Inference only when weight learning is not run.
+            for (Predicate predicate : Predicate.getAll()) {
+                if (predicate instanceof DeepPredicate) {
+                    ((DeepPredicate)predicate).initDeepPredicateInference(database.getAtomStore());
+                    ((DeepPredicate)predicate).predictDeepModel();
+                }
+            }
+        }
         double objective = internalInference(evaluations, trainingMap);
         log.info("Inference complete.");
         atomsCommitted = false;
