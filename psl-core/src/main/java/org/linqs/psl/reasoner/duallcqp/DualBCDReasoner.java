@@ -474,15 +474,16 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
             }
 
             float[] coefficients = term.getCoefficients();
-            for (int atomIndex : term.getAtomIndexes()) {
-                GroundAtom atom = atoms[atomIndex];
+            int[] atomIndexes = term.getAtomIndexes();
+            for (int i = 0; i < term.size(); i++) {
+                GroundAtom atom = atoms[atomIndexes[i]];
 
                 if (atom instanceof ObservedAtom) {
                     continue;
                 }
 
-                if (atoms[atomIndex].getPredicate() instanceof DeepPredicate) {
-                    deepAtomGradient[atomIndex] += term.getDualVariable() * coefficients[atomIndex];
+                if (atoms[atomIndexes[i]].getPredicate() instanceof DeepPredicate) {
+                    deepAtomGradient[atomIndexes[i]] += term.getDualVariable() * coefficients[i];
                 }
             }
         }
