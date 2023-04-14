@@ -148,15 +148,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
         initForLearning();
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.initDeepPredicateWeightLearning(inference.getDatabase().getAtomStore());
+            deepPredicate.predictDeepModel();
         }
 
         long totalTime = 0;
         int iteration = 0;
         while (!breakGD) {
-            for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.predictDeepModel();
-            }
-
             if (log.isTraceEnabled() && evaluation != null) {
                 // Compute the MAP state before evaluating so variables have assigned values.
                 computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
@@ -329,6 +326,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     private void atomGradientStep() {
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.fitDeepPredicate(deepAtomGradient);
+            deepPredicate.predictDeepModel();
         }
     }
 
@@ -503,6 +501,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             if (atomStore.getAtom(i).isFixed()) {
                 continue;
             }
+
             atomValues[i] = atomValueState[i];
         }
 
