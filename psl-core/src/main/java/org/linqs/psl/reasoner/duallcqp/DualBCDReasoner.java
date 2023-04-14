@@ -84,7 +84,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
-            if (iteration % computePeriod == 0) {
+            if ((iteration - 1) % computePeriod == 0) {
                 primalVariableUpdate(termStore);
 
                 oldObjective = objective;
