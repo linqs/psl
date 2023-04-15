@@ -25,6 +25,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.UnmanagedObservedAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -38,6 +39,7 @@ import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +59,8 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] augmentedRVAtomGradient;
     protected float[] augmentedDeepAtomGradient;
 
+    protected List<Integer> rvAtomIndexToProxIndex;
+    protected List<Integer> proxIndexToRVAtomIndex;
     protected WeightedArithmeticRule[] proxRules;
     protected UnmanagedObservedAtom[] proxRuleObservedAtoms;
     protected int[] proxRuleObservedAtomIndexes;
@@ -84,6 +88,8 @@ public abstract class Minimizer extends GradientDescent {
         augmentedInferenceTermState = null;
         augmentedInferenceAtomValueState = null;
 
+        rvAtomIndexToProxIndex = new ArrayList<Integer>();
+        proxIndexToRVAtomIndex = new ArrayList<Integer>();
         proxRules = null;
         proxRuleObservedAtoms = null;
         proxRuleObservedAtomValueGradient = null;
@@ -108,31 +114,14 @@ public abstract class Minimizer extends GradientDescent {
 
         AtomStore atomStore = inference.getTermStore().getDatabase().getAtomStore();
 
-        // TODO(Charles): Do not create proximity terms for atoms that are fixed for inference (deep or observed).
-        //  or do and think about how to set/update the constant.
-
         // Create and add the augmented inference proximity terms.
-        int originalAtomCount = atomStore.size();
+        int unFixedAtomCount = 0;
+        for (GroundAtom atom : atomStore) {
+            if (atom.isFixed()) {
+                continue;
+            }
 
-        proxRules = new WeightedArithmeticRule[originalAtomCount];
-        proxRuleObservedAtoms = new UnmanagedObservedAtom[originalAtomCount];
-        proxRuleObservedAtomIndexes = new int[originalAtomCount];
-        proxRuleObservedAtomValueGradient = new float[originalAtomCount];
-        for (int i = 0; i < originalAtomCount; i++) {
-            // Create a new predicate for the proximity terms prefixed with the hashcode.
-            // Users cannot create predicates prefixed with digits so this should be safe.
-            Predicate proxPredicate = StandardPredicate.get(
-                    String.format("augmented%s", atomStore.getAtom(i).getPredicate().getName()),
-                            atomStore.getAtom(i).getPredicate().getArgumentTypes());
-            Predicate.registerPredicate(proxPredicate);
-
-            proxRuleObservedAtoms[i] = new UnmanagedObservedAtom(proxPredicate,
-                    atomStore.getAtom(i).getArguments(), atomStore.getAtom(i).getValue());
-            atomStore.addAtom(proxRuleObservedAtoms[i]);
-        }
-
-        for (int i = 0; i < originalAtomCount; i++) {
-            proxRuleObservedAtomIndexes[i] = atomStore.getAtomIndex(proxRuleObservedAtoms[i]);
+            unFixedAtomCount++;
         }
 
         // Add the proximity terms to the term store but do not merge the constants.
@@ -141,22 +130,50 @@ public abstract class Minimizer extends GradientDescent {
         boolean originalMergeConstants = inference.getTermStore().getTermGenerator().getMergeConstants();
         inference.getTermStore().getTermGenerator().setMergeConstants(false);
 
-        for (int i = 0; i < proxRules.length; i++) {
-            proxRules[i] = new WeightedArithmeticRule(new ArithmeticRuleExpression(
+        proxRules = new WeightedArithmeticRule[unFixedAtomCount];
+        proxRuleObservedAtoms = new UnmanagedObservedAtom[unFixedAtomCount];
+        proxRuleObservedAtomIndexes = new int[unFixedAtomCount];
+        proxRuleObservedAtomValueGradient = new float[unFixedAtomCount];
+        int originalAtomCount = atomStore.size();
+        int proxRuleIndex = 0;
+        for (int i = 0; i < originalAtomCount; i++) {
+            GroundAtom atom = atomStore.getAtom(i);
+
+            if (atom.isFixed()) {
+                rvAtomIndexToProxIndex.add(-1);
+                continue;
+            }
+
+            rvAtomIndexToProxIndex.add(proxRuleIndex);
+            proxIndexToRVAtomIndex.add(i);
+
+            // Create a new predicate for the proximity terms prefixed with the hashcode.
+            // Users cannot create predicates prefixed with digits so this should be safe.
+            Predicate proxPredicate = StandardPredicate.get(
+                    String.format("augmented%s", atom.getPredicate().getName()), atom.getPredicate().getArgumentTypes());
+            Predicate.registerPredicate(proxPredicate);
+
+            proxRuleObservedAtoms[proxRuleIndex] = new UnmanagedObservedAtom(proxPredicate, atom.getArguments(), atom.getValue());
+            atomStore.addAtom(proxRuleObservedAtoms[proxRuleIndex]);
+            proxRuleObservedAtomIndexes[proxRuleIndex] = atomStore.getAtomIndex(proxRuleObservedAtoms[proxRuleIndex]);
+
+            proxRules[proxRuleIndex] = new WeightedArithmeticRule(new ArithmeticRuleExpression(
                     Arrays.asList(new ConstantNumber(1.0f), (new ConstantNumber(-1.0f))),
-                    Arrays.asList(atomStore.getAtom(i), proxRuleObservedAtoms[i]),
+                    Arrays.asList(atom, proxRuleObservedAtoms[proxRuleIndex]),
                     FunctionComparator.EQ, new ConstantNumber(0.0f)), proxRuleWeight, true);
 
-            proxRules[i].setActive(false);
+            proxRules[proxRuleIndex].setActive(false);
 
             inference.getTermStore().add(new WeightedGroundArithmeticRule(
-                    proxRules[i], Arrays.asList(1.0f, -1.0f),
-                    Arrays.asList(atomStore.getAtom(i), proxRuleObservedAtoms[i]),
+                    proxRules[proxRuleIndex], Arrays.asList(1.0f, -1.0f),
+                    Arrays.asList(atom, proxRuleObservedAtoms[proxRuleIndex]),
                     FunctionComparator.LTE, 0.0f));
             inference.getTermStore().add(new WeightedGroundArithmeticRule(
-                    proxRules[i], Arrays.asList(1.0f, -1.0f),
-                    Arrays.asList(atomStore.getAtom(i), proxRuleObservedAtoms[i]),
+                    proxRules[proxRuleIndex], Arrays.asList(1.0f, -1.0f),
+                    Arrays.asList(atom, proxRuleObservedAtoms[proxRuleIndex]),
                     FunctionComparator.GTE, 0.0f));
+
+            proxRuleIndex++;
         }
 
         inference.getTermStore().getTermGenerator().setMergeConstants(originalMergeConstants);
@@ -234,9 +251,9 @@ public abstract class Minimizer extends GradientDescent {
             AtomStore atomStore = inference.getDatabase().getAtomStore();
             float[] atomValues = atomStore.getAtomValues();
             for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
-                proxRuleObservedAtoms[i]._assumeValue(mpeAtomValueState[i]);
-                atomValues[proxRuleObservedAtomIndexes[i]] = mpeAtomValueState[i];
-                augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = mpeAtomValueState[i];
+                proxRuleObservedAtoms[i]._assumeValue(mpeAtomValueState[proxIndexToRVAtomIndex.get(i)]);
+                atomValues[proxRuleObservedAtomIndexes[i]] = mpeAtomValueState[proxIndexToRVAtomIndex.get(i)];
+                augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = mpeAtomValueState[proxIndexToRVAtomIndex.get(i)];
             }
 
             for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
@@ -244,9 +261,9 @@ public abstract class Minimizer extends GradientDescent {
                 ObservedAtom observedAtom = entry.getValue();
                 int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
 
-                proxRuleObservedAtoms[atomIndex]._assumeValue(observedAtom.getValue());
-                atomValues[proxRuleObservedAtomIndexes[atomIndex]] = observedAtom.getValue();
-                augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[atomIndex]] = observedAtom.getValue();
+                proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)]._assumeValue(observedAtom.getValue());
+                atomValues[proxRuleObservedAtomIndexes[rvAtomIndexToProxIndex.get(atomIndex)]] = observedAtom.getValue();
+                augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[rvAtomIndexToProxIndex.get(atomIndex)]] = observedAtom.getValue();
             }
         }
 
@@ -260,7 +277,7 @@ public abstract class Minimizer extends GradientDescent {
         float[] incompatibilityDifference = new float[mutableRules.size()];
         float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
 
-        for (int i = 0; i < rvAtomGradient.length; i++) {
+        for (int i = 0; i < inference.getDatabase().getAtomStore().size(); i++) {
             float rvGradientDifference = augmentedRVAtomGradient[i] - rvAtomGradient[i];
             float deepGradientDifference = augmentedDeepAtomGradient[i] - deepAtomGradient[i];
 
@@ -401,8 +418,8 @@ public abstract class Minimizer extends GradientDescent {
         GroundAtom[] atoms = inference.getDatabase().getAtomStore().getAtoms();
         float augmentedInferenceLCQPRegularization = 0.0f;
         float fullInferenceLCQPRegularization = 0.0f;
-        for (int i = 0; i < augmentedInferenceAtomValueState.length; i++) {
-            if (atoms[i] instanceof ObservedAtom) {
+        for (int i = 0; i < inference.getDatabase().getAtomStore().size(); i++) {
+            if (atoms[i].isFixed()) {
                 continue;
             }
 
@@ -417,7 +434,7 @@ public abstract class Minimizer extends GradientDescent {
     private float computeTotalProxValue(float[] proxRuleIncompatibility) {
         float totalProxValue = 0.0f;
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
-            proxRuleIncompatibility[i] = proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[i];
+            proxRuleIncompatibility[i] = proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[proxIndexToRVAtomIndex.get(i)];
             totalProxValue += Math.pow(proxRuleIncompatibility[i], 2.0f);
         }
         totalProxValue = proxRuleWeight * totalProxValue;
@@ -438,7 +455,7 @@ public abstract class Minimizer extends GradientDescent {
     protected float computeGradientNorm() {
         float gradientNorm = super.computeGradientNorm();
 
-        log.trace("Weight gradient: {}", weightGradient);
+        log.trace("Weight gradient: {}", Arrays.toString(weightGradient));
         log.trace("Weight gradient norm: {}", gradientNorm);
 
         float[] boxClippedProxRuleObservedAtomValueGradient = proxRuleObservedAtomValueGradient.clone();

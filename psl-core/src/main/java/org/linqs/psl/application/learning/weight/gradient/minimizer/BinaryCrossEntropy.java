@@ -47,8 +47,8 @@ public class BinaryCrossEntropy extends Minimizer {
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
 
-            supervisedLoss += -1.0f * (observedAtom.getValue() * Math.log(Math.max(proxRuleObservedAtoms[atomIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT))
-                    + (1.0f - observedAtom.getValue()) * Math.log(Math.max(1.0f - proxRuleObservedAtoms[atomIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT)));
+            supervisedLoss += -1.0f * (observedAtom.getValue() * Math.log(Math.max(proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue(), MathUtils.RELAXED_EPSILON_FLOAT))
+                    + (1.0f - observedAtom.getValue()) * Math.log(Math.max(1.0f - proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue(), MathUtils.RELAXED_EPSILON_FLOAT)));
         }
 
         return supervisedLoss;
@@ -63,8 +63,8 @@ public class BinaryCrossEntropy extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            proxRuleObservedAtomValueGradient[atomIndex] += -1.0f * (observedAtom.getValue() / Math.max(proxRuleObservedAtoms[atomIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT)
-                    - (1.0f - observedAtom.getValue()) / Math.max(1.0f - proxRuleObservedAtoms[atomIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT));
+            proxRuleObservedAtomValueGradient[rvAtomIndexToProxIndex.get(atomIndex)] += -1.0f * (observedAtom.getValue() / Math.max(proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue(), MathUtils.RELAXED_EPSILON_FLOAT)
+                    - (1.0f - observedAtom.getValue()) / Math.max(1.0f - proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue(), MathUtils.RELAXED_EPSILON_FLOAT));
         }
     }
 }

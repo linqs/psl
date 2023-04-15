@@ -45,7 +45,7 @@ public class MeanSquaredError extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            supervisedLoss += Math.pow(proxRuleObservedAtoms[atomIndex].getValue() - observedAtom.getValue(), 2.0f);
+            supervisedLoss += Math.pow(proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue() - observedAtom.getValue(), 2.0f);
         }
 
         return supervisedLoss;
@@ -60,7 +60,7 @@ public class MeanSquaredError extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            proxRuleObservedAtomValueGradient[atomIndex] += 2.0f * (proxRuleObservedAtoms[atomIndex].getValue() - observedAtom.getValue());
+            proxRuleObservedAtomValueGradient[rvAtomIndexToProxIndex.get(atomIndex)] += 2.0f * (proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue() - observedAtom.getValue());
         }
     }
 }
