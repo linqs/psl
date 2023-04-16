@@ -168,8 +168,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             long start = System.currentTimeMillis();
 
             gradientStep(iteration);
-            weightGradientStep(iteration);
-            atomGradientStep();
 
             log.trace("Model: {}", mutableRules);
 
@@ -271,6 +269,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void gradientStep(int iteration) {
         weightGradientStep(iteration);
         internalParameterGradientStep(iteration);
+        atomGradientStep();
     }
 
     /**
