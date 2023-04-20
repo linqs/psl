@@ -35,6 +35,16 @@ public class Energy extends OptimalValue {
     @Override
     protected float computeLearningLoss() {
         float energy = 0.0f;
+
+        if (deepWeights) {
+            float[] deepWeightValues = deepModelWeight.getWeights();
+            for (int i = 0; i < deepWeightValues.length; i++) {
+                energy += deepWeightValues[i] * latentInferenceIncompatibility[i];
+            }
+
+            return energy;
+        }
+
         for (int i = 0; i < mutableRules.size(); i++) {
             energy += mutableRules.get(i).getWeight() * latentInferenceIncompatibility[i];
         }

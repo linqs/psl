@@ -67,6 +67,10 @@ public abstract class OptimalValue extends GradientDescent {
 
         rvLatentAtomGradient = new float[atomValues.length];
         deepLatentAtomGradient = new float[atomValues.length];
+
+        if (deepWeights) {
+            latentInferenceIncompatibility = new float[numDeepTerms];
+        }
     }
 
     /**
