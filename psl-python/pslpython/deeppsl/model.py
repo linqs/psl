@@ -31,10 +31,8 @@ class DeepModel(abc.ABC):
         self._shared_file = None
         self._shared_buffer = None
 
-        self._class_size = None
-
+        self._value_count = None
         self._data = None
-        self._entity_ids = None
 
     """
     Higher-level methods that are passed nicely-formatted data for implementing classes to extend.
@@ -59,20 +57,46 @@ class DeepModel(abc.ABC):
     Low-level methods that take care of moving around data.
     """
 
-    def init_model(self, shared_memory_path, application, options = {}):
-        """
-        Initialize the underlying model/network.
+    def init_weight(self, shared_memory_path, application, options = {}):
+        self._shared_file = open(shared_memory_path, 'rb+')
+        self._shared_buffer = mmap.mmap(self._shared_file.fileno(), 0)
+        self._value_count = int(options['max-variables'])
 
-        The data file must have one row per entity and start with an identifier for the entity.
-        The identifier will be |entity-argument-indexes| columns long.
-        """
+        return self.internal_init_model(application, options = options)
 
+    def fit_weight(self, options = {}):
+        self._shared_buffer.seek(0)
+
+        gradients = None
+        if self._data is None:
+            count = self._read_int()
+            self._data = self._read_values('>i4', count * (self._value_count + 1)).reshape((count, self._value_count + 1))
+        else:
+            count = self._read_int()
+            gradients = self._read_values('>f4', count)
+
+        return self.internal_fit(None, gradients, options = options)
+
+    def predict_weight(self, options = {}):
+        predictions, response = self.internal_predict(None, options=options)
+
+        self._shared_buffer.seek(0)
+
+        self._write_int(len(predictions))
+        predictions = numpy.array(predictions, dtype = '>f4', copy = False)
+        self._shared_buffer.write(predictions.tobytes(order = 'C'))
+
+        return response
+
+    def eval_weight(self, options = {}):
+        return self.internal_eval(None, options=options)
+
+    def init_predicate(self, shared_memory_path, application, options = {}):
         self._shared_file = open(shared_memory_path, 'rb+')
         self._shared_buffer = mmap.mmap(self._shared_file.fileno(), 0)
 
-        self._class_size = int(options['class-size'])
+        self._value_count = int(options['class-size'])
         self._data = []
-        self._entity_ids = []
 
         entity_argument_length = len(options['entity-argument-indexes'].split(","))
 
@@ -80,28 +104,30 @@ class DeepModel(abc.ABC):
             for row in file:
                 parts = row.split("\t")
 
-                entity_id = parts[0:entity_argument_length]
                 data = parts[entity_argument_length:len(parts)]
-
-                self._entity_ids.append(entity_id)
                 self._data.append([float(value) for value in data])
 
         self._data = numpy.array(self._data)
 
         return self.internal_init_model(application, options = options)
 
-    def fit(self, options = {}):
+    def fit_predicate(self, options = {}):
         self._shared_buffer.seek(0)
 
-        entity_indexes, gradients = self._read_entity_values()
+        count = self._read_int()
+        entity_indexes = self._read_values('>i4', count)
+        gradients = self._read_values('>f4', count * self._value_count).reshape((count, self._value_count))
+
         data = numpy.array([self._data[index] for index in entity_indexes])
 
-        return self.internal_fit(data, gradients = gradients, options = options)
+        return self.internal_fit(data, gradients, options = options)
 
-    def predict(self, options = {}):
+    def predict_predicate(self, options = {}):
         self._shared_buffer.seek(0)
 
-        entity_indexes = self._read_indexes()
+        count = self._read_int()
+        entity_indexes = self._read_values('>i4', count)
+
         data = numpy.array([self._data[index] for index in entity_indexes])
 
         predictions, response = self.internal_predict(data, options=options)
@@ -114,10 +140,12 @@ class DeepModel(abc.ABC):
 
         return response
 
-    def eval(self, options = {}):
+    def eval_predicate(self, options = {}):
         self._shared_buffer.seek(0)
 
-        entity_indexes = self._read_indexes()
+        count = self._read_int()
+        entity_indexes = self._read_values('>i4', count)
+
         data = numpy.array([self._data[index] for index in entity_indexes])
 
         return self.internal_eval(data, options=options)
@@ -138,36 +166,14 @@ class DeepModel(abc.ABC):
             self._shared_file.close()
             self._shared_file = None
 
-        self._class_size = None
+        self._value_count = None
         self._data = None
-        self._entity_ids = None
 
-    """
-    Read entity values (typically gradients, always floats) off the buffer.
-    On the buffer, entity values are laid out in the format:
-    <count><entity index, ...><value, ...>
-    Returns: numpy.ndarray([entity index, ...]), numpy.ndarray([[entity1_value1, ...], [entity2_value1, ...], ...])
-    """
-    def _read_entity_values(self):
-        count = self._read_int()
+    def _read_values(self, value_type, count, byte_size = INT_SIZE_BYTES):
+        values_buffer = self._shared_buffer.read(count * byte_size)
+        values_buffer = numpy.frombuffer(values_buffer, dtype = value_type, count = count)
 
-        indexes_buffer = self._shared_buffer.read(count * INT_SIZE_BYTES)
-        values_buffer = self._shared_buffer.read(count * self._class_size * FLOAT_SIZE_BYTES)
-
-        indexes = numpy.frombuffer(indexes_buffer, dtype = '>i4', count = count)
-        values = numpy.frombuffer(values_buffer, dtype = '>f4', count = (count * self._class_size))
-
-        values = values.reshape((count, self._class_size))
-
-        return indexes, values
-
-    def _read_indexes(self):
-        count = self._read_int()
-
-        indexes_buffer = self._shared_buffer.read(count * INT_SIZE_BYTES)
-        indexes = numpy.frombuffer(indexes_buffer, dtype = '>i4', count = count)
-
-        return indexes
+        return values_buffer
 
     def _read_int(self):
         return struct.unpack('>i', self._shared_buffer.read(INT_SIZE_BYTES))[0]
