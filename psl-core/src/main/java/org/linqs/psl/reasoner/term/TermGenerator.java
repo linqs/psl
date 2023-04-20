@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -44,6 +45,9 @@ public abstract class TermGenerator<T extends ReasonerTerm> {
 
     public TermGenerator(boolean mergeConstants) {
         this.mergeConstants = mergeConstants;
+        if (Options.REASONER_OVERRIDE_MERGE_CONSTANTS.getBoolean()) {
+            this.mergeConstants = false;
+        }
     }
 
     public boolean getMergeConstants() {

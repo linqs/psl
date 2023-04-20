@@ -38,6 +38,8 @@ public class DeepModelPredicate extends DeepModel {
     public DeepModelPredicate(Predicate predicate) {
         super();
 
+        this.deepModel = "DeepModelPredicate";
+
         this.atomStore = null;
         this.predicate = predicate;
 

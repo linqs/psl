@@ -457,6 +457,18 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_DEEP_WEIGHTS = new Option(
+        "gradientdescent.deepweights",
+        false,
+        "Use deep weights for gradient descent weight learning."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_DEEP_WEIGHTS_MODEL_PATH = new Option(
+            "gradientdescent.deepweights.modelpath",
+            false,
+            "Use deep weights for gradient descent weight learning."
+    );
+
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
         "gridsearch.weights",
         "0.001:0.01:0.1:1:10",
@@ -795,6 +807,12 @@ public class Options {
         1e-4f,
         "How close two iterates need to be to be considered the same.",
         Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option REASONER_OVERRIDE_MERGE_CONSTANTS = new Option(
+        "reasoner.overridemergeconstants",
+        false,
+        "If true, never merge constants."
     );
 
     public static final Option RUNTIME_STATS_COLLECT = new Option(

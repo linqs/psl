@@ -50,6 +50,7 @@ public class ReasonerTerm {
     protected float constant;
     protected boolean squared;
     protected boolean hinge;
+    protected float weight;
 
     public ReasonerTerm(Hyperplane hyperplane, Rule rule,
                         boolean squared, boolean hinge,
@@ -63,6 +64,7 @@ public class ReasonerTerm {
         this.size = (short)hyperplane.size();
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
+        this.weight = -1;
 
         atomIndexes = new int[size];
         GroundAtom[] atoms = hyperplane.getVariables();
@@ -108,6 +110,10 @@ public class ReasonerTerm {
      * Get the weight of the rule this term was generated from.
      */
     public float getWeight() {
+        if (weight >= 0) {
+            return weight;
+        }
+
         if (rule != null && rule.isWeighted()) {
             return ((WeightedRule)rule).getWeight();
         }
@@ -305,6 +311,9 @@ public class ReasonerTerm {
         return 2.0f * innerPotential * coefficients[varId];
     }
 
+    public void setWeight(float weight) {
+        this.weight = weight;
+    }
 
     /**
      * Load the provided state of the term.

@@ -51,6 +51,7 @@ public abstract class DeepModel {
     private static int startingPort = -1;
     private static Map<Integer, DeepModel> usedPorts = null;
 
+    protected String deepModel;
     protected Map<String, String> pythonOptions;
 
     private int port;
@@ -65,6 +66,7 @@ public abstract class DeepModel {
     private boolean serverOpen;
 
     protected DeepModel() {
+        deepModel = null;
         pythonOptions = new HashMap<String, String>();
 
         initStatic();
@@ -127,6 +129,7 @@ public abstract class DeepModel {
 
         JSONObject message = new JSONObject();
         message.put("task", "init");
+        message.put("deep_model", deepModel);
         message.put("shared_memory_path", sharedMemoryPath);
         message.put("application", application);
         message.put("options", pythonOptions);
@@ -146,6 +149,7 @@ public abstract class DeepModel {
 
         JSONObject message = new JSONObject();
         message.put("task", "fit");
+        message.put("deep_model", deepModel);
         message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
@@ -163,6 +167,7 @@ public abstract class DeepModel {
 
         JSONObject message = new JSONObject();
         message.put("task", "predict");
+        message.put("deep_model", deepModel);
         message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
@@ -183,6 +188,7 @@ public abstract class DeepModel {
 
         JSONObject message = new JSONObject();
         message.put("task", "eval");
+        message.put("deep_model", deepModel);
         message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
