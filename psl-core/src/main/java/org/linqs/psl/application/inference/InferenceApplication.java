@@ -24,6 +24,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.deep.DeepModelWeight;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
@@ -69,6 +70,8 @@ public abstract class InferenceApplication implements ModelApplication {
 
     private boolean atomsCommitted;
 
+    protected boolean deepWeights;
+
     protected InferenceApplication(List<Rule> rules, Database database) {
         this(rules, database, Options.INFERENCE_RELAX.getBoolean());
     }
@@ -84,6 +87,7 @@ public abstract class InferenceApplication implements ModelApplication {
         this.relaxHardConstraints = relaxHardConstraints;
         this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getFloat();
         this.relaxationSquared = Options.INFERENCE_RELAX_SQUARED.getBoolean();
+        this.deepWeights = Options.WLA_GRADIENT_DESCENT_DEEP_WEIGHTS.getBoolean();
 
         initialize();
     }
@@ -181,6 +185,15 @@ public abstract class InferenceApplication implements ModelApplication {
                     ((DeepPredicate)predicate).initDeepPredicateInference(database.getAtomStore());
                     ((DeepPredicate)predicate).predictDeepModel();
                 }
+            }
+
+            if (deepWeights) {
+                DeepModelWeight deepModelWeight = new DeepModelWeight();
+                deepModelWeight.setTermStore(termStore);
+                deepModelWeight.setAtomStore(database.getAtomStore());
+                deepModelWeight.initDeepModel("inference");
+                deepModelWeight.fitDeepModel();
+                deepModelWeight.predictDeepModel();
             }
         }
         double objective = internalInference(evaluations, trainingMap);
