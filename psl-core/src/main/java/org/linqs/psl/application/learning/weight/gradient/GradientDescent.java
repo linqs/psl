@@ -21,6 +21,7 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.deep.DeepModelWeight;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
@@ -64,6 +65,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected TermState[] mpeTermState;
     protected float[] mpeAtomValueState;
 
+    protected boolean deepWeights;
+    protected int numDeepTerms;
+    protected DeepModelWeight deepModelWeight;
+
     protected float baseStepSize;
     protected boolean scaleStepSize;
     protected float maxGradientMagnitude;
@@ -94,6 +99,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         mpeTermState = null;
         mpeAtomValueState = null;
+
+        deepModelWeight = null;
+        numDeepTerms = 0;
+        deepWeights = Options.WLA_GRADIENT_DESCENT_DEEP_WEIGHTS.getBoolean();
 
         baseStepSize = Options.WLA_GRADIENT_DESCENT_STEP_SIZE.getFloat();
         scaleStepSize = Options.WLA_GRADIENT_DESCENT_SCALE_STEP.getBoolean();
@@ -136,6 +145,17 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 deepPredicates.add((DeepPredicate)predicate);
             }
         }
+
+        if (deepWeights) {
+            weightGradient = new float[numDeepTerms];
+            deepModelWeight = new DeepModelWeight();
+            for (Object rawTerm : inference.getTermStore()) {
+                if (!(((ReasonerTerm) rawTerm).getRule() instanceof WeightedRule) || ((ReasonerTerm) rawTerm).getRule().toString().contains("AUGMENTED")) {
+                    continue;
+                }
+                numDeepTerms++;
+            }
+        }
     }
 
     @Override
@@ -149,6 +169,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.initDeepPredicateWeightLearning(inference.getDatabase().getAtomStore());
             deepPredicate.predictDeepModel();
+        }
+
+        if (deepWeights) {
+            deepModelWeight.setTermStore(inference.getTermStore());
+            deepModelWeight.setAtomStore(inference.getDatabase().getAtomStore());
+            deepModelWeight.initDeepModel("learning");
         }
 
         long totalTime = 0;
@@ -194,6 +220,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.saveDeepModel();
+        }
+
+        if (deepWeights) {
+            deepModelWeight.saveDeepModel();
         }
 
         log.info("Gradient Descent Weight Learning Finished.");
@@ -267,9 +297,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * This method will call the gradient step methods for each parameter group: weights and internal parameters.
      */
     protected void gradientStep(int iteration) {
-        weightGradientStep(iteration);
-        internalParameterGradientStep(iteration);
-        atomGradientStep();
+        if (deepWeights) {
+            deepModelWeight.setSymbolicGradients(weightGradient);
+            deepModelWeight.fitDeepModel();
+            deepModelWeight.predictDeepModel();
+        } else {
+            weightGradientStep(iteration);
+            internalParameterGradientStep(iteration);
+            atomGradientStep();
+        }
     }
 
     /**
@@ -523,6 +559,19 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
 
+        if (deepWeights) {
+            int index = 0;
+            for (Object rawTerm : inference.getTermStore()) {
+                if (!(((ReasonerTerm) rawTerm).getRule() instanceof WeightedRule) || ((ReasonerTerm) rawTerm).getRule().toString().contains("AUGMENTED")) {
+                    continue;
+                }
+
+                incompatibilityArray[index] = ((ReasonerTerm)rawTerm).evaluateIncompatibility(atomValues);
+                index++;
+            }
+            return;
+        }
+
         // Sums up the incompatibilities.
         for (int i = 0; i < mutableRules.size(); i++) {
             // Note that this cast should be unnecessary, but Java does not like the TermStore without a generic.
@@ -592,6 +641,16 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Add the gradient of the regularization with respect to the weights.
      */
     protected void addRegularizationWeightGradient() {
+        if (deepWeights) {
+            float[] deepWeightValues = deepModelWeight.getWeights();
+            for (int i = 0; i < deepWeightValues.length; i++) {
+                float logWeight = (float)Math.log(Math.max(deepWeightValues[i], MathUtils.STRICT_EPSILON));
+                weightGradient[i] += 2.0f * l2Regularization * deepWeightValues[i]
+                        - logRegularization / Math.max(deepWeightValues[i], MathUtils.STRICT_EPSILON)
+                        + entropyRegularization * (logWeight + 1);
+            }
+            return;
+        }
         for (int i = 0; i < mutableRules.size(); i++) {
             float logWeight = (float)Math.log(Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON));
             weightGradient[i] += 2.0f * l2Regularization * mutableRules.get(i).getWeight()
