@@ -34,6 +34,7 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.ADMMReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
@@ -194,6 +195,19 @@ public abstract class InferenceApplication implements ModelApplication {
                 deepModelWeight.initDeepModel("inference");
                 deepModelWeight.fitDeepModel();
                 deepModelWeight.predictDeepModel();
+                log.trace("Deep Model Weights After Load: ");
+                for (Object term : termStore) {
+                    if (!(((ReasonerTerm) term).getRule() instanceof WeightedRule) || ((ReasonerTerm) term).getRule().toString().contains("AUGMENTED")) {
+                        continue;
+                    }
+
+                    StringBuilder termString = new StringBuilder();
+                    for (int i = 0; i < ((ReasonerTerm) term).getAtomIndexes().length; i++) {
+                        int atomIndex = ((ReasonerTerm) term).getAtomIndexes()[i];
+                        termString.append(database.getAtomStore().getAtom(atomIndex).toString());
+                    }
+                    log.trace(termString + " Weight: " + ((ReasonerTerm)term).getWeight());
+                }
             }
         }
         double objective = internalInference(evaluations, trainingMap);

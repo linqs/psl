@@ -488,7 +488,6 @@ public abstract class Minimizer extends GradientDescent {
     protected float computeGradientNorm() {
         float gradientNorm = super.computeGradientNorm();
 
-        log.trace("Weight gradient: {}", Arrays.toString(weightGradient));
         log.trace("Weight gradient norm: {}", gradientNorm);
 
         float[] boxClippedProxRuleObservedAtomValueGradient = proxRuleObservedAtomValueGradient.clone();

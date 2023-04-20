@@ -96,49 +96,45 @@ class ConnectionHandler(object):
         options = request.get('options', {})
 
         self._model = self._load_model(os.path.join(options['relative-dir'], options['model-path']))
-        match deep_model:
-            case 'DeepModelPredicate':
-                return self._model.init_predicate(shared_memory_path, application, options=options)
-            case 'DeepModelWeight':
-                return self._model.init_weight(shared_memory_path, application, options=options)
-            case _:
-                raise ValueError("Unknown deep model type in init: '%s'." % (deep_model,))
+        if deep_model == 'DeepModelPredicate':
+            return self._model.init_predicate(shared_memory_path, application, options=options)
+        elif deep_model == 'DeepModelWeight':
+            return self._model.init_weight(shared_memory_path, application, options=options)
+        else:
+            raise ValueError("Unknown deep model type in init: '%s'." % (deep_model,))
 
     def _fit(self, request):
         deep_model = request['deep_model']
         options = request.get('options', {})
 
-        match deep_model:
-            case 'DeepModelPredicate':
-                return self._model.fit_predicate(options=options)
-            case 'DeepModelWeight':
-                return self._model.fit_weight(options=options)
-            case _:
-                raise ValueError("Unknown deep model type in fit: '%s'." % (deep_model,))
+        if deep_model == 'DeepModelPredicate':
+            return self._model.fit_predicate(options=options)
+        elif deep_model == 'DeepModelWeight':
+            return self._model.fit_weight(options=options)
+        else:
+            raise ValueError("Unknown deep model type in fit: '%s'." % (deep_model,))
 
     def _predict(self, request):
         deep_model = request['deep_model']
         options = request.get('options', {})
 
-        match deep_model:
-            case 'DeepModelPredicate':
-                return self._model.predict_predicate(options=options)
-            case 'DeepModelWeight':
-                return self._model.predict_weight(options=options)
-            case _:
-                raise ValueError("Unknown deep model type in predict: '%s'." % (deep_model,))
+        if deep_model == 'DeepModelPredicate':
+            return self._model.predict_predicate(options=options)
+        elif deep_model == 'DeepModelWeight':
+            return self._model.predict_weight(options=options)
+        else:
+            raise ValueError("Unknown deep model type in predict: '%s'." % (deep_model,))
 
     def _eval(self, request):
         deep_model = request['deep_model']
         options = request.get('options', {})
 
-        match deep_model:
-            case 'DeepModelPredicate':
-                return self._model.eval_predicate(options=options)
-            case 'DeepModelWeight':
-                return self._model.eval_weight(options=options)
-            case _:
-                raise ValueError("Unknown deep model type in eval: '%s'." % (deep_model,))
+        if deep_model == 'DeepModelPredicate':
+            return self._model.eval_predicate(options=options)
+        elif deep_model == 'DeepModelWeight':
+            return self._model.eval_weight(options=options)
+        else:
+            raise ValueError("Unknown deep model type in eval: '%s'." % (deep_model,))
 
     def _save(self, request):
         options = request.get('options', {})

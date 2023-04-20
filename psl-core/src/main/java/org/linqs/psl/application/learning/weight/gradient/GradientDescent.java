@@ -147,7 +147,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         if (deepWeights) {
-            weightGradient = new float[numDeepTerms];
             deepModelWeight = new DeepModelWeight();
             for (Object rawTerm : inference.getTermStore()) {
                 if (!(((ReasonerTerm) rawTerm).getRule() instanceof WeightedRule) || ((ReasonerTerm) rawTerm).getRule().toString().contains("AUGMENTED")) {
@@ -155,6 +154,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
                 numDeepTerms++;
             }
+            weightGradient = new float[numDeepTerms];
         }
     }
 
@@ -224,6 +224,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         if (deepWeights) {
             deepModelWeight.saveDeepModel();
+            log.trace("Deep Model Weights Before Save: ");
+            for (Object term : inference.getTermStore()) {
+                if (!(((ReasonerTerm) term).getRule() instanceof WeightedRule) || ((ReasonerTerm) term).getRule().toString().contains("AUGMENTED")) {
+                    continue;
+                }
+
+                StringBuilder termString = new StringBuilder();
+                for (int i = 0; i < ((ReasonerTerm) term).getAtomIndexes().length; i++) {
+                    int atomIndex = ((ReasonerTerm) term).getAtomIndexes()[i];
+                    termString.append(inference.getDatabase().getAtomStore().getAtom(atomIndex).toString());
+                }
+                log.trace(termString + " Weight: " + ((ReasonerTerm)term).getWeight());            }
         }
 
         log.info("Gradient Descent Weight Learning Finished.");
