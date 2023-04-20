@@ -187,6 +187,11 @@ public abstract class Minimizer extends GradientDescent {
 
         augmentedRVAtomGradient = new float[atomValues.length];
         augmentedDeepAtomGradient = new float[atomValues.length];
+
+        if (deepWeights) {
+            augmentedInferenceIncompatibility = new float[numDeepTerms];
+            mapIncompatibility = new float[numDeepTerms];
+        }
     }
 
     @Override
@@ -275,6 +280,9 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected void computeTotalAtomGradient() {
         float[] incompatibilityDifference = new float[mutableRules.size()];
+        if (deepWeights) {
+            incompatibilityDifference = new float[numDeepTerms];
+        }
         float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
 
         for (int i = 0; i < inference.getDatabase().getAtomStore().size(); i++) {
@@ -356,6 +364,9 @@ public abstract class Minimizer extends GradientDescent {
 
     private float computeObjectiveDifference() {
         float[] incompatibilityDifference = new float[mutableRules.size()];
+        if (deepWeights) {
+            incompatibilityDifference = new float[numDeepTerms];
+        }
         float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
 
         float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
@@ -367,6 +378,9 @@ public abstract class Minimizer extends GradientDescent {
 
     protected void addAugmentedLagrangianProxRuleConstantsGradient() {
         float[] incompatibilityDifference = new float[mutableRules.size()];
+        if (deepWeights) {
+            incompatibilityDifference = new float[numDeepTerms];
+        }
         float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
 
         float[] proxRuleIncompatibility = new float[proxRuleObservedAtoms.length];
@@ -390,10 +404,20 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected void addLearningLossWeightGradient() {
         float[] incompatibilityDifference = new float[mutableRules.size()];
+        if (deepWeights) {
+            incompatibilityDifference = new float[numDeepTerms];
+        }
         float totalEnergyDifference = computeTotalEnergyDifference(incompatibilityDifference);
 
         float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
 
+        if (deepWeights) {
+            for (int i = 0; i < incompatibilityDifference.length; i++) {
+                weightGradient[i] += linearPenaltyCoefficient * incompatibilityDifference[i];
+                weightGradient[i] += squaredPenaltyCoefficient * (totalEnergyDifference + totalProxValue) * incompatibilityDifference[i];
+            }
+            return;
+        }
         for (int i = 0; i < mutableRules.size(); i++) {
             weightGradient[i] += linearPenaltyCoefficient * incompatibilityDifference[i];
             weightGradient[i] += squaredPenaltyCoefficient * (totalEnergyDifference + totalProxValue) * incompatibilityDifference[i];
@@ -405,13 +429,22 @@ public abstract class Minimizer extends GradientDescent {
         float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
 
         float totalEnergyDifference = 0.0f;
-        for (int i = 0; i < mutableRules.size(); i++) {
-            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
-            if (mutableRules.get(i).isSquared()) {
-                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-            } else {
-                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-                totalEnergyDifference += regularizationParameter * (Math.pow(augmentedInferenceIncompatibility[i], 2.0f) - Math.pow(mapIncompatibility[i], 2.0f));
+        if (deepWeights) {
+            float[] deepWeightValues = deepModelWeight.getWeights();
+            for (int i = 0; i < deepWeightValues.length; i++) {
+                incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
+                // TODO(Connor) Assume Squared for now
+                totalEnergyDifference += (deepWeightValues[i] + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+            }
+        } else {
+            for (int i = 0; i < mutableRules.size(); i++) {
+                incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
+                if (mutableRules.get(i).isSquared()) {
+                    totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+                } else {
+                    totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+                    totalEnergyDifference += regularizationParameter * (Math.pow(augmentedInferenceIncompatibility[i], 2.0f) - Math.pow(mapIncompatibility[i], 2.0f));
+                }
             }
         }
 
