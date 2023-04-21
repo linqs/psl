@@ -33,7 +33,9 @@ import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Learns weights for weighted rules in a model by optimizing an objective via Gradient Descent.
@@ -55,6 +57,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected GDExtension gdExtension;
+
+    protected Map<WeightedRule, Integer> ruleIndexMap;
 
     protected float[] weightGradient;
     protected float[] rvAtomGradient;
@@ -86,6 +90,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         super(rules, rvDB, observedDB);
 
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
+
+        ruleIndexMap = new HashMap<WeightedRule, Integer>(mutableRules.size());
+        for (int i = 0; i < mutableRules.size(); i++) {
+            ruleIndexMap.put(mutableRules.get(i), i);
+        }
 
         weightGradient = new float[mutableRules.size()];
         rvAtomGradient = null;
@@ -524,14 +533,21 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
 
         // Sums up the incompatibilities.
-        for (int i = 0; i < mutableRules.size(); i++) {
-            // Note that this cast should be unnecessary, but Java does not like the TermStore without a generic.
-            for (Object rawTerm : inference.getTermStore().getTerms(mutableRules.get(i))) {
-                @SuppressWarnings("unchecked")
-                ReasonerTerm term = (ReasonerTerm)rawTerm;
+        for (Object rawTerm : inference.getTermStore()) {
+            @SuppressWarnings("unchecked")
+            ReasonerTerm term = (ReasonerTerm)rawTerm;
 
-                incompatibilityArray[i] += term.evaluateIncompatibility(atomValues);
+            if (!(term.getRule() instanceof WeightedRule)) {
+                continue;
             }
+
+            Integer index = ruleIndexMap.get((WeightedRule)term.getRule());
+
+            if (index == null) {
+                continue;
+            }
+
+            incompatibilityArray[index] += term.evaluateIncompatibility(atomValues);
         }
     }
 
