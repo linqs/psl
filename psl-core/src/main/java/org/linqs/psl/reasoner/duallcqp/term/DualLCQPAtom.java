@@ -29,16 +29,16 @@ public final class DualLCQPAtom {
     // The message represents the total influence this atom has on the total objective.
     // To be maintained the reasoners must call the update method whenever it updates a dual variable
     // associated with the atom and set variables via the provided setters.
-    private float message;
+    private double message;
 
-    private float lowerBoundDualVariable;
-    private float upperBoundDualVariable;
+    private double lowerBoundDualVariable;
+    private double upperBoundDualVariable;
 
     public DualLCQPAtom() {
-        message = 0.0f;
+        message = 0.0;
 
-        lowerBoundDualVariable = 0.0f;
-        upperBoundDualVariable = 0.0f;
+        lowerBoundDualVariable = 0.0;
+        upperBoundDualVariable = 0.0;
     }
 
     public void addTerm(DualLCQPObjectiveTerm term, float coefficient) {
@@ -49,69 +49,69 @@ public final class DualLCQPAtom {
      * Update the DualLCQPAtom's bound dual variables and its message given the change
      * a dual variable of a term the atom is involved in.
      */
-    public synchronized void update(float termDualDelta, float coefficient,
-                                    float regularizationParameter, float stepSize) {
-        float lowerBoundPartial = getLowerBoundPartial(regularizationParameter);
-        float upperBoundPartial = getUpperBoundPartial(regularizationParameter);
+    public synchronized void update(double termDualDelta, double coefficient,
+                                    double regularizationParameter, double stepSize) {
+        double lowerBoundPartial = getLowerBoundPartial(regularizationParameter);
+        double upperBoundPartial = getUpperBoundPartial(regularizationParameter);
 
         addToMessage(termDualDelta * coefficient);
 
-        setLowerBoundDualVariable(Math.max(0.0f, lowerBoundDualVariable - stepSize * lowerBoundPartial));
-        setUpperBoundDualVariable(Math.max(0.0f, upperBoundDualVariable - stepSize * upperBoundPartial));
+        setLowerBoundDualVariable(Math.max(0.0, lowerBoundDualVariable - stepSize * lowerBoundPartial));
+        setUpperBoundDualVariable(Math.max(0.0, upperBoundDualVariable - stepSize * upperBoundPartial));
     }
 
-    private synchronized void addToMessage(float value) {
+    private synchronized void addToMessage(double value) {
         message += value;
     }
 
-    public float getMessage() {
+    public double getMessage() {
         return message;
     }
 
-    public float getPrimal(float regularizationParameter) {
-        return -1.0f * message / (2.0f * regularizationParameter);
+    public float getPrimal(double regularizationParameter) {
+        return (float)(-1.0 * message / (2.0 * regularizationParameter));
     }
 
-    public float getLowerBoundDualVariable() {
+    public double getLowerBoundDualVariable() {
         return lowerBoundDualVariable;
     }
 
-    public float getUpperBoundDualVariable() {
+    public double getUpperBoundDualVariable() {
         return upperBoundDualVariable;
     }
 
-    public synchronized void setLowerBoundDualVariable(float lowerBoundDualVariable) {
-        float dualVariableChange = lowerBoundDualVariable - this.lowerBoundDualVariable;
-        addToMessage(-1.0f * dualVariableChange);
+    public synchronized void setLowerBoundDualVariable(double lowerBoundDualVariable) {
+        double dualVariableChange = lowerBoundDualVariable - this.lowerBoundDualVariable;
+        addToMessage(-1.0 * dualVariableChange);
         this.lowerBoundDualVariable = lowerBoundDualVariable;
     }
 
-    public synchronized void setUpperBoundDualVariable(float upperBoundDualVariable) {
-        float dualVariableChange = upperBoundDualVariable - this.upperBoundDualVariable;
+    public synchronized void setUpperBoundDualVariable(double upperBoundDualVariable) {
+        double dualVariableChange = upperBoundDualVariable - this.upperBoundDualVariable;
         addToMessage(dualVariableChange);
         this.upperBoundDualVariable = upperBoundDualVariable;
     }
 
-    public float getLowerBoundObjective(float regularizationParameter) {
-        return -1.0f * message * lowerBoundDualVariable / (2.0f * regularizationParameter);
+    public double getLowerBoundObjective(double regularizationParameter) {
+        return -1.0 * message * lowerBoundDualVariable / (2.0 * regularizationParameter);
     }
 
-    public float getUpperBoundObjective(float regularizationParameter) {
-        return message * upperBoundDualVariable / (2.0f * regularizationParameter) + 2.0f * upperBoundDualVariable;
+    public double getUpperBoundObjective(double regularizationParameter) {
+        return message * upperBoundDualVariable / (2.0 * regularizationParameter) + 2.0 * upperBoundDualVariable;
     }
 
-    public float getLowerBoundPartial(float regularizationParameter) {
-        float lowerBoundPartial = -1.0f * message / regularizationParameter;
-        if (MathUtils.isZero(lowerBoundDualVariable, MathUtils.STRICT_EPSILON) && lowerBoundPartial > 0.0f) {
-            lowerBoundPartial = 0.0f;
+    public double getLowerBoundPartial(double regularizationParameter) {
+        double lowerBoundPartial = -1.0 * message / regularizationParameter;
+        if (MathUtils.isZero(lowerBoundDualVariable, MathUtils.STRICT_EPSILON) && (lowerBoundPartial > 0.0)) {
+            lowerBoundPartial = 0.0;
         }
         return lowerBoundPartial;
     }
 
-    public float getUpperBoundPartial(float regularizationParameter) {
-        float upperBoundPartial = message / regularizationParameter + 2.0f;
-        if (MathUtils.isZero(upperBoundDualVariable, MathUtils.STRICT_EPSILON) && upperBoundPartial > 0.0f) {
-            upperBoundPartial = 0.0f;
+    public double getUpperBoundPartial(double regularizationParameter) {
+        double upperBoundPartial = message / regularizationParameter + 2.0;
+        if (MathUtils.isZero(upperBoundDualVariable, MathUtils.STRICT_EPSILON) && (upperBoundPartial > 0.0)) {
+            upperBoundPartial = 0.0;
         }
         return upperBoundPartial;
     }
@@ -141,12 +141,12 @@ public final class DualLCQPAtom {
     }
 
     public static final class DualLCQPAtomState extends TermState {
-        public float message;
+        public double message;
 
-        public float lowerBoundDualVariable;
-        public float upperBoundDualVariable;
+        public double lowerBoundDualVariable;
+        public double upperBoundDualVariable;
 
-        public DualLCQPAtomState(float message, float lowerBoundDualVariable, float upperBoundDualVariable) {
+        public DualLCQPAtomState(double message, double lowerBoundDualVariable, double upperBoundDualVariable) {
             this.message = message;
 
             this.lowerBoundDualVariable = lowerBoundDualVariable;
