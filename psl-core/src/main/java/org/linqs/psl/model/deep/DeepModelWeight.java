@@ -22,6 +22,7 @@ public class DeepModelWeight extends DeepModel {
     private float[] symbolicGradients;
 
     private String modelPath;
+    private String modelOptions;
     private Map<String, Integer> ruleIndexMap;
 
     private boolean initialFit;
@@ -39,6 +40,7 @@ public class DeepModelWeight extends DeepModel {
         this.symbolicGradients = null;
 
         this.modelPath = Options.WLA_GRADIENT_DESCENT_DEEP_WEIGHTS_MODEL_PATH.getString();
+        this.modelOptions = Options.WLA_GRADIENT_DESCENT_DEEP_WEIGHTS_MODEL_OPTIONS.getString();
         this.ruleIndexMap = new HashMap<String, Integer>();
 
         this.initialFit = true;
@@ -83,6 +85,7 @@ public class DeepModelWeight extends DeepModel {
 
         pythonOptions.put(CONFIG_RULES, rulesString.toString());
         pythonOptions.put("max-variables", String.valueOf(maxVariables));
+        pythonOptions.put("deep-weight-options", modelOptions);
         return Integer.SIZE + numWeightedTerms * (maxVariables + 1) * Long.SIZE + numWeightedTerms * Float.SIZE;
     }
 

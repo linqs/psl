@@ -464,9 +464,15 @@ public class Options {
     );
 
     public static final Option WLA_GRADIENT_DESCENT_DEEP_WEIGHTS_MODEL_PATH = new Option(
-            "gradientdescent.deepweights.modelpath",
-            false,
-            "Use deep weights for gradient descent weight learning."
+        "gradientdescent.deepweights.modelpath",
+        "",
+        "Use deep weights for gradient descent weight learning."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_DEEP_WEIGHTS_MODEL_OPTIONS = new Option(
+        "gradientdescent.deepweights.options",
+        "",
+        "String of options that will be passed to the deep model."
     );
 
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
