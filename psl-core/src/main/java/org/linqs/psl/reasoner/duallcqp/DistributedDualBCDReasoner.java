@@ -17,15 +17,11 @@
  */
 package org.linqs.psl.reasoner.duallcqp;
 
-import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPObjectiveTerm;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
-
-import java.util.List;
 
 /**
  * A distributed variant of the DualBCDReasoner.
@@ -64,9 +60,9 @@ public class DistributedDualBCDReasoner extends DualBCDReasoner {
     private static class BlockUpdateWorker extends Parallel.Worker<Long> {
         private final DualLCQPTermStore termStore;
         private final int blockSize;
-        private final float regularizationParameter;
+        private final double regularizationParameter;
 
-        public BlockUpdateWorker(DualLCQPTermStore termStore, int blockSize, float regularizationParameter) {
+        public BlockUpdateWorker(DualLCQPTermStore termStore, int blockSize, double regularizationParameter) {
             super();
 
             this.termStore = termStore;

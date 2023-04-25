@@ -426,7 +426,7 @@ public abstract class Minimizer extends GradientDescent {
 
     private float computeTotalEnergyDifference(float[] incompatibilityDifference){
         // LCQP reasoners add a regularization to the energy function to ensure strong convexity.
-        float regularizationParameter = ((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
+        float regularizationParameter = (float)((DualBCDReasoner)inference.getReasoner()).regularizationParameter;
 
         float totalEnergyDifference = 0.0f;
         if (deepWeights) {
