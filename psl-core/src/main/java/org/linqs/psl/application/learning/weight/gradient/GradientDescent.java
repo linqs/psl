@@ -324,9 +324,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
             deepModelWeight.predictDeepModel();
         } else {
             weightGradientStep(iteration);
-            internalParameterGradientStep(iteration);
-            atomGradientStep();
         }
+        internalParameterGradientStep(iteration);
+        atomGradientStep();
     }
 
     /**
