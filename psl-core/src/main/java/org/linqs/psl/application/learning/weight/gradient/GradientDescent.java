@@ -244,7 +244,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     int atomIndex = ((ReasonerTerm) term).getAtomIndexes()[i];
                     termString.append(inference.getDatabase().getAtomStore().getAtom(atomIndex).toString());
                 }
-                log.trace(termString + " Weight: " + ((ReasonerTerm)term).getWeight());            }
+                log.trace(termString + " Weight: " + ((ReasonerTerm)term).getWeight());
+            }
         }
 
         log.info("Gradient Descent Weight Learning Finished.");

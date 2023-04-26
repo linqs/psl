@@ -106,6 +106,7 @@ public class DeepModelWeight extends DeepModel {
     public void readPredictData() {
         log.debug("Reading predict data for deep model weight");
         int index = 0;
+        int count = sharedBuffer.getInt();
         for (Object rawTerm : termStore) {
             if (!(((ReasonerTerm) rawTerm).getRule() instanceof WeightedRule) || ((ReasonerTerm) rawTerm).getRule().toString().contains("AUGMENTED")) {
                 continue;
@@ -147,7 +148,6 @@ public class DeepModelWeight extends DeepModel {
         sharedBuffer.putInt( numWeightedTerms);
         int numVariables = 0;
         int variableCurrent = 0;
-        int totalVariables = 0;
         for (Object rawTerm : termStore) {
             if (!(((ReasonerTerm) rawTerm).getRule() instanceof WeightedRule) || ((ReasonerTerm) rawTerm).getRule().toString().contains("AUGMENTED")) {
                 continue;
@@ -166,8 +166,6 @@ public class DeepModelWeight extends DeepModel {
             for (int i = numVariables; i < maxVariables; i++) {
                 sharedBuffer.putInt(-1);
             }
-            totalVariables += numVariables;
         }
-        log.debug("Total variables: {}", totalVariables);
     }
 }
