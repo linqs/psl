@@ -31,8 +31,8 @@ import java.util.Map;
  * the minimizer-based learning framework.
  */
 public class MeanSquaredError extends Minimizer {
-    public MeanSquaredError(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public MeanSquaredError(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
     }
 
     @Override

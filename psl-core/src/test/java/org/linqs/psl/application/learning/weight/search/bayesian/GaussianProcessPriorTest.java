@@ -40,14 +40,14 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         // Do less steps for tests.
         Options.WLA_GPP_MAX_ITERATIONS.set(2);
 
-        return new GaussianProcessPrior(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new GaussianProcessPrior(this.info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 
     protected WeightLearningApplication getWLALocal() {
         // Do less steps for tests.
         Options.WLA_GPP_MAX_ITERATIONS.set(2);
 
-        WeightLearningApplication wla = new GPPTest(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        WeightLearningApplication wla = new GPPTest(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
         wla.setEvaluation(new EvaluationInstance(info.predicates.get("Friends"), new ContinuousEvaluator(), true));
 
         return wla;
@@ -148,8 +148,8 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
     }
 
     private static class GPPTest extends GaussianProcessPrior {
-        public GPPTest(List<Rule> rules, Database rvDB, Database observedDB) {
-            super(rules, rvDB, observedDB);
+        public GPPTest(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+            super(rules, rvDB, observedDB, validationDB);
         }
 
         @Override

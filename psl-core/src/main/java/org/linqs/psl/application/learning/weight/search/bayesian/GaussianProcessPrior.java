@@ -63,12 +63,12 @@ public class GaussianProcessPrior extends WeightLearningApplication {
      */
     private boolean useProvidedWeight;
 
-    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
+    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB, Database validationDB) {
+        this(model.getRules(), rvDB, observedDB, validationDB);
     }
 
-    public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
 
         maxIterations = Options.WLA_GPP_MAX_ITERATIONS.getInt();
         maxConfigs = Options.WLA_GPP_MAX_CONFIGS.getInt();

@@ -44,7 +44,8 @@ public class DataStoreMetadataTest extends PSLBaseTest {
         Map<String, String> expected = new HashMap<String, String>();
         expected.put(TestModel.PARTITION_OBSERVATIONS, "1");
         expected.put(TestModel.PARTITION_TARGETS, "2");
-        expected.put(TestModel.PARTITION_TRUTH, "3");
+        expected.put(TestModel.PARTITION_VALIDATION, "3");
+        expected.put(TestModel.PARTITION_TRUTH, "4");
 
         assertEquals(expected, actual);
     }

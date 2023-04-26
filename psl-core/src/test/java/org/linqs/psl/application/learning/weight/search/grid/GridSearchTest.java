@@ -33,6 +33,6 @@ public class GridSearchTest extends WeightLearningTest {
         // Narrow the search space for tests.
         Options.WLA_GS_POSSIBLE_WEIGHTS.set("0.01:1:10");
 
-        return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 }

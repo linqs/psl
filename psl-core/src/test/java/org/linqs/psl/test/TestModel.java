@@ -57,6 +57,7 @@ import java.util.Map;
 public class TestModel {
     public static final String PARTITION_OBSERVATIONS = "observations";
     public static final String PARTITION_TARGETS = "targets";
+    public static final String PARTITION_VALIDATION = "validation";
     public static final String PARTITION_TRUTH = "truth";
     // This class promises not to use this partition, so tests can guarantee it will be empty.
     public static final String PARTITION_UNUSED = "unused";
@@ -152,6 +153,7 @@ public class TestModel {
         // Data
         Map<StandardPredicate, List<PredicateData>> observations = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> targets = new HashMap<StandardPredicate, List<PredicateData>>();
+        Map<StandardPredicate, List<PredicateData>> validation = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> truths = new HashMap<StandardPredicate, List<PredicateData>>();
 
         // Person
@@ -229,7 +231,7 @@ public class TestModel {
             new PredicateData(0, new Object[]{"Eugene", "Derek"})
         )));
 
-        return getModel(driver, predicates, rules, observations, targets, truths);
+        return getModel(driver, predicates, rules, observations, targets, validation, truths);
     }
 
     /**
@@ -241,7 +243,9 @@ public class TestModel {
     public static ModelInformation getModel(
             DatabaseDriver driver,
             Map<String, StandardPredicate> predicates, List<Rule> rules,
-            Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
+            Map<StandardPredicate, List<PredicateData>> observations,
+            Map<StandardPredicate, List<PredicateData>> targets,
+            Map<StandardPredicate, List<PredicateData>> validation,
             Map<StandardPredicate, List<PredicateData>> truths) {
         DataStore dataStore = new RDBMSDataStore(driver);
 
@@ -262,6 +266,7 @@ public class TestModel {
         // Partitions
         Partition obsPartition = dataStore.getPartition(PARTITION_OBSERVATIONS);
         Partition targetPartition = dataStore.getPartition(PARTITION_TARGETS);
+        Partition validationPartition = dataStore.getPartition(PARTITION_VALIDATION);
         Partition truthPartition = dataStore.getPartition(PARTITION_TRUTH);
 
         Map<Partition, Map<StandardPredicate, List<PredicateData>>> allData = new HashMap<Partition, Map<StandardPredicate, List<PredicateData>>>();
@@ -271,6 +276,10 @@ public class TestModel {
 
         if (targets != null && targets.size() != 0) {
             allData.put(targetPartition, targets);
+        }
+
+        if (validation != null && validation.size() != 0) {
+            allData.put(validationPartition, validation);
         }
 
         if (truths != null && truths.size() != 0) {
@@ -286,7 +295,7 @@ public class TestModel {
             }
         }
 
-        return new ModelInformation(modelId++, dataStore, model, predicates, obsPartition, targetPartition, truthPartition);
+        return new ModelInformation(modelId++, dataStore, model, predicates, obsPartition, targetPartition, validationPartition, truthPartition);
     }
 
     /**
@@ -322,6 +331,7 @@ public class TestModel {
         // Data
         Map<StandardPredicate, List<PredicateData>> observations = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> targets = new HashMap<StandardPredicate, List<PredicateData>>();
+        Map<StandardPredicate, List<PredicateData>> validation = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> truths = new HashMap<StandardPredicate, List<PredicateData>>();
 
         // Nice
@@ -380,7 +390,7 @@ public class TestModel {
                 new PredicateData(0, new Object[]{"Eugene", "Derek"})
         )));
 
-        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, truths);
+        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, validation, truths);
     }
 
     /**
@@ -417,6 +427,7 @@ public class TestModel {
         // Data
         Map<StandardPredicate, List<PredicateData>> observations = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> targets = new HashMap<StandardPredicate, List<PredicateData>>();
+        Map<StandardPredicate, List<PredicateData>> validation = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> truths = new HashMap<StandardPredicate, List<PredicateData>>();
 
 
@@ -476,7 +487,7 @@ public class TestModel {
                 new PredicateData(0, new Object[]{"Eugene", "Derek"})
         )));
 
-        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, truths);
+        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, validation, truths);
     }
 
     /**
@@ -520,6 +531,7 @@ public class TestModel {
         // Data
         Map<StandardPredicate, List<PredicateData>> observations = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> targets = new HashMap<StandardPredicate, List<PredicateData>>();
+        Map<StandardPredicate, List<PredicateData>> validation = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> truths = new HashMap<StandardPredicate, List<PredicateData>>();
 
         // Friends
@@ -569,7 +581,7 @@ public class TestModel {
                 new PredicateData(0, new Object[]{"Eugene", "Derek"})
         )));
 
-        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, truths);
+        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, validation, truths);
     }
 
     /**
@@ -599,6 +611,7 @@ public class TestModel {
         // Data
         Map<StandardPredicate, List<PredicateData>> observations = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> targets = new HashMap<StandardPredicate, List<PredicateData>>();
+        Map<StandardPredicate, List<PredicateData>> validation = new HashMap<StandardPredicate, List<PredicateData>>();
         Map<StandardPredicate, List<PredicateData>> truths = new HashMap<StandardPredicate, List<PredicateData>>();
 
         // Friends
@@ -648,7 +661,7 @@ public class TestModel {
                 new PredicateData(0, new Object[]{"Eugene", "Derek"})
         )));
 
-        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, truths);
+        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, validation, truths);
     }
 
     /**
@@ -664,6 +677,7 @@ public class TestModel {
         public Map<String, StandardPredicate> predicates;
         public Partition observationPartition;
         public Partition targetPartition;
+        public Partition validationPartition;
         public Partition truthPartition;
 
         // Keep track of open models so we can close them.
@@ -672,13 +686,14 @@ public class TestModel {
         public ModelInformation(
                 int id, DataStore dataStore, Model model,
                 Map<String, StandardPredicate> predicates,
-                Partition observationPartition, Partition targetPartition, Partition truthPartition) {
+                Partition observationPartition, Partition targetPartition, Partition validationPartition, Partition truthPartition) {
             this.id = id;
             this.dataStore = dataStore;
             this.model = model;
             this.predicates = predicates;
             this.observationPartition = observationPartition;
             this.targetPartition = targetPartition;
+            this.validationPartition = validationPartition;
             this.truthPartition = truthPartition;
 
             openModels.add(this);

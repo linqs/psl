@@ -33,6 +33,6 @@ public class MeanSquaredErrorTest extends WeightLearningTest {
 
     @Override
     protected WeightLearningApplication getBaseWLA() {
-        return new MeanSquaredError(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new MeanSquaredError(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 }

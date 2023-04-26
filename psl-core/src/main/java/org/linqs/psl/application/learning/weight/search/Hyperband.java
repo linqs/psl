@@ -56,12 +56,12 @@ public class Hyperband extends WeightLearningApplication {
     private int numBrackets;
     private int baseBracketSize;
 
-    public Hyperband(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
+    public Hyperband(Model model, Database rvDB, Database observedDB, Database validationDB) {
+        this(model.getRules(), rvDB, observedDB, validationDB);
     }
 
-    public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public Hyperband(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
 
         weightSampler = new WeightSampler(mutableRules.size());
 

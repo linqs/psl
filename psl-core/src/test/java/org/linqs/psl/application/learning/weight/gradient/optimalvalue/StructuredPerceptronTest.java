@@ -23,6 +23,6 @@ import org.linqs.psl.application.learning.weight.WeightLearningTest;
 public class StructuredPerceptronTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getBaseWLA() {
-        return new StructuredPerceptron(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new StructuredPerceptron(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 }

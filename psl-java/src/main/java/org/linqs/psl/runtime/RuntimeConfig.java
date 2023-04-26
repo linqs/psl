@@ -607,6 +607,7 @@ public class RuntimeConfig {
 
         public PartitionInfo observations;
         public PartitionInfo targets;
+        public PartitionInfo validation;
         public PartitionInfo truth;
 
         // May be null.
@@ -630,6 +631,7 @@ public class RuntimeConfig {
 
             observations = new PartitionInfo();
             targets = new PartitionInfo();
+            validation = new PartitionInfo();
             truth = new PartitionInfo();
 
             function = null;
@@ -644,7 +646,7 @@ public class RuntimeConfig {
         }
 
         public int dataSize() {
-            return observations.size() + targets.size() + truth.size();
+            return observations.size() + targets.size() + truth.size() + validation.size();
         }
 
         /**
@@ -653,6 +655,7 @@ public class RuntimeConfig {
         public boolean hasExplicitInferData() {
             return (observations.infer.size() > 0)
                     || (targets.infer.size() > 0)
+                    || (validation.infer.size() > 0)
                     || (truth.infer.size() > 0);
         }
 
@@ -662,12 +665,14 @@ public class RuntimeConfig {
         public boolean hasExplicitLearnData() {
             return (observations.learn.size() > 0)
                     || (targets.learn.size() > 0)
+                    || (validation.infer.size() > 0)
                     || (truth.learn.size() > 0);
         }
 
         public void resolvePaths(String relativeBasePath) {
             observations.resolvePaths(relativeBasePath);
             targets.resolvePaths(relativeBasePath);
+            validation.resolvePaths(relativeBasePath);
             truth.resolvePaths(relativeBasePath);
         }
 
@@ -691,6 +696,8 @@ public class RuntimeConfig {
                     observations.getDataPaths(false),
                     targets.getDataPaths(true),
                     targets.getDataPaths(false),
+                    validation.getDataPaths(true),
+                    validation.getDataPaths(false),
                     truth.getDataPaths(true),
                     truth.getDataPaths(false));
         }
@@ -704,6 +711,8 @@ public class RuntimeConfig {
                     observations.getDataPoints(false),
                     targets.getDataPoints(true),
                     targets.getDataPoints(false),
+                    validation.getDataPoints(true),
+                    validation.getDataPoints(false),
                     truth.getDataPoints(true),
                     truth.getDataPoints(false));
         }
@@ -722,6 +731,7 @@ public class RuntimeConfig {
                     && (this.forceOpen == otherInfo.forceOpen)
                     && this.observations.equals(otherInfo.observations)
                     && this.targets.equals(otherInfo.targets)
+                    && this.validation.equals(otherInfo.validation)
                     && this.truth.equals(otherInfo.truth)
                     && ((this.function == null) ? (otherInfo.function == null) : this.function.equals(otherInfo.function))
                     && this.evaluations.equals(otherInfo.evaluations)
@@ -900,6 +910,7 @@ public class RuntimeConfig {
 
         public PartitionInfo observations;
         public PartitionInfo targets;
+        public PartitionInfo validation;
         public PartitionInfo truth;
 
         public String function;
@@ -924,6 +935,7 @@ public class RuntimeConfig {
 
             config.observations = (observations == null) ? new PartitionInfo() : observations;
             config.targets = (targets == null) ? new PartitionInfo() : targets;
+            config.validation = (validation == null) ? new PartitionInfo() : validation;
             config.truth = (truth == null) ? new PartitionInfo() : truth;
 
             config.forceOpen = false;

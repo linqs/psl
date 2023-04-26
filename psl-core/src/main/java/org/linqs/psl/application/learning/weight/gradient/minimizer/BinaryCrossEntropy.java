@@ -32,8 +32,8 @@ import java.util.Map;
  * the minimizer-based learning framework.
  */
 public class BinaryCrossEntropy extends Minimizer {
-    public BinaryCrossEntropy(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public BinaryCrossEntropy(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
     }
 
     @Override

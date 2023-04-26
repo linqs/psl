@@ -50,11 +50,13 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
     protected Database rvDB;
     protected Database observedDB;
+    protected Database validationDB;
 
     protected List<Rule> allRules;
     protected List<WeightedRule> mutableRules;
 
     protected TrainingMap trainingMap;
+    protected TrainingMap validationMap;
 
     protected InferenceApplication inference;
     protected EvaluationInstance evaluation;
@@ -68,9 +70,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     protected boolean inMPEState;
 
-    public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB) {
+    public WeightLearningApplication(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
         this.rvDB = rvDB;
         this.observedDB = observedDB;
+        this.validationDB = validationDB;
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();
@@ -143,7 +146,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
         }
 
         TrainingMap trainingMap = new TrainingMap(inference.getDatabase(), observedDB);
-        initGroundModel(inference, trainingMap);
+        TrainingMap validationMap = new TrainingMap(inference.getDatabase(), validationDB);
+        initGroundModel(inference, trainingMap, validationMap);
     }
 
     /**
@@ -151,13 +155,14 @@ public abstract class WeightLearningApplication implements ModelApplication {
      * The caller should be careful calling this method instead of the other variants.
      * Children should favor overriding postInitGroundModel() instead of this.
      */
-    public void initGroundModel(InferenceApplication inference, TrainingMap trainingMap) {
+    public void initGroundModel(InferenceApplication inference, TrainingMap trainingMap, TrainingMap validationMap) {
         if (groundModelInit) {
             return;
         }
 
         this.inference = inference;
         this.trainingMap = trainingMap;
+        this.validationMap = validationMap;
 
         if (Options.WLA_RANDOM_WEIGHTS.getBoolean()) {
             initRandomWeights();
@@ -207,6 +212,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         trainingMap = null;
         rvDB = null;
         observedDB = null;
+        validationDB = null;
     }
 
     /**
@@ -214,7 +220,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
      * Look for a constructor like: (List<Rule>, Database (rv), Database (observed)).
      */
     public static WeightLearningApplication getWLA(String name, List<Rule> rules,
-            Database randomVariableDatabase, Database observedTruthDatabase) {
+            Database randomVariableDatabase, Database observedTruthDatabase, Database observedValidationDatabase) {
         String className = Reflection.resolveClassName(name);
         if (className == null) {
             throw new IllegalArgumentException("Could not find class: " + name);
@@ -231,14 +237,14 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         Constructor<? extends WeightLearningApplication> constructor = null;
         try {
-            constructor = classObject.getConstructor(List.class, Database.class, Database.class);
+            constructor = classObject.getConstructor(List.class, Database.class, Database.class, Database.class);
         } catch (NoSuchMethodException ex) {
             throw new IllegalArgumentException("No suitable constructor found for weight learner: " + className + ".", ex);
         }
 
         WeightLearningApplication wla = null;
         try {
-            wla = constructor.newInstance(rules, randomVariableDatabase, observedTruthDatabase);
+            wla = constructor.newInstance(rules, randomVariableDatabase, observedTruthDatabase, observedValidationDatabase);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
         } catch (IllegalAccessException ex) {

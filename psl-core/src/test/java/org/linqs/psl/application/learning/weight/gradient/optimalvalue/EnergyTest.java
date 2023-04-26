@@ -36,7 +36,7 @@ public class EnergyTest extends WeightLearningTest {
 
     @Override
     protected WeightLearningApplication getBaseWLA() {
-        return new Energy(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new Energy(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 
     @Override

@@ -37,6 +37,6 @@ public class GridSearchDiscreteLossTest extends WeightLearningTest {
         // Use MAE as an objective.
         Options.WLA_EVAL.set(DiscreteEvaluator.class.getName());
 
-        return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 }

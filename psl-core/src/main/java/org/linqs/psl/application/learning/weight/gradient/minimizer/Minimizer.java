@@ -25,7 +25,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.UnmanagedObservedAtom;
-import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -79,8 +78,8 @@ public abstract class Minimizer extends GradientDescent {
 
     protected final float objectiveDifferenceTolerance;
 
-    public Minimizer(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public Minimizer(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
 
         mapIncompatibility = new float[mutableRules.size()];
 
