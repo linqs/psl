@@ -26,7 +26,6 @@ import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.test.PSLBaseTest;
@@ -36,7 +35,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;

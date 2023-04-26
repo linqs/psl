@@ -60,6 +60,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
     public static final String RULE_SYMMETRY = "symmetry";
 
     protected Database weightLearningTrainDB;
+    protected Database weightLearningValidationDB;
     protected Database weightLearningTruthDB;
     protected TestModel.ModelInformation info;
 
@@ -89,6 +90,9 @@ public abstract class WeightLearningTest extends PSLBaseTest {
         weightLearningTrainDB.close();
         weightLearningTrainDB = null;
 
+        weightLearningValidationDB.close();
+        weightLearningValidationDB = null;
+
         weightLearningTruthDB.close();
         weightLearningTruthDB = null;
 
@@ -115,6 +119,11 @@ public abstract class WeightLearningTest extends PSLBaseTest {
         if (weightLearningTrainDB != null) {
             weightLearningTrainDB.close();
             weightLearningTrainDB = null;
+        }
+
+        if (weightLearningValidationDB != null) {
+            weightLearningValidationDB.close();
+            weightLearningValidationDB = null;
         }
 
         if (weightLearningTruthDB != null) {
@@ -152,6 +161,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
         closedPredicates.remove(info.predicates.get("Friends"));
 
         weightLearningTrainDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
+        weightLearningValidationDB = info.dataStore.getDatabase(info.validationPartition, allPredicates);
         weightLearningTruthDB = info.dataStore.getDatabase(info.truthPartition, allPredicates);
     }
 

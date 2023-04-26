@@ -33,6 +33,6 @@ public class GuidedRandomGridSearchTest extends WeightLearningTest {
         // Narrow the search space for tests.
         Options.WLA_RGS_MAX_LOCATIONS.set(100);
 
-        return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new GuidedRandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 }

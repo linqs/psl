@@ -29,8 +29,8 @@ import java.util.List;
 public class StructuredPerceptron extends OptimalValue {
     protected float[] MAPIncompatibility;
 
-    public StructuredPerceptron(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public StructuredPerceptron(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
 
         MAPIncompatibility = new float[mutableRules.size()];
     }

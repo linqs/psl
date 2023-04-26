@@ -28,8 +28,8 @@ import java.util.List;
  * In the case there is no latent variables, this reduces to minimizing the energy the observations.
  */
 public class Energy extends OptimalValue {
-    public Energy(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public Energy(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
     }
 
     @Override

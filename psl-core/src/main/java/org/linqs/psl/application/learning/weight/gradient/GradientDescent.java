@@ -91,8 +91,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float logRegularization;
     protected float entropyRegularization;
 
-    public GradientDescent(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public GradientDescent(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
 
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
 
@@ -193,11 +193,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 // Compute the MAP state before evaluating so variables have assigned values.
                 computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
 
-                evaluation.compute(trainingMap);
                 for (DeepPredicate deepPredicate : deepPredicates) {
                     deepPredicate.evalDeepModel();
                 }
-                log.trace("MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+
+                evaluation.compute(trainingMap);
+                log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+
+                evaluation.compute(validationMap);
+                log.trace("MAP State Validation Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
             }
 
             long start = System.currentTimeMillis();

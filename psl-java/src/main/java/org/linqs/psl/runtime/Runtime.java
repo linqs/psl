@@ -79,10 +79,12 @@ public class Runtime {
     public static final String PARTITION_NAME_OBSERVATIONS = "observations";
     public static final String PARTITION_NAME_TARGET = "targets";
     public static final String PARTITION_NAME_LABELS = "truth";
+    public static final String PARTITION_NAME_VALIDATION = "validation";
 
     private static final String[] PARTITION_NAMES = new String[]{
         PARTITION_NAME_OBSERVATIONS,
         PARTITION_NAME_TARGET,
+        PARTITION_NAME_VALIDATION,
         PARTITION_NAME_LABELS
     };
 
@@ -282,12 +284,14 @@ public class Runtime {
             List<Iterable<String>> paths = Arrays.asList(
                 predicateInfo.observations.getDataPaths(infer),
                 predicateInfo.targets.getDataPaths(infer),
+                predicateInfo.validation.getDataPaths(infer),
                 predicateInfo.truth.getDataPaths(infer)
             );
 
             List<Iterable<List<String>>> points = Arrays.asList(
                 predicateInfo.observations.getDataPoints(infer),
                 predicateInfo.targets.getDataPoints(infer),
+                predicateInfo.validation.getDataPoints(infer),
                 predicateInfo.truth.getDataPoints(infer)
             );
 
@@ -500,9 +504,11 @@ public class Runtime {
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
         Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+        Partition validationPartition = dataStore.getPartition(PARTITION_NAME_VALIDATION);
 
         Database targetDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+        Database validationDatabase = dataStore.getDatabase(validationPartition, dataStore.getRegisteredPredicates());
 
         EvaluationInstance primaryEvaluation = null;
         for (EvaluationInstance evaluation : getEvaluations(config)) {
@@ -514,13 +520,14 @@ public class Runtime {
 
         WeightLearningApplication learner = WeightLearningApplication.getWLA(
                 RuntimeOptions.LEARN_METHOD.getString(), model.getRules(),
-                targetDatabase, truthDatabase);
+                targetDatabase, truthDatabase, validationDatabase);
         learner.setEvaluation(primaryEvaluation);
         learner.learn();
 
         learner.close();
         targetDatabase.close();
         truthDatabase.close();
+        validationDatabase.close();
         dataStore.close();
 
         log.info("Learned Model:");

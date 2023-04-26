@@ -23,8 +23,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.InitialValue;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 
 import java.util.Arrays;
@@ -48,8 +46,8 @@ public abstract class OptimalValue extends GradientDescent {
     protected float[] rvLatentAtomGradient;
     protected float[] deepLatentAtomGradient;
 
-    public OptimalValue(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public OptimalValue(List<Rule> rules, Database rvDB, Database observedDB, Database validationDB) {
+        super(rules, rvDB, observedDB, validationDB);
 
         latentInferenceIncompatibility = new float[mutableRules.size()];
         latentInferenceTermState = null;

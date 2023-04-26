@@ -21,7 +21,6 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;

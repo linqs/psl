@@ -22,7 +22,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
 
@@ -57,7 +56,7 @@ public class TrainingMap {
     private static final Logger log = Logger.getLogger(TrainingMap.class);
 
     /**
-     * The mapping between an RVA and its observed truth atom.
+     * A mapping between an RVA and its truth atom in the training set.
      */
     private Map<RandomVariableAtom, ObservedAtom> labelMap;
 
@@ -210,38 +209,6 @@ public class TrainingMap {
     }
 
     /**
-     * Add a random variable target atom to the trainingMap.
-     */
-    public void addRandomVariableTargetAtom(RandomVariableAtom atom) {
-        int missingTargetIndex = missingTargets.indexOf(atom);
-        if (missingTargetIndex != -1) {
-            ObservedAtom observedAtom = missingTargets.remove(missingTargetIndex);
-            labelMap.put(atom, observedAtom);
-        } else {
-            int latentVariableIndex = latentVariables.indexOf(atom);
-            if (latentVariableIndex == -1) {
-                latentVariables.add(atom);
-            } else {
-                latentVariables.set(latentVariableIndex, atom);
-            }
-        }
-    }
-
-    /**
-     * Delete a random variable atom from trainingMap.
-     */
-    public void deleteAtom(GroundAtom atom) {
-        if (atom instanceof RandomVariableAtom) {
-            labelMap.remove((RandomVariableAtom)atom);
-            latentVariables.remove((RandomVariableAtom)atom);
-        } else {
-            observedMap.remove((ObservedAtom)atom);
-            missingLabels.remove((ObservedAtom)atom);
-            missingTargets.remove((ObservedAtom)atom);
-        }
-    }
-
-    /**
      * Get the full mapping of target to truth atoms (unobserved and observed).
      */
     // Casting non-static subclasses (ie Mep.Entry) can get iffy, so we just brute forced the cast using Object.
@@ -258,7 +225,7 @@ public class TrainingMap {
     @Override
     public String toString() {
         return String.format(
-                "Training Map -- Label Map: %d, Observed Map: %d, Latent Variables: %d, Missing Labels: %d, Missing Targets: %d",
+                "Training Map -- Training Label Map: %d, Validation Label Map: %d, Observed Map: %d, Latent Variables: %d, Missing Labels: %d, Missing Targets: %d",
                 labelMap.size(),
                 observedMap.size(),
                 latentVariables.size(),

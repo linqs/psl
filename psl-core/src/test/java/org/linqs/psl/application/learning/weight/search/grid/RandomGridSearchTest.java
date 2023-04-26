@@ -33,6 +33,6 @@ public class RandomGridSearchTest extends WeightLearningTest {
         // Narrow the search space for tests.
         Options.WLA_RGS_MAX_LOCATIONS.set(50);
 
-        return new RandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new RandomGridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB, weightLearningValidationDB);
     }
 }
