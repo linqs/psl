@@ -265,6 +265,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
         log.info("Final Weight Learning Loss: {}, Final Gradient Magnitude: {}, Total optimization time: {}",
                 computeTotalLoss(), computeGradientNorm(), totalTime);
+
+        if (deepWeights) {
+            deepModelWeight.close();
+        }
     }
 
     protected void initForLearning() {
