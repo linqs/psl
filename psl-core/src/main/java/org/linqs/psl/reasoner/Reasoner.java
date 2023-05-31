@@ -20,7 +20,8 @@ package org.linqs.psl.reasoner;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
-import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
@@ -52,6 +53,9 @@ public abstract class Reasoner<T extends ReasonerTerm> {
 
     protected float[] prevVariableValues;
 
+    protected float[][] workerRVAtomGradients;
+    protected float[][] workerDeepGradients;
+
     public Reasoner() {
         budget = 1.0;
 
@@ -65,6 +69,9 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         variableMovementNorm = Options.REASONER_VARIABLE_MOVEMENT_NORM.getFloat();
 
         prevVariableValues = null;
+
+        workerRVAtomGradients = null;
+        workerDeepGradients = null;
     }
 
     /**
@@ -173,6 +180,55 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     }
 
     /**
+     * Compute the (sub)gradient of the energy function with respect to the variables.
+     * This method does not consider the constraints and it is therefore not guaranteed to be the subgradient
+     * with the smallest magnitude. Therefore, this gradient can only be used for estimating distance to optimality
+     * after passing it through the clipGradient method to account for the standard [0, 1] box constraints.
+     * Moreover, there should be no constraints other than the box constraints
+     */
+    protected void parallelComputeGradient(TermStore<? extends ReasonerTerm> termStore,
+                                           float[] rvAtomGradient, float[] deepAtomGradient) {
+        int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(termStore.size() / (double)blockSize);
+
+        if ((workerRVAtomGradients == null) || (workerRVAtomGradients.length < numTermBlocks)
+                || (workerRVAtomGradients[0].length < rvAtomGradient.length)
+                || (workerDeepGradients == null) || (workerDeepGradients.length < numTermBlocks)
+                || (workerDeepGradients[0].length < deepAtomGradient.length)) {
+            workerRVAtomGradients = new float[(int)numTermBlocks][];
+            workerDeepGradients = new float[(int)numTermBlocks][];
+            for (int i = 0; i < numTermBlocks; i++) {
+                workerRVAtomGradients[i] = new float[rvAtomGradient.length];
+                workerDeepGradients[i] = new float[deepAtomGradient.length];
+            }
+        }
+
+        Parallel.count(numTermBlocks, new GradientWorker(termStore, workerRVAtomGradients, workerDeepGradients, blockSize));
+
+        Arrays.fill(rvAtomGradient, 0.0f);
+        Arrays.fill(deepAtomGradient, 0.0f);
+        for(int j = 0; j < numTermBlocks; j++) {
+            for(int i = 0; i < termStore.getNumVariables(); i++) {
+                rvAtomGradient[i] += workerRVAtomGradients[j][i];
+                deepAtomGradient[i] += workerDeepGradients[j][i];
+            }
+        }
+    }
+
+    /**
+     * Clip the (sub)gradient to account for [0, 1] box constraints.
+     */
+    protected void clipGradient(float[] variableValues, float[] gradient) {
+        for (int i = 0; i < gradient.length; i++) {
+            if (MathUtils.equals(variableValues[i], 0.0f) && gradient[i] > 0.0f) {
+                gradient[i] = 0.0f;
+            } else if (MathUtils.equals(variableValues[i], 1.0f) && gradient[i] < 0.0f) {
+                gradient[i] = 0.0f;
+            }
+        }
+    }
+
+    /**
      * Compute the total weighted objective of the terms in their current state.
      */
     protected ObjectiveResult computeObjective(TermStore<T> termStore) {
@@ -233,6 +289,64 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         for (EvaluationInstance evaluation : evaluations) {
             evaluation.compute(trainingMap);
             log.info("Iteration {} -- {}.", iteration, evaluation.getOutput());
+        }
+    }
+
+    private static class GradientWorker extends Parallel.Worker<Long> {
+        private final TermStore<? extends ReasonerTerm> termStore;
+        private final int blockSize;
+        private final float[] variableValues;
+        private final GroundAtom[] variableAtoms;
+        private final float[][] rvAtomGradients;
+        private final float[][] deepAtomGradients;
+
+        public GradientWorker(TermStore<? extends ReasonerTerm> termStore,
+                              float[][] rvAtomGradients, float[][] deepAtomGradients, int blockSize) {
+            super();
+
+            this.termStore = termStore;
+            this.variableValues = termStore.getVariableValues();
+            this.variableAtoms = termStore.getVariableAtoms();
+            this.rvAtomGradients = rvAtomGradients;
+            this.deepAtomGradients = deepAtomGradients;
+            this.blockSize = blockSize;
+        }
+
+        @Override
+        public Object clone() {
+            return new GradientWorker(termStore, rvAtomGradients, deepAtomGradients, blockSize);
+        }
+
+        @Override
+        public void work(long blockIndex, Long ignore) {
+            long numTerms = termStore.size();
+
+            Arrays.fill(rvAtomGradients[(int)blockIndex], 0.0f);
+            Arrays.fill(deepAtomGradients[(int)blockIndex], 0.0f);
+            for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+                int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
+
+                if (termIndex >= numTerms) {
+                    break;
+                }
+
+                ReasonerTerm term = termStore.get(termIndex);
+
+                if (term.isConstraint()) {
+                    continue;
+                }
+
+                int[] atomIndexes = term.getAtomIndexes();
+                float innerPotential = term.computeInnerPotential(variableValues);
+
+                for (int i = 0; i < term.size(); i++) {
+                    if (variableAtoms[atomIndexes[i]] instanceof ObservedAtom) {
+                        continue;
+                    }
+
+                    rvAtomGradients[(int)blockIndex][atomIndexes[i]] += term.computeVariablePartial(i, innerPotential);
+                }
+            }
         }
     }
 
