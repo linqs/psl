@@ -44,11 +44,11 @@ import org.linqs.psl.reasoner.term.TermState;
  * except for those corresponding to Linear Equality Constraints.
  */
 public class DualLCQPObjectiveTerm extends ReasonerTerm {
-    protected static final float regularizationParameter = Options.DUAL_LCQP_REGULARIZATION.getFloat();
+    protected static final double regularizationParameter = Options.DUAL_LCQP_REGULARIZATION.getDouble();
 
     // The dual variables associated with this term and with the lower bound on the slack (if it exists).
-    protected float dualVariable;
-    protected float slackBoundDualVariable;
+    protected double dualVariable;
+    protected double slackBoundDualVariable;
 
     protected boolean isEqualityConstraint;
 
@@ -57,8 +57,8 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
                                  FunctionComparator comparator) {
         super(hyperplane, rule, squared, hinge, comparator);
 
-        dualVariable = 0.0f;
-        slackBoundDualVariable = 0.0f;
+        dualVariable = 0.0;
+        slackBoundDualVariable = 0.0;
 
         isEqualityConstraint = (this.comparator != null) && this.comparator.equals(FunctionComparator.EQ);
 
@@ -90,34 +90,44 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
             return 0.0f;
         }
 
-        return (getWeight() * evaluateIncompatibility(variableValues)
-                + regularizationParameter * evaluateSquaredHingeLoss(variableValues));
+        return (float)(getWeight() * incompatibility + regularizationParameter * evaluateSquaredHingeLoss(variableValues));
+    }
+
+    @Override
+    public float computeVariablePartial(int varId, float innerPotential) {
+        float unregularizedPartial = super.computeVariablePartial(varId, innerPotential);
+
+        if (isConstraint()) {
+            return unregularizedPartial;
+        }
+
+        return (float)(unregularizedPartial + regularizationParameter * computeSquaredHingeLossPartial(varId, innerPotential));
     }
 
     public boolean isEqualityConstraint() {
         return isEqualityConstraint;
     }
 
-    public float getDualVariable() {
+    public double getDualVariable() {
         return dualVariable;
     }
 
-    public void setDualVariable(float dualVariable) {
+    public void setDualVariable(double dualVariable) {
         this.dualVariable = dualVariable;
     }
 
-    public float getSlackBoundDualVariable() {
+    public double getSlackBoundDualVariable() {
         assert !isConstraint();
         return slackBoundDualVariable;
     }
 
-    public void setSlackBoundDualVariable(float slackBoundDualVariable) {
+    public void setSlackBoundDualVariable(double slackBoundDualVariable) {
         assert !isConstraint();
         this.slackBoundDualVariable = slackBoundDualVariable;
     }
 
-    public float computeSelfInnerProduct() {
-        float innerProduct = 0.0f;
+    public double computeSelfInnerProduct() {
+        double innerProduct = 0.0;
 
         for (int i = 0; i < size(); i++) {
             innerProduct += coefficients[i] * coefficients[i];
@@ -150,10 +160,10 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
     }
 
     public static final class DualLCQPObjectiveTermState extends TermState {
-        public float dualVariable;
-        public float slackBoundDualVariable;
+        public double dualVariable;
+        public double slackBoundDualVariable;
 
-        public DualLCQPObjectiveTermState(float dualVariable, float slackBoundDualVariable) {
+        public DualLCQPObjectiveTermState(double dualVariable, double slackBoundDualVariable) {
             this.dualVariable = dualVariable;
             this.slackBoundDualVariable = slackBoundDualVariable;
         }

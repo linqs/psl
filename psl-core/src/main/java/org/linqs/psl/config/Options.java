@@ -174,6 +174,13 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option DUAL_LCQP_COMPUTE_PERIOD = new Option(
+        "duallcqp.computeperiod",
+        10,
+        "Compute some stats about the optimization to log and use them for stopping criterion once for each period.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option DUAL_LCQP_FIRST_ORDER_BREAK = new Option(
         "duallcqp.firstorderbreak",
         false,

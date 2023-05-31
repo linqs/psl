@@ -30,6 +30,11 @@
     </Match>
 
     <Match>
+        <Class name="org.linqs.psl.reasoner.duallcqp.term.DualLCQPAtom" />
+        <Bug pattern="UG_SYNC_SET_UNSYNC_GET" />
+    </Match>
+
+    <Match>
         <Class name="org.linqs.psl.database.Database" />
         <Field name="atomStore" />
         <Bug pattern="IS2_INCONSISTENT_SYNC" />
