@@ -165,7 +165,7 @@ public class ReasonerTerm {
             }
             return 0.0f;
         }
-        return getWeight() * evaluateIncompatibility(variableValues);
+        return getWeight() * incompatibility;
     }
 
     /**
@@ -202,12 +202,12 @@ public class ReasonerTerm {
             }
             return Float.POSITIVE_INFINITY;
         } else if (comparator.equals(FunctionComparator.LTE)) {
-            if (value <= 0.0f) {
+            if (value <= MathUtils.RELAXED_EPSILON) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
         } else if (comparator.equals(FunctionComparator.GTE)) {
-            if (value >= 0.0f) {
+            if (value >= MathUtils.RELAXED_EPSILON) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
