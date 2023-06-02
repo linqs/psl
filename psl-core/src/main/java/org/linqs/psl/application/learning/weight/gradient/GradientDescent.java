@@ -21,15 +21,19 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Learns weights for weighted rules in a model by optimizing an objective via Gradient Descent.
@@ -52,8 +56,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected GDExtension gdExtension;
 
-    protected float[] weightGradient;
+    protected Map<WeightedRule, Integer> ruleIndexMap;
 
+    protected float[] weightGradient;
     protected TermState[] mpeTermState;
     protected float[] mpeAtomValueState;
 
@@ -79,6 +84,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         super(rules, rvDB, observedDB);
 
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
+
+        ruleIndexMap = new HashMap<WeightedRule, Integer>(mutableRules.size());
+        for (int i = 0; i < mutableRules.size(); i++) {
+            ruleIndexMap.put(mutableRules.get(i), i);
+        }
 
         weightGradient = new float[mutableRules.size()];
 
@@ -113,66 +123,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // the atom values that were fixed to their warm start or true labels are preserved.
         inference.setInitialValue(InitialValue.ATOM);
 
-        // Initialize MPE warm start state objects.
+        // Initialize MPE state objects for warm starts.
         mpeTermState = inference.getTermStore().saveState();
+
         float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
         mpeAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
-    }
-
-    @Override
-    protected void doLearn() {
-        boolean breakGD = false;
-        float objective = 0.0f;
-        float oldObjective = Float.POSITIVE_INFINITY;
-
-        log.info("Gradient Descent Weight Learning Start.");
-        initForLearning();
-
-        long totalTime = 0;
-        int iteration = 1;
-        while (!breakGD) {
-            log.trace("Model: {}", mutableRules);
-            if (log.isTraceEnabled() && evaluation != null) {
-                // Compute the MAP state before evaluating so variables have assigned values.
-                computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
-
-                evaluation.compute(trainingMap);
-                log.trace("MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
-            }
-
-            long start = System.currentTimeMillis();
-
-            weightGradientStep(iteration);
-
-            computeIterationStatistics();
-            objective = computeTotalLoss();
-            computeTotalWeightGradient();
-            if (clipWeightGradient) {
-                clipWeightGradient();
-            }
-
-            breakGD = breakOptimization(iteration, objective, oldObjective);
-
-            long end = System.currentTimeMillis();
-            totalTime += end - start;
-            oldObjective = objective;
-
-            log.trace("Iteration {} -- Weight Learning Objective: {}, Weight Gradient Magnitude: {}, Iteration Time: {}",
-                    iteration - 1, objective, computeGradientNorm(), (end - start));
-
-            iteration++;
-        }
-
-        log.info("Gradient Descent Weight Learning Finished.");
-        log.info("Final Model {} ", mutableRules);
-        if (evaluation != null) {
-            // Compute the MAP state before evaluating so variables have assigned values.
-            computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
-            evaluation.compute(trainingMap);
-            log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
-        }
-        log.info("Final Weight Learning Loss: {}, Final Gradient Magnitude: {}, Total optimization time: {}",
-                computeTotalLoss(), computeGradientNorm(), totalTime);
     }
 
     protected void initForLearning() {
@@ -190,8 +145,69 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    private boolean breakOptimization(int iteration, float objective, float oldObjective) {
-        // Always break when the allocated iterations is up.
+    @Override
+    protected void doLearn() {
+        boolean breakGD = false;
+        float objective = 0.0f;
+        float oldObjective = Float.POSITIVE_INFINITY;
+
+        log.info("Gradient Descent Weight Learning Start.");
+        initForLearning();
+
+        long totalTime = 0;
+        int iteration = 0;
+        while (!breakGD) {
+            long start = System.currentTimeMillis();
+
+            log.trace("Model: {}", mutableRules);
+
+            gradientStep(iteration);
+
+            if (log.isTraceEnabled() && evaluation != null) {
+                // Compute the MAP state before evaluating so variables have assigned values.
+                computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
+
+                evaluation.compute(trainingMap);
+                double currentMAPStateEvaluationMetric = evaluation.getNormalizedRepMetric();
+                log.trace("MAP State Training Evaluation Metric: {}", currentMAPStateEvaluationMetric);
+            }
+
+            computeIterationStatistics();
+
+            objective = computeTotalLoss();
+            computeTotalWeightGradient();
+            if (clipWeightGradient) {
+                clipWeightGradient();
+            }
+
+            long end = System.currentTimeMillis();
+
+            totalTime += end - start;
+            oldObjective = objective;
+
+            breakGD = breakOptimization(iteration, objective, oldObjective);
+
+            log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
+                    iteration, objective, computeGradientNorm(), (end - start));
+
+            iteration++;
+        }
+
+        log.info("Gradient Descent Weight Learning Finished.");
+
+        if (evaluation != null) {
+            // Compute the MAP state before evaluating so variables have assigned values.
+            computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
+            evaluation.compute(trainingMap);
+            log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+        }
+
+        log.info("Final Model {} ", mutableRules);
+        log.info("Final Weight Learning Loss: {}, Final Gradient Magnitude: {}, Total optimization time: {}",
+                computeTotalLoss(), computeGradientNorm(), totalTime);
+    }
+
+    protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
         if (iteration > maxNumSteps) {
             return true;
         }
@@ -227,9 +243,26 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     /**
+     * Take a step in the direction of the negative gradient.
+     * This method will call the gradient step methods for each parameter group: weights and internal parameters.
+     */
+    protected void gradientStep(int iteration) {
+        weightGradientStep(iteration);
+        internalParameterGradientStep(iteration);
+    }
+
+    /**
+     * Take a step in the direction of the negative gradient of the internal parameters.
+     * This method is a no-op for the abstract class. Children should override this method if they have internal parameters.
+     */
+    protected void internalParameterGradientStep(int iteration) {
+        // Do nothing.
+    }
+
+    /**
      * Take a step in the direction of the negative gradient of the weights.
      */
-    private void weightGradientStep(int iteration) {
+    protected void weightGradientStep(int iteration) {
         float stepSize = computeStepSize(iteration);
 
         switch (gdExtension) {
@@ -272,7 +305,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float stepSize = baseStepSize;
 
         if (scaleStepSize) {
-            stepSize /= iteration;
+            stepSize /= (iteration + 1);
         }
 
         return stepSize;
@@ -326,19 +359,19 @@ public abstract class GradientDescent extends WeightLearningApplication {
         int numNonZeroGradients = 0;
         float[] simplexClippedGradients = weightGradient.clone();
         for (int i = 0; i < simplexClippedGradients.length; i++) {
-            if (MathUtils.equals(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
+            if ((logRegularization == 0.0f) && MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
 
-            if (MathUtils.equals(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
+            if ((logRegularization == 0.0f) && MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
 
             simplexClippedGradients[i] = weightGradient[i];
 
-            if (MathUtils.isZero(simplexClippedGradients[i])) {
+            if ((logRegularization == 0.0f) && MathUtils.isZero(simplexClippedGradients[i], MathUtils.STRICT_EPSILON)) {
                 continue;
             }
 
@@ -347,7 +380,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         float exponentiatedGradientSum = 0.0f;
         for (int i = 0; i < mutableRules.size(); i ++) {
-            if (MathUtils.isZero(simplexClippedGradients[i])) {
+            if ((logRegularization == 0.0f) && MathUtils.isZero(simplexClippedGradients[i], MathUtils.STRICT_EPSILON)) {
                 continue;
             }
 
@@ -355,7 +388,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         for (int i = 0; i < mutableRules.size(); i ++) {
-            if (MathUtils.isZero(simplexClippedGradients[i])) {
+            if ((logRegularization == 0.0f) && MathUtils.isZero(simplexClippedGradients[i], MathUtils.STRICT_EPSILON)) {
                 continue;
             }
 
@@ -370,8 +403,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * The norm of non-negative weights is the norm of the lower boundary clipped weight gradient.
      */
     private float computeGradientDescentNorm() {
-        float norm = 0.0f;
-
         float[] boundaryClippedGradients = weightGradient.clone();
         for (int i = 0; i < boundaryClippedGradients.length; i++) {
             if (MathUtils.equals(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
@@ -382,10 +413,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             boundaryClippedGradients[i] = weightGradient[i];
         }
 
-        for (float boundaryClippedGradient: boundaryClippedGradients) {
-            norm += (float)Math.pow(boundaryClippedGradient, stoppingGradientNorm);
-        }
-        return (float)Math.pow(norm, 1.0f / stoppingGradientNorm);
+        return MathUtils.pNorm(boundaryClippedGradients, stoppingGradientNorm);
     }
 
     /**
@@ -439,9 +467,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // Warm start inference with previous termState.
         inference.getTermStore().loadState(termState);
         AtomStore atomStore = inference.getDatabase().getAtomStore();
-        System.arraycopy(atomValueState, 0,
-                atomStore.getAtomValues(), 0,
-                atomValueState.length);
+        float[] atomValues = atomStore.getAtomValues();
+        for (int i = 0; i < atomStore.size(); i++) {
+            if (atomStore.getAtom(i) instanceof ObservedAtom) {
+                continue;
+            }
+
+            atomValues[i] = atomValueState[i];
+        }
+
         atomStore.sync();
 
         computeMPEState();
@@ -450,6 +484,34 @@ public abstract class GradientDescent extends WeightLearningApplication {
         inference.getTermStore().saveState(termState);
         float[] mpeAtomValues = inference.getDatabase().getAtomStore().getAtomValues();
         System.arraycopy(mpeAtomValues, 0, atomValueState, 0, mpeAtomValues.length);
+    }
+
+    /**
+     * A method for computing the incompatibility of rules with atoms values in their current state.
+     */
+    protected void computeCurrentIncompatibility(float[] incompatibilityArray) {
+        // Zero out the incompatibility first.
+        Arrays.fill(incompatibilityArray, 0.0f);
+
+        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
+
+        // Sums up the incompatibilities.
+        for (Object rawTerm : inference.getTermStore()) {
+            @SuppressWarnings("unchecked")
+            ReasonerTerm term = (ReasonerTerm)rawTerm;
+
+            if (!(term.getRule() instanceof WeightedRule)) {
+                continue;
+            }
+
+            Integer index = ruleIndexMap.get((WeightedRule)term.getRule());
+
+            if (index == null) {
+                continue;
+            }
+
+            incompatibilityArray[index] += term.evaluateIncompatibility(atomValues);
+        }
     }
 
     /**
@@ -466,7 +528,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float regularization = computeRegularization();
 
         log.trace("Learning Loss: {}, Regularization: {}", learningLoss, regularization);
-        
+
         return learningLoss + regularization;
     }
 
@@ -480,9 +542,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     protected float computeRegularization() {
         float regularization = 0.0f;
-        for (WeightedRule mutableRule : mutableRules) {
+        for (int i = 0; i < mutableRules.size(); i++) {
+            WeightedRule mutableRule = mutableRules.get(i);
             float logWeight = (float)Math.max(Math.log(mutableRule.getWeight()), Math.log(MathUtils.STRICT_EPSILON));
-            regularization += l2Regularization * (float)Math.pow(mutableRule.getWeight(), 2)
+            regularization += l2Regularization * (float)Math.pow(mutableRule.getWeight(), 2.0f)
                     - logRegularization * logWeight
                     + entropyRegularization * mutableRule.getWeight() * logWeight;
         }
@@ -510,7 +573,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     protected void addRegularizationWeightGradient() {
         for (int i = 0; i < mutableRules.size(); i++) {
-            float logWeight = (float)Math.max(Math.log(mutableRules.get(i).getWeight()), Math.log(MathUtils.STRICT_EPSILON));
+            float logWeight = (float)Math.log(Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON));
             weightGradient[i] += 2.0f * l2Regularization * mutableRules.get(i).getWeight()
                     - logRegularization / Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON)
                     + entropyRegularization * (logWeight + 1);
