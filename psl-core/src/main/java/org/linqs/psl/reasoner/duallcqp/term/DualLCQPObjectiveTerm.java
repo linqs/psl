@@ -81,6 +81,10 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
      */
     @Override
     public float evaluate(float[] variableValues) {
+        if (!isActive()) {
+            return 0.0f;
+        }
+
         float incompatibility = evaluateIncompatibility(variableValues);
 
         if (isConstraint()) {

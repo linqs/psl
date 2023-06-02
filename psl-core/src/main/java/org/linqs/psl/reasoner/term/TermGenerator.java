@@ -50,6 +50,10 @@ public abstract class TermGenerator<T extends ReasonerTerm> {
         this.mergeConstants = mergeConstants;
     }
 
+    public boolean getMergeConstants() {
+        return mergeConstants;
+    }
+
     /**
      * Create terms from the ground rule and add it to supplied collections.
      *

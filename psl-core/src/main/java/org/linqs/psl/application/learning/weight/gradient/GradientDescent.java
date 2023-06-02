@@ -301,7 +301,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         inMPEState = false;
     }
 
-    private float computeStepSize(int iteration) {
+    protected float computeStepSize(int iteration) {
         float stepSize = baseStepSize;
 
         if (scaleStepSize) {

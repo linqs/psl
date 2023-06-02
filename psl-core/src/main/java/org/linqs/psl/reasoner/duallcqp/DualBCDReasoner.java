@@ -42,7 +42,7 @@ import java.util.List;
 public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     private static final org.linqs.psl.util.Logger log = Logger.getLogger(DualBCDReasoner.class);
 
-    protected final double regularizationParameter;
+    public final double regularizationParameter;
 
     protected final int computePeriod;
     private final boolean firstOrderBreak;
@@ -112,6 +112,10 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
     protected void internalOptimize(DualLCQPTermStore termStore) {
         for (DualLCQPObjectiveTerm term : termStore) {
+            if (!term.isActive()) {
+                continue;
+            }
+
             dualBlockUpdate(term, termStore, regularizationParameter);
         }
     }
@@ -539,6 +543,10 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                 }
 
                 DualLCQPObjectiveTerm term = termStore.get(termIndex);
+
+                if (!term.isActive()) {
+                    continue;
+                }
 
                 objectives[blockIntIndex] += evaluateDualTerm(term, termStore, regularizationParameter);
                 objectives[blockIntIndex] += evaluateDualSlackLowerBound(term, regularizationParameter);

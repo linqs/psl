@@ -591,6 +591,49 @@ public class Options {
         "Shuffle the terms before each return of iterator()."
     );
 
+    public static final Option MINIMIZER_INITIAL_LINEAR_PENALTY = new Option(
+        "minimizer.initiallinearpenalty",
+        0.1f,
+        "The initial value for the linear penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_INITIAL_SQUARED_PENALTY = new Option(
+        "minimizer.initialsquaredpenalty",
+        1.0f,
+        "The initial value for the squared penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_NUM_INTERNAL_ITERATIONS = new Option(
+        "minimizer.numinternaliterations",
+        100,
+        "The number of internal iterations to perform before updating the augmented Lagrangian parameters.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE = new Option(
+        "minimizer.objectivedifferencetolerance",
+        0.01f,
+        "The tolerance of the violation of value of the lower level objective function difference constraint"
+        + " in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_PROX_RULE_WEIGHT = new Option(
+        "minimizer.proxruleweight",
+        0.01f,
+        "The weight of the proximity rules added to the objective function for augmented inference subproblem.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_SQUARED_PENALTY_DELTA = new Option(
+        "minimizer.squaredpenaltydelta",
+        10.0f,
+        "The amount to increase the squared penalty coefficient each outer iteration.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option MODEL_PREDICATE_BATCH_SIZE = new Option(
         "modelpredicate.batchsize",
         32,

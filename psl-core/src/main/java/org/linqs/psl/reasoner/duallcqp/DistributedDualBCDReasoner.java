@@ -88,6 +88,10 @@ public class DistributedDualBCDReasoner extends DualBCDReasoner {
 
                 DualLCQPObjectiveTerm term = termStore.get(termIndex);
 
+                if (!term.isActive()) {
+                    continue;
+                }
+
                 dualBlockUpdate(term, termStore, regularizationParameter);
             }
         }

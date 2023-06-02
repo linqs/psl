@@ -38,7 +38,7 @@ public class DualLCQPTermGenerator extends TermGenerator<DualLCQPObjectiveTerm> 
 
     @Override
     public int createLossTerm(Collection<DualLCQPObjectiveTerm> newTerms,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
+                              boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
         // Interpret all loss terms as hinges.
         // This is safe for Lukasiewicz interpretation of logical rules and the current semantics for arithmetic rules.
         newTerms.add(new DualLCQPObjectiveTerm(hyperplane, groundRule.getRule(), isSquared, true, null));
@@ -47,7 +47,7 @@ public class DualLCQPTermGenerator extends TermGenerator<DualLCQPObjectiveTerm> 
 
     @Override
     public int createLinearConstraintTerm(Collection<DualLCQPObjectiveTerm> newTerms,
-            GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
+                                          GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
         newTerms.add(new DualLCQPObjectiveTerm(hyperplane, groundRule.getRule(), false, true, comparator));
         return 1;
     }

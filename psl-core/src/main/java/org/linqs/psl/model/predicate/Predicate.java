@@ -94,7 +94,15 @@ public abstract class Predicate implements Serializable {
     }
 
     /**
-     * Close the predicate and free related resrouces.
+     * Returns the array of ArgumentType which a {@link Term} must have to be a valid
+     * argument for this Predicate.
+     */
+    public ConstantType[] getArgumentTypes() {
+        return types;
+    }
+
+    /**
+     * Close the predicate and free related resources.
      * It will be very rare to call this method.
      * Most predicates stay alive for the duration of PSL's run.
      */

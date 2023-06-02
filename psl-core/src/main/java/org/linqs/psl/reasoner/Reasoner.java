@@ -54,7 +54,6 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     protected float[] prevVariableValues;
 
     protected float[][] workerRVAtomGradients;
-    protected float[][] workerDeepGradients;
 
     public Reasoner() {
         budget = 1.0;
@@ -71,7 +70,6 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         prevVariableValues = null;
 
         workerRVAtomGradients = null;
-        workerDeepGradients = null;
     }
 
     /**
@@ -186,31 +184,24 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      * after passing it through the clipGradient method to account for the standard [0, 1] box constraints.
      * Moreover, there should be no constraints other than the box constraints
      */
-    protected void parallelComputeGradient(TermStore<? extends ReasonerTerm> termStore,
-                                           float[] rvAtomGradient, float[] deepAtomGradient) {
+    public void parallelComputeGradient(TermStore termStore, float[] rvAtomGradient) {
         int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
         int numTermBlocks = (int)Math.ceil(termStore.size() / (double)blockSize);
 
         if ((workerRVAtomGradients == null) || (workerRVAtomGradients.length < numTermBlocks)
-                || (workerRVAtomGradients[0].length < rvAtomGradient.length)
-                || (workerDeepGradients == null) || (workerDeepGradients.length < numTermBlocks)
-                || (workerDeepGradients[0].length < deepAtomGradient.length)) {
+                || (workerRVAtomGradients[0].length < rvAtomGradient.length)) {
             workerRVAtomGradients = new float[(int)numTermBlocks][];
-            workerDeepGradients = new float[(int)numTermBlocks][];
             for (int i = 0; i < numTermBlocks; i++) {
                 workerRVAtomGradients[i] = new float[rvAtomGradient.length];
-                workerDeepGradients[i] = new float[deepAtomGradient.length];
             }
         }
 
-        Parallel.count(numTermBlocks, new GradientWorker(termStore, workerRVAtomGradients, workerDeepGradients, blockSize));
+        Parallel.count(numTermBlocks, new GradientWorker(termStore, workerRVAtomGradients, blockSize));
 
         Arrays.fill(rvAtomGradient, 0.0f);
-        Arrays.fill(deepAtomGradient, 0.0f);
         for(int j = 0; j < numTermBlocks; j++) {
             for(int i = 0; i < termStore.getNumVariables(); i++) {
                 rvAtomGradient[i] += workerRVAtomGradients[j][i];
-                deepAtomGradient[i] += workerDeepGradients[j][i];
             }
         }
     }
@@ -237,6 +228,10 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         float[] variableValues = termStore.getVariableValues();
 
         for (ReasonerTerm term : termStore) {
+            if (!term.isActive()) {
+                continue;
+            }
+
             if (term.isConstraint()) {
                 if (term.evaluate(variableValues) > 0.0f) {
                     violatedConstraints++;
@@ -298,23 +293,21 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         private final float[] variableValues;
         private final GroundAtom[] variableAtoms;
         private final float[][] rvAtomGradients;
-        private final float[][] deepAtomGradients;
 
         public GradientWorker(TermStore<? extends ReasonerTerm> termStore,
-                              float[][] rvAtomGradients, float[][] deepAtomGradients, int blockSize) {
+                              float[][] rvAtomGradients, int blockSize) {
             super();
 
             this.termStore = termStore;
             this.variableValues = termStore.getVariableValues();
             this.variableAtoms = termStore.getVariableAtoms();
             this.rvAtomGradients = rvAtomGradients;
-            this.deepAtomGradients = deepAtomGradients;
             this.blockSize = blockSize;
         }
 
         @Override
         public Object clone() {
-            return new GradientWorker(termStore, rvAtomGradients, deepAtomGradients, blockSize);
+            return new GradientWorker(termStore, rvAtomGradients, blockSize);
         }
 
         @Override
@@ -322,7 +315,6 @@ public abstract class Reasoner<T extends ReasonerTerm> {
             long numTerms = termStore.size();
 
             Arrays.fill(rvAtomGradients[(int)blockIndex], 0.0f);
-            Arrays.fill(deepAtomGradients[(int)blockIndex], 0.0f);
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
                 int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
 
@@ -331,6 +323,10 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                 }
 
                 ReasonerTerm term = termStore.get(termIndex);
+
+                if (!term.isActive()) {
+                    continue;
+                }
 
                 if (term.isConstraint()) {
                     continue;
@@ -387,6 +383,10 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                 }
 
                 ReasonerTerm term = termStore.get(termIndex);
+
+                if (!term.isActive()) {
+                    continue;
+                }
 
                 if (term.isConstraint()) {
                     if(!MathUtils.isZero(term.evaluate(variableValues))) {

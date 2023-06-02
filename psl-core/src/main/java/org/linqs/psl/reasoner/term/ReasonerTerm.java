@@ -115,6 +115,14 @@ public class ReasonerTerm {
         return Float.POSITIVE_INFINITY;
     }
 
+    public boolean isActive() {
+        if (rule != null) {
+            return rule.isActive();
+        }
+
+        return true;
+    }
+
     /**
      * Get the constant defining this term.
      */
@@ -232,7 +240,7 @@ public class ReasonerTerm {
     /**
      * [max(0, coefficients^T * y - constant)]^2
      */
-    protected float evaluateSquaredHingeLoss(float[] variableValues) {
+    public float evaluateSquaredHingeLoss(float[] variableValues) {
         return (float)Math.pow(Math.max(0.0f, computeInnerPotential(variableValues)), 2.0f);
     }
 
