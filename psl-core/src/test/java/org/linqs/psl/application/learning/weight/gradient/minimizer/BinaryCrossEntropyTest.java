@@ -17,11 +17,12 @@
  */
 package org.linqs.psl.application.learning.weight.gradient.minimizer;
 
-import org.junit.Before;
 import org.linqs.psl.application.inference.mpe.DualBCDInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Options;
+
+import org.junit.Before;
 
 public class BinaryCrossEntropyTest extends WeightLearningTest {
     @Before
