@@ -785,7 +785,7 @@ public class RuntimeConfig {
                     allPaths = IteratorUtils.join(allPaths, learn.paths);
                     break;
                 case RuntimeConfig.KEY_VALIDATION:
-                    // TODO(Charles): No validation data for now.
+                    allPaths = IteratorUtils.join(allPaths, validation.paths);
                     break;
                 case RuntimeConfig.KEY_INFER:
                     allPaths = IteratorUtils.join(allPaths, infer.paths);
@@ -809,7 +809,7 @@ public class RuntimeConfig {
                     allPoints = IteratorUtils.join(allPoints, learn.data);
                     break;
                 case RuntimeConfig.KEY_VALIDATION:
-                    // TODO(Charles): No validation data for now.
+                    allPoints = IteratorUtils.join(allPoints, validation.data);
                     break;
                 case RuntimeConfig.KEY_INFER:
                     allPoints = IteratorUtils.join(allPoints, infer.data);
