@@ -100,6 +100,7 @@ public class RuntimeConfig {
     public Map<String, String> options;
 
     public SplitConfigInfo learn;
+    public SplitConfigInfo validation;
     public SplitConfigInfo infer;
 
     /**
@@ -114,6 +115,7 @@ public class RuntimeConfig {
         options = new HashMap<String, String>();
 
         learn = new SplitConfigInfo();
+        validation = new SplitConfigInfo();
         infer = new SplitConfigInfo();
 
         relativeBasePath = ".";
@@ -133,11 +135,16 @@ public class RuntimeConfig {
      */
     public void validate() {
         boolean runLearn = false;
+        boolean runValidation = false;
         boolean runInfer = false;
 
         // Any top-level learn/infer indicates that those respective steps should be run.
         if (!learn.isEmpty()) {
             runLearn = true;
+        }
+
+        if (!validation.isEmpty()) {
+            runValidation = true;
         }
 
         if (!infer.isEmpty()) {
@@ -155,6 +162,10 @@ public class RuntimeConfig {
                 runLearn = true;
             }
 
+            if (entry.getValue().hasExplicitValidationData()) {
+                runValidation = true;
+            }
+
             if (entry.getValue().hasExplicitInferData()) {
                 runInfer = true;
             }
@@ -163,6 +174,7 @@ public class RuntimeConfig {
         // Parse and validate all rules.
         validateRules(rules);
         validateRules(learn.rules);
+        validateRules(validation.rules);
         validateRules(infer.rules);
 
         // If no learn/infer option was passed in or inferred, then just assume inference.
@@ -176,11 +188,16 @@ public class RuntimeConfig {
             runLearn = RuntimeOptions.LEARN.getBoolean();
         }
 
+        if (RuntimeOptions.LEARN.isSet()) {
+            runValidation = RuntimeOptions.VALIDATION.getBoolean();
+        }
+
         if (RuntimeOptions.INFERENCE.isSet()) {
             runInfer = RuntimeOptions.INFERENCE.getBoolean();
         }
 
         options.put(RuntimeOptions.LEARN.name(), "" + runLearn);
+        options.put(RuntimeOptions.VALIDATION.name(), "" + runValidation);
         options.put(RuntimeOptions.INFERENCE.name(), "" + runInfer);
     }
 
@@ -188,11 +205,11 @@ public class RuntimeConfig {
      * Fetch standard predicates that are closed.
      * Should only be called after validation.
      */
-    public Set<StandardPredicate> getClosedPredicates(boolean useInfer) {
+    public Set<StandardPredicate> getClosedPredicates(String splitName) {
         Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>();
 
         for (PredicateConfigInfo predicateInfo : predicates.values()) {
-            if (predicateInfo.isOpen(useInfer)) {
+            if (predicateInfo.isOpen(splitName)) {
                 continue;
             }
 
@@ -269,18 +286,18 @@ public class RuntimeConfig {
         for (String path : info.getAllDataPaths()) {
             if (!FileUtils.isFile(path)) {
                 throw new IllegalArgumentException(String.format(
-                        "Non-existant path found in data for predicate %s." +
+                        "Non-existent path found in data for predicate %s." +
                         " Path: '%s'.",
                         info.name, path));
             }
         }
 
-        // Validate embeded data size.
+        // Validate embedded data size.
 
         for (List<String> point : info.getAllDataPoints()) {
             if ((point.size() != info.arity) && (point.size() != info.arity + 1)) {
                 throw new IllegalArgumentException(String.format(
-                        "Mismatch on embeded data size for predicate %s." +
+                        "Mismatch on embedded data size for predicate %s." +
                         " Expected size %s or %s, found size %s." +
                         " Offending row: %s.",
                         info.name, info.arity, info.arity + 1, point.size(), point));
@@ -634,21 +651,30 @@ public class RuntimeConfig {
         }
 
         /**
-         * Is there any data for this predicate explicitly defined to be infer-only?
-         */
-        public boolean hasExplicitInferData() {
-            return (observations.infer.size() > 0)
-                    || (targets.infer.size() > 0)
-                    || (truth.infer.size() > 0);
-        }
-
-        /**
          * Is there any data for this predicate explicitly defined to be learn-only?
          */
         public boolean hasExplicitLearnData() {
             return (observations.learn.size() > 0)
                     || (targets.learn.size() > 0)
                     || (truth.learn.size() > 0);
+        }
+
+        /**
+         * Is there any data for this predicate explicitly defined to be learn-only?
+         */
+        public boolean hasExplicitValidationData() {
+            return (observations.validation.size() > 0)
+                    || (targets.validation.size() > 0)
+                    || (truth.validation.size() > 0);
+        }
+
+        /**
+         * Is there any data for this predicate explicitly defined to be infer-only?
+         */
+        public boolean hasExplicitInferData() {
+            return (observations.infer.size() > 0)
+                    || (targets.infer.size() > 0)
+                    || (truth.infer.size() > 0);
         }
 
         public void resolvePaths(String relativeBasePath) {
@@ -661,11 +687,12 @@ public class RuntimeConfig {
          * Check if this predicate is open.
          * !useInfer == learn.
          */
-        public boolean isOpen(boolean useInfer) {
+        public boolean isOpen(String splitName) {
             return forceOpen
                 || (targets.all.size() > 0)
-                || (useInfer && targets.infer.size() > 0)
-                || (!useInfer && targets.learn.size() > 0);
+                || (Runtime.SPLIT_NAME_TEST.equals(splitName) && targets.infer.size() > 0)
+                || (Runtime.SPLIT_NAME_VALIDATION.equals(splitName) && targets.validation.size() > 0)
+                || (Runtime.SPLIT_NAME_TRAIN.equals(splitName) && targets.learn.size() > 0);
         }
 
         /**
@@ -673,12 +700,15 @@ public class RuntimeConfig {
          */
         public Iterable<String> getAllDataPaths() {
             return IteratorUtils.join(
-                    observations.getDataPaths(true),
-                    observations.getDataPaths(false),
-                    targets.getDataPaths(true),
-                    targets.getDataPaths(false),
-                    truth.getDataPaths(true),
-                    truth.getDataPaths(false));
+                    observations.getDataPaths(Runtime.SPLIT_NAME_TRAIN),
+                    observations.getDataPaths(Runtime.SPLIT_NAME_VALIDATION),
+                    observations.getDataPaths(Runtime.SPLIT_NAME_TEST),
+                    targets.getDataPaths(Runtime.SPLIT_NAME_TRAIN),
+                    targets.getDataPaths(Runtime.SPLIT_NAME_VALIDATION),
+                    targets.getDataPaths(Runtime.SPLIT_NAME_TEST),
+                    truth.getDataPaths(Runtime.SPLIT_NAME_TRAIN),
+                    truth.getDataPaths(Runtime.SPLIT_NAME_VALIDATION),
+                    truth.getDataPaths(Runtime.SPLIT_NAME_TEST));
         }
 
         /**
@@ -686,12 +716,15 @@ public class RuntimeConfig {
          */
         public Iterable<List<String>> getAllDataPoints() {
             return IteratorUtils.join(
-                    observations.getDataPoints(true),
-                    observations.getDataPoints(false),
-                    targets.getDataPoints(true),
-                    targets.getDataPoints(false),
-                    truth.getDataPoints(true),
-                    truth.getDataPoints(false));
+                    observations.getDataPoints(Runtime.SPLIT_NAME_TRAIN),
+                    observations.getDataPoints(Runtime.SPLIT_NAME_VALIDATION),
+                    observations.getDataPoints(Runtime.SPLIT_NAME_TEST),
+                    targets.getDataPoints(Runtime.SPLIT_NAME_TRAIN),
+                    targets.getDataPoints(Runtime.SPLIT_NAME_VALIDATION),
+                    targets.getDataPoints(Runtime.SPLIT_NAME_TEST),
+                    truth.getDataPoints(Runtime.SPLIT_NAME_TRAIN),
+                    truth.getDataPoints(Runtime.SPLIT_NAME_VALIDATION),
+                    truth.getDataPoints(Runtime.SPLIT_NAME_TEST));
         }
 
         @Override
@@ -719,35 +752,45 @@ public class RuntimeConfig {
     public static class PartitionInfo {
         public SplitDataInfo all;
         public SplitDataInfo learn;
+        public SplitDataInfo validation;
         public SplitDataInfo infer;
 
         public PartitionInfo() {
             all = new SplitDataInfo();
             learn = new SplitDataInfo();
+            validation = new SplitDataInfo();
             infer = new SplitDataInfo();
         }
 
         public int size() {
-            return all.size() + learn.size() + infer.size();
+            return all.size() + learn.size() + validation.size() + infer.size();
         }
 
         public void resolvePaths(String relativeBasePath) {
             all.resolvePaths(relativeBasePath);
             learn.resolvePaths(relativeBasePath);
+            validation.resolvePaths(relativeBasePath);
             infer.resolvePaths(relativeBasePath);
         }
 
         /**
          * Get all the paths to data files.
-         * !useInfer == learn.
          */
-        public Iterable<String> getDataPaths(boolean useInfer) {
+        public Iterable<String> getDataPaths(String splitName) {
             Iterable<String> allPaths = all.paths;
 
-            if (useInfer) {
-                allPaths = IteratorUtils.join(allPaths, infer.paths);
-            } else {
-                allPaths = IteratorUtils.join(allPaths, learn.paths);
+            switch (splitName) {
+                case Runtime.SPLIT_NAME_TRAIN:
+                    allPaths = IteratorUtils.join(allPaths, learn.paths);
+                    break;
+                case Runtime.SPLIT_NAME_VALIDATION:
+                    // TODO(Charles): No validation data for now.
+                    break;
+                case Runtime.SPLIT_NAME_TEST:
+                    allPaths = IteratorUtils.join(allPaths, infer.paths);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown split name: " + splitName);
             }
 
             return allPaths;
@@ -757,13 +800,21 @@ public class RuntimeConfig {
          * Get all the embedded data points.
          * !useInfer == learn.
          */
-        public Iterable<List<String>> getDataPoints(boolean useInfer) {
+        public Iterable<List<String>> getDataPoints(String splitName) {
             Iterable<List<String>> allPoints = all.data;
 
-            if (useInfer) {
-                allPoints = IteratorUtils.join(allPoints, infer.data);
-            } else {
-                allPoints = IteratorUtils.join(allPoints, learn.data);
+            switch (splitName) {
+                case Runtime.SPLIT_NAME_TRAIN:
+                    allPoints = IteratorUtils.join(allPoints, learn.data);
+                    break;
+                case Runtime.SPLIT_NAME_VALIDATION:
+                    // TODO(Charles): No validation data for now.
+                    break;
+                case Runtime.SPLIT_NAME_TEST:
+                    allPoints = IteratorUtils.join(allPoints, infer.data);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown split name: " + splitName);
             }
 
             return allPoints;
@@ -776,7 +827,7 @@ public class RuntimeConfig {
             }
 
             PartitionInfo otherInfo = (PartitionInfo)other;
-            return this.all.equals(otherInfo.all) && this.learn.equals(otherInfo.learn) && this.infer.equals(otherInfo.infer);
+            return this.all.equals(otherInfo.all) && this.learn.equals(otherInfo.learn) && this.validation.equals(otherInfo.validation) && this.infer.equals(otherInfo.infer);
         }
     }
 
@@ -845,6 +896,7 @@ public class RuntimeConfig {
         public Map<String, String> options;
 
         public SplitConfigInfo learn;
+        public SplitConfigInfo validation;
         public SplitConfigInfo infer;
 
         /**
@@ -856,6 +908,7 @@ public class RuntimeConfig {
             config.options = (this.options == null) ? new HashMap<String, String>() : this.options;
             config.rules = (this.rules == null) ? new RuleList() : this.rules;
             config.learn = (this.learn == null) ? new SplitConfigInfo() : this.learn;
+            config.validation = (this.validation == null) ? new SplitConfigInfo() : this.validation;
             config.infer = (this.infer == null) ? new SplitConfigInfo() : this.infer;
 
             if (this.predicates == null) {

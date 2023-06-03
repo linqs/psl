@@ -42,9 +42,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.FileUtils;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
@@ -52,9 +50,7 @@ import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -63,7 +59,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -72,6 +67,10 @@ import java.util.Set;
  */
 public class Runtime {
     private static final Logger log = Logger.getLogger(Runtime.class);
+
+    public static final String SPLIT_NAME_TRAIN = "train";
+    public static final String SPLIT_NAME_VALIDATION = "validation";
+    public static final String SPLIT_NAME_TEST = "infer";
 
     public static final String PARTITION_NAME_OBSERVATIONS = "observations";
     public static final String PARTITION_NAME_TARGET = "targets";
@@ -254,7 +253,7 @@ public class Runtime {
         }
     }
 
-    protected void loadData(DataStore dataStore, RuntimeConfig config, boolean infer) {
+    protected void loadData(DataStore dataStore, RuntimeConfig config, String splitName) {
         log.debug("Data loading start");
 
         for (RuntimeConfig.PredicateConfigInfo predicateInfo : config.predicates.values()) {
@@ -266,15 +265,15 @@ public class Runtime {
 
             // Align with partition names.
             List<Iterable<String>> paths = Arrays.asList(
-                predicateInfo.observations.getDataPaths(infer),
-                predicateInfo.targets.getDataPaths(infer),
-                predicateInfo.truth.getDataPaths(infer)
+                predicateInfo.observations.getDataPaths(splitName),
+                predicateInfo.targets.getDataPaths(splitName),
+                predicateInfo.truth.getDataPaths(splitName)
             );
 
             List<Iterable<List<String>>> points = Arrays.asList(
-                predicateInfo.observations.getDataPoints(infer),
-                predicateInfo.targets.getDataPoints(infer),
-                predicateInfo.truth.getDataPoints(infer)
+                predicateInfo.observations.getDataPoints(splitName),
+                predicateInfo.targets.getDataPoints(splitName),
+                predicateInfo.truth.getDataPoints(splitName)
             );
 
 
@@ -379,9 +378,9 @@ public class Runtime {
         }
 
         DataStore dataStore = initDataStore(config);
-        loadData(dataStore, config, true);
+        loadData(dataStore, config, SPLIT_NAME_TEST);
 
-        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(true);
+        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(Runtime.SPLIT_NAME_TEST);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
@@ -479,9 +478,9 @@ public class Runtime {
         }
 
         DataStore dataStore = initDataStore(config);
-        loadData(dataStore, config, false);
+        loadData(dataStore, config, SPLIT_NAME_TRAIN);
 
-        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(false);
+        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(Runtime.SPLIT_NAME_TRAIN);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);

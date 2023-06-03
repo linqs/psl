@@ -125,6 +125,12 @@ public class RuntimeOptions {
         "Run learning."
     );
 
+    public static final Option VALIDATION = new Option(
+        "runtime.validation",
+        false,
+        "Run validation while learning."
+    );
+
     public static final Option LEARN_METHOD = new Option(
         "runtime.learn.method",
         StructuredPerceptron.class.getName(),

@@ -120,9 +120,9 @@ public final class GroundingAPI extends Runtime {
         }
 
         DataStore dataStore = initDataStore(config);
-        loadData(dataStore, config, true);
+        loadData(dataStore, config, Runtime.SPLIT_NAME_TEST);
 
-        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(true);
+        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(Runtime.SPLIT_NAME_TEST);
 
         Partition targetPartition = dataStore.getPartition(Runtime.PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(Runtime.PARTITION_NAME_OBSERVATIONS);
