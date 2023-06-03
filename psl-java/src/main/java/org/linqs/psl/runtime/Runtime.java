@@ -68,10 +68,6 @@ import java.util.Set;
 public class Runtime {
     private static final Logger log = Logger.getLogger(Runtime.class);
 
-    public static final String SPLIT_NAME_TRAIN = "train";
-    public static final String SPLIT_NAME_VALIDATION = "validation";
-    public static final String SPLIT_NAME_TEST = "infer";
-
     public static final String PARTITION_NAME_OBSERVATIONS = "observations";
     public static final String PARTITION_NAME_TARGET = "targets";
     public static final String PARTITION_NAME_LABELS = "truth";
@@ -364,7 +360,7 @@ public class Runtime {
         }
 
         // Add infer-only rules.
-        for (Rule rule : config.learn.rules.getRules()) {
+        for (Rule rule : config.infer.rules.getRules()) {
             model.addRule(rule);
         }
 
@@ -378,9 +374,9 @@ public class Runtime {
         }
 
         DataStore dataStore = initDataStore(config);
-        loadData(dataStore, config, SPLIT_NAME_TEST);
+        loadData(dataStore, config, RuntimeConfig.KEY_INFER);
 
-        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(Runtime.SPLIT_NAME_TEST);
+        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(RuntimeConfig.KEY_INFER);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
@@ -478,9 +474,9 @@ public class Runtime {
         }
 
         DataStore dataStore = initDataStore(config);
-        loadData(dataStore, config, SPLIT_NAME_TRAIN);
+        loadData(dataStore, config, RuntimeConfig.KEY_LEARN);
 
-        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(Runtime.SPLIT_NAME_TRAIN);
+        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(RuntimeConfig.KEY_LEARN);
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);

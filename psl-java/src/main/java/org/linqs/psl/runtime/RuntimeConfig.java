@@ -48,7 +48,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -88,10 +87,11 @@ public class RuntimeConfig {
     public static final String KEY_RULES = "rules";
 
     public static final String KEY_ALL = "all";
-    public static final String KEY_WL = "learn";
+    public static final String KEY_LEARN = "learn";
+    public static final String KEY_VALIDATION = "validation";
     public static final String KEY_INFER = "infer";
 
-    public static final String KEY_EVALAUTOR = "evaluator";
+    public static final String KEY_EVALUATOR = "evaluator";
     public static final String KEY_OPTIONS = "options";
     public static final String KEY_PRIMARY = "primary";
 
@@ -387,6 +387,7 @@ public class RuntimeConfig {
                 && this.predicates.equals(otherConfig.predicates)
                 && this.options.equals(otherConfig.options)
                 && this.learn.equals(otherConfig.learn)
+                && this.validation.equals(otherConfig.validation)
                 && this.infer.equals(otherConfig.infer);
     }
 
@@ -690,9 +691,9 @@ public class RuntimeConfig {
         public boolean isOpen(String splitName) {
             return forceOpen
                 || (targets.all.size() > 0)
-                || (Runtime.SPLIT_NAME_TEST.equals(splitName) && targets.infer.size() > 0)
-                || (Runtime.SPLIT_NAME_VALIDATION.equals(splitName) && targets.validation.size() > 0)
-                || (Runtime.SPLIT_NAME_TRAIN.equals(splitName) && targets.learn.size() > 0);
+                || (RuntimeConfig.KEY_INFER.equals(splitName) && targets.infer.size() > 0)
+                || (RuntimeConfig.KEY_VALIDATION.equals(splitName) && targets.validation.size() > 0)
+                || (RuntimeConfig.KEY_LEARN.equals(splitName) && targets.learn.size() > 0);
         }
 
         /**
@@ -700,15 +701,15 @@ public class RuntimeConfig {
          */
         public Iterable<String> getAllDataPaths() {
             return IteratorUtils.join(
-                    observations.getDataPaths(Runtime.SPLIT_NAME_TRAIN),
-                    observations.getDataPaths(Runtime.SPLIT_NAME_VALIDATION),
-                    observations.getDataPaths(Runtime.SPLIT_NAME_TEST),
-                    targets.getDataPaths(Runtime.SPLIT_NAME_TRAIN),
-                    targets.getDataPaths(Runtime.SPLIT_NAME_VALIDATION),
-                    targets.getDataPaths(Runtime.SPLIT_NAME_TEST),
-                    truth.getDataPaths(Runtime.SPLIT_NAME_TRAIN),
-                    truth.getDataPaths(Runtime.SPLIT_NAME_VALIDATION),
-                    truth.getDataPaths(Runtime.SPLIT_NAME_TEST));
+                    observations.getDataPaths(RuntimeConfig.KEY_LEARN),
+                    observations.getDataPaths(RuntimeConfig.KEY_VALIDATION),
+                    observations.getDataPaths(RuntimeConfig.KEY_INFER),
+                            targets.getDataPaths(RuntimeConfig.KEY_LEARN),
+                            targets.getDataPaths(RuntimeConfig.KEY_VALIDATION),
+                    targets.getDataPaths(RuntimeConfig.KEY_INFER),
+                            truth.getDataPaths(RuntimeConfig.KEY_LEARN),
+                            truth.getDataPaths(RuntimeConfig.KEY_VALIDATION),
+                    truth.getDataPaths(RuntimeConfig.KEY_INFER));
         }
 
         /**
@@ -716,15 +717,15 @@ public class RuntimeConfig {
          */
         public Iterable<List<String>> getAllDataPoints() {
             return IteratorUtils.join(
-                    observations.getDataPoints(Runtime.SPLIT_NAME_TRAIN),
-                    observations.getDataPoints(Runtime.SPLIT_NAME_VALIDATION),
-                    observations.getDataPoints(Runtime.SPLIT_NAME_TEST),
-                    targets.getDataPoints(Runtime.SPLIT_NAME_TRAIN),
-                    targets.getDataPoints(Runtime.SPLIT_NAME_VALIDATION),
-                    targets.getDataPoints(Runtime.SPLIT_NAME_TEST),
-                    truth.getDataPoints(Runtime.SPLIT_NAME_TRAIN),
-                    truth.getDataPoints(Runtime.SPLIT_NAME_VALIDATION),
-                    truth.getDataPoints(Runtime.SPLIT_NAME_TEST));
+                    observations.getDataPoints(RuntimeConfig.KEY_LEARN),
+                    observations.getDataPoints(RuntimeConfig.KEY_VALIDATION),
+                    observations.getDataPoints(RuntimeConfig.KEY_INFER),
+                            targets.getDataPoints(RuntimeConfig.KEY_LEARN),
+                            targets.getDataPoints(RuntimeConfig.KEY_VALIDATION),
+                    targets.getDataPoints(RuntimeConfig.KEY_INFER),
+                            truth.getDataPoints(RuntimeConfig.KEY_LEARN),
+                            truth.getDataPoints(RuntimeConfig.KEY_VALIDATION),
+                    truth.getDataPoints(RuntimeConfig.KEY_INFER));
         }
 
         @Override
@@ -780,13 +781,13 @@ public class RuntimeConfig {
             Iterable<String> allPaths = all.paths;
 
             switch (splitName) {
-                case Runtime.SPLIT_NAME_TRAIN:
+                case RuntimeConfig.KEY_LEARN:
                     allPaths = IteratorUtils.join(allPaths, learn.paths);
                     break;
-                case Runtime.SPLIT_NAME_VALIDATION:
+                case RuntimeConfig.KEY_VALIDATION:
                     // TODO(Charles): No validation data for now.
                     break;
-                case Runtime.SPLIT_NAME_TEST:
+                case RuntimeConfig.KEY_INFER:
                     allPaths = IteratorUtils.join(allPaths, infer.paths);
                     break;
                 default:
@@ -804,13 +805,13 @@ public class RuntimeConfig {
             Iterable<List<String>> allPoints = all.data;
 
             switch (splitName) {
-                case Runtime.SPLIT_NAME_TRAIN:
+                case RuntimeConfig.KEY_LEARN:
                     allPoints = IteratorUtils.join(allPoints, learn.data);
                     break;
-                case Runtime.SPLIT_NAME_VALIDATION:
+                case RuntimeConfig.KEY_VALIDATION:
                     // TODO(Charles): No validation data for now.
                     break;
-                case Runtime.SPLIT_NAME_TEST:
+                case RuntimeConfig.KEY_INFER:
                     allPoints = IteratorUtils.join(allPoints, infer.data);
                     break;
                 default:
@@ -1025,11 +1026,11 @@ public class RuntimeConfig {
         }
 
         private EvalInfo parseEvalDef(ObjectNode root) {
-            if (!root.hasNonNull(KEY_EVALAUTOR)) {
-                throw new IllegalArgumentException("Evalautor object missing the '" + KEY_EVALAUTOR + "' key.");
+            if (!root.hasNonNull(KEY_EVALUATOR)) {
+                throw new IllegalArgumentException("Evalautor object missing the '" + KEY_EVALUATOR + "' key.");
             }
 
-            String evaluator = root.get(KEY_EVALAUTOR).textValue();
+            String evaluator = root.get(KEY_EVALUATOR).textValue();
             Map<String, String> options = null;
             boolean primary = false;
 
@@ -1161,15 +1162,17 @@ public class RuntimeConfig {
 
                     if (entry.getKey().equals(KEY_ALL)) {
                         parseDataSpec((ArrayNode)entry.getValue(), partition.all);
-                    } else if (entry.getKey().equals(KEY_WL)) {
+                    } else if (entry.getKey().equals(KEY_LEARN)) {
                         parseDataSpec((ArrayNode)entry.getValue(), partition.learn);
+                    } else if (entry.getKey().equals(KEY_VALIDATION)) {
+                        parseDataSpec((ArrayNode)entry.getValue(), partition.validation);
                     } else if (entry.getKey().equals(KEY_INFER)) {
                         parseDataSpec((ArrayNode)entry.getValue(), partition.infer);
                     } else {
                         throw new IllegalStateException(String.format(
-                                "Unknown split type (%s). Expecting one of [%s, %s, %s].",
+                                "Unknown split type (%s). Expecting one of [%s, %s, %s, %s].",
                                 entry.getKey(),
-                                KEY_ALL, KEY_WL, KEY_INFER));
+                                KEY_ALL, KEY_LEARN, KEY_VALIDATION, KEY_INFER));
                     }
                 }
             } else {
