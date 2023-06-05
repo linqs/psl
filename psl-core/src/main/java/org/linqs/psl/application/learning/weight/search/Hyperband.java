@@ -20,7 +20,6 @@ package org.linqs.psl.application.learning.weight.search;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
@@ -56,12 +55,9 @@ public class Hyperband extends WeightLearningApplication {
     private int numBrackets;
     private int baseBracketSize;
 
-    public Hyperband(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
-    }
-
-    public Hyperband(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public Hyperband(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                     Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         weightSampler = new WeightSampler(mutableRules.size());
 
@@ -124,7 +120,7 @@ public class Hyperband extends WeightLearningApplication {
                     log.trace("Weights: {}", config);
 
                     // The weights have changed, so we are no longer in an MPE state.
-                    inMPEState = false;
+                    inTrainingMAPState = false;
 
                     double objective = run(config);
                     RunResult result = new RunResult(config, objective);
@@ -153,7 +149,7 @@ public class Hyperband extends WeightLearningApplication {
         }
 
         // The weights have changed, so we are no longer in an MPE state.
-        inMPEState = false;
+        inTrainingMAPState = false;
 
         log.debug("Hyperband complete. Configurations examined: {}. Total budget: {}",  numEvaluatedConfigs, totalCost);
     }
@@ -180,7 +176,7 @@ public class Hyperband extends WeightLearningApplication {
      * This is a prime method for child classes to override.
      */
     protected double run(float[] weights) {
-        computeMPEState();
+        computeTrainingMAPState();
 
         evaluation.compute(trainingMap);
         return -1.0 * evaluation.getNormalizedRepMetric();

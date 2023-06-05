@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.gradient;
 
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
@@ -59,8 +60,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected Map<WeightedRule, Integer> ruleIndexMap;
 
     protected float[] weightGradient;
-    protected TermState[] mpeTermState;
-    protected float[] mpeAtomValueState;
+    protected TermState[] trainMAPTermState;
+    protected float[] trainMAPAtomValueState;
+
+    protected TermState[] validationMAPTermState;
+    protected float[] validationMAPAtomValueState;
+    protected boolean runValidation;
+    protected boolean saveBestValidationWeights;
+
 
     protected float baseStepSize;
     protected boolean scaleStepSize;
@@ -80,8 +87,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float logRegularization;
     protected float entropyRegularization;
 
-    public GradientDescent(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public GradientDescent(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                           Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
 
@@ -92,8 +100,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         weightGradient = new float[mutableRules.size()];
 
-        mpeTermState = null;
-        mpeAtomValueState = null;
+        trainMAPTermState = null;
+        trainMAPAtomValueState = null;
+
+        validationMAPTermState = null;
+        validationMAPAtomValueState = null;
+        runValidation = Options.WLA_GRADIENT_DESCENT_RUN_VALIDATION.getBoolean();
+        saveBestValidationWeights = Options.WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS.getBoolean();
 
         baseStepSize = Options.WLA_GRADIENT_DESCENT_STEP_SIZE.getFloat();
         scaleStepSize = Options.WLA_GRADIENT_DESCENT_SCALE_STEP.getBoolean();
@@ -118,16 +131,29 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void postInitGroundModel() {
         super.postInitGroundModel();
 
+        if (!((!runValidation) || ((validationInferenceApplication.getDatabase().getAtomStore().size() > 0) && (evaluation != null)))) {
+            throw new IllegalArgumentException("If validation is being run, then validation data must be provided in the runtime.json file and an evaluator must be specified for predicates.");
+        }
+
+        if (!((!saveBestValidationWeights) || runValidation)) {
+            throw new IllegalArgumentException("If saveBestValidationWeights is true, then runValidation must also be true.");
+        }
+
         // Set the initial value of atoms to be the current atom value.
         // This ensures that when the inference application is reset before computing the MAP state
         // the atom values that were fixed to their warm start or true labels are preserved.
-        inference.setInitialValue(InitialValue.ATOM);
+        trainInferenceApplication.setInitialValue(InitialValue.ATOM);
+        validationInferenceApplication.setInitialValue(InitialValue.ATOM);
 
         // Initialize MPE state objects for warm starts.
-        mpeTermState = inference.getTermStore().saveState();
+        trainMAPTermState = trainInferenceApplication.getTermStore().saveState();
+        validationMAPTermState = validationInferenceApplication.getTermStore().saveState();
 
-        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
-        mpeAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+        float[] trainAtomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        trainMAPAtomValueState = Arrays.copyOf(trainAtomValues, trainAtomValues.length);
+
+        float[] validationAtomValues = validationInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        validationMAPAtomValueState = Arrays.copyOf(validationAtomValues, validationAtomValues.length);
     }
 
     protected void initForLearning() {
@@ -136,7 +162,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             case PROJECTED_GRADIENT:
                 // Initialize weights to be centered on the unit simplex.
                 simplexScaleWeights();
-                inMPEState = false;
+                inTrainingMAPState = false;
+                inValidationMAPState = false;
 
                 break;
             default:
@@ -151,8 +178,20 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float objective = 0.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
+        double currentTrainingEvaluationMetric = Double.NEGATIVE_INFINITY;
+        double bestTrainingEvaluationMetric = Double.NEGATIVE_INFINITY;
+
+        double currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+        double bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+
+        float[] bestWeights = new float[mutableRules.size()];
+
         log.info("Gradient Descent Weight Learning Start.");
         initForLearning();
+
+        for (int i = 0; i < bestWeights.length; i++) {
+            bestWeights[i] = mutableRules.get(i).getWeight();
+        }
 
         long totalTime = 0;
         int iteration = 0;
@@ -161,16 +200,37 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             log.trace("Model: {}", mutableRules);
 
-            gradientStep(iteration);
-
-            if (log.isTraceEnabled() && evaluation != null) {
+            if (log.isTraceEnabled() && (evaluation != null)) {
                 // Compute the MAP state before evaluating so variables have assigned values.
-                computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
+                computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+                inTrainingMAPState = true;
 
                 evaluation.compute(trainingMap);
-                double currentMAPStateEvaluationMetric = evaluation.getNormalizedRepMetric();
-                log.trace("MAP State Training Evaluation Metric: {}", currentMAPStateEvaluationMetric);
+                currentTrainingEvaluationMetric = evaluation.getNormalizedRepMetric();
+                log.trace("MAP State Training Evaluation Metric: {}", currentTrainingEvaluationMetric);
             }
+
+            if (runValidation) {
+                computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
+                inValidationMAPState = true;
+
+                evaluation.compute(validationMap);
+                currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
+                log.trace("MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
+
+                if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
+                    bestValidationEvaluationMetric = currentValidationEvaluationMetric;
+                    bestTrainingEvaluationMetric = currentTrainingEvaluationMetric;
+
+                    for (int i = 0; i < mutableRules.size(); i++) {
+                        bestWeights[i] = mutableRules.get(i).getWeight();
+                    }
+                }
+
+                log.trace("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
+            }
+
+            gradientStep(iteration);
 
             computeIterationStatistics();
 
@@ -195,11 +255,30 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         log.info("Gradient Descent Weight Learning Finished.");
 
+        if (saveBestValidationWeights) {
+            // Reset rule weights to bestWeights.
+            for (int i = 0; i < mutableRules.size(); i++) {
+                mutableRules.get(i).setWeight(bestWeights[i]);
+            }
+
+            inTrainingMAPState = false;
+            inValidationMAPState = false;
+        }
+
         if (evaluation != null) {
-            // Compute the MAP state before evaluating so variables have assigned values.
-            computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
+            computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+            inTrainingMAPState = true;
+
             evaluation.compute(trainingMap);
             log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+        }
+
+        if (runValidation) {
+            computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
+            inValidationMAPState = true;
+
+            evaluation.compute(validationMap);
+            log.info("Final MAP State Validation Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
         }
 
         log.info("Final Model {} ", mutableRules);
@@ -298,7 +377,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 break;
         }
 
-        inMPEState = false;
+        inTrainingMAPState = false;
+        inValidationMAPState = false;
     }
 
     protected float computeStepSize(int iteration) {
@@ -463,10 +543,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
     /**
      * Use the provided warm start for MPE inference to save time in reasoner.
      */
-    protected void computeMPEStateWithWarmStart(TermState[] termState, float[] atomValueState) {
+    protected void computeMAPStateWithWarmStart(InferenceApplication inferenceApplication, TermState[] termState, float[] atomValueState) {
         // Warm start inference with previous termState.
-        inference.getTermStore().loadState(termState);
-        AtomStore atomStore = inference.getDatabase().getAtomStore();
+        inferenceApplication.getTermStore().loadState(termState);
+        AtomStore atomStore = inferenceApplication.getDatabase().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
         for (int i = 0; i < atomStore.size(); i++) {
             if (atomStore.getAtom(i) instanceof ObservedAtom) {
@@ -478,11 +558,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         atomStore.sync();
 
-        computeMPEState();
+        computeMAPState(inferenceApplication);
 
         // Save the MPE state for future warm starts.
-        inference.getTermStore().saveState(termState);
-        float[] mpeAtomValues = inference.getDatabase().getAtomStore().getAtomValues();
+        inferenceApplication.getTermStore().saveState(termState);
+        float[] mpeAtomValues = inferenceApplication.getDatabase().getAtomStore().getAtomValues();
         System.arraycopy(mpeAtomValues, 0, atomValueState, 0, mpeAtomValues.length);
     }
 
@@ -493,11 +573,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // Zero out the incompatibility first.
         Arrays.fill(incompatibilityArray, 0.0f);
 
-        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
 
         // Sums up the incompatibilities.
-        for (Object rawTerm : inference.getTermStore()) {
-            @SuppressWarnings("unchecked")
+        for (Object rawTerm : trainInferenceApplication.getTermStore()) {
             ReasonerTerm term = (ReasonerTerm)rawTerm;
 
             if (!(term.getRule() instanceof WeightedRule)) {

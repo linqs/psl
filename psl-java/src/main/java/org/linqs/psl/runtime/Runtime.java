@@ -70,12 +70,12 @@ public class Runtime {
 
     public static final String PARTITION_NAME_OBSERVATIONS = "observations";
     public static final String PARTITION_NAME_TARGET = "targets";
-    public static final String PARTITION_NAME_LABELS = "truth";
+    public static final String PARTITION_NAME_TRUTH = "truth";
 
     private static final String[] PARTITION_NAMES = new String[]{
         PARTITION_NAME_OBSERVATIONS,
         PARTITION_NAME_TARGET,
-        PARTITION_NAME_LABELS
+        PARTITION_NAME_TRUTH
     };
 
     public Runtime() {
@@ -274,8 +274,13 @@ public class Runtime {
 
 
             for (int i = 0; i < PARTITION_NAMES.length; i++) {
-                loadDataPaths(dataStore, predicate, PARTITION_NAMES[i], paths.get(i));
-                loadDataPoints(dataStore, predicate, PARTITION_NAMES[i], points.get(i));
+                if (RuntimeConfig.KEY_VALIDATION.equals(splitName)) {
+                    loadDataPaths(dataStore, predicate, String.format("%s_%s", RuntimeConfig.KEY_VALIDATION, PARTITION_NAMES[i]), paths.get(i));
+                    loadDataPoints(dataStore, predicate, String.format("%s_%s", RuntimeConfig.KEY_VALIDATION, PARTITION_NAMES[i]), points.get(i));
+                } else {
+                    loadDataPaths(dataStore, predicate, PARTITION_NAMES[i], paths.get(i));
+                    loadDataPoints(dataStore, predicate, PARTITION_NAMES[i], points.get(i));
+                }
             }
         }
 
@@ -301,7 +306,7 @@ public class Runtime {
         Partition partition = dataStore.getPartition(partitionName);
         Inserter inserter = dataStore.getInserter(predicate, partition);
 
-        log.debug("Loading embeded data for {} ({} partition)", predicate, partitionName);
+        log.debug("Loading embedded data for {} ({} partition)", predicate, partitionName);
 
         int arity = predicate.getArity();
         Object[] point = new Object[arity];
@@ -380,7 +385,7 @@ public class Runtime {
 
         Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
         Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
-        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_TRUTH);
 
         Database targetDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
         Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
@@ -473,17 +478,30 @@ public class Runtime {
             log.debug("   " + rule);
         }
 
+        // Load the training data.
         DataStore dataStore = initDataStore(config);
         loadData(dataStore, config, RuntimeConfig.KEY_LEARN);
 
-        Set<StandardPredicate> closedPredicates = config.getClosedPredicates(RuntimeConfig.KEY_LEARN);
+        Set<StandardPredicate> trainClosedPredicates = config.getClosedPredicates(RuntimeConfig.KEY_LEARN);
 
-        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
-        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
-        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+        Partition trainTargetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+        Partition trainObservationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+        Partition trainTruthPartition = dataStore.getPartition(PARTITION_NAME_TRUTH);
 
-        Database targetDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
-        Database truthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+        Database trainTargetDatabase = dataStore.getDatabase(trainTargetPartition, trainClosedPredicates, trainObservationsPartition);
+        Database trainTruthDatabase = dataStore.getDatabase(trainTruthPartition, dataStore.getRegisteredPredicates());
+
+        // Load the validation data.
+        loadData(dataStore, config, RuntimeConfig.KEY_VALIDATION);
+
+        Set<StandardPredicate> validationClosedPredicates = config.getClosedPredicates(RuntimeConfig.KEY_VALIDATION);
+
+        Partition validationTargetPartition = dataStore.getPartition(String.format("%s_%s", RuntimeConfig.KEY_VALIDATION, PARTITION_NAME_TARGET));
+        Partition validationObservationsPartition = dataStore.getPartition(String.format("%s_%s", RuntimeConfig.KEY_VALIDATION, PARTITION_NAME_OBSERVATIONS));
+        Partition validationTruthPartition = dataStore.getPartition(String.format("%s_%s", RuntimeConfig.KEY_VALIDATION, PARTITION_NAME_TRUTH));
+
+        Database validationTargetDatabase = dataStore.getDatabase(validationTargetPartition, validationClosedPredicates, validationObservationsPartition);
+        Database validationTruthDatabase = dataStore.getDatabase(validationTruthPartition, dataStore.getRegisteredPredicates());
 
         EvaluationInstance primaryEvaluation = null;
         for (EvaluationInstance evaluation : getEvaluations(config)) {
@@ -495,13 +513,18 @@ public class Runtime {
 
         WeightLearningApplication learner = WeightLearningApplication.getWLA(
                 RuntimeOptions.LEARN_METHOD.getString(), model.getRules(),
-                targetDatabase, truthDatabase);
+                trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
         learner.setEvaluation(primaryEvaluation);
         learner.learn();
 
         learner.close();
-        targetDatabase.close();
-        truthDatabase.close();
+
+        trainTargetDatabase.close();
+        trainTruthDatabase.close();
+
+        validationTargetDatabase.close();
+        validationTruthDatabase.close();
+
         dataStore.close();
 
         log.info("Learned Model:");

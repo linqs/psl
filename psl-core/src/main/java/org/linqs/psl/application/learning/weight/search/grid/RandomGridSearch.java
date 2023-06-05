@@ -35,12 +35,9 @@ import java.util.List;
 public class RandomGridSearch extends GridSearch {
     private int maxLocations;
 
-    public RandomGridSearch(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
-    }
-
-    public RandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public RandomGridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                            Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         maxLocations = Options.WLA_RGS_MAX_LOCATIONS.getInt();
         numLocations = Math.min(numLocations, maxLocations);

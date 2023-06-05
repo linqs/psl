@@ -21,7 +21,6 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.search.WeightSampler;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.ListUtils;
@@ -63,12 +62,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
      */
     private boolean useProvidedWeight;
 
-    public GaussianProcessPrior(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
-    }
-
-    public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public GaussianProcessPrior(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                                Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         maxIterations = Options.WLA_GPP_MAX_ITERATIONS.getInt();
         maxConfigs = Options.WLA_GPP_MAX_CONFIGS.getInt();
@@ -252,7 +248,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             mutableRules.get(i).setWeight(config.config[i]);
         }
 
-        inMPEState = false;
+        inTrainingMAPState = false;
     }
 
     protected List<WeightConfig> getConfigs() {
@@ -368,7 +364,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     // Get metric value like accuracy.
     protected double getFunctionValue(WeightConfig config) {
         setWeights(config);
-        computeMPEState();
+        computeTrainingMAPState();
         evaluation.compute(trainingMap);
         return evaluation.getNormalizedRepMetric();
     }

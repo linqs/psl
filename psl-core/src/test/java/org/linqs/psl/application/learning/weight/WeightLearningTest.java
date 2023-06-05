@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.application.learning.weight;
 
-import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.EvaluationInstance;
@@ -60,8 +59,13 @@ public abstract class WeightLearningTest extends PSLBaseTest {
     public static final String RULE_NICE = "nice";
     public static final String RULE_SYMMETRY = "symmetry";
 
-    protected Database weightLearningTrainDB;
-    protected Database weightLearningTruthDB;
+    protected Database trainTargetDatabase;
+    protected Database trainTruthDatabase;
+
+    protected Database validationTargetDatabase;
+    protected Database validationTruthDatabase;
+
+
     protected TestModel.ModelInformation info;
 
     // Give all the rules a name to make it easier to check weight learning results.
@@ -87,11 +91,17 @@ public abstract class WeightLearningTest extends PSLBaseTest {
     public void cleanup() {
         disableLogger();
 
-        weightLearningTrainDB.close();
-        weightLearningTrainDB = null;
+        trainTargetDatabase.close();
+        trainTargetDatabase = null;
 
-        weightLearningTruthDB.close();
-        weightLearningTruthDB = null;
+        trainTruthDatabase.close();
+        trainTruthDatabase = null;
+
+        validationTargetDatabase.close();
+        validationTargetDatabase = null;
+
+        validationTruthDatabase.close();
+        validationTruthDatabase = null;
 
         info.dataStore.close();
         info = null;
@@ -113,14 +123,24 @@ public abstract class WeightLearningTest extends PSLBaseTest {
     }
 
     protected void initModel(boolean useNice) {
-        if (weightLearningTrainDB != null) {
-            weightLearningTrainDB.close();
-            weightLearningTrainDB = null;
+        if (trainTargetDatabase != null) {
+            trainTargetDatabase.close();
+            trainTargetDatabase = null;
         }
 
-        if (weightLearningTruthDB != null) {
-            weightLearningTruthDB.close();
-            weightLearningTruthDB = null;
+        if (trainTruthDatabase != null) {
+            trainTruthDatabase.close();
+            trainTruthDatabase = null;
+        }
+
+        if (validationTargetDatabase != null) {
+            validationTargetDatabase.close();
+            validationTargetDatabase = null;
+        }
+
+        if (validationTruthDatabase != null) {
+            validationTruthDatabase.close();
+            validationTruthDatabase = null;
         }
 
         if (info != null) {
@@ -148,12 +168,15 @@ public abstract class WeightLearningTest extends PSLBaseTest {
             rule.setWeight(1.0f);
         }
 
-        Set<StandardPredicate> allPredicates = new HashSet<StandardPredicate>(info.predicates.values());
-        Set<StandardPredicate> closedPredicates = new HashSet<StandardPredicate>(info.predicates.values());
-        closedPredicates.remove(info.predicates.get("Friends"));
+        Set<StandardPredicate> allTrainPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+        Set<StandardPredicate> closedTrainPredicates = new HashSet<StandardPredicate>(info.predicates.values());
+        closedTrainPredicates.remove(info.predicates.get("Friends"));
 
-        weightLearningTrainDB = info.dataStore.getDatabase(info.targetPartition, closedPredicates, info.observationPartition);
-        weightLearningTruthDB = info.dataStore.getDatabase(info.truthPartition, allPredicates);
+        trainTargetDatabase = info.dataStore.getDatabase(info.targetPartition, closedTrainPredicates, info.observationPartition);
+        trainTruthDatabase = info.dataStore.getDatabase(info.truthPartition, allTrainPredicates);
+
+        validationTargetDatabase = info.dataStore.getDatabase(info.validationTargetPartition, closedTrainPredicates, info.validationObservationPartition);
+        validationTruthDatabase = info.dataStore.getDatabase(info.validationTruthPartition, allTrainPredicates);
     }
 
     /**

@@ -799,7 +799,6 @@ public class RuntimeConfig {
 
         /**
          * Get all the embedded data points.
-         * !useInfer == learn.
          */
         public Iterable<List<String>> getDataPoints(String splitName) {
             Iterable<List<String>> allPoints = all.data;

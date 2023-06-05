@@ -36,12 +36,9 @@ public class GridSearch extends BaseGridSearch {
 
     protected final float[] possibleWeights;
 
-    public GridSearch(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
-    }
-
-    public GridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public GridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                      Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         possibleWeights = StringUtils.splitFloat(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
         if (possibleWeights.length == 0) {

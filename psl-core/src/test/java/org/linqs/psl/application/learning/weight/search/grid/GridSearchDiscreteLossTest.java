@@ -20,6 +20,8 @@ package org.linqs.psl.application.learning.weight.search.grid;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Options;
+import org.linqs.psl.evaluation.EvaluationInstance;
+import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 
 public class GridSearchDiscreteLossTest extends WeightLearningTest {
@@ -34,9 +36,16 @@ public class GridSearchDiscreteLossTest extends WeightLearningTest {
         // Narrow the search space for tests.
         Options.WLA_GS_POSSIBLE_WEIGHTS.set("0.01:1:10");
 
-        // Use MAE as an objective.
-        Options.WLA_EVAL.set(DiscreteEvaluator.class.getName());
+        return new GridSearch(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
+                validationTargetDatabase, validationTruthDatabase);
+    }
 
-        return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+    @Override
+    protected WeightLearningApplication getWLA() {
+
+        WeightLearningApplication wla = getBaseWLA();
+        wla.setEvaluation(new EvaluationInstance(info.predicates.get("Friends"), new DiscreteEvaluator(), true));
+
+        return wla;
     }
 }

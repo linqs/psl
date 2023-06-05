@@ -25,12 +25,10 @@ import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.RDBMSDataStore;
 import org.linqs.psl.database.rdbms.driver.DatabaseDriver;
 import org.linqs.psl.model.Model;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -43,7 +41,6 @@ import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,9 +52,12 @@ import java.util.Map;
  * This is not for testing the model itself, but for integration tests where models are required.
  */
 public class TestModel {
-    public static final String PARTITION_OBSERVATIONS = "observations";
-    public static final String PARTITION_TARGETS = "targets";
-    public static final String PARTITION_TRUTH = "truth";
+    public static final String PARTITION_NAME_OBSERVATIONS = "observations";
+    public static final String PARTITION_NAME_TARGETS = "targets";
+    public static final String PARTITION_NAME_TRUTH = "truth";
+
+    public static final String KEY_VALIDATION = "validation";
+
     // This class promises not to use this partition, so tests can guarantee it will be empty.
     public static final String PARTITION_UNUSED = "unused";
 
@@ -83,7 +83,7 @@ public class TestModel {
      *
      * Data:
      *     - There are 5 people.
-     *     - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugue is 0.0).
+     *     - Every person has a Nice value. Alice starts at 0.8 then is decreases by 0.2 alphabetically (Eugene is 0.0).
      *     - All Friendships are in the target partition.
      *     - All Friendships have a binary truth value in the truth partition.
      *
@@ -241,7 +241,8 @@ public class TestModel {
     public static ModelInformation getModel(
             DatabaseDriver driver,
             Map<String, StandardPredicate> predicates, List<Rule> rules,
-            Map<StandardPredicate, List<PredicateData>> observations, Map<StandardPredicate, List<PredicateData>> targets,
+            Map<StandardPredicate, List<PredicateData>> observations,
+            Map<StandardPredicate, List<PredicateData>> targets,
             Map<StandardPredicate, List<PredicateData>> truths) {
         DataStore dataStore = new RDBMSDataStore(driver);
 
@@ -260,21 +261,29 @@ public class TestModel {
         // Load Data
 
         // Partitions
-        Partition obsPartition = dataStore.getPartition(PARTITION_OBSERVATIONS);
-        Partition targetPartition = dataStore.getPartition(PARTITION_TARGETS);
-        Partition truthPartition = dataStore.getPartition(PARTITION_TRUTH);
+        Partition obsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGETS);
+        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_TRUTH);
+
+        // TODO(Charles): The validation database currently contains the same data as the training database.
+        Partition validationObsPartition = dataStore.getPartition(String.format("%s_%s", KEY_VALIDATION, PARTITION_NAME_OBSERVATIONS));
+        Partition validationTargetPartition = dataStore.getPartition(String.format("%s_%s", KEY_VALIDATION, PARTITION_NAME_TARGETS));
+        Partition validationTruthPartition = dataStore.getPartition(String.format("%s_%s", KEY_VALIDATION, PARTITION_NAME_TRUTH));
 
         Map<Partition, Map<StandardPredicate, List<PredicateData>>> allData = new HashMap<Partition, Map<StandardPredicate, List<PredicateData>>>();
         if (observations != null && observations.size() != 0) {
             allData.put(obsPartition, observations);
+            allData.put(validationObsPartition, observations);
         }
 
         if (targets != null && targets.size() != 0) {
             allData.put(targetPartition, targets);
+            allData.put(validationTargetPartition, targets);
         }
 
         if (truths != null && truths.size() != 0) {
             allData.put(truthPartition, truths);
+            allData.put(validationTruthPartition, truths);
         }
 
         for (Map.Entry<Partition, Map<StandardPredicate, List<PredicateData>>> partition : allData.entrySet()) {
@@ -286,7 +295,9 @@ public class TestModel {
             }
         }
 
-        return new ModelInformation(modelId++, dataStore, model, predicates, obsPartition, targetPartition, truthPartition);
+        return new ModelInformation(modelId++, dataStore, model, predicates,
+                obsPartition, targetPartition, truthPartition,
+                validationObsPartition, validationTargetPartition, validationTruthPartition);
     }
 
     /**
@@ -665,6 +676,9 @@ public class TestModel {
         public Partition observationPartition;
         public Partition targetPartition;
         public Partition truthPartition;
+        public Partition validationObservationPartition;
+        public Partition validationTargetPartition;
+        public Partition validationTruthPartition;
 
         // Keep track of open models so we can close them.
         private static List<ModelInformation> openModels = new ArrayList<ModelInformation>();
@@ -672,7 +686,8 @@ public class TestModel {
         public ModelInformation(
                 int id, DataStore dataStore, Model model,
                 Map<String, StandardPredicate> predicates,
-                Partition observationPartition, Partition targetPartition, Partition truthPartition) {
+                Partition observationPartition, Partition targetPartition, Partition truthPartition,
+                Partition validationObservationPartition, Partition validationTargetPartition, Partition validationTruthPartition) {
             this.id = id;
             this.dataStore = dataStore;
             this.model = model;
@@ -680,6 +695,9 @@ public class TestModel {
             this.observationPartition = observationPartition;
             this.targetPartition = targetPartition;
             this.truthPartition = truthPartition;
+            this.validationObservationPartition = validationObservationPartition;
+            this.validationTargetPartition = validationTargetPartition;
+            this.validationTruthPartition = validationTruthPartition;
 
             openModels.add(this);
         }

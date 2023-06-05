@@ -29,8 +29,9 @@ import java.util.List;
 public class StructuredPerceptron extends OptimalValue {
     protected float[] MAPIncompatibility;
 
-    public StructuredPerceptron(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public StructuredPerceptron(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                                Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         MAPIncompatibility = new float[mutableRules.size()];
     }
@@ -45,7 +46,9 @@ public class StructuredPerceptron extends OptimalValue {
      * Compute the incompatibility of the MAP state.
      */
     private void computeFullInferenceIncompatibility() {
-        computeMPEStateWithWarmStart(mpeTermState, mpeAtomValueState);
+        computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+        inTrainingMAPState = true;
+
         computeCurrentIncompatibility(MAPIncompatibility);
     }
 

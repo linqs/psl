@@ -42,9 +42,12 @@ public class DataStoreMetadataTest extends PSLBaseTest {
         Map<String, String> actual = metadata.getAllValuesByType(DataStoreMetadata.PARTITION_NAMESPACE, DataStoreMetadata.NAME_KEY);
 
         Map<String, String> expected = new HashMap<String, String>();
-        expected.put(TestModel.PARTITION_OBSERVATIONS, "1");
-        expected.put(TestModel.PARTITION_TARGETS, "2");
-        expected.put(TestModel.PARTITION_TRUTH, "3");
+        expected.put(TestModel.PARTITION_NAME_OBSERVATIONS, "1");
+        expected.put(TestModel.PARTITION_NAME_TARGETS, "2");
+        expected.put(TestModel.PARTITION_NAME_TRUTH, "3");
+        expected.put(String.format("%s_%s", TestModel.KEY_VALIDATION, TestModel.PARTITION_NAME_OBSERVATIONS), "4");
+        expected.put(String.format("%s_%s", TestModel.KEY_VALIDATION, TestModel.PARTITION_NAME_TARGETS), "5");
+        expected.put(String.format("%s_%s", TestModel.KEY_VALIDATION, TestModel.PARTITION_NAME_TRUTH), "6");
 
         assertEquals(expected, actual);
     }

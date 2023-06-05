@@ -31,12 +31,9 @@ import java.util.List;
 public class ContinuousRandomGridSearch extends BaseGridSearch {
     private WeightSampler weightSampler;
 
-    public ContinuousRandomGridSearch(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
-    }
-
-    public ContinuousRandomGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public ContinuousRandomGridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                                      Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         weightSampler = new WeightSampler(mutableRules.size());
 

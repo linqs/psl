@@ -35,9 +35,9 @@ public class GridSearchContinuousLossMSETest extends WeightLearningTest {
         Options.WLA_GS_POSSIBLE_WEIGHTS.set("0.01:1:10");
 
         // Use MSE as an objective.
-        Options.WLA_EVAL.set(ContinuousEvaluator.class.getName());
         Options.EVAL_CONT_REPRESENTATIVE.set(ContinuousEvaluator.RepresentativeMetric.MSE.toString());
 
-        return new GridSearch(info.model.getRules(), weightLearningTrainDB, weightLearningTruthDB);
+        return new GridSearch(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
+                validationTargetDatabase, validationTruthDatabase);
     }
 }

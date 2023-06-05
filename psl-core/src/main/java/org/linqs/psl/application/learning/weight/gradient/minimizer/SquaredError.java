@@ -31,13 +31,14 @@ import java.util.Map;
  * using the minimizer-based learning framework.
  */
 public class SquaredError extends Minimizer {
-    public SquaredError(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public SquaredError(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                        Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
     }
 
     @Override
     protected float computeSupervisedLoss() {
-        AtomStore atomStore = inference.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
 
         float supervisedLoss = 0.0f;
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
@@ -53,7 +54,7 @@ public class SquaredError extends Minimizer {
 
     @Override
     protected void addSupervisedProxRuleObservedAtomValueGradient() {
-        AtomStore atomStore = inference.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();

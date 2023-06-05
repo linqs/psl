@@ -23,8 +23,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.InitialValue;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 
 import java.util.Arrays;
@@ -45,8 +43,9 @@ public abstract class OptimalValue extends GradientDescent {
     protected TermState[] latentInferenceTermState;
     protected float[] latentInferenceAtomValueState;
 
-    public OptimalValue(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public OptimalValue(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                        Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         latentInferenceIncompatibility = new float[mutableRules.size()];
         latentInferenceTermState = null;
@@ -58,8 +57,8 @@ public abstract class OptimalValue extends GradientDescent {
         super.postInitGroundModel();
 
         // Initialize latent inference warm start state objects.
-        latentInferenceTermState = inference.getTermStore().saveState();
-        float[] atomValues = inference.getDatabase().getAtomStore().getAtomValues();
+        latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
+        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
     }
 
@@ -70,7 +69,9 @@ public abstract class OptimalValue extends GradientDescent {
     protected void computeLatentInferenceIncompatibility() {
         fixLabeledRandomVariables();
 
-        computeMPEStateWithWarmStart(latentInferenceTermState, latentInferenceAtomValueState);
+        computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
+        inTrainingMAPState = true;
+
         computeCurrentIncompatibility(latentInferenceIncompatibility);
 
         unfixLabeledRandomVariables();
@@ -82,7 +83,7 @@ public abstract class OptimalValue extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void fixLabeledRandomVariables() {
-        AtomStore atomStore = inference.getTermStore().getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getDatabase().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
@@ -95,7 +96,7 @@ public abstract class OptimalValue extends GradientDescent {
             randomVariableAtom.setValue(observedAtom.getValue());
         }
 
-        inMPEState = false;
+        inTrainingMAPState = false;
     }
 
     /**
@@ -104,7 +105,7 @@ public abstract class OptimalValue extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void unfixLabeledRandomVariables() {
-        AtomStore atomStore = inference.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
@@ -113,6 +114,6 @@ public abstract class OptimalValue extends GradientDescent {
             atomStore.getAtoms()[atomIndex] = randomVariableAtom;
         }
 
-        inMPEState = false;
+        inTrainingMAPState = false;
     }
 }

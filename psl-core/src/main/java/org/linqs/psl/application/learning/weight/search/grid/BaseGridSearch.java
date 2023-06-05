@@ -19,7 +19,6 @@ package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
@@ -61,12 +60,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      */
     protected String currentLocation;
 
-    public BaseGridSearch(Model model, Database rvDB, Database observedDB) {
-        this(model.getRules(), rvDB, observedDB);
-    }
-
-    public BaseGridSearch(List<Rule> rules, Database rvDB, Database observedDB) {
-        super(rules, rvDB, observedDB);
+    public BaseGridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                          Database validationTargetDatabase, Database validationTruthDatabase) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
 
         maxNumLocations = 0;
         numLocations = maxNumLocations;
@@ -122,7 +118,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             log.trace("Weights: {}", weights);
 
             // The weights have changed, so we are no longer in an MPE state.
-            inMPEState = false;
+            inTrainingMAPState = false;
 
             double objective = inspectLocation(weights);
 
@@ -145,7 +141,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         }
 
         // The weights have changed, so we are no longer in an MPE state.
-        inMPEState = false;
+        inTrainingMAPState = false;
     }
 
     /**
@@ -157,7 +153,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * @param weights
      */
     protected double inspectLocation(float[] weights) {
-        computeMPEState();
+        computeTrainingMAPState();
 
         evaluation.compute(trainingMap);
 

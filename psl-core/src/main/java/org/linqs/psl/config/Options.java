@@ -99,34 +99,6 @@ public class Options {
         "Store all seen atoms in the atom store, even unmanaged atoms."
     );
 
-    public static final Option BOOLEAN_MAXWALKSAT_MAX_FLIPS = new Option(
-        "booleanmaxwalksat.maxflips",
-        50000,
-        "The maximum number of flips to try during optimization.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option BOOLEAN_MAXWALKSAT_NOISE = new Option(
-        "booleanmaxwalksat.noise",
-        0.01,
-        "The probability of randomly perturbing an atom in a randomly chosen potential.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option BOOLEAN_MCSAT_NUM_BURNIN = new Option(
-        "booleanmcsat.numburnin",
-        500,
-        "Number of burn-in samples.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option BOOLEAN_MCSAT_NUM_SAMPLES = new Option(
-        "booleanmcsat.numsamples",
-        2500,
-        "Length of the Markov chain.",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option EVAL_CAT_CATEGORY_INDEXES = new Option(
         "categoricalevaluator.categoryindexes",
         "-1",
@@ -218,20 +190,6 @@ public class Options {
         "duallcqp.regularizationparameter",
         0.01,
         "The regularization parameter for the dual lcqp problem.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_EM_ITERATIONS = new Option(
-        "em.iterations",
-        10,
-        "The number of iterations of expectation maximization to perform.",
-        Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_EM_TOLERANCE = new Option(
-        "em.tolerance",
-        1e-3,
-        "The minimum absolute change in weights such that EM is considered converged.",
         Option.FLAG_POSITIVE
     );
 
@@ -435,6 +393,20 @@ public class Options {
         + " is reached for gradient descent weight learning."
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_RUN_VALIDATION = new Option(
+        "gradientdescent.runvalidation",
+        false,
+        "Run validation evaluation after each iteration of gradient descent."
+        + " If true, then validation data must be provided in the runtime.json file and an evaluator must be specified for predicates."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS = new Option(
+        "gradientdescent.savevalidationweights",
+        false,
+        "Save the weights that obtained the best validation evaluation."
+        + " If true, then gradientdescent.runvalidation must be true."
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_SCALE_STEP = new Option(
         "gradientdescent.scalestepsize",
         true,
@@ -504,12 +476,6 @@ public class Options {
         25,
         "The number of locations to initially search.",
         Option.FLAG_POSITIVE
-    );
-
-    public static final Option WLA_HEM_ADAGRAD = new Option(
-        "hardem.adagrad",
-        false,
-        "Whether to use AdaGrad subgradient scaling, the adaptive subgradient algorithm of Duchi et al., 2010."
     );
 
     public static final Option WLA_HB_BRACKET_SIZE = new Option(
@@ -925,19 +891,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option SGD_MOVEMENT = new Option(
-        "sgd.movement",
-        true,
-        "Keep track of the mean movement of the random variables. Do not stop optimization if that value is greater than some threshold."
-    );
-
-    public static final Option SGD_MOVEMENT_THRESHOLD = new Option(
-        "sgd.movement.threshold",
-        0.05f,
-        "If movement watching is enabled, don't stop optimization if the mean random variable movement is greater than this threshold.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
     public static final Option STREAMING_TS_PAGE_LOCATION = new Option(
         "streamingtermstore.pagelocation",
         SystemUtils.getTempDir("streaimg_term_cache_pages"),
@@ -967,14 +920,6 @@ public class Options {
         "streamingtermstore.warnunsupportedrules",
         true,
         "Warn on rules the streaming term store can't handle."
-    );
-
-    public static final Option WLA_EVAL = new Option(
-        "weightlearning.evaluator",
-        ContinuousEvaluator.class.getName(),
-        "The evaluator to use during weight learning."
-        + " Not all weight learning methods will use the evaluator for decision making,"
-        + " but even those will typically output an evaluator score each iteration."
     );
 
     public static final Option WLA_RANDOM_WEIGHTS = new Option(
