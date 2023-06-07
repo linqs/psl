@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
@@ -70,6 +71,10 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         objectives = new HashMap<String, Double>();
 
         currentLocation = null;
+
+        if (Options.WLA_GRADIENT_DESCENT_RUN_VALIDATION.getBoolean()) {
+            throw new IllegalArgumentException("Validation is not supported by GridSearch weight learning applications.");
+        }
     }
 
     @Override

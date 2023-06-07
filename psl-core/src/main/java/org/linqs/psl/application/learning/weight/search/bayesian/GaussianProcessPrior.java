@@ -79,6 +79,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         space = GaussianProcessKernel.Space.valueOf(Options.WLA_GPP_KERNEL_SPACE.getString().toUpperCase());
 
         weightSampler = new WeightSampler(mutableRules.size());
+
+        if (Options.WLA_GRADIENT_DESCENT_RUN_VALIDATION.getBoolean()) {
+            throw new IllegalArgumentException("Validation is not supported by GaussianProcessPrior weight learning applications.");
+        }
     }
 
     private void reset() {
