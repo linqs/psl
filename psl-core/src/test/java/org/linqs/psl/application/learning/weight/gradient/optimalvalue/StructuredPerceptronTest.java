@@ -24,6 +24,6 @@ public class StructuredPerceptronTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getBaseWLA() {
         return new StructuredPerceptron(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
-                validationTargetDatabase, validationTruthDatabase);
+                validationTargetDatabase, validationTruthDatabase, false);
     }
 }

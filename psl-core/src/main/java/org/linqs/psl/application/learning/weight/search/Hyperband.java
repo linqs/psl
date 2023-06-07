@@ -56,14 +56,18 @@ public class Hyperband extends WeightLearningApplication {
     private int baseBracketSize;
 
     public Hyperband(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                     Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                     Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         weightSampler = new WeightSampler(mutableRules.size());
 
         survival = Options.WLA_HB_SURVIVAL.getInt();
         numBrackets = Options.WLA_HB_NUM_BRACKETS.getInt();
         baseBracketSize = Options.WLA_HB_BRACKET_SIZE.getInt();
+
+        if (this.runValidation) {
+            throw new IllegalArgumentException("Validation is not supported by the Hyperband weight learning application.");
+        }
     }
 
     @Override

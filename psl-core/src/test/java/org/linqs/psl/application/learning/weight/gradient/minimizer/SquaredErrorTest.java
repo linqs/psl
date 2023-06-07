@@ -35,6 +35,6 @@ public class SquaredErrorTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getBaseWLA() {
         return new SquaredError(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
-                validationTargetDatabase, validationTruthDatabase);
+                validationTargetDatabase, validationTruthDatabase, false);
     }
 }

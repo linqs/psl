@@ -38,6 +38,6 @@ public class GridSearchContinuousLossMAETest extends WeightLearningTest {
         Options.EVAL_CONT_REPRESENTATIVE.set(ContinuousEvaluator.RepresentativeMetric.MAE.toString());
 
         return new GridSearch(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
-                validationTargetDatabase, validationTruthDatabase);
+                validationTargetDatabase, validationTruthDatabase, false);
     }
 }

@@ -63,8 +63,8 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private boolean useProvidedWeight;
 
     public GaussianProcessPrior(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                                Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                                Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         maxIterations = Options.WLA_GPP_MAX_ITERATIONS.getInt();
         maxConfigs = Options.WLA_GPP_MAX_CONFIGS.getInt();
@@ -80,7 +80,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
 
         weightSampler = new WeightSampler(mutableRules.size());
 
-        if (Options.WLA_GRADIENT_DESCENT_RUN_VALIDATION.getBoolean()) {
+        if (this.runValidation) {
             throw new IllegalArgumentException("Validation is not supported by GaussianProcessPrior weight learning applications.");
         }
     }

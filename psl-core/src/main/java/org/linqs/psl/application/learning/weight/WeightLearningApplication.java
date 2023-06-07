@@ -54,6 +54,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
     protected Database validationTargetDatabase;
     protected Database validationTruthDatabase;
 
+    protected boolean runValidation;
+
     protected List<Rule> allRules;
     protected List<WeightedRule> mutableRules;
 
@@ -76,12 +78,14 @@ public abstract class WeightLearningApplication implements ModelApplication {
     protected boolean inValidationMAPState;
 
     public WeightLearningApplication(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                                     Database validationTargetDatabase, Database validationTruthDatabase) {
+                                     Database validationTargetDatabase, Database validationTruthDatabase, Boolean runValidation) {
         this.trainTargetDatabase = trainTargetDatabase;
         this.trainTruthDatabase = trainTruthDatabase;
 
         this.validationTargetDatabase = validationTargetDatabase;
         this.validationTruthDatabase = validationTruthDatabase;
+
+        this.runValidation = runValidation;
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();
@@ -262,7 +266,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     public static WeightLearningApplication getWLA(String name, List<Rule> rules,
                                                    Database trainTargetDatabase, Database trainTruthDatabase,
-                                                   Database validationTargetDatabase, Database validationTruthDatabase) {
+                                                   Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         String className = Reflection.resolveClassName(name);
         if (className == null) {
             throw new IllegalArgumentException("Could not find class: " + name);
@@ -279,7 +283,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         Constructor<? extends WeightLearningApplication> constructor = null;
         try {
-            constructor = classObject.getConstructor(List.class, Database.class, Database.class, Database.class, Database.class);
+            constructor = classObject.getConstructor(List.class, Database.class, Database.class, Database.class, Database.class, Boolean.class);
         } catch (NoSuchMethodException ex) {
             throw new IllegalArgumentException("No suitable constructor found for weight learner: " + className + ".", ex);
         }
@@ -287,7 +291,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
         WeightLearningApplication wla = null;
         try {
             wla = constructor.newInstance(rules, trainTargetDatabase, trainTruthDatabase,
-                    validationTargetDatabase, validationTruthDatabase);
+                    validationTargetDatabase, validationTruthDatabase, runValidation);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
         } catch (IllegalAccessException ex) {

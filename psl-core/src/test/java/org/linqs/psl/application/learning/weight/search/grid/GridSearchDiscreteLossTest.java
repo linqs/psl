@@ -37,7 +37,7 @@ public class GridSearchDiscreteLossTest extends WeightLearningTest {
         Options.WLA_GS_POSSIBLE_WEIGHTS.set("0.01:1:10");
 
         return new GridSearch(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
-                validationTargetDatabase, validationTruthDatabase);
+                validationTargetDatabase, validationTruthDatabase, false);
     }
 
     @Override

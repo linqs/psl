@@ -65,7 +65,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
-    protected boolean runValidation;
     protected boolean saveBestValidationWeights;
 
 
@@ -88,8 +87,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float entropyRegularization;
 
     public GradientDescent(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                           Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                           Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
 
@@ -105,14 +104,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         validationMAPTermState = null;
         validationMAPAtomValueState = null;
-        runValidation = Options.WLA_GRADIENT_DESCENT_RUN_VALIDATION.getBoolean();
         saveBestValidationWeights = Options.WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS.getBoolean();
 
-        if (!((!runValidation) || (evaluation != null))) {
+        if (this.runValidation && (evaluation == null)) {
             throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
         }
 
-        if (!((!saveBestValidationWeights) || runValidation)) {
+        if (saveBestValidationWeights && (!this.runValidation)) {
             throw new IllegalArgumentException("If saveBestValidationWeights is true, then runValidation must also be true.");
         }
 

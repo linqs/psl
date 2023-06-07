@@ -32,8 +32,8 @@ import java.util.Map;
  */
 public class SquaredError extends Minimizer {
     public SquaredError(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                        Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                        Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
     }
 
     @Override

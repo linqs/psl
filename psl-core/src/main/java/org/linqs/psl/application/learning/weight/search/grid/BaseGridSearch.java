@@ -62,8 +62,8 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
     protected String currentLocation;
 
     public BaseGridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                          Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                          Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         maxNumLocations = 0;
         numLocations = maxNumLocations;
@@ -72,7 +72,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
         currentLocation = null;
 
-        if (Options.WLA_GRADIENT_DESCENT_RUN_VALIDATION.getBoolean()) {
+        if (this.runValidation) {
             throw new IllegalArgumentException("Validation is not supported by GridSearch weight learning applications.");
         }
     }

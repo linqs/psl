@@ -84,8 +84,8 @@ public abstract class Minimizer extends GradientDescent {
     protected final float objectiveDifferenceTolerance;
 
     public Minimizer(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                     Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                     Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         mpeIncompatibility = new float[mutableRules.size()];
         mpeSquaredIncompatibility = new float[mutableRules.size()];

@@ -41,7 +41,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         Options.WLA_GPP_MAX_ITERATIONS.set(2);
 
         return new GaussianProcessPrior(this.info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
-                validationTargetDatabase, validationTruthDatabase);
+                validationTargetDatabase, validationTruthDatabase, false);
     }
 
     protected WeightLearningApplication getWLALocal() {
@@ -151,7 +151,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
     private static class GPPTest extends GaussianProcessPrior {
         public GPPTest(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase, Database validationTargetDatabase, Database validationTruthDatabase) {
-            super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+            super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, false);
         }
 
         @Override

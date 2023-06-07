@@ -46,8 +46,8 @@ public class GuidedRandomGridSearch extends RandomGridSearch {
     private Set<String> toExplore;
 
     public GuidedRandomGridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                                  Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                                  Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         maxNumSeedLocations = Options.WLA_GRGS_SEED_LOCATIONS.getInt();
         numSeedLocations = maxNumSeedLocations;

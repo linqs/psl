@@ -37,8 +37,8 @@ public class GridSearch extends BaseGridSearch {
     protected final float[] possibleWeights;
 
     public GridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                      Database validationTargetDatabase, Database validationTruthDatabase) {
-        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase);
+                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+        super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         possibleWeights = StringUtils.splitFloat(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
         if (possibleWeights.length == 0) {

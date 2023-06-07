@@ -35,6 +35,6 @@ public class BinaryCrossEntropyTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getBaseWLA() {
         return new BinaryCrossEntropy(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
-                validationTargetDatabase, validationTruthDatabase);
+                validationTargetDatabase, validationTruthDatabase, false);
     }
 }

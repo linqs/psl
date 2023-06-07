@@ -393,13 +393,6 @@ public class Options {
         + " is reached for gradient descent weight learning."
     );
 
-    public static final Option WLA_GRADIENT_DESCENT_RUN_VALIDATION = new Option(
-        "gradientdescent.runvalidation",
-        false,
-        "Run validation evaluation after each iteration of gradient descent."
-        + " If true, then validation data must be provided in the runtime.json file and an evaluator must be specified for predicates."
-    );
-
     public static final Option WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS = new Option(
         "gradientdescent.savevalidationweights",
         false,
