@@ -283,7 +283,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         Constructor<? extends WeightLearningApplication> constructor = null;
         try {
-            constructor = classObject.getConstructor(List.class, Database.class, Database.class, Database.class, Database.class, Boolean.class);
+            constructor = classObject.getConstructor(List.class, Database.class, Database.class, Database.class, Database.class, boolean.class);
         } catch (NoSuchMethodException ex) {
             throw new IllegalArgumentException("No suitable constructor found for weight learner: " + className + ".", ex);
         }

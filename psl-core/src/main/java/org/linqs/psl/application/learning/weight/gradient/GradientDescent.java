@@ -106,10 +106,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         validationMAPAtomValueState = null;
         saveBestValidationWeights = Options.WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS.getBoolean();
 
-        if (this.runValidation && (evaluation == null)) {
-            throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
-        }
-
         if (saveBestValidationWeights && (!this.runValidation)) {
             throw new IllegalArgumentException("If saveBestValidationWeights is true, then runValidation must also be true.");
         }
@@ -136,6 +132,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
     @Override
     protected void postInitGroundModel() {
         super.postInitGroundModel();
+
+        if (this.runValidation && (evaluation == null)) {
+            throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
+        }
 
         if (!((!runValidation) || (validationInferenceApplication.getDatabase().getAtomStore().size() > 0))) {
             throw new IllegalStateException("If validation is being run, then validation data must be provided in the runtime.json file.");
