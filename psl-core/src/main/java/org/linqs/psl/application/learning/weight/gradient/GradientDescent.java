@@ -108,6 +108,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
         runValidation = Options.WLA_GRADIENT_DESCENT_RUN_VALIDATION.getBoolean();
         saveBestValidationWeights = Options.WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS.getBoolean();
 
+        if (!((!runValidation) || (evaluation != null))) {
+            throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
+        }
+
+        if (!((!saveBestValidationWeights) || runValidation)) {
+            throw new IllegalArgumentException("If saveBestValidationWeights is true, then runValidation must also be true.");
+        }
+
         baseStepSize = Options.WLA_GRADIENT_DESCENT_STEP_SIZE.getFloat();
         scaleStepSize = Options.WLA_GRADIENT_DESCENT_SCALE_STEP.getBoolean();
         clipWeightGradient = Options.WLA_GRADIENT_DESCENT_CLIP_GRADIENT.getBoolean();
@@ -131,12 +139,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void postInitGroundModel() {
         super.postInitGroundModel();
 
-        if (!((!runValidation) || ((validationInferenceApplication.getDatabase().getAtomStore().size() > 0) && (evaluation != null)))) {
-            throw new IllegalArgumentException("If validation is being run, then validation data must be provided in the runtime.json file and an evaluator must be specified for predicates.");
-        }
-
-        if (!((!saveBestValidationWeights) || runValidation)) {
-            throw new IllegalArgumentException("If saveBestValidationWeights is true, then runValidation must also be true.");
+        if (!((!runValidation) || (validationInferenceApplication.getDatabase().getAtomStore().size() > 0))) {
+            throw new IllegalStateException("If validation is being run, then validation data must be provided in the runtime.json file.");
         }
 
         // Set the initial value of atoms to be the current atom value.
@@ -216,7 +220,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 evaluation.compute(validationMap);
                 currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
-                log.trace("MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
+                log.debug("MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
 
                 if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
                     bestValidationEvaluationMetric = currentValidationEvaluationMetric;
@@ -225,9 +229,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     for (int i = 0; i < mutableRules.size(); i++) {
                         bestWeights[i] = mutableRules.get(i).getWeight();
                     }
+
+                    log.debug("New Best Validation Model: {}", mutableRules);
                 }
 
-                log.trace("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
+                log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
             }
 
             gradientStep(iteration);

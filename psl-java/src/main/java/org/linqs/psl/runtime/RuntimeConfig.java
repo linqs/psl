@@ -188,7 +188,7 @@ public class RuntimeConfig {
             runLearn = RuntimeOptions.LEARN.getBoolean();
         }
 
-        if (RuntimeOptions.LEARN.isSet()) {
+        if (RuntimeOptions.VALIDATION.isSet()) {
             runValidation = RuntimeOptions.VALIDATION.getBoolean();
         }
 
