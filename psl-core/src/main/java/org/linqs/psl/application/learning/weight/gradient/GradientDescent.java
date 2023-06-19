@@ -200,8 +200,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 evaluation.compute(trainingMap);
                 log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
 
-                evaluation.compute(validationMap);
-                log.trace("MAP State Validation Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+                if (validationMap.getLabelMap().size() > 0) {
+                    evaluation.compute(validationMap);
+                    log.trace("MAP State Validation Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+                }
             }
 
             long start = System.currentTimeMillis();
