@@ -195,8 +195,6 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
-        float totalObjectiveDifference = computeObjectiveDifference();
-
         if (iteration > maxNumSteps) {
             return true;
         }
@@ -208,6 +206,8 @@ public abstract class Minimizer extends GradientDescent {
         if (outerIteration == 1) {
             return false;
         }
+
+        float totalObjectiveDifference = computeObjectiveDifference();
 
         // Break if the objective difference is greater than the tolerance.
         return totalObjectiveDifference < objectiveDifferenceTolerance;
