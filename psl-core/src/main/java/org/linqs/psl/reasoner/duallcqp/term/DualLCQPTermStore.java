@@ -34,12 +34,14 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     public DualLCQPTermStore(Database database) {
         super(database, new DualLCQPTermGenerator());
 
-        dualLCQPAtoms = null;
+        dualLCQPAtoms = new DualLCQPAtom[AtomStore.MIN_ALLOCATION];
+        for (int i = 0; i < dualLCQPAtoms.length; i++) {
+            dualLCQPAtoms[i] = new DualLCQPAtom();
+        }
     }
 
     @Override
     public synchronized int add(GroundRule groundRule, DualLCQPObjectiveTerm term, Hyperplane hyperplane) {
-        init();
         ensureDualLCQPAtomsCapacity();
 
         super.add(groundRule, term, hyperplane);
@@ -59,24 +61,6 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
 
     public DualLCQPAtom[] getDualLCQPAtoms() {
         return dualLCQPAtoms;
-    }
-
-    @Override
-    public void initForOptimization() {
-        super.initForOptimization();
-
-        init();
-    }
-
-    public synchronized void init() {
-        if (dualLCQPAtoms == null) {
-            AtomStore atomStore = database.getAtomStore();
-
-            dualLCQPAtoms = new DualLCQPAtom[atomStore.size()];
-            for (int i = 0; i < dualLCQPAtoms.length; i++) {
-                dualLCQPAtoms[i] = new DualLCQPAtom();
-            }
-        }
     }
 
     private synchronized void ensureDualLCQPAtomsCapacity() {
