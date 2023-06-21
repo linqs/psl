@@ -242,11 +242,9 @@ public abstract class Minimizer extends GradientDescent {
                     return;
                 }
                 linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
-                squaredPenaltyCoefficient = squaredPenaltyCoefficient;
                 constraintTolerance = (float)(constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9));
                 parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
             } else {
-                linearPenaltyCoefficient = linearPenaltyCoefficient;
                 squaredPenaltyCoefficient = 100.0f * squaredPenaltyCoefficient;
                 constraintTolerance = (float)(1.0f / Math.pow(squaredPenaltyCoefficient, 0.1));
                 parameterMovementTolerance = (float)(1.0f / squaredPenaltyCoefficient);
