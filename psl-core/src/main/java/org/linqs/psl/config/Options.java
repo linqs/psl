@@ -550,6 +550,13 @@ public class Options {
         "Shuffle the terms before each return of iterator()."
     );
 
+    public static final Option MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE = new Option(
+        "minimizer.finalparametermovementconvergencetolerance",
+        0.01f,
+        "Minimizer based learning is stopped when the amount of parameter movement drops below this tolerance.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option MINIMIZER_INITIAL_LINEAR_PENALTY = new Option(
         "minimizer.initiallinearpenalty",
         0.1f,
@@ -559,7 +566,7 @@ public class Options {
 
     public static final Option MINIMIZER_INITIAL_SQUARED_PENALTY = new Option(
         "minimizer.initialsquaredpenalty",
-        1.0f,
+        10.0f,
         "The initial value for the squared penalty parameter in the augmented Lagrangian minimizer-based learning framework.",
         Option.FLAG_NON_NEGATIVE
     );

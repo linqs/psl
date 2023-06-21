@@ -51,8 +51,8 @@ import java.util.Map;
 public abstract class Minimizer extends GradientDescent {
     private static final Logger log = Logger.getLogger(Minimizer.class);
 
-    protected float[] mpeIncompatibility;
-    protected float[] mpeSquaredIncompatibility;
+    protected float[] mapIncompatibility;
+    protected float[] mapSquaredIncompatibility;
 
     protected float[] augmentedInferenceIncompatibility;
     protected float[] augmentedInferenceSquaredIncompatibility;
@@ -71,9 +71,14 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] proxRuleObservedAtomValueGradient;
     protected final float proxRuleWeight;
 
-    protected int internalIteration;
+    protected float parameterMovement;
+    protected float parameterMovementTolerance;
+    protected float finalParameterMovementTolerance;
+    protected float constraintTolerance;
+    protected float finalConstraintTolerance;
+
+    protected boolean initializedProxRuleConstants;
     protected int outerIteration;
-    protected int numInternalIterations;
 
     protected final float initialSquaredPenaltyCoefficient;
     protected float squaredPenaltyCoefficient;
@@ -81,14 +86,12 @@ public abstract class Minimizer extends GradientDescent {
     protected final float initialLinearPenaltyCoefficient;
     protected float linearPenaltyCoefficient;
 
-    protected final float objectiveDifferenceTolerance;
-
     public Minimizer(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        mpeIncompatibility = new float[mutableRules.size()];
-        mpeSquaredIncompatibility = new float[mutableRules.size()];
+        mapIncompatibility = new float[mutableRules.size()];
+        mapSquaredIncompatibility = new float[mutableRules.size()];
 
         augmentedInferenceIncompatibility = new float[mutableRules.size()];
         augmentedInferenceSquaredIncompatibility = new float[mutableRules.size()];
@@ -102,17 +105,19 @@ public abstract class Minimizer extends GradientDescent {
         proxRuleObservedAtomValueGradient = null;
         proxRuleWeight = Options.MINIMIZER_PROX_RULE_WEIGHT.getFloat();
 
-        internalIteration = 0;
-        outerIteration = 1;
-        numInternalIterations = Options.MINIMIZER_NUM_INTERNAL_ITERATIONS.getInt();
-
         initialSquaredPenaltyCoefficient = Options.MINIMIZER_INITIAL_SQUARED_PENALTY.getFloat();
         squaredPenaltyCoefficient = initialSquaredPenaltyCoefficient;
         squaredPenaltyCoefficientDelta = Options.MINIMIZER_SQUARED_PENALTY_DELTA.getFloat();
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
 
-        objectiveDifferenceTolerance = Options.MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE.getFloat();
+        parameterMovement = Float.POSITIVE_INFINITY;
+        parameterMovementTolerance = 1.0f / initialSquaredPenaltyCoefficient;
+        finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
+        constraintTolerance = (float)(1.0f / Math.pow(initialSquaredPenaltyCoefficient, 0.1f));
+        finalConstraintTolerance = Options.MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE.getFloat();
+        initializedProxRuleConstants = false;
+        outerIteration = 1;
     }
 
     @Override
@@ -213,40 +218,60 @@ public abstract class Minimizer extends GradientDescent {
         float totalObjectiveDifference = computeObjectiveDifference();
 
         // Break if the objective difference is less than the tolerance.
-        return totalObjectiveDifference < objectiveDifferenceTolerance;
+        return totalObjectiveDifference < finalConstraintTolerance;
     }
 
     @Override
     protected void gradientStep(int iteration) {
-        super.gradientStep(iteration);
-        internalIteration++;
-    }
+        parameterMovement = 0.0f;
+        parameterMovement += weightGradientStep(iteration);
+        parameterMovement += internalParameterGradientStep(iteration);
 
-    @Override
-    protected void internalParameterGradientStep(int iteration) {
-        if (internalIteration >= numInternalIterations) {
+        if ((iteration > 0) && (parameterMovement < parameterMovementTolerance)) {
+            outerIteration++;
+
             // Update the penalty coefficients and tolerance.
             float totalObjectiveDifference = computeObjectiveDifference();
 
-            log.trace("Outer iteration: {}, Objective Difference: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}.",
-                    outerIteration, totalObjectiveDifference, squaredPenaltyCoefficient, linearPenaltyCoefficient);
+            log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
+                    outerIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
 
-            linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
-            squaredPenaltyCoefficient = squaredPenaltyCoefficient + squaredPenaltyCoefficientDelta;
-
-            internalIteration = 0;
-            outerIteration++;
+            if (totalObjectiveDifference < constraintTolerance) {
+                if ((totalObjectiveDifference < finalConstraintTolerance) && (parameterMovement < finalParameterMovementTolerance)) {
+                    // Learning has converged.
+                    return;
+                }
+                linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
+                squaredPenaltyCoefficient = squaredPenaltyCoefficient;
+                constraintTolerance = (float)(constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9));
+                parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
+            } else {
+                linearPenaltyCoefficient = linearPenaltyCoefficient;
+                squaredPenaltyCoefficient = 100.0f * squaredPenaltyCoefficient;
+                constraintTolerance = (float)(1.0f / Math.pow(squaredPenaltyCoefficient, 0.1));
+                parameterMovementTolerance = (float)(1.0f / squaredPenaltyCoefficient);
+            }
         }
+    }
 
+    @Override
+    protected float internalParameterGradientStep(int iteration) {
+        float proxRuleObservedAtomsValueMovement = 0.0f;
         // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
         float stepSize = computeStepSize(iteration);
         float[] atomValues = trainInferenceApplication.getTermStore().getDatabase().getAtomStore().getAtomValues();
         for (int i = 0; i < proxRules.length; i++) {
-            proxRuleObservedAtoms[i]._assumeValue(Math.min(Math.max(
-                    proxRuleObservedAtoms[i].getValue() - stepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f));
-            atomValues[proxRuleObservedAtomIndexes[i]] = proxRuleObservedAtoms[i].getValue();
-            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = proxRuleObservedAtoms[i].getValue();
+            float newProxRuleObservedAtomsValue = Math.min(Math.max(
+                    proxRuleObservedAtoms[i].getValue() - stepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
+            proxRuleObservedAtomsValueMovement += Math.pow(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue, 2.0f);
+
+            proxRuleObservedAtoms[i]._assumeValue(newProxRuleObservedAtomsValue);
+            atomValues[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
+            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
         }
+        proxRuleObservedAtomsValueMovement = (float)Math.sqrt(proxRuleObservedAtomsValueMovement);
+
+        return proxRuleObservedAtomsValueMovement;
     }
 
     protected void initializeProximityRuleConstants() {
@@ -256,6 +281,9 @@ public abstract class Minimizer extends GradientDescent {
 
         AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
+
+        System.arraycopy(trainMAPAtomValueState, 0, augmentedInferenceAtomValueState, 0, trainMAPAtomValueState.length);
+
         for (int i = 0; i < proxRules.length; i++) {
             proxRuleObservedAtoms[i]._assumeValue(trainMAPAtomValueState[proxRuleRVAtomIndexes[i]]);
             atomValues[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxRuleRVAtomIndexes[i]];
@@ -274,13 +302,15 @@ public abstract class Minimizer extends GradientDescent {
             atomValues[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
             augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
         }
+
+        initializedProxRuleConstants = true;
     }
 
     @Override
     protected void computeIterationStatistics() {
         computeFullInferenceStatistics();
 
-        if ((internalIteration == 1) && (outerIteration == 1)) {
+        if (!initializedProxRuleConstants) {
             initializeProximityRuleConstants();
         }
 
@@ -304,8 +334,8 @@ public abstract class Minimizer extends GradientDescent {
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
 
-        computeCurrentIncompatibility(mpeIncompatibility);
-        computeCurrentSquaredIncompatibility(mpeSquaredIncompatibility);
+        computeCurrentIncompatibility(mapIncompatibility);
+        computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
     }
 
     /**
@@ -414,12 +444,12 @@ public abstract class Minimizer extends GradientDescent {
 
         float totalEnergyDifference = 0.0f;
         for (int i = 0; i < mutableRules.size(); i++) {
-            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mpeIncompatibility[i];
+            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
             if (mutableRules.get(i).isSquared()) {
-                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mpeIncompatibility[i]);
+                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
             } else {
-                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mpeIncompatibility[i]);
-                totalEnergyDifference += regularizationParameter * (augmentedInferenceSquaredIncompatibility[i] - mpeSquaredIncompatibility[i]);
+                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+                totalEnergyDifference += regularizationParameter * (augmentedInferenceSquaredIncompatibility[i] - mapSquaredIncompatibility[i]);
             }
         }
 
