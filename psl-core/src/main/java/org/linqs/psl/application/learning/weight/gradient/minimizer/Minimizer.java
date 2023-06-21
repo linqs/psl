@@ -82,7 +82,7 @@ public abstract class Minimizer extends GradientDescent {
 
     protected final float initialSquaredPenaltyCoefficient;
     protected float squaredPenaltyCoefficient;
-    protected float squaredPenaltyCoefficientDelta;
+    protected float squaredPenaltyCoefficientIncreaseRate;
     protected final float initialLinearPenaltyCoefficient;
     protected float linearPenaltyCoefficient;
 
@@ -107,7 +107,7 @@ public abstract class Minimizer extends GradientDescent {
 
         initialSquaredPenaltyCoefficient = Options.MINIMIZER_INITIAL_SQUARED_PENALTY.getFloat();
         squaredPenaltyCoefficient = initialSquaredPenaltyCoefficient;
-        squaredPenaltyCoefficientDelta = Options.MINIMIZER_SQUARED_PENALTY_DELTA.getFloat();
+        squaredPenaltyCoefficientIncreaseRate = Options.MINIMIZER_SQUARED_PENALTY_INCREASE_RATE.getFloat();
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
 
@@ -233,9 +233,6 @@ public abstract class Minimizer extends GradientDescent {
             // Update the penalty coefficients and tolerance.
             float totalObjectiveDifference = computeObjectiveDifference();
 
-            log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
-                    outerIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
-
             if (totalObjectiveDifference < constraintTolerance) {
                 if ((totalObjectiveDifference < finalConstraintTolerance) && (parameterMovement < finalParameterMovementTolerance)) {
                     // Learning has converged.
@@ -245,10 +242,14 @@ public abstract class Minimizer extends GradientDescent {
                 constraintTolerance = (float)(constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9));
                 parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
             } else {
-                squaredPenaltyCoefficient = 100.0f * squaredPenaltyCoefficient;
+                squaredPenaltyCoefficient = squaredPenaltyCoefficientIncreaseRate * squaredPenaltyCoefficient;
                 constraintTolerance = (float)(1.0f / Math.pow(squaredPenaltyCoefficient, 0.1));
                 parameterMovementTolerance = (float)(1.0f / squaredPenaltyCoefficient);
             }
+
+            log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
+                    outerIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
+
         }
     }
 

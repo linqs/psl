@@ -593,10 +593,10 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
-    public static final Option MINIMIZER_SQUARED_PENALTY_DELTA = new Option(
-        "minimizer.squaredpenaltydelta",
-        10.0f,
-        "The amount to increase the squared penalty coefficient each outer iteration.",
+    public static final Option MINIMIZER_SQUARED_PENALTY_INCREASE_RATE = new Option(
+        "minimizer.squaredpenaltyincreaserate",
+        2.0f,
+        "The rate to increase the squared penalty coefficient.",
         Option.FLAG_NON_NEGATIVE
     );
 
