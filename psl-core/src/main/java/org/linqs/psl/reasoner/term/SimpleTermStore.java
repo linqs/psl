@@ -112,6 +112,10 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
         return allTerms.get((int)index);
     }
 
+    public HashMap<Integer, ArrayList<T>> getConnectedComponents() {
+        return connectedComponents;
+    }
+
     @Override
     public Iterator<T> iterator() {
         return allTerms.iterator();

@@ -73,6 +73,8 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         ObjectiveResult objective = null;
         ObjectiveResult oldObjective = null;
 
+        log.trace("Number of connected components: {}", termStore.getConnectedComponents().size());
+
         long totalTime = 0;
         boolean breakDualBCD = false;
         int iteration = 1;
