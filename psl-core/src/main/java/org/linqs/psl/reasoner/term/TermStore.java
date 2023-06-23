@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -33,6 +34,7 @@ import java.util.List;
  * A place to store terms that are to be optimized.
  */
 public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
+    protected AtomStore atomStore;
     protected Database database;
     protected TermGenerator<T> termGenerator;
 
@@ -40,6 +42,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
     public TermStore(Database database, TermGenerator<T> termGenerator) {
         this.database = database;
+        this.atomStore = database.getAtomStore();
         this.termGenerator = termGenerator;
         threadResourceKey = "termstore::objectid::" + System.identityHashCode(this);
     }
@@ -71,6 +74,10 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
     public Database getDatabase() {
         return database;
+    }
+
+    public AtomStore getAtomStore() {
+        return atomStore;
     }
 
     public TermGenerator<T> getTermGenerator() {

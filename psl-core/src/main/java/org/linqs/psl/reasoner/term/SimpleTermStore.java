@@ -17,36 +17,72 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.util.IteratorUtils;
-import org.linqs.psl.util.Parallel;
 
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * A straightforward term store.
  */
 public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<T> {
-    protected ArrayList<T> terms;
+    protected ArrayList<T> allTerms;
+
+    /**
+     * A map from component ID to the terms in that component.
+     * The component ID is the index of the root atom in the component.
+     */
+    protected HashMap<Integer, ArrayList<T>> connectedComponents;
 
     public SimpleTermStore(Database database, TermGenerator<T> termGenerator) {
         super(database, termGenerator);
-        terms = new ArrayList<T>();
+        allTerms = new ArrayList<T>();
+        connectedComponents = new HashMap<Integer, ArrayList<T>>();
     }
 
-    /**
-     * An internal add that will always be called to add new terms.
-     * User will use add(GroundRule) which will generate terms and call this method.
-     * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
-     */
     @Override
     protected synchronized int add(GroundRule groundRule, T term, Hyperplane hyperplane) {
-        terms.add(term);
+        allTerms.add(term);
+
+        // Add to the connected component map.
+        int termRootIndex = atomStore.findAtomRoot(atomStore.getAtom(term.atomIndexes[0]));
+        GroundAtom rootAtom = atomStore.getAtom(termRootIndex);
+        term.setParent(termRootIndex);
+
+        if (connectedComponents.containsKey(termRootIndex)) {
+            connectedComponents.get(termRootIndex).add(term);
+        } else {
+            ArrayList<T> component = new ArrayList<T>();
+            component.add(term);
+            connectedComponents.put(termRootIndex, component);
+        }
+
+        // Unify the components of the atoms in this term.
+        for (int i = 1; i < term.size; i++) {
+            int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(term.atomIndexes[i]));
+            GroundAtom nextRootAtom = atomStore.getAtom(nextAtomRootIndex);
+
+            if (nextAtomRootIndex == termRootIndex) {
+                // Already in the same component.
+                continue;
+            }
+
+            atomStore.union(rootAtom, nextRootAtom);
+
+            // Merge the components.
+            if (!connectedComponents.containsKey(nextAtomRootIndex)) {
+                // No component for the next atom.
+                continue;
+            }
+
+            connectedComponents.get(termRootIndex).addAll(connectedComponents.get(nextAtomRootIndex));
+            connectedComponents.remove(nextAtomRootIndex);
+        }
+
         return 1;
     }
 
@@ -55,34 +91,36 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
      */
     @Override
     public void clear() {
-        terms.clear();
+        allTerms.clear();
+        connectedComponents.clear();
     }
 
     @Override
     public void close() {
         super.close();
-        terms = null;
+        allTerms = null;
+        connectedComponents = null;
     }
 
     @Override
     public void ensureCapacity(long capacity) {
-        terms.ensureCapacity((int)capacity);
+        allTerms.ensureCapacity((int)capacity);
     }
 
     @Override
     public T get(long index) {
         assert(index <= Integer.MAX_VALUE);
 
-        return terms.get((int)index);
+        return allTerms.get((int)index);
     }
 
     @Override
     public Iterator<T> iterator() {
-        return terms.iterator();
+        return allTerms.iterator();
     }
 
     @Override
     public long size() {
-        return (long)terms.size();
+        return (long) allTerms.size();
     }
 }

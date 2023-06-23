@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A term store that does not actaully store terms.
+ * A term store that does not actually store terms.
  * This is intended for testing.
  * The number of ground rules seen will be tracked (and returned via size()).
  */
