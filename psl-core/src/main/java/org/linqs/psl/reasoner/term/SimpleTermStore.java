@@ -50,7 +50,6 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
         // Add to the connected component map.
         int termRootIndex = atomStore.findAtomRoot(atomStore.getAtom(term.atomIndexes[0]));
         GroundAtom rootAtom = atomStore.getAtom(termRootIndex);
-        term.setParent(termRootIndex);
 
         if (connectedComponents.containsKey(termRootIndex)) {
             connectedComponents.get(termRootIndex).add(term);

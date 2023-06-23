@@ -45,13 +45,6 @@ public class ReasonerTerm {
     protected Rule rule;
     protected int[] atomIndexes;
 
-    /**
-     * The parent of a term is the index of an atom in the AtomStore that is managing the atoms present in this term.
-     * The parent is used to implement an abstract disjoint-set data structure for keeping track of the
-     * connected components of the factor graph. This assumes term instances are stored in a single termStore.
-     */
-    protected int parent;
-
     protected short size;
     protected float[] coefficients;
     protected float constant;
@@ -76,8 +69,6 @@ public class ReasonerTerm {
         for (int i = 0; i < size; i++) {
             atomIndexes[i] = atoms[i].getIndex();
         }
-
-        this.parent = -1;
     }
 
     /**
@@ -111,20 +102,6 @@ public class ReasonerTerm {
      */
     public Rule getRule() {
         return rule;
-    }
-
-    /**
-     * Get the parent of this term.
-     */
-    public int getParent() {
-        return parent;
-    }
-
-    /**
-     * Set the parent of this term.
-     */
-    public void setParent(int parent) {
-        this.parent = parent;
     }
 
     /**
