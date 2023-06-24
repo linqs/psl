@@ -73,11 +73,6 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         termStore.initForOptimization();
         initForOptimization(termStore);
 
-        log.trace("Number of connected components: {}", termStore.getConnectedComponents().size());
-        for (int i : termStore.getConnectedComponents().keySet()) {
-            log.trace("Connected component {} size: {}", i, termStore.getConnectedComponents().get(i).size());
-        }
-
         ObjectiveResult objective = null;
         ObjectiveResult oldObjective = null;
 
