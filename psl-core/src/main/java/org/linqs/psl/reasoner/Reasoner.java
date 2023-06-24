@@ -23,13 +23,17 @@ import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
+import org.linqs.psl.util.Hash;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -115,12 +119,11 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         }
     }
 
-    protected void optimizationComplete(TermStore<T> termStore, ObjectiveResult finalObjective,
-                                        long totalTime, int iteration) {
+    protected void optimizationComplete(TermStore<T> termStore, ObjectiveResult finalObjective, long totalTime) {
         float change = (float)termStore.sync();
 
-        log.info("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}, Total Number of Iterations: {}",
-                finalObjective.objective, finalObjective.violatedConstraints, totalTime, iteration);
+        log.info("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}",
+                finalObjective.objective, finalObjective.violatedConstraints, totalTime);
         log.debug("Movement of variables from initial state: {}", change);
     }
 
@@ -269,6 +272,30 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         return new ObjectiveResult(objective, violatedConstraints);
     }
 
+    protected ObjectiveResult parallelComputeComponentObjective(TermStore<T> termStore, int componentIndex) {
+        assert (termStore instanceof SimpleTermStore);
+
+        HashMap<Integer, ArrayList<T>> connectedComponents = ((SimpleTermStore)termStore).getConnectedComponents();
+        ArrayList<T> component = connectedComponents.get(componentIndex);
+
+        int blockSize = (int)(component.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(component.size() / (double)blockSize);
+
+        float[] workerObjectives = new float[numTermBlocks];
+        int[] workerViolatedConstraints = new int[numTermBlocks];
+
+        Parallel.count(numTermBlocks, new ComponentObjectiveWorker(((SimpleTermStore)termStore), componentIndex, workerObjectives, workerViolatedConstraints, blockSize));
+
+        float objective = 0.0f;
+        int violatedConstraints = 0;
+        for (int i = 0; i < numTermBlocks; i++) {
+            objective += workerObjectives[i];
+            violatedConstraints += workerViolatedConstraints[i];
+        }
+
+        return new ObjectiveResult(objective, violatedConstraints);
+    }
+
     protected void evaluate(TermStore<T> termStore, int iteration, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
         if (!evaluate) {
             return;
@@ -383,6 +410,65 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                 }
 
                 ReasonerTerm term = termStore.get(termIndex);
+
+                if (!term.isActive()) {
+                    continue;
+                }
+
+                if (term.isConstraint()) {
+                    if(!MathUtils.isZero(term.evaluate(variableValues))) {
+                        violatedConstraints++;
+                    }
+                } else {
+                    objective += term.evaluate(variableValues);
+                }
+            }
+            objectives[(int)blockIndex] = objective;
+            this.violatedConstraints[(int)blockIndex] = violatedConstraints;
+        }
+    }
+
+    private static class ComponentObjectiveWorker extends Parallel.Worker<Long> {
+        private final SimpleTermStore<? extends ReasonerTerm> termStore;
+        private final ArrayList<? extends ReasonerTerm> component;
+        private final int componentIndex;
+        private final int blockSize;
+        private final float[] variableValues;
+        private final float[] objectives;
+        private final int[] violatedConstraints;
+
+        public ComponentObjectiveWorker(SimpleTermStore<? extends ReasonerTerm> termStore,
+                               int componentIndex, float[] objectives, int[] violatedConstraints, int blockSize) {
+            super();
+
+            this.termStore = termStore;
+            this.component = termStore.getConnectedComponents().get(componentIndex);
+            this.componentIndex = componentIndex;
+            this.variableValues = termStore.getVariableValues();
+            this.objectives = objectives;
+            this.violatedConstraints = violatedConstraints;
+            this.blockSize = blockSize;
+        }
+
+        @Override
+        public Object clone() {
+            return new ComponentObjectiveWorker(termStore, componentIndex, objectives, violatedConstraints, blockSize);
+        }
+
+        @Override
+        public void work(long blockIndex, Long ignore) {
+            int numTerms = (int)component.size();
+            float objective = 0.0f;
+            int violatedConstraints = 0;
+
+            for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+                int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
+
+                if (termIndex >= numTerms) {
+                    break;
+                }
+
+                ReasonerTerm term = component.get(termIndex);
 
                 if (!term.isActive()) {
                     continue;

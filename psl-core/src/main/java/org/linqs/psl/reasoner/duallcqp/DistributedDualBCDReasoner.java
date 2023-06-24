@@ -19,9 +19,10 @@ package org.linqs.psl.reasoner.duallcqp;
 
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPObjectiveTerm;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
+
+import java.util.ArrayList;
 
 /**
  * A distributed variant of the DualBCDReasoner.
@@ -45,48 +46,49 @@ public class DistributedDualBCDReasoner extends DualBCDReasoner {
     }
 
     @Override
-    protected void internalOptimize(DualLCQPTermStore termStore) {
-        Parallel.count(numTermBlocks, new BlockUpdateWorker(termStore, blockSize, regularizationParameter));
-    }
+    protected void internalOptimize(DualLCQPTermStore termStore, int componentIndex) {
+        ArrayList<DualLCQPObjectiveTerm> connectedComponent = termStore.getConnectedComponents().get(componentIndex);
 
-    @Override
-    protected void initForOptimization(TermStore<DualLCQPObjectiveTerm> termStore) {
-        super.initForOptimization(termStore);
+        blockSize = (int)(connectedComponent.size() / (Parallel.getNumThreads() * 4) + 1);
+        numTermBlocks = (int)Math.ceil(connectedComponent.size() / (double)blockSize);
 
-        blockSize = (int) (termStore.size() / (Parallel.getNumThreads() * 4) + 1);
-        numTermBlocks = (int) Math.ceil(termStore.size() / (double)blockSize);
+        Parallel.count(numTermBlocks, new BlockUpdateWorker(termStore, componentIndex, blockSize, regularizationParameter));
     }
 
     private static class BlockUpdateWorker extends Parallel.Worker<Long> {
         private final DualLCQPTermStore termStore;
+        private final ArrayList<DualLCQPObjectiveTerm> component;
+        private final int componentIndex;
         private final int blockSize;
         private final double regularizationParameter;
 
-        public BlockUpdateWorker(DualLCQPTermStore termStore, int blockSize, double regularizationParameter) {
+        public BlockUpdateWorker(DualLCQPTermStore termStore, int componentIndex, int blockSize, double regularizationParameter) {
             super();
 
             this.termStore = termStore;
+            this.componentIndex = componentIndex;
+            this.component = termStore.getConnectedComponents().get(componentIndex);
             this.blockSize = blockSize;
             this.regularizationParameter = regularizationParameter;
         }
 
         @Override
         public Object clone() {
-            return new BlockUpdateWorker(termStore, blockSize, regularizationParameter);
+            return new BlockUpdateWorker(termStore, componentIndex, blockSize, regularizationParameter);
         }
 
         @Override
         public void work(long blockIndex, Long ignore) {
-            long numTerms = termStore.size();
+            long numTerms = component.size();
 
             for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
-                int termIndex = (int) (blockIndex * blockSize + innerBlockIndex);
+                int termIndex = (int)(blockIndex * blockSize + innerBlockIndex);
 
                 if (termIndex >= numTerms) {
                     break;
                 }
 
-                DualLCQPObjectiveTerm term = termStore.get(termIndex);
+                DualLCQPObjectiveTerm term = component.get(termIndex);
 
                 if (!term.isActive()) {
                     continue;

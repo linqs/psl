@@ -148,7 +148,7 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
             iteration++;
         }
 
-        optimizationComplete(termStore, objective, totalTime, iteration - 1);
+        optimizationComplete(termStore, objective, totalTime);
         return objective.objective;
     }
 

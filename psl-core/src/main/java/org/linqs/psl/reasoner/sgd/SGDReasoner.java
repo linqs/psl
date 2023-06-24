@@ -179,7 +179,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
         float[] variableValues = termStore.getVariableValues();
         System.arraycopy(lowestVariableValues, 0, variableValues, 0, variableValues.length);
 
-        optimizationComplete(termStore, new ObjectiveResult(lowestObjective, 0), totalTime, iteration - 1);
+        optimizationComplete(termStore, new ObjectiveResult(lowestObjective, 0), totalTime);
         return lowestObjective;
     }
 
@@ -204,8 +204,8 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
 
     @Override
     protected void optimizationComplete(TermStore<SGDObjectiveTerm> termStore, ObjectiveResult finalObjective,
-                                        long totalTime, int iteration) {
-        super.optimizationComplete(termStore, finalObjective, totalTime, iteration);
+                                        long totalTime) {
+        super.optimizationComplete(termStore, finalObjective, totalTime);
 
         prevGradient = null;
         accumulatedGradientSquares = null;

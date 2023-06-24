@@ -33,6 +33,7 @@ import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -71,6 +72,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     private int numAtoms;
     private float[] atomValues;
     private GroundAtom[] atoms;
+    private HashMap<Integer, ArrayList<GroundAtom>> connectedComponentsAtoms;
     private int maxRVAIndex;
     private boolean storeAllAtoms;
 
@@ -84,6 +86,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         numAtoms = 0;
         atomValues = null;
         atoms = null;
+        connectedComponentsAtoms = null;
         maxRVAIndex = -1;
         storeAllAtoms = false;
 
@@ -119,6 +122,10 @@ public class AtomStore implements Iterable<GroundAtom> {
      */
     public GroundAtom[] getAtoms() {
         return atoms;
+    }
+
+    public ArrayList<GroundAtom> getConnectedComponentAtoms(int index) {
+    	return connectedComponentsAtoms.get(index);
     }
 
     public GroundAtom getAtom(int index) {
@@ -263,6 +270,9 @@ public class AtomStore implements Iterable<GroundAtom> {
         // Merge the two sets.
         GroundAtom rootAtom2 = getAtom(root2);
         rootAtom2.setParent(root1);
+
+        connectedComponentsAtoms.get(root1).addAll(connectedComponentsAtoms.get(root2));
+        connectedComponentsAtoms.remove(root2);
     }
 
     /**
@@ -364,6 +374,8 @@ public class AtomStore implements Iterable<GroundAtom> {
         atom.setParent(numAtoms);
 
         atoms[numAtoms] = atom;
+        connectedComponentsAtoms.put(numAtoms, new ArrayList<GroundAtom>());
+        connectedComponentsAtoms.get(numAtoms).add(atom);
         atomValues[numAtoms] = atom.getValue();
         lookup.put(atom, numAtoms);
 
@@ -434,6 +446,7 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];
+        connectedComponentsAtoms = new HashMap<>();
         lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
 
         // Load open predicates first (to get RVAs at a lower index).
