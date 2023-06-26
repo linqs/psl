@@ -289,6 +289,19 @@ public abstract class Minimizer extends GradientDescent {
         computeProxRuleObservedAtomValueGradient();
     }
 
+    @Override
+    protected void computeTotalAtomGradient() {
+        float totalEnergyDifference = computeObjectiveDifference();
+
+        for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
+            float rvGradientDifference = augmentedRVAtomGradient[i] - rvAtomGradient[i];
+            float deepGradientDifference = augmentedDeepAtomGradient[i] - deepAtomGradient[i];
+
+            rvAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * rvGradientDifference + linearPenaltyCoefficient * rvGradientDifference;
+            deepAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * deepGradientDifference + linearPenaltyCoefficient * deepGradientDifference;
+        }
+    }
+
     protected void computeProxRuleObservedAtomValueGradient() {
         Arrays.fill(proxRuleObservedAtomValueGradient, 0.0f);
 

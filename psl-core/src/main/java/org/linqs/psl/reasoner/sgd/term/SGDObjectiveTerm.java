@@ -18,15 +18,10 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.AbstractRule;
-import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
-import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
-import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 

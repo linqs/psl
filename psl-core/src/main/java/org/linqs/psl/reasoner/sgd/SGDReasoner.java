@@ -21,7 +21,6 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -251,7 +250,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
         float innerPotential = term.computeInnerPotential(variableValues);
 
         for (int i = 0 ; i < size; i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+            if (variableAtoms[variableIndexes[i]].isFixed()) {
                 continue;
             }
 
@@ -287,7 +286,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
         float innerPotential = term.computeInnerPotential(variableValues);
 
         for (int i = 0 ; i < size; i++) {
-            if (variableAtoms[variableIndexes[i]] instanceof ObservedAtom) {
+            if (variableAtoms[variableIndexes[i]].isFixed()) {
                 continue;
             }
 

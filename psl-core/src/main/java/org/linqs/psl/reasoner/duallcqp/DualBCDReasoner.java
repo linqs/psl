@@ -22,7 +22,6 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPAtom;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPObjectiveTerm;
@@ -129,7 +128,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         float[] atomValues = atomStore.getAtomValues();
 
         for (int i = 0; i < atomStore.size(); i ++) {
-            if (atoms[i] instanceof ObservedAtom) {
+            if (atoms[i].isFixed()) {
                 continue;
             }
 
@@ -195,7 +194,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
         for (int i = 0; i < term.size(); i++) {
-            if (atoms[atomIndexes[i]] instanceof ObservedAtom) {
+            if (atoms[atomIndexes[i]].isFixed()) {
                 continue;
             }
 
@@ -238,7 +237,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
         for (int i = 0; i < term.size(); i++) {
-            if (atoms[atomIndexes[i]] instanceof ObservedAtom) {
+            if (atoms[atomIndexes[i]].isFixed()) {
                 continue;
             }
 
@@ -283,7 +282,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
 
         for (int i = 0; i < term.size(); i++) {
-            if (atoms[atomIndexes[i]] instanceof ObservedAtom) {
+            if (atoms[atomIndexes[i]].isFixed()) {
                 continue;
             }
 
@@ -342,7 +341,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         int[] atomIndexes = term.getAtomIndexes();
 
         for (int i = 0; i < term.size(); i++) {
-            if (atoms[atomIndexes[i]] instanceof ObservedAtom) {
+            if (atoms[atomIndexes[i]].isFixed()) {
                 observedConstant += coefficients[i] * atoms[atomIndexes[i]].getValue();
                 continue;
             }
@@ -397,7 +396,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         // Dual objective value contributions from the primal variables in the term.
         for (int i = 0; i < term.size(); i++) {
-            if (atoms[atomIndexes[i]] instanceof ObservedAtom) {
+            if (atoms[atomIndexes[i]].isFixed()) {
                 observedConstant += coefficients[i] * atoms[atomIndexes[i]].getValue();
                 continue;
             }
@@ -448,7 +447,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         double atomValueRegularization = 0.0;
         for (int i = 0; i < atomStore.size(); i ++) {
-            if (atoms[i] instanceof ObservedAtom) {
+            if (atoms[i].isFixed()) {
                 continue;
             }
 
@@ -483,7 +482,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
         for(int i = 0; i < dualLCQPAtoms.length; i++) {
-            if (atoms[i] instanceof ObservedAtom) {
+            if (atoms[i] == null || atoms[i].isFixed()) {
                 continue;
             }
 
