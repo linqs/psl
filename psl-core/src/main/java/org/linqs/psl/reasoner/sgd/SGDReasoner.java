@@ -126,6 +126,10 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
             }
 
             for (SGDObjectiveTerm term : termStore) {
+                if (!term.isActive()) {
+                    continue;
+                }
+
                 if (iteration > 1) {
                     objective += term.evaluate(prevVariableValues);
                     addTermGradient(term, prevGradient, prevVariableValues, termStore.getVariableAtoms());
@@ -169,7 +173,7 @@ public class SGDReasoner extends Reasoner<SGDObjectiveTerm> {
             iteration++;
         }
 
-        // Compute final objective and update lowest variable values, then set termStore values with lowest values.
+        // Compute final objective and update the lowest variable values, then set termStore values with lowest values.
         ObjectiveResult finalObjective = computeObjective(termStore);
         if (finalObjective.objective < lowestObjective) {
             lowestObjective = finalObjective.objective;
