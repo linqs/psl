@@ -24,11 +24,11 @@ import java.math.BigInteger;
  */
 public final class MathUtils {
     public static final double EPSILON = 1e-6;
-    public static final double RELAXED_EPSILON = 5e-3;
+    public static final double RELAXED_EPSILON = 1e-3;
     public static final double STRICT_EPSILON = 1e-8;
 
     public static final float EPSILON_FLOAT = 1e-4f;
-    public static final float RELAXED_EPSILON_FLOAT = 5e-3f;
+    public static final float RELAXED_EPSILON_FLOAT = 1e-2f;
     public static final float STRICT_EPSILON_FLOAT = 1e-6f;
 
     // Static only.
