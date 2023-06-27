@@ -30,8 +30,10 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +62,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected Map<WeightedRule, Integer> ruleIndexMap;
 
     protected float[] weightGradient;
+
+    protected int currentBatchIndex;
+    protected HashMap<Integer, TermState[]> trainComponentMAPTermStates;
     protected TermState[] trainMAPTermState;
+    protected TermState[] trainAllMAPTermState;
     protected float[] trainMAPAtomValueState;
 
     protected TermState[] validationMAPTermState;
@@ -99,6 +105,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         weightGradient = new float[mutableRules.size()];
 
+        currentBatchIndex = -1;
+
+        trainComponentMAPTermStates = null;
+        trainAllMAPTermState = null;
         trainMAPTermState = null;
         trainMAPAtomValueState = null;
 
@@ -148,7 +158,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
         validationInferenceApplication.setInitialValue(InitialValue.ATOM);
 
         // Initialize MPE state objects for warm starts.
-        trainMAPTermState = trainInferenceApplication.getTermStore().saveState();
+        trainComponentMAPTermStates = new HashMap<Integer, TermState[]>();
+        trainAllMAPTermState = trainFullTermStore.saveState();
+        trainMAPTermState = trainAllMAPTermState;
+        for (Integer i : trainFullTermStore.getConnectedComponents().keySet()) {
+            trainComponentMAPTermStates.put(i, trainFullTermStore.saveComponentState(i));
+        }
         validationMAPTermState = validationInferenceApplication.getTermStore().saveState();
 
         float[] trainAtomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
@@ -204,7 +219,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             if (log.isTraceEnabled() && (evaluation != null)) {
                 // Compute the MAP state before evaluating so variables have assigned values.
-                computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+                computeMAPStateWithWarmStart(trainInferenceApplication, trainAllMAPTermState, trainMAPAtomValueState);
                 inTrainingMAPState = true;
 
                 evaluation.compute(trainingMap);
@@ -236,7 +251,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             gradientStep(iteration);
 
+            setBatch();
+
             computeIterationStatistics();
+
+            resetBatch();
 
             objective = computeTotalLoss();
             computeTotalWeightGradient();
@@ -270,7 +289,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         if (evaluation != null) {
-            computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+            computeMAPStateWithWarmStart(trainInferenceApplication, trainAllMAPTermState, trainMAPAtomValueState);
             inTrainingMAPState = true;
 
             evaluation.compute(trainingMap);
@@ -288,6 +307,27 @@ public abstract class GradientDescent extends WeightLearningApplication {
         log.info("Final Model {} ", mutableRules);
         log.info("Final Weight Learning Loss: {}, Final Gradient Magnitude: {}, Total optimization time: {}",
                 computeTotalLoss(), computeGradientNorm(), totalTime);
+    }
+
+    protected void setBatch() {
+        trainBatchTermStore.clear();
+
+        currentBatchIndex = (int)trainFullTermStore.getConnectedComponents().keySet().toArray()[RandUtils.nextInt(trainFullTermStore.getConnectedComponents().size())];
+
+        ArrayList<? extends ReasonerTerm> batchTerms = trainFullTermStore.getConnectedComponents().get(currentBatchIndex);
+
+        for (ReasonerTerm term : batchTerms) {
+            trainBatchTermStore.add(term);
+        }
+        trainInferenceApplication.setTermStore(trainBatchTermStore);
+
+        trainMAPTermState = trainComponentMAPTermStates.get(currentBatchIndex);
+    }
+
+    protected void resetBatch() {
+        trainBatchTermStore.clear();
+        trainInferenceApplication.setTermStore(trainFullTermStore);
+        trainMAPTermState = trainAllMAPTermState;
     }
 
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {

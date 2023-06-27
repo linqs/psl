@@ -26,6 +26,7 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.TermState;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +42,8 @@ import java.util.Map;
 public abstract class OptimalValue extends GradientDescent {
     protected float[] latentInferenceIncompatibility;
     protected TermState[] latentInferenceTermState;
+    protected TermState[] latentInferenceAllTermState;
+    protected HashMap<Integer, TermState[]> latentInferenceComponentTermState;
     protected float[] latentInferenceAtomValueState;
 
     public OptimalValue(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
@@ -48,7 +51,11 @@ public abstract class OptimalValue extends GradientDescent {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         latentInferenceIncompatibility = new float[mutableRules.size()];
+
         latentInferenceTermState = null;
+        latentInferenceAllTermState = null;
+        latentInferenceComponentTermState = null;
+
         latentInferenceAtomValueState = null;
     }
 
@@ -57,9 +64,29 @@ public abstract class OptimalValue extends GradientDescent {
         super.postInitGroundModel();
 
         // Initialize latent inference warm start state objects.
-        latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
+        latentInferenceAllTermState = trainFullTermStore.saveState();
+        latentInferenceTermState = latentInferenceAllTermState;
+        latentInferenceComponentTermState = new HashMap<Integer, TermState[]>();
+        for (Integer i : trainFullTermStore.getConnectedComponents().keySet()) {
+            latentInferenceComponentTermState.put(i, trainFullTermStore.saveComponentState(i));
+
+        }
         float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+    }
+
+    @Override
+    protected void setBatch() {
+        super.setBatch();
+
+        latentInferenceTermState = latentInferenceComponentTermState.get(currentBatchIndex);
+    }
+
+    @Override
+    protected void resetBatch() {
+        super.resetBatch();
+
+        latentInferenceTermState = latentInferenceAllTermState;
     }
 
     /**

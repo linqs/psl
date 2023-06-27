@@ -24,6 +24,9 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
@@ -63,6 +66,9 @@ public abstract class WeightLearningApplication implements ModelApplication {
     protected TrainingMap validationMap;
 
     protected InferenceApplication trainInferenceApplication;
+    protected SimpleTermStore<? extends ReasonerTerm> trainFullTermStore;
+    protected SimpleTermStore<? extends ReasonerTerm> trainBatchTermStore;
+
     protected InferenceApplication validationInferenceApplication;
 
     protected EvaluationInstance evaluation;
@@ -99,6 +105,9 @@ public abstract class WeightLearningApplication implements ModelApplication {
         }
 
         trainInferenceApplication = null;
+        trainFullTermStore = null;
+        trainBatchTermStore = null;
+
         validationInferenceApplication = null;
 
         trainingMap = null;
@@ -181,6 +190,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
         }
 
         this.trainInferenceApplication = trainInferenceApplication;
+
+        assert trainInferenceApplication.getTermStore() instanceof SimpleTermStore;
+        this.trainFullTermStore = (SimpleTermStore<? extends ReasonerTerm>) trainInferenceApplication.getTermStore();
+        this.trainBatchTermStore = (SimpleTermStore<? extends ReasonerTerm>) trainInferenceApplication.createTermStore();
         this.trainingMap = trainingMap;
 
         this.validationInferenceApplication = validationInferenceApplication;
@@ -239,6 +252,11 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
     @Override
     public void close() {
+        if (trainBatchTermStore != null) {
+            trainBatchTermStore.close();
+            trainBatchTermStore = null;
+        }
+
         if (trainInferenceApplication != null) {
             trainInferenceApplication.commit();
             trainInferenceApplication.close();

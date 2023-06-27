@@ -22,6 +22,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FileUtils;
@@ -128,7 +129,7 @@ public abstract class StreamingTermStore<T extends StreamingTerm> extends TermSt
     }
 
     @Override
-    public int add(GroundRule rule, T term, Hyperplane hyperplane) {
+    public int add(ReasonerTerm term) {
         throw new UnsupportedOperationException();
     }
 

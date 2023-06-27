@@ -40,7 +40,7 @@ public class DualBCDInference extends MPEInference {
     }
 
     @Override
-    protected TermStore createTermStore() {
+    public TermStore createTermStore() {
         return new DualLCQPTermStore(database);
     }
 }

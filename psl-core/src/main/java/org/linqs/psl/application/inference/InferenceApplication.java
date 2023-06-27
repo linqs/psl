@@ -116,7 +116,7 @@ public abstract class InferenceApplication implements ModelApplication {
         return new ADMMReasoner();
     }
 
-    protected TermStore createTermStore() {
+    public TermStore createTermStore() {
         return new ADMMTermStore(database);
     }
 
@@ -205,6 +205,12 @@ public abstract class InferenceApplication implements ModelApplication {
 
     public TermStore getTermStore() {
         return termStore;
+    }
+
+    public void setTermStore(TermStore termStore) {
+        assert termStore.getDatabase().equals(database);
+
+        this.termStore = termStore;
     }
 
     public Database getDatabase() {

@@ -39,11 +39,9 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Minimizer-based weight learning losses are functions of the MAP predictions made by PSL.
@@ -57,6 +55,8 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] augmentedInferenceIncompatibility;
     protected float[] augmentedInferenceSquaredIncompatibility;
     protected TermState[] augmentedInferenceTermState;
+    protected TermState[] augmentedInferenceAllTermState;
+    protected HashMap<Integer, TermState[]> augmentedInferenceComponentTermState;
     protected float[] augmentedInferenceAtomValueState;
 
     protected float[] augmentedRVAtomGradient;
@@ -92,7 +92,9 @@ public abstract class Minimizer extends GradientDescent {
 
         augmentedInferenceIncompatibility = new float[mutableRules.size()];
         augmentedInferenceSquaredIncompatibility = new float[mutableRules.size()];
+        augmentedInferenceComponentTermState = null;
         augmentedInferenceTermState = null;
+        augmentedInferenceAllTermState = null;
         augmentedInferenceAtomValueState = null;
 
         rvAtomIndexToProxRuleIndex = new ArrayList<Integer>();
@@ -192,13 +194,34 @@ public abstract class Minimizer extends GradientDescent {
         super.postInitGroundModel();
 
         // Initialize augmented inference state objects for warm starts.
-        augmentedInferenceTermState = trainInferenceApplication.getTermStore().saveState();
+        augmentedInferenceAllTermState = trainFullTermStore.saveState();
+        augmentedInferenceTermState = augmentedInferenceAllTermState;
+        augmentedInferenceComponentTermState = new HashMap<Integer, TermState[]>();
+        for (Integer i : trainFullTermStore.getConnectedComponents().keySet()) {
+            augmentedInferenceComponentTermState.put(i, trainFullTermStore.saveComponentState(i));
+
+        }
         float[] atomValues = atomStore.getAtomValues();
         augmentedInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
 
         augmentedRVAtomGradient = new float[atomValues.length];
         augmentedDeepAtomGradient = new float[atomValues.length];
     }
+
+    @Override
+    protected void setBatch() {
+        super.setBatch();
+
+        augmentedInferenceTermState = augmentedInferenceComponentTermState.get(currentBatchIndex);
+    }
+
+    @Override
+    protected void resetBatch() {
+        super.resetBatch();
+
+        augmentedInferenceTermState = augmentedInferenceAllTermState;
+    }
+
 
     @Override
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {

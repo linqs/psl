@@ -19,7 +19,6 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.rule.GroundRule;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,24 +43,25 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
     }
 
     @Override
-    protected synchronized int add(GroundRule groundRule, T term, Hyperplane hyperplane) {
-        allTerms.add(term);
+    public synchronized int add(ReasonerTerm term) {
+        T newTerm = (T)term;
+        allTerms.add(newTerm);
 
         // Add to the connected component map.
-        int termRootIndex = atomStore.findAtomRoot(atomStore.getAtom(term.atomIndexes[0]));
+        int termRootIndex = atomStore.findAtomRoot(atomStore.getAtom(newTerm.atomIndexes[0]));
         GroundAtom rootAtom = atomStore.getAtom(termRootIndex);
 
         if (connectedComponents.containsKey(termRootIndex)) {
-            connectedComponents.get(termRootIndex).add(term);
+            connectedComponents.get(termRootIndex).add(newTerm);
         } else {
             ArrayList<T> component = new ArrayList<T>();
-            component.add(term);
+            component.add(newTerm);
             connectedComponents.put(termRootIndex, component);
         }
 
         // Unify the components of the atoms in this term.
-        for (int i = 1; i < term.size; i++) {
-            int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(term.atomIndexes[i]));
+        for (int i = 1; i < newTerm.size; i++) {
+            int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(newTerm.atomIndexes[i]));
             GroundAtom nextRootAtom = atomStore.getAtom(nextAtomRootIndex);
 
             if (nextAtomRootIndex == termRootIndex) {
@@ -114,6 +114,17 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
 
     public HashMap<Integer, ArrayList<T>> getConnectedComponents() {
         return connectedComponents;
+    }
+
+    public TermState[] saveComponentState(int componentId) {
+        ArrayList<T> component = connectedComponents.get(componentId);
+        TermState[] termStates = new TermState[component.size()];
+
+        for (int i = 0; i < component.size(); i++) {
+            termStates[i] = component.get(i).saveState();
+        }
+
+        return termStates;
     }
 
     @Override

@@ -19,10 +19,11 @@ package org.linqs.psl.reasoner.duallcqp.term;
 
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
+
+import java.util.ArrayList;
 
 /**
  * A term store that manages both DualLCQPObjectiveTerms and DualLCQPAtoms.
@@ -41,15 +42,16 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     }
 
     @Override
-    public synchronized int add(GroundRule groundRule, DualLCQPObjectiveTerm term, Hyperplane hyperplane) {
+    public synchronized int add(ReasonerTerm term) {
         ensureDualLCQPAtomsCapacity();
 
-        super.add(groundRule, term, hyperplane);
+        super.add(term);
+        DualLCQPObjectiveTerm newTerm = (DualLCQPObjectiveTerm) term;
 
-        int[] atomIndexes = term.getAtomIndexes();
-        float[] coefficients = term.getCoefficients();
-        for (int i = 0; i < term.size(); i++) {
-            dualLCQPAtoms[atomIndexes[i]].addTerm(term, coefficients[i]);
+        int[] atomIndexes = newTerm.getAtomIndexes();
+        float[] coefficients = newTerm.getCoefficients();
+        for (int i = 0; i < newTerm.size(); i++) {
+            dualLCQPAtoms[atomIndexes[i]].addTerm(newTerm, coefficients[i]);
         }
 
         return 1;
@@ -64,6 +66,14 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     }
 
     private synchronized void ensureDualLCQPAtomsCapacity() {
+        if (dualLCQPAtoms == null) {
+            dualLCQPAtoms = new DualLCQPAtom[database.getAtomStore().size()];
+            for (int i = 0; i < dualLCQPAtoms.length; i++) {
+                dualLCQPAtoms[i] = new DualLCQPAtom();
+            }
+            return;
+        }
+
         if (dualLCQPAtoms.length < database.getAtomStore().size()) {
             DualLCQPAtom[] newDualLCQPAtoms = new DualLCQPAtom[database.getAtomStore().size()];
             System.arraycopy(dualLCQPAtoms, 0, newDualLCQPAtoms, 0, dualLCQPAtoms.length);
@@ -109,6 +119,22 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
         for (int i = 0; i < dualLCQPAtoms.length; i++) {
             dualLCQPAtoms[i].saveState(termStates[i + (int)size()]);
         }
+    }
+
+    @Override
+    public TermState[] saveComponentState(int componentId) {
+        ArrayList<DualLCQPObjectiveTerm> component = connectedComponents.get(componentId);
+        TermState[] termStates = new TermState[component.size() + dualLCQPAtoms.length];
+
+        for (int i = 0; i < component.size(); i++) {
+            termStates[i] = component.get(i).saveState();
+        }
+
+        for (int i = 0; i < dualLCQPAtoms.length; i++) {
+            termStates[i + component.size()] = dualLCQPAtoms[i].saveState();
+        }
+
+        return termStates;
     }
 
     @Override
