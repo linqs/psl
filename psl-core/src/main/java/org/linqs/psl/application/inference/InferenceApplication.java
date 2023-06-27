@@ -134,7 +134,7 @@ public abstract class InferenceApplication implements ModelApplication {
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
                 ((DeepPredicate)predicate).initDeepPredicate(database.getAtomStore(), application);
-                ((DeepPredicate)predicate).predictDeepModel();
+                ((DeepPredicate)predicate).predictDeepModel(application.equals("learning"));
             }
         }
     }

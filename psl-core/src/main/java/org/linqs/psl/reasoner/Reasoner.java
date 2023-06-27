@@ -181,6 +181,15 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     }
 
     /**
+     * Compute the (sub)gradient of the optimal value of the energy function with respect to the variables.
+     * This method does not consider the constraints and it is therefore not guaranteed to be the smallest magnitude subgradient.
+     * This method assumes that the terms and variables are already optimized.
+     */
+    public void computeOptimalValueGradient(TermStore<T> termStore, float[] rvAtomGradient, float[] deepAtomGradient) {
+        parallelComputeGradient(termStore, rvAtomGradient, deepAtomGradient);
+    }
+
+    /**
      * Compute the (sub)gradient of the energy function with respect to the variables.
      * This method does not consider the constraints and it is therefore not guaranteed to be the subgradient
      * with the smallest magnitude. Therefore, this gradient can only be used for estimating distance to optimality

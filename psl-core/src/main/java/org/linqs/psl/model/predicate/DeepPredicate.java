@@ -52,7 +52,11 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     public void predictDeepModel() {
-        deepModel.predictDeepModel();
+        deepModel.predictDeepModel(false);
+    }
+
+    public void predictDeepModel(Boolean learning) {
+        deepModel.predictDeepModel(learning);
     }
 
     public void evalDeepModel() {

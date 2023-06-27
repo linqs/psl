@@ -160,7 +160,7 @@ public abstract class DeepModel {
         log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
-    public void predictDeepModel() {
+    public void predictDeepModel(Boolean learning) {
         log.debug("Predict deep model {}.", this);
 
         sharedBuffer.clear();
@@ -168,7 +168,11 @@ public abstract class DeepModel {
         sharedBuffer.force();
 
         JSONObject message = new JSONObject();
-        message.put("task", "predict");
+        if (learning) {
+            message.put("task", "predict_learn");
+        } else {
+            message.put("task", "predict");
+        }
         message.put("deep_model", deepModel);
         message.put("options", pythonOptions);
 

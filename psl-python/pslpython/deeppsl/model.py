@@ -66,6 +66,9 @@ class DeepModel(abc.ABC):
     def predict_weight(self, options = {}):
         raise NotImplementedError("predict_weight")
 
+    def predict_weight_learn(self, options = {}):
+        raise NotImplementedError("predict_weight")
+
     def eval_weight(self, options = {}):
         raise NotImplementedError("eval_weight")
 
@@ -101,6 +104,14 @@ class DeepModel(abc.ABC):
         return self.internal_fit(data, gradients, options = options)
 
     def predict_predicate(self, options = {}):
+        self._predict_predicate(False, options = options)
+
+    def predict_predicate_learn(self, options = {}):
+        self._predict_predicate(True, options = options)
+
+    def _predict_predicate(self, learn, options = {}):
+        options['learn'] = learn
+
         self._shared_buffer.seek(0)
 
         count = self._read_int()

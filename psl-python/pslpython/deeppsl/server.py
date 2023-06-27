@@ -68,6 +68,8 @@ class ConnectionHandler(object):
             result = self._fit(request)
         elif request['task'] == 'predict':
             result = self._predict(request)
+        elif request['task'] == 'predict_learn':
+            result = self._predict_learn(request)
         elif request['task'] == 'eval':
             result = self._eval(request)
         elif request['task'] == 'save':
@@ -119,6 +121,17 @@ class ConnectionHandler(object):
             return self._model.predict_predicate(options=options)
         elif deep_model == 'DeepModelWeight':
             return self._model.predict_weight(options=options)
+        else:
+            raise ValueError("Unknown deep model type in predict: '%s'." % (deep_model,))
+
+    def _predict_learn(self, request):
+        deep_model = request['deep_model']
+        options = request.get('options', {})
+
+        if deep_model == 'DeepModelPredicate':
+            return self._model.predict_predicate_learn(options=options)
+        elif deep_model == 'DeepModelWeight':
+            return self._model.predict_weight_learn(options=options)
         else:
             raise ValueError("Unknown deep model type in predict: '%s'." % (deep_model,))
 

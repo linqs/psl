@@ -550,25 +550,6 @@ public class Options {
         "Shuffle the terms before each return of iterator()."
     );
 
-    public static final Option PREDICATE_DEEP_PYTHON_PORT = new Option(
-            "predicate.deep.python.port",
-            12345,
-            "The port to connect to the Python model wrapper server.",
-            Option.FLAG_POSITIVE
-    );
-
-    public static final Option PREDICATE_DEEP_PYTHON_WRAPPER_MODULE = new Option(
-            "predicate.deep.python.module",
-            "pslpython.deeppsl.server",
-            "The Python module to invoke for the deep wrapper."
-    );
-
-    public static final Option PREDICATE_DEEP_SHARED_MEMORY_PATH = new Option(
-            "predicate.deep.sharedmemory.path",
-            SystemUtils.getTempDir("deep_shared_memory.bin"),
-            "Where the place shared memory."
-    );
-
     public static final Option MINIMIZER_INITIAL_LINEAR_PENALTY = new Option(
         "minimizer.initiallinearpenalty",
         0.1f,
@@ -672,6 +653,25 @@ public class Options {
         "postgres.user",
         "",
         "The Postgres user to connect with (when not explicitly specified)."
+    );
+
+    public static final Option PREDICATE_DEEP_PYTHON_PORT = new Option(
+        "predicate.deep.python.port",
+        12345,
+        "The port to connect to the Python model wrapper server.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option PREDICATE_DEEP_PYTHON_WRAPPER_MODULE = new Option(
+        "predicate.deep.python.module",
+        "pslpython.deeppsl.server",
+        "The Python module to invoke for the deep wrapper."
+    );
+
+    public static final Option PREDICATE_DEEP_SHARED_MEMORY_PATH = new Option(
+        "predicate.deep.sharedmemory.path",
+        SystemUtils.getTempDir("deep_shared_memory.bin"),
+        "Where the place shared memory."
     );
 
     public static final Option PROJECT_VERSION = new Option(

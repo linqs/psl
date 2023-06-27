@@ -40,6 +40,24 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
         }
     }
 
+    public synchronized void init() {
+        if (dualLCQPAtoms == null) {
+            AtomStore atomStore = database.getAtomStore();
+
+            dualLCQPAtoms = new DualLCQPAtom[atomStore.size()];
+            for (int i = 0; i < dualLCQPAtoms.length; i++) {
+                dualLCQPAtoms[i] = new DualLCQPAtom();
+            }
+        }
+    }
+
+    @Override
+    public void initForOptimization() {
+        super.initForOptimization();
+
+        init();
+    }
+
     @Override
     public synchronized int add(GroundRule groundRule, DualLCQPObjectiveTerm term, Hyperplane hyperplane) {
         ensureDualLCQPAtomsCapacity();

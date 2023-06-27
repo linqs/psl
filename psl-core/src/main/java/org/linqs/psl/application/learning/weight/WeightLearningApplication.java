@@ -156,6 +156,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
         trainInferenceApplication.loadDeepPredicates("learning");
         InferenceApplication validationInferenceApplication = InferenceApplication.getInferenceApplication(Options.WLA_INFERENCE.getString(), allRules, validationTargetDatabase);
 
+        if (runValidation) {
+            validationInferenceApplication.loadDeepPredicates("inference");
+        }
+
         initGroundModel(trainInferenceApplication, validationInferenceApplication);
     }
 

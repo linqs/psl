@@ -51,8 +51,8 @@ import java.util.Map;
 public abstract class Minimizer extends GradientDescent {
     private static final Logger log = Logger.getLogger(Minimizer.class);
 
-    protected float[] mpeIncompatibility;
-    protected float[] mpeSquaredIncompatibility;
+    protected float[] mapIncompatibility;
+    protected float[] mapSquaredIncompatibility;
 
     protected float[] augmentedInferenceIncompatibility;
     protected float[] augmentedInferenceSquaredIncompatibility;
@@ -87,8 +87,8 @@ public abstract class Minimizer extends GradientDescent {
                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        mpeIncompatibility = new float[mutableRules.size()];
-        mpeSquaredIncompatibility = new float[mutableRules.size()];
+        mapIncompatibility = new float[mutableRules.size()];
+        mapSquaredIncompatibility = new float[mutableRules.size()];
 
         augmentedInferenceIncompatibility = new float[mutableRules.size()];
         augmentedInferenceSquaredIncompatibility = new float[mutableRules.size()];
@@ -294,8 +294,8 @@ public abstract class Minimizer extends GradientDescent {
         float totalEnergyDifference = computeObjectiveDifference();
 
         for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
-            float rvGradientDifference = augmentedRVAtomGradient[i] - rvAtomGradient[i];
-            float deepGradientDifference = augmentedDeepAtomGradient[i] - deepAtomGradient[i];
+            float rvGradientDifference = augmentedRVAtomGradient[i] - MAPRVAtomGradient[i];
+            float deepGradientDifference = augmentedDeepAtomGradient[i] - MAPDeepAtomGradient[i];
 
             rvAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * rvGradientDifference + linearPenaltyCoefficient * rvGradientDifference;
             deepAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * deepGradientDifference + linearPenaltyCoefficient * deepGradientDifference;
@@ -317,8 +317,9 @@ public abstract class Minimizer extends GradientDescent {
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
 
-        computeCurrentIncompatibility(mpeIncompatibility);
-        computeCurrentSquaredIncompatibility(mpeSquaredIncompatibility);
+        computeCurrentIncompatibility(mapIncompatibility);
+        computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);
     }
 
     /**
@@ -427,12 +428,12 @@ public abstract class Minimizer extends GradientDescent {
 
         float totalEnergyDifference = 0.0f;
         for (int i = 0; i < mutableRules.size(); i++) {
-            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mpeIncompatibility[i];
+            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
             if (mutableRules.get(i).isSquared()) {
-                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mpeIncompatibility[i]);
+                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
             } else {
-                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mpeIncompatibility[i]);
-                totalEnergyDifference += regularizationParameter * (augmentedInferenceSquaredIncompatibility[i] - mpeSquaredIncompatibility[i]);
+                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+                totalEnergyDifference += regularizationParameter * (augmentedInferenceSquaredIncompatibility[i] - mapSquaredIncompatibility[i]);
             }
         }
 
@@ -440,7 +441,7 @@ public abstract class Minimizer extends GradientDescent {
         float augmentedInferenceLCQPRegularization = 0.0f;
         float fullInferenceLCQPRegularization = 0.0f;
         for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
-            if (atoms[i] instanceof ObservedAtom) {
+            if (atoms[i].isFixed()) {
                 continue;
             }
 
