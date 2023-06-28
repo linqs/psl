@@ -225,6 +225,7 @@ public abstract class Minimizer extends GradientDescent {
         parameterMovement = 0.0f;
         parameterMovement += weightGradientStep(iteration);
         parameterMovement += internalParameterGradientStep(iteration);
+        atomGradientStep();
 
         if ((iteration > 0) && (parameterMovement < parameterMovementTolerance)) {
             outerIteration++;
