@@ -149,14 +149,6 @@
 
     <profiles>
         <profile>
-            <id>all-modules</id>
-
-            <modules>
-                <module>psl-neural</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>linqs-release</id>
 
             <distributionManagement>

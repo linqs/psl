@@ -1,0 +1,46 @@
+{
+  "rules": [
+    "1.0: Deep(Id, Class) -> Sign(Id, Class) ^2"
+  ],
+  "predicates": {
+    "Deep/2": {
+      "type": "DeepPredicate",
+      "options": {
+        "model-path": "./tensorflow_model.py::SignModel",
+        "entity-data-map-path": "./data/entity-data-map.txt",
+        "entity-argument-indexes": "0",
+        "class-size": 2,
+        "input_shape": 5,
+        "output_shape": 2,
+        "learning_rate": 1.0e-0,
+        "epochs": 20
+      },
+      "targets": {
+        "learn": [
+          "data/targets_train.txt"
+        ],
+        "infer": [
+          "data/targets_test.txt"
+        ]
+      }
+    },
+    "Sign/2": {
+      "targets": {
+        "learn": [
+          "data/targets_train.txt"
+        ],
+        "infer": [
+          "data/targets_test.txt"
+        ]
+      },
+      "truth": {
+        "learn": [
+          "data/truth_train.txt"
+        ],
+        "infer": [
+          "data/truth_test.txt"
+        ]
+      }
+    }
+  }
+}

@@ -47,7 +47,7 @@ public class BinaryCrossEntropy extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            int proxRuleIndex = rvAtomIndexToProxRuleIndex.get(atomIndex);
+            int proxRuleIndex = rvAtomIndexToProxIndex.get(atomIndex);
 
             supervisedLoss += -1.0f * (observedAtom.getValue() * Math.log(Math.max(proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT))
                     + (1.0f - observedAtom.getValue()) * Math.log(Math.max(1.0f - proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT)));
@@ -65,7 +65,7 @@ public class BinaryCrossEntropy extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            int proxRuleIndex = rvAtomIndexToProxRuleIndex.get(atomIndex);
+            int proxRuleIndex = rvAtomIndexToProxIndex.get(atomIndex);
 
             proxRuleObservedAtomValueGradient[proxRuleIndex] += -1.0f * (observedAtom.getValue() / Math.max(proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT)
                     - (1.0f - observedAtom.getValue()) / Math.max(1.0f - proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.RELAXED_EPSILON_FLOAT));

@@ -21,13 +21,11 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import java.util.List;
@@ -220,8 +218,13 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                     break;
                 }
 
-                termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
-                termStore.get(termIndex).minimize(stepSize, consensusValues);
+                ADMMObjectiveTerm term = termStore.get(termIndex);
+                if (!term.isActive()) {
+                    continue;
+                }
+
+                term.updateLagrange(stepSize, consensusValues);
+                term.minimize(stepSize, consensusValues);
             }
         }
     }
@@ -272,21 +275,32 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                 }
 
                 double total = 0.0f;
-                int numLocalVariables = localRecords.size();
 
                 // First pass computes newConsensusValue and dual residual fom all local copies.
+                int numLocalVariables = 0;
                 for (ADMMTermStore.LocalRecord localRecord : localRecords) {
-                    float localValue = termStore.get(localRecord.termIndex).getVariableValue(localRecord.variableIndex);
-                    float localLagrange = termStore.get(localRecord.termIndex).getVariableLagrange(localRecord.variableIndex);
+                    ADMMObjectiveTerm term = termStore.get(localRecord.termIndex);
+                    if (!term.isActive()) {
+                        continue;
+                    }
+
+                    float localValue = term.getVariableValue(localRecord.variableIndex);
+                    float localLagrange = term.getVariableLagrange(localRecord.variableIndex);
 
                     total += localValue + localLagrange / stepSize;
 
                     AxNormInc += localValue * localValue;
                     AyNormInc += localLagrange * localLagrange;
+
+                    numLocalVariables++;
+                }
+
+                if (numLocalVariables == 0) {
+                    continue;
                 }
 
                 float newConsensusValue = 0.0f;
-                if (consensusAtoms[variableIndex] instanceof ObservedAtom) {
+                if (consensusAtoms[variableIndex].isFixed()) {
                     newConsensusValue = consensusValues[variableIndex];
                 } else {
                     newConsensusValue = (float)(total / numLocalVariables);
@@ -303,7 +317,13 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                 // Second pass computes primal residuals.
 
                 for (ADMMTermStore.LocalRecord localRecord : localRecords) {
-                    float localValue = termStore.get(localRecord.termIndex).getVariableValue(localRecord.variableIndex);
+                    ADMMObjectiveTerm term = termStore.get(localRecord.termIndex);
+
+                    if (!term.isActive()) {
+                        continue;
+                    }
+
+                    float localValue = term.getVariableValue(localRecord.variableIndex);
 
                     diff = localValue - newConsensusValue;
                     primalResInc += diff * diff;

@@ -22,7 +22,8 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
@@ -31,6 +32,7 @@ import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -56,17 +58,22 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected GDExtension gdExtension;
-
     protected Map<WeightedRule, Integer> ruleIndexMap;
 
     protected float[] weightGradient;
+    protected float[] rvAtomGradient;
+    protected float[] deepAtomGradient;
+    protected float[] MAPRVAtomGradient;
+    protected float[] MAPDeepAtomGradient;
+
+    protected List<DeepPredicate> deepPredicates;
+
     protected TermState[] trainMAPTermState;
     protected float[] trainMAPAtomValueState;
 
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
     protected boolean saveBestValidationWeights;
-
 
     protected float baseStepSize;
     protected boolean scaleStepSize;
@@ -98,6 +105,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         weightGradient = new float[mutableRules.size()];
+        rvAtomGradient = null;
+        deepAtomGradient = null;
+        MAPRVAtomGradient = null;
+        MAPDeepAtomGradient = null;
+
+        deepPredicates = new ArrayList<DeepPredicate>();
 
         trainMAPTermState = null;
         trainMAPAtomValueState = null;
@@ -156,6 +169,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         float[] validationAtomValues = validationInferenceApplication.getDatabase().getAtomStore().getAtomValues();
         validationMAPAtomValueState = Arrays.copyOf(validationAtomValues, validationAtomValues.length);
+
+        rvAtomGradient = new float[trainAtomValues.length];
+        deepAtomGradient = new float[trainAtomValues.length];
+
+        MAPRVAtomGradient = new float[trainAtomValues.length];
+        MAPDeepAtomGradient = new float[trainAtomValues.length];
+
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                deepPredicates.add((DeepPredicate)predicate);
+            }
+        }
     }
 
     protected void initForLearning() {
@@ -171,6 +196,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
             default:
                 // Do nothing.
                 break;
+        }
+
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.predictDeepModel(true);
         }
     }
 
@@ -202,6 +231,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             log.trace("Model: {}", mutableRules);
 
+            gradientStep(iteration);
+
             if (log.isTraceEnabled() && (evaluation != null)) {
                 // Compute the MAP state before evaluating so variables have assigned values.
                 computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
@@ -209,12 +240,29 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 evaluation.compute(trainingMap);
                 currentTrainingEvaluationMetric = evaluation.getNormalizedRepMetric();
+
+                for (DeepPredicate deepPredicate : deepPredicates) {
+                    deepPredicate.evalDeepModel();
+                }
+
+                for (DeepPredicate deepPredicate : deepPredicates) {
+                    deepPredicate.predictDeepModel(true);
+                }
+
                 log.trace("MAP State Training Evaluation Metric: {}", currentTrainingEvaluationMetric);
             }
 
             if (runValidation) {
+                for (DeepPredicate deepPredicate : deepPredicates) {
+                    deepPredicate.predictDeepModel(false);
+                }
+
                 computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
                 inValidationMAPState = true;
+
+                for (DeepPredicate deepPredicate : deepPredicates) {
+                    deepPredicate.predictDeepModel(true);
+                }
 
                 evaluation.compute(validationMap);
                 currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
@@ -234,12 +282,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
             }
 
-            gradientStep(iteration);
-
             computeIterationStatistics();
 
             objective = computeTotalLoss();
             computeTotalWeightGradient();
+            computeTotalAtomGradient();
             if (clipWeightGradient) {
                 clipWeightGradient();
             }
@@ -250,7 +297,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             oldObjective = objective;
 
             breakGD = breakOptimization(iteration, objective, oldObjective);
-
             log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
                     iteration, objective, computeGradientNorm(), (end - start));
 
@@ -278,6 +324,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         if (runValidation) {
+            for (DeepPredicate deepPredicate : deepPredicates) {
+                deepPredicate.predictDeepModel(false);
+            }
+
             computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
             inValidationMAPState = true;
 
@@ -288,6 +338,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         log.info("Final Model {} ", mutableRules);
         log.info("Final Weight Learning Loss: {}, Final Gradient Magnitude: {}, Total optimization time: {}",
                 computeTotalLoss(), computeGradientNorm(), totalTime);
+
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.saveDeepModel();
+            deepPredicate.close();
+        }
     }
 
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
@@ -332,6 +387,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void gradientStep(int iteration) {
         weightGradientStep(iteration);
         internalParameterGradientStep(iteration);
+        atomGradientStep();
     }
 
     /**
@@ -398,6 +454,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         weightChange = (float)Math.sqrt(weightChange);
 
         return weightChange;
+    }
+
+    protected void atomGradientStep() {
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.fitDeepPredicate(deepAtomGradient);
+            deepPredicate.predictDeepModel(true);
+        }
     }
 
     protected float computeStepSize(int iteration) {
@@ -569,7 +632,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         AtomStore atomStore = inferenceApplication.getDatabase().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
         for (int i = 0; i < atomStore.size(); i++) {
-            if (atomStore.getAtom(i) instanceof ObservedAtom) {
+            if (atomStore.getAtom(i).isFixed()) {
                 continue;
             }
 
@@ -678,4 +741,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     + entropyRegularization * (logWeight + 1);
         }
     }
+
+    protected abstract void computeTotalAtomGradient();
 }

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -37,6 +38,7 @@ import java.util.NoSuchElementException;
  */
 public class FileUtils {
     private static final Logger log = Logger.getLogger(FileUtils.class);
+    public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
     // Static only.
     private FileUtils() {}
@@ -59,7 +61,7 @@ public class FileUtils {
 
     public static BufferedWriter getBufferedWriter(File file) {
         try {
-            return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+            return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), DEFAULT_CHARSET));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -78,7 +80,7 @@ public class FileUtils {
     }
 
     public static InputStreamReader getInputStreamReader(InputStream stream) {
-        return new InputStreamReader(stream, StandardCharsets.UTF_8);
+        return new InputStreamReader(stream, DEFAULT_CHARSET);
     }
 
     public static Iterable<String> lines(BufferedReader reader) {
@@ -189,7 +191,7 @@ public class FileUtils {
     public static String readFileAsString(String path) {
         try {
             byte[] bytes = Files.readAllBytes(Paths.get(path));
-            return new String(bytes, StandardCharsets.UTF_8);
+            return new String(bytes, DEFAULT_CHARSET);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to read file contents from: '" + path + "'.", ex);
         }
