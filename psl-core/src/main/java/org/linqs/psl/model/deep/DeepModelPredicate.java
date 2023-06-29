@@ -113,7 +113,7 @@ public class DeepModelPredicate extends DeepModel {
         writeDataIndexData();
     }
 
-    public void readPredictData() {
+    public float readPredictData() {
         log.debug("Reading predict data for deep model predicate: {}", predicate.getName());
         int count = sharedBuffer.getInt();
         if (count != atomIndexes.length) {
@@ -126,13 +126,16 @@ public class DeepModelPredicate extends DeepModel {
         float deepPrediction = 0.0f;
         int atomIndex = 0;
 
+        float change = 0.0f;
         for(int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
             atomIndex = atomIndexes[index];
 
+            change += Math.abs(atomValues[atomIndex] - deepPrediction);
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
         }
+        return change;
     }
 
     public void writeEvalData() {

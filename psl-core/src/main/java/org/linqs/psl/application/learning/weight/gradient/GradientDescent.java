@@ -347,6 +347,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
         if (iteration > maxNumSteps) {
+            log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
         }
 
@@ -355,11 +356,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         if (objectiveBreak && MathUtils.equals(objective, oldObjective, objectiveTolerance)) {
+            log.trace("Breaking Weight Learning. Objective change: {} is within tolerance: {}", Math.abs(objective - oldObjective), objectiveTolerance);
             return true;
         }
 
-        if (normBreak) {
-            return MathUtils.equals(computeGradientNorm(), 0.0f, normTolerance);
+        if (normBreak && MathUtils.equals(computeGradientNorm(), 0.0f, normTolerance)) {
+            log.trace("Breaking Weight Learning. Gradient norm: {} is within tolerance: {}", computeGradientNorm(), normTolerance);
+            return true;
         }
 
         return false;
@@ -449,18 +452,19 @@ public abstract class GradientDescent extends WeightLearningApplication {
         inValidationMAPState = false;
 
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightChange += Math.pow(oldWeights[i] - mutableRules.get(i).getWeight(), 2.0f);
+            weightChange += Math.abs(oldWeights[i] - mutableRules.get(i).getWeight());
         }
-        weightChange = (float)Math.sqrt(weightChange);
 
         return weightChange;
     }
 
-    protected void atomGradientStep() {
+    protected float atomGradientStep() {
+        float deepPredicateChange = 0.0f;
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.fitDeepPredicate(deepAtomGradient);
-            deepPredicate.predictDeepModel(true);
+            deepPredicateChange += deepPredicate.predictDeepModel(true);
         }
+        return deepPredicateChange;
     }
 
     protected float computeStepSize(int iteration) {

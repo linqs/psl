@@ -207,6 +207,7 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
         if (iteration > maxNumSteps) {
+            log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
         }
 
@@ -215,9 +216,13 @@ public abstract class Minimizer extends GradientDescent {
         }
 
         float totalObjectiveDifference = computeObjectiveDifference();
+        if (totalObjectiveDifference < finalConstraintTolerance) {
+            log.trace("Breaking Weight Learning. Objective difference {} is less than final constraint tolerance {}.",
+                    totalObjectiveDifference, finalConstraintTolerance);
+            return true;
+        }
 
-        // Break if the objective difference is less than the tolerance.
-        return totalObjectiveDifference < finalConstraintTolerance;
+        return false;
     }
 
     @Override
@@ -262,13 +267,12 @@ public abstract class Minimizer extends GradientDescent {
         for (int i = 0; i < proxRules.length; i++) {
             float newProxRuleObservedAtomsValue = Math.min(Math.max(
                     proxRuleObservedAtoms[i].getValue() - stepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
-            proxRuleObservedAtomsValueMovement += Math.pow(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue, 2.0f);
+            proxRuleObservedAtomsValueMovement += Math.abs(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue);
 
             proxRuleObservedAtoms[i]._assumeValue(newProxRuleObservedAtomsValue);
             atomValues[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
             augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
         }
-        proxRuleObservedAtomsValueMovement = (float)Math.sqrt(proxRuleObservedAtomsValueMovement);
 
         return proxRuleObservedAtomsValueMovement;
     }
