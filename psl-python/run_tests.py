@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+import glob
 import os
 import re
 import sys
 import unittest
 
-TARGET_DIR = os.path.join('tests')
+THIS_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+TARGET_DIR = os.path.join(THIS_DIR, 'tests', 'python')
 
 # Return a list of unittest.TestCase
 def _collect_tests(suite, testCases = []):
@@ -21,10 +23,24 @@ def _collect_tests(suite, testCases = []):
 
     return testCases
 
+def _collect_test_directories(root_dir):
+    test_dirs = []
+    for path in glob.glob(f'{root_dir}/*/**/', recursive=True):
+        if os.path.basename(os.path.dirname(path)) in ['__pycache__']:
+            continue
+        test_dirs.append(path)
+    return test_dirs
+
 def main(pattern = None):
     runner = unittest.TextTestRunner(verbosity = 3)
-    discoveredSuite = unittest.TestLoader().discover(TARGET_DIR)
-    testCases = _collect_tests(discoveredSuite)
+    test_dirs = _collect_test_directories(TARGET_DIR)
+    testCases = []
+
+    for test_dir in test_dirs + [TARGET_DIR]:
+        discoveredSuite = unittest.TestLoader().discover(test_dir)
+        testCases = testCases + _collect_tests(discoveredSuite)
+
+    print(len(testCases))
 
     tests = unittest.suite.TestSuite()
 

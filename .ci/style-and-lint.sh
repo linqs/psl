@@ -50,7 +50,7 @@ main() {
     local status=0
 
     # Run lint.
-    mvn compile spotbugs:check -P all-modules
+    mvn compile spotbugs:check
     status=$(($status | $?))
 
     # Run misc checks.

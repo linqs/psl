@@ -19,7 +19,6 @@ package org.linqs.psl.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Compute hash digests.
@@ -68,7 +67,7 @@ public class Hash {
     }
 
     public static byte[] compute(String data, String algorithm) {
-        return compute(data.getBytes(StandardCharsets.UTF_8), algorithm);
+        return compute(data.getBytes(FileUtils.DEFAULT_CHARSET), algorithm);
     }
 
     public static byte[] compute(byte[] data, String algorithm) {

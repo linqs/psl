@@ -1,0 +1,1 @@
+../../../../../../psl-python/tests/resources/data/sign/targets_test.txt

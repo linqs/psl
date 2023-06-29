@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.atom;
 
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 
@@ -29,6 +30,9 @@ public class RandomVariableAtom extends GroundAtom {
      */
     public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value, short partition) {
         super(predicate, args, value, partition);
+        if (!(predicate instanceof DeepPredicate)) {
+            this.fixed = false;
+        }
     }
 
     @Override

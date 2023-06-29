@@ -21,13 +21,11 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
 import java.util.List;
@@ -302,7 +300,7 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
                 }
 
                 float newConsensusValue = 0.0f;
-                if (consensusAtoms[variableIndex] instanceof ObservedAtom) {
+                if (consensusAtoms[variableIndex].isFixed()) {
                     newConsensusValue = consensusValues[variableIndex];
                 } else {
                     newConsensusValue = (float)(total / numLocalVariables);

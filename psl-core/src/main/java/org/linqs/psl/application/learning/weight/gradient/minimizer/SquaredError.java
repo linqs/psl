@@ -46,7 +46,7 @@ public class SquaredError extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            supervisedLoss += Math.pow(proxRuleObservedAtoms[rvAtomIndexToProxRuleIndex.get(atomIndex)].getValue() - observedAtom.getValue(), 2.0f);
+            supervisedLoss += Math.pow(proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue() - observedAtom.getValue(), 2.0f);
         }
 
         return supervisedLoss;
@@ -61,7 +61,7 @@ public class SquaredError extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            int proxRuleIndex = rvAtomIndexToProxRuleIndex.get(atomIndex);
+            int proxRuleIndex = rvAtomIndexToProxIndex.get(atomIndex);
             proxRuleObservedAtomValueGradient[proxRuleIndex] += 2.0f * (proxRuleObservedAtoms[proxRuleIndex].getValue() - observedAtom.getValue());
         }
     }

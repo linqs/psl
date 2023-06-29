@@ -46,6 +46,9 @@ public abstract class OptimalValue extends GradientDescent {
     protected HashMap<Integer, TermState[]> latentInferenceComponentTermState;
     protected float[] latentInferenceAtomValueState;
 
+    protected float[] rvLatentAtomGradient;
+    protected float[] deepLatentAtomGradient;
+
     public OptimalValue(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                         Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
@@ -73,6 +76,9 @@ public abstract class OptimalValue extends GradientDescent {
         }
         float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+
+        rvLatentAtomGradient = new float[atomValues.length];
+        deepLatentAtomGradient = new float[atomValues.length];
     }
 
     @Override
@@ -100,6 +106,7 @@ public abstract class OptimalValue extends GradientDescent {
         inTrainingMAPState = true;
 
         computeCurrentIncompatibility(latentInferenceIncompatibility);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
 
         unfixLabeledRandomVariables();
     }

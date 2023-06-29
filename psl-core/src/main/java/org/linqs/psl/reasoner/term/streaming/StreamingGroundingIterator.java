@@ -18,11 +18,9 @@
 package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.database.QueryResultIterable;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;

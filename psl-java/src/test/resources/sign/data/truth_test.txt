@@ -1,0 +1,1 @@
+../../../../../../psl-python/tests/resources/data/sign/truth_test.txt

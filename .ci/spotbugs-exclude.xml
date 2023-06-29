@@ -12,6 +12,11 @@
         <Bug pattern="EI_EXPOSE_REP2" />
     </Match>
 
+    <!-- Incompatibility between spotbugs and Java 11: https://github.com/spotbugs/spotbugs-maven-plugin/issues/92 -->
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE" />
+    </Match>
+
     <Match>
         <Class name="org.linqs.psl.application.learning.weight.search.bayesian.SquaredExpKernel" />
         <Method name="kernel" />

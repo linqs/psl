@@ -7,11 +7,13 @@
 target
 classpath.out
 
-# Eclipse metadata #
+# IDE metadata #
 ####################
 .classpath
 .project
 .settings
+.idea/
+*.iml
 
 # Editor Temporary #
 ####################

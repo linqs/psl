@@ -61,7 +61,7 @@ public final class Reflection {
         return longName;
     }
 
-    public static Object newObject(String name) {
+    public static Class getClass(String name) {
         String className = resolveClassName(name);
         if (className == null) {
             throw new IllegalArgumentException("Could not find class: " + name);
@@ -74,7 +74,11 @@ public final class Reflection {
             throw new IllegalArgumentException("Could not find class: " + className, ex);
         }
 
-        return newObject(classObject);
+        return classObject;
+    }
+
+    public static Object newObject(String name) {
+        return newObject(getClass(name));
     }
 
     public static Object newObject(Class<?> classObject) {

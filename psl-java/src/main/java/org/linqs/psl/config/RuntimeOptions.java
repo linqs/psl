@@ -119,6 +119,12 @@ public class RuntimeOptions {
         + " The " + INFERENCE_OUTPUT_GROUNDRULES_PATH.name() + " option controls where ground rules are output."
     );
 
+    public static final Option INFERENCE_CLEAR_RULES = new Option(
+        "runtime.inference.clearrules",
+        false,
+        "Clear learning rules before inference. Useful when switching models between train and test."
+    );
+
     public static final Option LEARN = new Option(
         "runtime.learn",
         false,

@@ -20,8 +20,6 @@ package org.linqs.psl.runtime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import org.linqs.psl.config.RuntimeOptions;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -72,7 +70,9 @@ public class RuntimeConfigTest extends RuntimeTest {
 
     // JSON that fails to parse, but not for JSON syntax reasons.
     private static List<String> BAD_SYNTAX = Arrays.asList(
-        "{'predicates':{'BadArity/2':{'arity':3}}}"
+        "{'predicates':{'BadArity/2':{'arity':3}}}",
+        // Bad type.
+        "{'predicates':{'BadType/2':{'type':'org.some.type'}}}"
     );
 
     // JSON that passes parsing, but fails validation.
@@ -91,8 +91,6 @@ public class RuntimeConfigTest extends RuntimeTest {
         "{'predicates':{'BadData/2':{'observations':[['1', '2', '3', '4']]}}}",
         // Bad function.
         "{'predicates':{'BadFunction/2':{'function':'org.some.implementation'}}}",
-        // Bad model.
-        "{'predicates':{'BadModel/2':{'model':'org.some.model'}}}",
         // Bad evaluation.
         "{'predicates':{'BadEval/2':{'evaluations':['FakeEvaluator']}}}",
         "{'predicates':{'BadEval/2':{'evaluations':['org.linqs.psl.runtime.RuntimeConfig']}}}",
@@ -248,11 +246,11 @@ public class RuntimeConfigTest extends RuntimeTest {
         config.predicates.put("ArityDemo3", predicate);
         GOOD_SYNTAX_CONFIG.add(config);
 
-        GOOD_SYNTAX.add("{'predicates':{'ModelPredicate1/2':{'model':'org.some.model'}}}");
+        GOOD_SYNTAX.add("{'predicates':{'TypePredicate1/2':{'type':'StandardPredicate'}}}");
         config = new RuntimeConfig();
-        predicate = new RuntimeConfig.PredicateConfigInfo("ModelPredicate1", 2);
-        predicate.model = "org.some.model";
-        config.predicates.put("ModelPredicate1", predicate);
+        predicate = new RuntimeConfig.PredicateConfigInfo("TypePredicate1", 2);
+        predicate.setType("StandardPredicate");
+        config.predicates.put("TypePredicate1", predicate);
         GOOD_SYNTAX_CONFIG.add(config);
 
         GOOD_SYNTAX.add("{'predicates':{'FunctionPredicate1/2':{'function':'org.some.implementation'}}}");

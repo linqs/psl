@@ -1,0 +1,8 @@
+{
+    "seed": 4,
+    "train_size": 100,
+    "test_size": 100,
+    "feature_range": 1024,
+    "feature_size": 5,
+    "class_size": 2
+}

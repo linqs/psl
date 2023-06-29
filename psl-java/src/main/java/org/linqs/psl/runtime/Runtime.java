@@ -38,6 +38,7 @@ import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -151,6 +152,17 @@ public class Runtime {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
         }
 
+        // Set the relative base path for all other paths.
+        Config.setProperty("runtime.relativebasepath", config.relativeBasePath, false);
+
+        // Set all predicate options inside each predicate.
+        for (RuntimeConfig.PredicateConfigInfo info : config.predicates.values()) {
+            Predicate predicate = Predicate.get(info.name);
+            for (Map.Entry<String, String> entry : info.options.entrySet()) {
+                predicate.setPredicateOption(entry.getKey(), entry.getValue());
+            }
+        }
+
         Model model = null;
         if (RuntimeOptions.LEARN.getBoolean()) {
             model = runLearning(config, result);
@@ -158,6 +170,13 @@ public class Runtime {
 
         if (RuntimeOptions.INFERENCE.getBoolean()) {
             runInference(config, model, result);
+        }
+
+        // TODO(Connor): Closing DeepPredicates needs to occur after both learning and inference.
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                predicate.close();
+            }
         }
 
         return result;
@@ -355,6 +374,10 @@ public class Runtime {
             Config.setProperty(entry.getKey(), entry.getValue(), false);
         }
 
+        if (RuntimeOptions.INFERENCE_CLEAR_RULES.getBoolean()) {
+            model.clear();
+        }
+
         // If a model was passed in, then it was learned from the common rules (so don't include them).
         // Otherwise, load the common rules.
         if (model == null) {
@@ -401,6 +424,7 @@ public class Runtime {
 
         InferenceApplication inferenceApplication = InferenceApplication.getInferenceApplication(
                 RuntimeOptions.INFERENCE_METHOD.getString(), model.getRules(), targetDatabase);
+        inferenceApplication.loadDeepPredicates("inference");
 
         inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 

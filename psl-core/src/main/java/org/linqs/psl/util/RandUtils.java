@@ -182,12 +182,12 @@ public final class RandUtils {
         double gammaSampleSum = 0.0;
         double [] dirichletSample = new double[alphas.length];
 
-        for(int i = 0; i < alphas.length; i++) {
+        for (int i = 0; i < alphas.length; i++) {
             gammaSamples[i] = nextGamma(alphas[i], 1);
             gammaSampleSum = gammaSampleSum + gammaSamples[i];
         }
 
-        for(int i = 0; i < alphas.length; i++) {
+        for (int i = 0; i < alphas.length; i++) {
             dirichletSample[i] = gammaSamples[i] / gammaSampleSum;
         }
 

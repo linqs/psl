@@ -85,9 +85,9 @@ function main() {
     cp "${SETTINGS_XML_PATH}" "${SETTINGS_XML_DEST}"
 
     if [[ $1 == 'test' ]] ; then
-        mvn verify deploy -P all-modules -P test-release -D maven.test.skip=true
+        mvn verify deploy -P test-release -D maven.test.skip=true
     else
-        mvn verify deploy -P all-modules -P central-release -D maven.test.skip=true
+        mvn verify deploy -P central-release -D maven.test.skip=true
     fi
 }
 

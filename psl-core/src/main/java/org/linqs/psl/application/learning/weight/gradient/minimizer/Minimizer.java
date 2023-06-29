@@ -49,8 +49,8 @@ import java.util.*;
 public abstract class Minimizer extends GradientDescent {
     private static final Logger log = Logger.getLogger(Minimizer.class);
 
-    protected float[] mpeIncompatibility;
-    protected float[] mpeSquaredIncompatibility;
+    protected float[] mapIncompatibility;
+    protected float[] mapSquaredIncompatibility;
 
     protected float[] augmentedInferenceIncompatibility;
     protected float[] augmentedInferenceSquaredIncompatibility;
@@ -62,10 +62,10 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] augmentedRVAtomGradient;
     protected float[] augmentedDeepAtomGradient;
 
-    protected List<Integer> rvAtomIndexToProxRuleIndex;
+    protected List<Integer> rvAtomIndexToProxIndex;
+    protected List<Integer> proxIndexToRVAtomIndex;
     protected WeightedArithmeticRule[] proxRules;
     protected UnmanagedObservedAtom[] proxRuleObservedAtoms;
-    protected int[] proxRuleRVAtomIndexes;
 
     protected int[] proxRuleObservedAtomIndexes;
     protected float[] proxRuleObservedAtomValueGradient;
@@ -87,8 +87,8 @@ public abstract class Minimizer extends GradientDescent {
                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        mpeIncompatibility = new float[mutableRules.size()];
-        mpeSquaredIncompatibility = new float[mutableRules.size()];
+        mapIncompatibility = new float[mutableRules.size()];
+        mapSquaredIncompatibility = new float[mutableRules.size()];
 
         augmentedInferenceIncompatibility = new float[mutableRules.size()];
         augmentedInferenceSquaredIncompatibility = new float[mutableRules.size()];
@@ -97,8 +97,8 @@ public abstract class Minimizer extends GradientDescent {
         augmentedInferenceAllTermState = null;
         augmentedInferenceAtomValueState = null;
 
-        rvAtomIndexToProxRuleIndex = new ArrayList<Integer>();
-        proxRuleRVAtomIndexes = null;
+        rvAtomIndexToProxIndex = new ArrayList<Integer>();
+        proxIndexToRVAtomIndex = new ArrayList<Integer>();
         proxRules = null;
         proxRuleObservedAtoms = null;
         proxRuleObservedAtomValueGradient = null;
@@ -124,7 +124,7 @@ public abstract class Minimizer extends GradientDescent {
         // Create and add the augmented inference proximity terms.
         int unFixedAtomCount = 0;
         for (GroundAtom atom : atomStore) {
-            if (atom instanceof ObservedAtom) {
+            if (atom.isFixed()) {
                 continue;
             }
 
@@ -139,7 +139,6 @@ public abstract class Minimizer extends GradientDescent {
 
         proxRules = new WeightedArithmeticRule[unFixedAtomCount];
         proxRuleObservedAtoms = new UnmanagedObservedAtom[unFixedAtomCount];
-        proxRuleRVAtomIndexes = new int[unFixedAtomCount];
         proxRuleObservedAtomIndexes = new int[unFixedAtomCount];
         proxRuleObservedAtomValueGradient = new float[unFixedAtomCount];
         int originalAtomCount = atomStore.size();
@@ -147,13 +146,13 @@ public abstract class Minimizer extends GradientDescent {
         for (int i = 0; i < originalAtomCount; i++) {
             GroundAtom atom = atomStore.getAtom(i);
 
-            if (atom instanceof ObservedAtom) {
-                rvAtomIndexToProxRuleIndex.add(-1);
+            if (atom.isFixed()) {
+                rvAtomIndexToProxIndex.add(-1);
                 continue;
             }
 
-            rvAtomIndexToProxRuleIndex.add(proxRuleIndex);
-            proxRuleRVAtomIndexes[proxRuleIndex] = i;
+            rvAtomIndexToProxIndex.add(proxRuleIndex);
+            proxIndexToRVAtomIndex.add(i);
 
             // Create a new predicate for the proximity terms.
             Predicate proxPredicate = StandardPredicate.get(
@@ -280,9 +279,9 @@ public abstract class Minimizer extends GradientDescent {
         AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
         for (int i = 0; i < proxRules.length; i++) {
-            proxRuleObservedAtoms[i]._assumeValue(trainMAPAtomValueState[proxRuleRVAtomIndexes[i]]);
-            atomValues[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxRuleRVAtomIndexes[i]];
-            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxRuleRVAtomIndexes[i]];
+            proxRuleObservedAtoms[i]._assumeValue(trainMAPAtomValueState[proxIndexToRVAtomIndex.get(i)]);
+            atomValues[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxIndexToRVAtomIndex.get(i)];
+            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxIndexToRVAtomIndex.get(i)];
         }
 
         // Overwrite the mpe state value with the truth if it exists.
@@ -291,7 +290,7 @@ public abstract class Minimizer extends GradientDescent {
             ObservedAtom observedAtom = entry.getValue();
 
             int rvAtomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            int proxRuleIndex = rvAtomIndexToProxRuleIndex.get(rvAtomIndex);
+            int proxRuleIndex = rvAtomIndexToProxIndex.get(rvAtomIndex);
 
             proxRuleObservedAtoms[proxRuleIndex]._assumeValue(observedAtom.getValue());
             atomValues[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
@@ -312,6 +311,19 @@ public abstract class Minimizer extends GradientDescent {
         computeProxRuleObservedAtomValueGradient();
     }
 
+    @Override
+    protected void computeTotalAtomGradient() {
+        float totalEnergyDifference = computeObjectiveDifference();
+
+        for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
+            float rvGradientDifference = augmentedRVAtomGradient[i] - MAPRVAtomGradient[i];
+            float deepGradientDifference = augmentedDeepAtomGradient[i] - MAPDeepAtomGradient[i];
+
+            rvAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * rvGradientDifference + linearPenaltyCoefficient * rvGradientDifference;
+            deepAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * deepGradientDifference + linearPenaltyCoefficient * deepGradientDifference;
+        }
+    }
+
     protected void computeProxRuleObservedAtomValueGradient() {
         Arrays.fill(proxRuleObservedAtomValueGradient, 0.0f);
 
@@ -327,8 +339,9 @@ public abstract class Minimizer extends GradientDescent {
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
 
-        computeCurrentIncompatibility(mpeIncompatibility);
-        computeCurrentSquaredIncompatibility(mpeSquaredIncompatibility);
+        computeCurrentIncompatibility(mapIncompatibility);
+        computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);
     }
 
     /**
@@ -343,6 +356,7 @@ public abstract class Minimizer extends GradientDescent {
 
         computeCurrentIncompatibility(augmentedInferenceIncompatibility);
         computeCurrentSquaredIncompatibility(augmentedInferenceSquaredIncompatibility);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), augmentedRVAtomGradient, augmentedDeepAtomGradient);
 
         deactivateAugmentedInferenceProxTerms();
     }
@@ -432,17 +446,17 @@ public abstract class Minimizer extends GradientDescent {
         // DualBCDReasoners add a regularization to the energy function to ensure strong convexity.
         float regularizationParameter = 0.0f;
         if (trainInferenceApplication.getReasoner() instanceof DualBCDReasoner) {
-            regularizationParameter = (float)((DualBCDReasoner) trainInferenceApplication.getReasoner()).regularizationParameter;
+            regularizationParameter = (float)((DualBCDReasoner)trainInferenceApplication.getReasoner()).regularizationParameter;
         }
 
         float totalEnergyDifference = 0.0f;
         for (int i = 0; i < mutableRules.size(); i++) {
-            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mpeIncompatibility[i];
+            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
             if (mutableRules.get(i).isSquared()) {
-                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mpeIncompatibility[i]);
+                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
             } else {
-                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mpeIncompatibility[i]);
-                totalEnergyDifference += regularizationParameter * (augmentedInferenceSquaredIncompatibility[i] - mpeSquaredIncompatibility[i]);
+                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+                totalEnergyDifference += regularizationParameter * (augmentedInferenceSquaredIncompatibility[i] - mapSquaredIncompatibility[i]);
             }
         }
 
@@ -450,7 +464,7 @@ public abstract class Minimizer extends GradientDescent {
         float augmentedInferenceLCQPRegularization = 0.0f;
         float fullInferenceLCQPRegularization = 0.0f;
         for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
-            if (atoms[i] instanceof ObservedAtom) {
+            if (atoms[i].isFixed()) {
                 continue;
             }
 
@@ -465,7 +479,7 @@ public abstract class Minimizer extends GradientDescent {
     private float computeTotalProxValue(float[] proxRuleIncompatibility) {
         float totalProxValue = 0.0f;
         for (int i = 0; i < proxRules.length; i++) {
-            proxRuleIncompatibility[i] = proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[proxRuleRVAtomIndexes[i]];
+            proxRuleIncompatibility[i] = proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[proxIndexToRVAtomIndex.get(i)];
             totalProxValue += Math.pow(proxRuleIncompatibility[i], 2.0f);
         }
         totalProxValue = proxRuleWeight * totalProxValue;
