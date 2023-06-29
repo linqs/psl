@@ -18,6 +18,7 @@
 package org.linqs.psl.model.deep;
 
 import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
@@ -29,6 +30,7 @@ import org.linqs.psl.util.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 public class DeepModelPredicate extends DeepModel {
@@ -45,9 +47,16 @@ public class DeepModelPredicate extends DeepModel {
 
     private int classSize;
     private int[] atomIndexes;
+    private HashMap<Integer, int[]> componentAtomIndexes;
     private int[] dataIndexes;
+    private HashMap<Integer, int[]> componentDataIndexes;
+
     private float[] gradients;
+    private HashMap<Integer, float[]> componentGradients;
+
     private float[] symbolicGradients;
+    private HashMap<Integer, int[]> componentSymbolicGradients;
+
 
     private ArrayList<Integer> validAtomIndexes;
     private ArrayList<Integer> validDataIndexes;
@@ -60,9 +69,13 @@ public class DeepModelPredicate extends DeepModel {
 
         this.classSize = -1;
         this.atomIndexes = null;
+        this.componentAtomIndexes = null;
         this.dataIndexes = null;
+        this.componentDataIndexes = null;
         this.gradients = null;
+        this.componentGradients = null;
         this.symbolicGradients = null;
+        this.componentSymbolicGradients = null;
 
         this.validAtomIndexes = new ArrayList<Integer>();
         this.validDataIndexes = new ArrayList<Integer>();
@@ -80,8 +93,26 @@ public class DeepModelPredicate extends DeepModel {
 
         // Switch arraylists to arrays for faster access.
         atomIndexes = new int[validAtomIndexes.size()];
+        componentAtomIndexes = new HashMap<>();
         gradients = new float[validAtomIndexes.size()];
+        componentGradients = new HashMap<>();
         dataIndexes = new int[validDataIndexes.size()];
+        componentDataIndexes = new HashMap<>();
+
+        HashMap<Integer, ArrayList<GroundAtom>> connectedComponentAtoms = atomStore.getConnectedComponentAtoms();
+        for (int componentIndex : connectedComponentAtoms.keySet()) {
+            ArrayList<GroundAtom> connectedComponent = connectedComponentAtoms.get(componentIndex);
+            componentAtomIndexes.put(componentIndex, new int[connectedComponent.size()]);
+            componentGradients.put(componentIndex, new float[connectedComponent.size()]);
+            componentDataIndexes.put(componentIndex, new int[connectedComponent.size()]);
+
+            for (int i = 0; i < connectedComponent.size(); i++) {
+                GroundAtom atom = connectedComponent.get(i);
+                componentAtomIndexes.get(componentIndex)[i] = atom.getIndex();
+                componentGradients.get(componentIndex)[i] = 0.0f;
+                componentDataIndexes.get(componentIndex)[i] = 0;
+            }
+        }
 
         for (int i = 0; i < atomIndexes.length; i++) {
             atomIndexes[i] = validAtomIndexes.get(i);

@@ -124,8 +124,12 @@ public class AtomStore implements Iterable<GroundAtom> {
         return atoms;
     }
 
+    public HashMap<Integer, ArrayList<GroundAtom>> getConnectedComponentAtoms() {
+    	return connectedComponentsAtoms;
+    }
+
     public ArrayList<GroundAtom> getConnectedComponentAtoms(int index) {
-    	return connectedComponentsAtoms.get(index);
+        return connectedComponentsAtoms.get(index);
     }
 
     public GroundAtom getAtom(int index) {
