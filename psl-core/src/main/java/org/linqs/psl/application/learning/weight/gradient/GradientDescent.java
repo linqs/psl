@@ -387,6 +387,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
         if (iteration > maxNumSteps) {
+            log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
         }
 
@@ -395,11 +396,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         if (objectiveBreak && MathUtils.equals(objective, oldObjective, objectiveTolerance)) {
+            log.trace("Breaking Weight Learning. Objective change: {} is within tolerance: {}", Math.abs(objective - oldObjective), objectiveTolerance);
             return true;
         }
 
-        if (normBreak) {
-            return MathUtils.equals(computeGradientNorm(), 0.0f, normTolerance);
+        if (normBreak && MathUtils.equals(computeGradientNorm(), 0.0f, normTolerance)) {
+            log.trace("Breaking Weight Learning. Gradient norm: {} is within tolerance: {}", computeGradientNorm(), normTolerance);
+            return true;
         }
 
         return false;
@@ -434,14 +437,22 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Take a step in the direction of the negative gradient of the internal parameters.
      * This method is a no-op for the abstract class. Children should override this method if they have internal parameters.
      */
-    protected void internalParameterGradientStep(int iteration) {
+    protected float internalParameterGradientStep(int iteration) {
         // Do nothing.
+        return 0.0f;
     }
 
     /**
      * Take a step in the direction of the negative gradient of the weights.
+     * Return the total change in the weights.
      */
-    protected void weightGradientStep(int iteration) {
+    protected float weightGradientStep(int iteration) {
+        float weightChange = 0.0f;
+        float[] oldWeights = new float[mutableRules.size()];
+        for (int i = 0; i < mutableRules.size(); i++) {
+            oldWeights[i] = mutableRules.get(i).getWeight();
+        }
+
         float stepSize = computeStepSize(iteration);
 
         switch (gdExtension) {
@@ -479,13 +490,21 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         inTrainingMAPState = false;
         inValidationMAPState = false;
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weightChange += Math.abs(oldWeights[i] - mutableRules.get(i).getWeight());
+        }
+
+        return weightChange;
     }
 
-    protected void atomGradientStep() {
+    protected float atomGradientStep() {
+        float deepPredicateChange = 0.0f;
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.fitDeepPredicate(deepAtomGradient);
-            deepPredicate.predictDeepModel(true);
+            deepPredicateChange += deepPredicate.predictDeepModel(true);
         }
+        return deepPredicateChange;
     }
 
     protected float computeStepSize(int iteration) {
@@ -650,16 +669,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
     /**
      * Use the provided warm start for MPE inference to save time in reasoner.
      */
-    protected void computeMAPStateWithWarmStart(InferenceApplication inferenceApplication, TermState[] termState, float[] atomValueState) {
+    protected void computeMAPStateWithWarmStart(InferenceApplication inferenceApplication,
+                                                TermState[] warmStartTermState, float[] warmStartAtomValueState) {
         // Warm start inference with previous termState.
-        inferenceApplication.getTermStore().loadState(termState);
+        inferenceApplication.getTermStore().loadState(warmStartTermState);
         AtomStore atomStore = inferenceApplication.getDatabase().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
         for (int i = 0; i < atomStore.size(); i++) {
             if (atomStore.getAtom(i).isFixed()) {
                 continue;
             }
-            atomValues[i] = atomValueState[i];
+
+            atomValues[i] = warmStartAtomValueState[i];
         }
 
         atomStore.sync();
@@ -667,9 +688,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         computeMAPState(inferenceApplication);
 
         // Save the MPE state for future warm starts.
-        inferenceApplication.getTermStore().saveState(termState);
+        inferenceApplication.getTermStore().saveState(warmStartTermState);
         float[] mpeAtomValues = inferenceApplication.getDatabase().getAtomStore().getAtomValues();
-        System.arraycopy(mpeAtomValues, 0, atomValueState, 0, mpeAtomValues.length);
+        System.arraycopy(mpeAtomValues, 0, warmStartAtomValueState, 0, mpeAtomValues.length);
     }
 
     /**

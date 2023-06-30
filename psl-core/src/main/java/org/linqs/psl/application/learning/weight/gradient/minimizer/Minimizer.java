@@ -49,6 +49,10 @@ import java.util.*;
 public abstract class Minimizer extends GradientDescent {
     private static final Logger log = Logger.getLogger(Minimizer.class);
 
+    protected float[] latentInferenceIncompatibility;
+    protected TermState[] latentInferenceTermState;
+    protected float[] latentInferenceAtomValueState;
+
     protected float[] mapIncompatibility;
     protected float[] mapSquaredIncompatibility;
 
@@ -71,21 +75,28 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] proxRuleObservedAtomValueGradient;
     protected final float proxRuleWeight;
 
-    protected int internalIteration;
+    protected float parameterMovement;
+    protected float parameterMovementTolerance;
+    protected float finalParameterMovementTolerance;
+    protected float constraintTolerance;
+    protected float finalConstraintTolerance;
+
+    protected boolean initializedProxRuleConstants;
     protected int outerIteration;
-    protected int numInternalIterations;
 
     protected final float initialSquaredPenaltyCoefficient;
     protected float squaredPenaltyCoefficient;
-    protected float squaredPenaltyCoefficientDelta;
+    protected float squaredPenaltyCoefficientIncreaseRate;
     protected final float initialLinearPenaltyCoefficient;
     protected float linearPenaltyCoefficient;
-
-    protected final float objectiveDifferenceTolerance;
 
     public Minimizer(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
+
+        latentInferenceIncompatibility = new float[mutableRules.size()];
+        latentInferenceTermState = null;
+        latentInferenceAtomValueState = null;
 
         mapIncompatibility = new float[mutableRules.size()];
         mapSquaredIncompatibility = new float[mutableRules.size()];
@@ -104,17 +115,19 @@ public abstract class Minimizer extends GradientDescent {
         proxRuleObservedAtomValueGradient = null;
         proxRuleWeight = Options.MINIMIZER_PROX_RULE_WEIGHT.getFloat();
 
-        internalIteration = 0;
-        outerIteration = 1;
-        numInternalIterations = Options.MINIMIZER_NUM_INTERNAL_ITERATIONS.getInt();
-
         initialSquaredPenaltyCoefficient = Options.MINIMIZER_INITIAL_SQUARED_PENALTY.getFloat();
         squaredPenaltyCoefficient = initialSquaredPenaltyCoefficient;
-        squaredPenaltyCoefficientDelta = Options.MINIMIZER_SQUARED_PENALTY_DELTA.getFloat();
+        squaredPenaltyCoefficientIncreaseRate = Options.MINIMIZER_SQUARED_PENALTY_INCREASE_RATE.getFloat();
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
 
-        objectiveDifferenceTolerance = Options.MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE.getFloat();
+        parameterMovement = Float.POSITIVE_INFINITY;
+        parameterMovementTolerance = 1.0f / initialSquaredPenaltyCoefficient;
+        finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
+        constraintTolerance = (float)(1.0f / Math.pow(initialSquaredPenaltyCoefficient, 0.1f));
+        finalConstraintTolerance = Options.MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE.getFloat();
+        initializedProxRuleConstants = false;
+        outerIteration = 1;
     }
 
     @Override
@@ -192,15 +205,13 @@ public abstract class Minimizer extends GradientDescent {
 
         super.postInitGroundModel();
 
-        // Initialize augmented inference state objects for warm starts.
-        augmentedInferenceAllTermState = trainFullTermStore.saveState();
-        augmentedInferenceTermState = augmentedInferenceAllTermState;
-        augmentedInferenceComponentTermState = new HashMap<Integer, TermState[]>();
-        for (Integer i : trainFullTermStore.getConnectedComponents().keySet()) {
-            augmentedInferenceComponentTermState.put(i, trainFullTermStore.saveComponentState(i));
+        // Initialize latent and augmented inference warm start state objects.
+        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
 
-        }
-        float[] atomValues = atomStore.getAtomValues();
+        latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
+        latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+
+        augmentedInferenceTermState = trainInferenceApplication.getTermStore().saveState();
         augmentedInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
 
         augmentedRVAtomGradient = new float[atomValues.length];
@@ -225,6 +236,7 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
         if (iteration > maxNumSteps) {
+            log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
         }
 
@@ -233,58 +245,89 @@ public abstract class Minimizer extends GradientDescent {
         }
 
         float totalObjectiveDifference = computeObjectiveDifference();
+        if (totalObjectiveDifference < finalConstraintTolerance) {
+            log.trace("Breaking Weight Learning. Objective difference {} is less than final constraint tolerance {}.",
+                    totalObjectiveDifference, finalConstraintTolerance);
+            return true;
+        }
 
-        // Break if the objective difference is less than the tolerance.
-        return totalObjectiveDifference < objectiveDifferenceTolerance;
+        return false;
     }
 
     @Override
     protected void gradientStep(int iteration) {
-        super.gradientStep(iteration);
-        internalIteration++;
-    }
+        parameterMovement = 0.0f;
+        parameterMovement += weightGradientStep(iteration);
+        parameterMovement += internalParameterGradientStep(iteration);
+        atomGradientStep();
 
-    @Override
-    protected void internalParameterGradientStep(int iteration) {
-        if (internalIteration >= numInternalIterations) {
+        if ((iteration > 0) && (parameterMovement < parameterMovementTolerance)) {
+            outerIteration++;
+
             // Update the penalty coefficients and tolerance.
             float totalObjectiveDifference = computeObjectiveDifference();
 
-            log.trace("Outer iteration: {}, Objective Difference: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}.",
-                    outerIteration, totalObjectiveDifference, squaredPenaltyCoefficient, linearPenaltyCoefficient);
+            if (totalObjectiveDifference < constraintTolerance) {
+                if ((totalObjectiveDifference < finalConstraintTolerance) && (parameterMovement < finalParameterMovementTolerance)) {
+                    // Learning has converged.
+                    return;
+                }
+                linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
+                constraintTolerance = (float)(constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9));
+                parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
+            } else {
+                squaredPenaltyCoefficient = squaredPenaltyCoefficientIncreaseRate * squaredPenaltyCoefficient;
+                constraintTolerance = (float)(1.0f / Math.pow(squaredPenaltyCoefficient, 0.1));
+                parameterMovementTolerance = (float)(1.0f / squaredPenaltyCoefficient);
+            }
 
-            linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
-            squaredPenaltyCoefficient = squaredPenaltyCoefficient + squaredPenaltyCoefficientDelta;
+            log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
+                    outerIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
 
-            internalIteration = 0;
-            outerIteration++;
         }
+    }
 
+    @Override
+    protected float internalParameterGradientStep(int iteration) {
+        float proxRuleObservedAtomsValueMovement = 0.0f;
         // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
         float stepSize = computeStepSize(iteration);
         float[] atomValues = trainInferenceApplication.getTermStore().getDatabase().getAtomStore().getAtomValues();
         for (int i = 0; i < proxRules.length; i++) {
-            proxRuleObservedAtoms[i]._assumeValue(Math.min(Math.max(
-                    proxRuleObservedAtoms[i].getValue() - stepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f));
-            atomValues[proxRuleObservedAtomIndexes[i]] = proxRuleObservedAtoms[i].getValue();
-            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = proxRuleObservedAtoms[i].getValue();
+            float newProxRuleObservedAtomsValue = Math.min(Math.max(
+                    proxRuleObservedAtoms[i].getValue() - stepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
+            proxRuleObservedAtomsValueMovement += Math.abs(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue);
+
+            proxRuleObservedAtoms[i]._assumeValue(newProxRuleObservedAtomsValue);
+            atomValues[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
+            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
         }
+
+        return proxRuleObservedAtomsValueMovement;
     }
 
     protected void initializeProximityRuleConstants() {
-        // Initialize the proximity rule constants to the truth if it exists or its current mpe state.
-        computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+        // Initialize the proximity rule constants to the truth if it exists or the latent MAP state.
+        fixLabeledRandomVariables();
+
+        log.trace("Performing Latent Inference.");
+        computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
         inTrainingMAPState = true;
+
+        unfixLabeledRandomVariables();
 
         AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
+
+        System.arraycopy(latentInferenceAtomValueState, 0, augmentedInferenceAtomValueState, 0, latentInferenceAtomValueState.length);
+
         for (int i = 0; i < proxRules.length; i++) {
-            proxRuleObservedAtoms[i]._assumeValue(trainMAPAtomValueState[proxIndexToRVAtomIndex.get(i)]);
-            atomValues[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxIndexToRVAtomIndex.get(i)];
-            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxIndexToRVAtomIndex.get(i)];
+            proxRuleObservedAtoms[i]._assumeValue(latentInferenceAtomValueState[proxIndexToRVAtomIndex.get(i)]);
+            atomValues[proxRuleObservedAtomIndexes[i]] = latentInferenceAtomValueState[proxIndexToRVAtomIndex.get(i)];
+            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = latentInferenceAtomValueState[proxIndexToRVAtomIndex.get(i)];
         }
 
-        // Overwrite the mpe state value with the truth if it exists.
+        // Overwrite the latent MAP state value with the truth if it exists.
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
             ObservedAtom observedAtom = entry.getValue();
@@ -296,13 +339,15 @@ public abstract class Minimizer extends GradientDescent {
             atomValues[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
             augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
         }
+
+        initializedProxRuleConstants = true;
     }
 
     @Override
     protected void computeIterationStatistics() {
         computeFullInferenceStatistics();
 
-        if ((internalIteration == 1) && (outerIteration == 1)) {
+        if (!initializedProxRuleConstants) {
             initializeProximityRuleConstants();
         }
 
@@ -341,6 +386,7 @@ public abstract class Minimizer extends GradientDescent {
 
         computeCurrentIncompatibility(mapIncompatibility);
         computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
+
         trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);
     }
 
@@ -535,5 +581,45 @@ public abstract class Minimizer extends GradientDescent {
 
             incompatibilityArray[index] += term.evaluateSquaredHingeLoss(atomValues);
         }
+    }
+
+    /**
+     * Set RandomVariableAtoms with labels to their observed (truth) value.
+     * This method relies on random variable atoms and observed atoms
+     * with the same predicates and arguments having the same hash.
+     */
+    protected void fixLabeledRandomVariables() {
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getDatabase().getAtomStore();
+
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
+            RandomVariableAtom randomVariableAtom = entry.getKey();
+            ObservedAtom observedAtom = entry.getValue();
+
+            int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            atomStore.getAtoms()[atomIndex] = observedAtom;
+            atomStore.getAtomValues()[atomIndex] = observedAtom.getValue();
+            latentInferenceAtomValueState[atomIndex] = observedAtom.getValue();
+            randomVariableAtom.setValue(observedAtom.getValue());
+        }
+
+        inTrainingMAPState = false;
+    }
+
+    /**
+     * Set RandomVariableAtoms with labels to their unobserved state.
+     * This method relies on random variable atoms and observed atoms
+     * with the same predicates and arguments having the same hash.
+     */
+    protected void unfixLabeledRandomVariables() {
+        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
+            RandomVariableAtom randomVariableAtom = entry.getKey();
+
+            int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            atomStore.getAtoms()[atomIndex] = randomVariableAtom;
+        }
+
+        inTrainingMAPState = false;
     }
 }

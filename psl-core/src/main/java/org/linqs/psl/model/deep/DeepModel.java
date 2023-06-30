@@ -100,7 +100,7 @@ public abstract class DeepModel {
     /**
      * Abstract class for reading the predict data from the shared buffer.
      */
-    public abstract void readPredictData();
+    public abstract float readPredictData();
 
     /**
      * Abstract class for writing the eval data to the shared buffer.
@@ -160,7 +160,7 @@ public abstract class DeepModel {
         log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
-    public void predictDeepModel(Boolean learning) {
+    public float predictDeepModel(Boolean learning) {
         log.debug("Predict deep model {}.", this);
 
         sharedBuffer.clear();
@@ -179,10 +179,12 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         sharedBuffer.clear();
-        readPredictData();
+        float movement = readPredictData();
 
         String resultString = getResultString(response);
         log.debug("Predict deep model result for {} : {}", this, resultString);
+
+        return movement;
     }
 
     public void evalDeepModel() {
