@@ -70,7 +70,7 @@ public abstract class Database {
 
     protected final List<Short> allPartitionIDs;
 
-    protected AtomStore atomStore;
+    protected PersistedAtomStore atomStore;
 
     /**
      * Keeps track of the open / closed status of this database.
@@ -166,7 +166,7 @@ public abstract class Database {
         return getAllGroundAtoms(predicate, allPartitionIDs);
     }
 
-    public AtomStore getAtomStore() {
+    public PersistedAtomStore getAtomStore() {
         if (closed) {
             throw new IllegalStateException("Cannot get an AtomStore from a closed database.");
         }
@@ -257,6 +257,6 @@ public abstract class Database {
             return;
         }
 
-        atomStore = new AtomStore(this);
+        atomStore = new PersistedAtomStore(this);
     }
 }

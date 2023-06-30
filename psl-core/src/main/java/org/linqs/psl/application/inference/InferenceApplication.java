@@ -113,7 +113,7 @@ public abstract class InferenceApplication implements ModelApplication {
         return new ADMMReasoner();
     }
 
-    protected TermStore createTermStore() {
+    public TermStore createTermStore() {
         return new ADMMTermStore(database);
     }
 

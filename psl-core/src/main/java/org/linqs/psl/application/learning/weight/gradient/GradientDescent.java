@@ -28,7 +28,9 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
@@ -66,10 +68,17 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float[] MAPRVAtomGradient;
     protected float[] MAPDeepAtomGradient;
 
+
     protected List<DeepPredicate> deepPredicates;
 
+    protected SimpleTermStore<? extends ReasonerTerm> trainFullTermStore;
     protected TermState[] trainMAPTermState;
     protected float[] trainMAPAtomValueState;
+
+    protected int numBatches;
+    protected List<SimpleTermStore<? extends ReasonerTerm>> batchTermStores;
+    protected List<int[]> batchAtomIndexes;
+    protected List<float[]> batchMAPTermState;
 
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
@@ -112,8 +121,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         deepPredicates = new ArrayList<DeepPredicate>();
 
+        trainFullTermStore = null;
         trainMAPTermState = null;
         trainMAPAtomValueState = null;
+
+        numBatches = Options.WLA_GRADIENT_DESCENT_NUM_BATCHES.getInt();
+        batchTermStores = new ArrayList<SimpleTermStore<? extends ReasonerTerm>>(numBatches);
 
         validationMAPTermState = null;
         validationMAPAtomValueState = null;
@@ -154,6 +167,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
             throw new IllegalStateException("If validation is being run, then validation data must be provided in the runtime.json file.");
         }
 
+        assert trainInferenceApplication.getTermStore() instanceof SimpleTermStore;
+        this.trainFullTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.getTermStore();
+
         // Set the initial value of atoms to be the current atom value.
         // This ensures that when the inference application is reset before computing the MAP state
         // the atom values that were fixed to their warm start or true labels are preserved.
@@ -179,6 +195,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
                 deepPredicates.add((DeepPredicate)predicate);
+            }
+        }
+
+        // ToDo(Charles): Create non-trivial batches.
+        for (int i = 0; i < numBatches; i++) {
+            batchTermStores.add((SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.createTermStore());
+
+            for (ReasonerTerm term : trainFullTermStore) {
+                batchTermStores.get(i).add(term);
             }
         }
     }

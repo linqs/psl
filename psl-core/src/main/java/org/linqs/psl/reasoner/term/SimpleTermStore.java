@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.rule.GroundRule;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -40,8 +39,10 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
      * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
      */
     @Override
-    protected synchronized int add(GroundRule groundRule, T term, Hyperplane hyperplane) {
-        terms.add(term);
+    public synchronized int add(ReasonerTerm term) {
+        T newTerm = (T)term;
+        terms.add(newTerm);
+
         return 1;
     }
 
