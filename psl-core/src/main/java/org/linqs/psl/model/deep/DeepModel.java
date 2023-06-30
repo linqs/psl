@@ -92,15 +92,21 @@ public abstract class DeepModel {
      */
     public abstract void writeFitData();
 
+    public abstract void writeFitData(int componentIndex);
+
     /**
      * Abstract class for writing the predict data to the shared buffer.
      */
     public abstract void writePredictData();
 
+    public abstract void writePredictData(int componentIndex);
+
     /**
      * Abstract class for reading the predict data from the shared buffer.
      */
     public abstract float readPredictData();
+
+    public abstract float readPredictData(int componentIndex);
 
     /**
      * Abstract class for writing the eval data to the shared buffer.
@@ -160,6 +166,24 @@ public abstract class DeepModel {
         log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
+    public void fitDeepModel(int componentIndex) {
+        log.debug("Fit deep model {}.", this);
+
+        sharedBuffer.clear();
+        writeFitData(componentIndex);
+        sharedBuffer.force();
+
+        JSONObject message = new JSONObject();
+        message.put("task", "fit");
+        message.put("deep_model", deepModel);
+        message.put("options", pythonOptions);
+
+        JSONObject response = sendSocketMessage(message);
+
+        String resultString = getResultString(response);
+        log.debug("Fit deep model results for {} : {}", this, resultString);
+    }
+
     public float predictDeepModel(Boolean learning) {
         log.debug("Predict deep model {}.", this);
 
@@ -180,6 +204,33 @@ public abstract class DeepModel {
 
         sharedBuffer.clear();
         float movement = readPredictData();
+
+        String resultString = getResultString(response);
+        log.debug("Predict deep model result for {} : {}", this, resultString);
+
+        return movement;
+    }
+
+    public float predictDeepModel(Boolean learning, int componentIndex) {
+        log.debug("Predict deep model {}.", this);
+
+        sharedBuffer.clear();
+        writePredictData(componentIndex);
+        sharedBuffer.force();
+
+        JSONObject message = new JSONObject();
+        if (learning) {
+            message.put("task", "predict_learn");
+        } else {
+            message.put("task", "predict");
+        }
+        message.put("deep_model", deepModel);
+        message.put("options", pythonOptions);
+
+        JSONObject response = sendSocketMessage(message);
+
+        sharedBuffer.clear();
+        float movement = readPredictData(componentIndex);
 
         String resultString = getResultString(response);
         log.debug("Predict deep model result for {} : {}", this, resultString);

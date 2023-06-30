@@ -232,6 +232,10 @@ public class AtomStore implements Iterable<GroundAtom> {
      * Additionally, update the parent of the atoms along the path to the root to point to grandparents, i.e., perform path halving.
      * This is to reduce the number of hops required to get to the root on the next call.
      */
+    public synchronized int findAtomRoot(int atomIndex) {
+        return findAtomRoot(getAtom(atomIndex));
+    }
+
     public synchronized int findAtomRoot(GroundAtom atom) {
         int atomIndex = getAtomIndex(atom);
         if (atomIndex == -1) {

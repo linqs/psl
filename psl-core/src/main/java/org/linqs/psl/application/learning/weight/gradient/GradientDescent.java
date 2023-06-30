@@ -377,6 +377,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         trainInferenceApplication.setTermStore(trainBatchTermStore);
 
         trainMAPTermState = trainComponentMAPTermStates.get(currentBatchIndex);
+
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.predictDeepModel(true, currentBatchIndex);
+        }
     }
 
     protected void resetBatch() {

@@ -51,12 +51,21 @@ public class DeepPredicate extends StandardPredicate {
         deepModel.fitDeepModel();
     }
 
+    public void fitDeepPredicate(float[] symbolicGradients, int componentIndex) {
+        deepModel.setSymbolicGradients(symbolicGradients);
+        deepModel.fitDeepModel();
+    }
+
     public float predictDeepModel() {
         return deepModel.predictDeepModel(false);
     }
 
     public float predictDeepModel(Boolean learning) {
         return deepModel.predictDeepModel(learning);
+    }
+
+    public float predictDeepModel(Boolean learning, int componentIndex) {
+        return deepModel.predictDeepModel(learning, componentIndex);
     }
 
     public void evalDeepModel() {

@@ -47,15 +47,11 @@ public class DeepModelPredicate extends DeepModel {
 
     private int classSize;
     private int[] atomIndexes;
-    private HashMap<Integer, int[]> componentAtomIndexes;
     private int[] dataIndexes;
-    private HashMap<Integer, int[]> componentDataIndexes;
 
     private float[] gradients;
-    private HashMap<Integer, float[]> componentGradients;
 
-    private float[] symbolicGradients;
-    private HashMap<Integer, int[]> componentSymbolicGradients;
+    private float[] allSymbolicGradients;
 
 
     private ArrayList<Integer> validAtomIndexes;
@@ -69,13 +65,9 @@ public class DeepModelPredicate extends DeepModel {
 
         this.classSize = -1;
         this.atomIndexes = null;
-        this.componentAtomIndexes = null;
         this.dataIndexes = null;
-        this.componentDataIndexes = null;
         this.gradients = null;
-        this.componentGradients = null;
-        this.symbolicGradients = null;
-        this.componentSymbolicGradients = null;
+        this.allSymbolicGradients = null;
 
         this.validAtomIndexes = new ArrayList<Integer>();
         this.validDataIndexes = new ArrayList<Integer>();
@@ -93,26 +85,8 @@ public class DeepModelPredicate extends DeepModel {
 
         // Switch arraylists to arrays for faster access.
         atomIndexes = new int[validAtomIndexes.size()];
-        componentAtomIndexes = new HashMap<>();
         gradients = new float[validAtomIndexes.size()];
-        componentGradients = new HashMap<>();
         dataIndexes = new int[validDataIndexes.size()];
-        componentDataIndexes = new HashMap<>();
-
-        HashMap<Integer, ArrayList<GroundAtom>> connectedComponentAtoms = atomStore.getConnectedComponentAtoms();
-        for (int componentIndex : connectedComponentAtoms.keySet()) {
-            ArrayList<GroundAtom> connectedComponent = connectedComponentAtoms.get(componentIndex);
-            componentAtomIndexes.put(componentIndex, new int[connectedComponent.size()]);
-            componentGradients.put(componentIndex, new float[connectedComponent.size()]);
-            componentDataIndexes.put(componentIndex, new int[connectedComponent.size()]);
-
-            for (int i = 0; i < connectedComponent.size(); i++) {
-                GroundAtom atom = connectedComponent.get(i);
-                componentAtomIndexes.get(componentIndex)[i] = atom.getIndex();
-                componentGradients.get(componentIndex)[i] = 0.0f;
-                componentDataIndexes.get(componentIndex)[i] = 0;
-            }
-        }
 
         for (int i = 0; i < atomIndexes.length; i++) {
             atomIndexes[i] = validAtomIndexes.get(i);
@@ -132,16 +106,35 @@ public class DeepModelPredicate extends DeepModel {
     public void writeFitData() {
         log.debug("Writing fit data for deep model predicate: {}", predicate.getName());
         for (int index = 0; index < gradients.length; index++) {
-            gradients[index] = symbolicGradients[atomIndexes[index]];
+            gradients[index] = allSymbolicGradients[atomIndexes[index]];
         }
 
         writeDataIndexData();
         writeGradientData(gradients);
     }
 
+    public void writeFitData(int componentIndex) {
+        log.debug("Writing fit data for deep model predicate: {}", predicate.getName());
+        for (int index = 0; index < gradients.length; index++) {
+            if (atomStore.findAtomRoot(atomIndexes[index]) != componentIndex) {
+                continue;
+            }
+
+            gradients[index] = allSymbolicGradients[atomIndexes[index]];
+        }
+
+        writeDataIndexData(componentIndex);
+        writeGradientData(gradients, componentIndex);
+    }
+
     public void writePredictData() {
         log.debug("Writing predict data for deep model predicate: {}", predicate.getName());
         writeDataIndexData();
+    }
+
+    public void writePredictData(int componentIndex) {
+        log.debug("Writing predict data for deep model predicate: {}", predicate.getName());
+        writeDataIndexData(componentIndex);
     }
 
     public float readPredictData() {
@@ -169,6 +162,46 @@ public class DeepModelPredicate extends DeepModel {
         return change;
     }
 
+    public float readPredictData(int componentIndex) {
+        log.debug("Reading predict data for deep model predicate: {}", predicate.getName());
+        int count = sharedBuffer.getInt();
+
+        int componentPredicateSize = 0;
+        for (int index = 0; index < dataIndexes.length; index++) {
+            if (atomStore.findAtomRoot(atomIndexes[index]) != componentIndex) {
+                continue;
+            }
+
+            componentPredicateSize++;
+        }
+
+        if (count != componentPredicateSize) {
+            throw new RuntimeException(String.format(
+                    "External model did not make the desired number of predictions, got %d, expected %d.",
+                    count, componentPredicateSize));
+        }
+
+        float[] atomValues = atomStore.getAtomValues();
+        float deepPrediction = 0.0f;
+        int atomIndex = 0;
+
+        float change = 0.0f;
+        for(int index = 0; index < atomIndexes.length; index++) {
+            atomIndex = atomIndexes[index];
+
+            if (atomStore.findAtomRoot(atomIndex) != componentIndex) {
+                continue;
+            }
+
+            deepPrediction = sharedBuffer.getFloat();
+
+            change += Math.abs(atomValues[atomIndex] - deepPrediction);
+            atomValues[atomIndex] = deepPrediction;
+            ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
+        }
+        return change;
+    }
+
     public void writeEvalData() {
         log.debug("Writing eval data for deep model predicate: {}", predicate.getName());
         writeDataIndexData();
@@ -183,7 +216,7 @@ public class DeepModelPredicate extends DeepModel {
         atomIndexes = null;
         dataIndexes = null;
         gradients = null;
-        symbolicGradients = null;
+        allSymbolicGradients = null;
 
         validAtomIndexes.clear();
         validDataIndexes.clear();
@@ -193,8 +226,8 @@ public class DeepModelPredicate extends DeepModel {
         this.atomStore = atomStore;
     }
 
-    public void setSymbolicGradients(float[] symbolicGradients) {
-        this.symbolicGradients = symbolicGradients;
+    public void setSymbolicGradients(float[] allSymbolicGradients) {
+        this.allSymbolicGradients = allSymbolicGradients;
     }
 
     /**
@@ -304,11 +337,42 @@ public class DeepModelPredicate extends DeepModel {
         }
     }
 
+    private void writeGradientData(float[] data, int componentIndex) {
+        for (int index = 0; index < data.length; index++) {
+            if (atomStore.findAtomRoot(atomIndexes[index]) != componentIndex) {
+                continue;
+            }
+
+            sharedBuffer.putFloat(data[index]);
+        }
+    }
+
     private void writeDataIndexData() {
         sharedBuffer.putInt(dataIndexes.length);
 
         for (int i = 0; i < dataIndexes.length; i++) {
             sharedBuffer.putInt(dataIndexes[i]);
+        }
+    }
+
+    private void writeDataIndexData(int componentIndex) {
+        int componentPredicateSize = 0;
+        for (int index = 0; index < dataIndexes.length; index++) {
+            if (atomStore.findAtomRoot(atomIndexes[index]) != componentIndex) {
+                continue;
+            }
+
+            componentPredicateSize++;
+        }
+
+        sharedBuffer.putInt(componentPredicateSize);
+
+        for (int index = 0; index < dataIndexes.length; index++) {
+            if (atomStore.findAtomRoot(atomIndexes[index]) != componentIndex) {
+                continue;
+            }
+
+            sharedBuffer.putInt(dataIndexes[index]);
         }
     }
 }
