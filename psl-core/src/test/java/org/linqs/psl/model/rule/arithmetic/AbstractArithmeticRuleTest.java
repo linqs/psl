@@ -424,10 +424,10 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
 
-        TermStore store = new DummyTermStore(database);
+        TermStore store = new DummyTermStore(database.getAtomStore());
 
         try {
-            rule.groundAll(store, null);
+            rule.groundAll(store, database, null);
             fail("IllegalArgumentException not thrown when trying to ground an open predicate in the filter.");
         } catch (IllegalArgumentException ex) {
             // Exception is expected.

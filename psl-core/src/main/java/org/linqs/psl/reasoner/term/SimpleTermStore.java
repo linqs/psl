@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.database.Database;
+import org.linqs.psl.database.AtomStore;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,8 +28,8 @@ import java.util.Iterator;
 public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<T> {
     protected ArrayList<T> terms;
 
-    public SimpleTermStore(Database database, TermGenerator<T> termGenerator) {
-        super(database, termGenerator);
+    public SimpleTermStore(AtomStore atomStore, TermGenerator<T> termGenerator) {
+        super(atomStore, termGenerator);
         terms = new ArrayList<T>();
     }
 

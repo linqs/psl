@@ -18,6 +18,7 @@
 package org.linqs.psl.test;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
@@ -164,13 +165,13 @@ public abstract class PSLBaseTest {
         }
     }
 
-    protected List<GroundRule> groundAndCompare(List<String> expected, Rule rule, TermStore store) {
-        return groundAndCompare(expected, true, rule, store);
+    protected List<GroundRule> groundAndCompare(List<String> expected, Rule rule, TermStore store, Database database) {
+        return groundAndCompare(expected, true, rule, store, database);
     }
 
-    protected List<GroundRule> groundAndCompare(List<String> expected, boolean alphabetize, Rule rule, TermStore store) {
+    protected List<GroundRule> groundAndCompare(List<String> expected, boolean alphabetize, Rule rule, TermStore store, Database database) {
         final List<GroundRule> groundRules = new ArrayList<GroundRule>();
-        rule.groundAll(store, new Grounding.GroundRuleCallback() {
+        rule.groundAll(store, database, new Grounding.GroundRuleCallback() {
             public synchronized void call(GroundRule groundRule) {
                 groundRules.add(groundRule);
             }

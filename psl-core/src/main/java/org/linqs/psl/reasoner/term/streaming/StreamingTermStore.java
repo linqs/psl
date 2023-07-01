@@ -45,6 +45,8 @@ public abstract class StreamingTermStore<T extends StreamingTerm> extends TermSt
 
     public static final int INITIAL_PATH_CACHE_SIZE = 100;
 
+    protected Database database;
+
     protected List<Rule> rules;
 
     protected List<String> termPagePaths;
@@ -88,7 +90,9 @@ public abstract class StreamingTermStore<T extends StreamingTerm> extends TermSt
     protected int[] shuffleMap;
 
     public StreamingTermStore(List<Rule> rawRules, Database database, TermGenerator<T> termGenerator) {
-        super(database, termGenerator);
+        super(database.getAtomStore(), termGenerator);
+
+        this.database = database;
 
         pageSize = Options.STREAMING_TS_PAGE_SIZE.getInt();
         pageDir = Options.STREAMING_TS_PAGE_LOCATION.getString();
@@ -131,6 +135,10 @@ public abstract class StreamingTermStore<T extends StreamingTerm> extends TermSt
     @Override
     public int add(ReasonerTerm term) {
         throw new UnsupportedOperationException();
+    }
+
+    public Database getDatabase() {
+        return database;
     }
 
     /**

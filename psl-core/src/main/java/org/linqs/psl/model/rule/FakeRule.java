@@ -66,7 +66,7 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
+    public long groundAll(TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback) {
         return 0;
     }
 

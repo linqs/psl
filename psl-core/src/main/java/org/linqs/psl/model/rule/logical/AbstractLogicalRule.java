@@ -127,9 +127,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     }
 
     @Override
-    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
-        try (QueryResultIterable queryResults = termStore.getDatabase().executeGroundingQuery(negatedDNF.getQueryFormula())) {
-            return groundAll(queryResults, termStore, groundRuleCallback);
+    public long groundAll(TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback) {
+        try (QueryResultIterable queryResults = database.executeGroundingQuery(negatedDNF.getQueryFormula())) {
+            return groundAll(queryResults, termStore, database, groundRuleCallback);
         }
     }
 
@@ -173,10 +173,10 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         return groundInternal(constants, variableMap, database, resources);
     }
 
-    public long groundAll(QueryResultIterable groundVariables, TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
+    public long groundAll(QueryResultIterable groundVariables, TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback) {
         long initialCount = termStore.size();
 
-        final Database finalDatabase = termStore.getDatabase();
+        final Database finalDatabase = database;
         final TermStore finalTermStore = termStore;
         final Map<Variable, Integer> variableMap = groundVariables.getVariableMap();
 

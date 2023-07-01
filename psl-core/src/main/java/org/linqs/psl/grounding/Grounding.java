@@ -58,22 +58,22 @@ public class Grounding {
         Grounding.groundRuleCallback = groundRuleCallback;
     }
 
-    public static long groundAll(List<Rule> rules, TermStore termStore) {
+    public static long groundAll(List<Rule> rules, TermStore termStore, Database database) {
         boolean collective = Options.GROUNDING_COLLECTIVE.getBoolean();
         if (collective) {
-            return groundCollective(rules, termStore);
+            return groundCollective(rules, termStore, database);
         }
 
-        return groundIndependent(rules, termStore);
+        return groundIndependent(rules, termStore, database);
     }
 
     /**
      * Ground each of the passed in rules independently.
      */
-    private static long groundIndependent(List<Rule> rules, TermStore termStore) {
+    private static long groundIndependent(List<Rule> rules, TermStore termStore, Database database) {
         long termCount = 0;
         for (Rule rule : rules) {
-            termCount += rule.groundAll(termStore, groundRuleCallback);
+            termCount += rule.groundAll(termStore, database, groundRuleCallback);
         }
 
         return termCount;
@@ -84,7 +84,7 @@ public class Grounding {
      * Note that collective grounding assumes that no PAM exceptions will happen,
      * so it may make optimizations based on this assumption.
      */
-    private static long groundCollective(List<Rule> rules, TermStore termStore) {
+    private static long groundCollective(List<Rule> rules, TermStore termStore, Database database) {
         // Rules that cannot take part in the collective process.
         List<Rule> bypassRules = new ArrayList<Rule>();
         List<Rule> collectiveRules = new ArrayList<Rule>(rules.size());
@@ -97,14 +97,14 @@ public class Grounding {
             }
         }
 
-        Set<CandidateQuery> candidates = genCandidates(collectiveRules, termStore.getDatabase());
+        Set<CandidateQuery> candidates = genCandidates(collectiveRules, database);
 
         Set<CandidateQuery> coverage = Coverage.compute(collectiveRules, candidates);
 
         long initialSize = termStore.size();
 
         // Ground the bypassed rules.
-        groundIndependent(bypassRules, termStore);
+        groundIndependent(bypassRules, termStore, database);
 
         int batchSize = Options.GROUNDING_COLLECTIVE_BATCH_SIZE.getInt();
 
@@ -116,7 +116,7 @@ public class Grounding {
             Set<Rule> toGround = new HashSet<Rule>(collectiveRules);
             toGround.retainAll(candidate.getCoveredRules());
 
-            sharedGrounding(candidate, toGround, termStore, batchSize);
+            sharedGrounding(candidate, toGround, termStore, database, batchSize);
 
             collectiveRules.removeAll(candidate.getCoveredRules());
         }
@@ -160,7 +160,7 @@ public class Grounding {
     /**
      * Use the provided formula to ground all of the provided rules.
      */
-    private static long sharedGrounding(CandidateQuery candidate, Set<Rule> rules, TermStore termStore, int batchSize) {
+    private static long sharedGrounding(CandidateQuery candidate, Set<Rule> rules, TermStore termStore, Database database, int batchSize) {
         log.debug("Grounding {} rule(s) with query: [{}].", rules.size(), candidate.getFormula());
         for (Rule rule : rules) {
             log.trace("    " + rule);
@@ -170,7 +170,7 @@ public class Grounding {
         long termCount = -1;
 
         // Run the query.
-        try (QueryResultIterable queryResults = termStore.getDatabase().executeGroundingQuery(candidate.getFormula())) {
+        try (QueryResultIterable queryResults = database.executeGroundingQuery(candidate.getFormula())) {
             // Build a per-rule variable mapping.
             Map<Rule, Map<Variable, Integer>> variableMaps = new HashMap<Rule, Map<Variable, Integer>>();
             Map<Variable, Integer> baseVariableMap = queryResults.getVariableMap();
@@ -191,7 +191,7 @@ public class Grounding {
             }
 
             long initialCount = termStore.size();
-            timings = Parallel.foreachBatch(queryResults, batchSize, new GroundWorker(termStore, variableMaps, rules));
+            timings = Parallel.foreachBatch(queryResults, batchSize, new GroundWorker(termStore, database, variableMaps, rules));
             termCount = termStore.size() - initialCount;
         }
 
@@ -203,12 +203,14 @@ public class Grounding {
 
     private static class GroundWorker extends Parallel.Worker<List<Constant[]>> {
         private TermStore termStore;
+        private Database database;
         private Map<Rule, Map<Variable, Integer>> variableMaps;
         private Set<Rule> rules;
         private List<GroundRule> groundRules;
 
-        public GroundWorker(TermStore termStore, Map<Rule, Map<Variable, Integer>> variableMaps, Set<Rule> rules) {
+        public GroundWorker(TermStore termStore, Database database, Map<Rule, Map<Variable, Integer>> variableMaps, Set<Rule> rules) {
             this.termStore = termStore;
+            this.database = database;
             this.variableMaps = variableMaps;
             this.rules = rules;
             this.groundRules = new ArrayList<GroundRule>();
@@ -216,7 +218,7 @@ public class Grounding {
 
         @Override
         public Object clone() {
-            return new GroundWorker(termStore, variableMaps, rules);
+            return new GroundWorker(termStore, database, variableMaps, rules);
         }
 
         @Override
@@ -225,7 +227,7 @@ public class Grounding {
 
             for (Rule rule : rules) {
                 for (int rowIndex = 0; rowIndex < size; rowIndex++) {
-                    rule.ground(batch.get(rowIndex), variableMaps.get(rule), termStore.getDatabase(), groundRules);
+                    rule.ground(batch.get(rowIndex), variableMaps.get(rule), database, groundRules);
 
                     for (int groundRuleIndex = 0; groundRuleIndex < groundRules.size(); groundRuleIndex++) {
                         groundRule = groundRules.get(groundRuleIndex);

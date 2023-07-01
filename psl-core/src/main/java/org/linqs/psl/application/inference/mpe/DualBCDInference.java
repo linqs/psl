@@ -41,6 +41,6 @@ public class DualBCDInference extends MPEInference {
 
     @Override
     public TermStore createTermStore() {
-        return new DualLCQPTermStore(database);
+        return new DualLCQPTermStore(database.getAtomStore());
     }
 }

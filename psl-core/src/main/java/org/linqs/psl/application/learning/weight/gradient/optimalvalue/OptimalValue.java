@@ -90,7 +90,7 @@ public abstract class OptimalValue extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void fixLabeledRandomVariables() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
