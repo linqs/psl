@@ -40,6 +40,10 @@ public class ObservedAtom extends GroundAtom {
         super(predicate, args, value, partition);
     }
 
+    public GroundAtom copy() {
+        return new ObservedAtom(predicate, (Constant[])arguments, value, partition);
+    }
+
     /**
      * This method should only be used in VERY specific situations and with a considerable amount of preparation.
      * This method sets the truth value of the atom.

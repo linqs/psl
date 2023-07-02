@@ -17,13 +17,16 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.MathUtils;
 
-public class ReasonerTerm {
+import java.util.Arrays;
+
+public abstract class ReasonerTerm {
     /**
      * The specific type of term represented by this instance.
      */
@@ -70,6 +73,22 @@ public class ReasonerTerm {
             atomIndexes[i] = atoms[i].getIndex();
         }
     }
+
+    public ReasonerTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
+                        Rule rule, boolean squared, boolean hinge, FunctionComparator comparator) {
+        this.rule = rule;
+        this.comparator = comparator;
+        this.squared = squared;
+        this.hinge = hinge;
+        termType = getTermType();
+
+        this.size = size;
+        this.coefficients = Arrays.copyOf(coefficients, size);
+        this.constant = constant;
+        this.atomIndexes = Arrays.copyOf(atomIndexes, size);
+    }
+
+    public abstract ReasonerTerm copy();
 
     /**
      * Get the specific type of term this instance represents.
@@ -328,5 +347,55 @@ public class ReasonerTerm {
      */
     public void saveState(TermState termState) {
         // Pass.
+    }
+
+    @Override
+    public String toString() {
+        return toString(null);
+    }
+
+    public String toString(AtomStore atomStore) {
+        // weight * [max(coeffs^T * x - constant, 0.0)]^2
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(getWeight());
+        builder.append(" * ");
+
+        if (hinge) {
+            builder.append("max(0.0, ");
+        } else {
+            builder.append("(");
+        }
+
+        for (int i = 0; i < size; i++) {
+            builder.append("(");
+            builder.append(coefficients[i]);
+
+            if (atomStore == null) {
+                builder.append(" * <index:");
+                builder.append(atomIndexes[i]);
+                builder.append(">)");
+            } else {
+                builder.append(" * ");
+                builder.append(atomStore.getAtomValue(atomIndexes[i]));
+                builder.append(")");
+            }
+
+            if (i != size - 1) {
+                builder.append(" + ");
+            }
+        }
+
+        builder.append(" - ");
+        builder.append(constant);
+
+        builder.append(")");
+
+        if (squared) {
+            builder.append(" ^2");
+        }
+
+        return builder.toString();
     }
 }

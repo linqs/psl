@@ -34,6 +34,11 @@ public abstract class StreamingTerm extends ReasonerTerm {
         super(hyperplane, rule, squared, hinge, comparator);
     }
 
+    public StreamingTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
+                         Rule rule, boolean squared, boolean hinge, FunctionComparator comparator) {
+        super(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
+    }
+
     /**
      * The number of bytes that writeFixedValues() will need to represent this term.
      */

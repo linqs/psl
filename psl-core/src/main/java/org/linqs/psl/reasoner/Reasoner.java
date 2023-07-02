@@ -314,8 +314,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         private final float[][] rvAtomGradients;
         private final float[][] deepAtomGradients;
 
-        public GradientWorker(TermStore termStore,
-                              float[][] rvAtomGradients, float[][] deepAtomGradients, int blockSize) {
+        public GradientWorker(TermStore termStore, float[][] rvAtomGradients, float[][] deepAtomGradients, int blockSize) {
             super();
 
             this.termStore = termStore;

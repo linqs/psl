@@ -36,6 +36,11 @@ public class RandomVariableAtom extends GroundAtom {
     }
 
     @Override
+    public GroundAtom copy() {
+        return new RandomVariableAtom((StandardPredicate)predicate, (Constant[])arguments, value, partition);
+    }
+
+    @Override
     public StandardPredicate getPredicate() {
         return (StandardPredicate)predicate;
     }

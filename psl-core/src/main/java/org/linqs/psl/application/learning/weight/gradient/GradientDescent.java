@@ -22,6 +22,7 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
@@ -77,8 +78,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected int numBatches;
     protected List<SimpleTermStore<? extends ReasonerTerm>> batchTermStores;
-    protected List<int[]> batchAtomIndexes;
-    protected List<float[]> batchMAPTermState;
 
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
@@ -198,13 +197,29 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
         }
 
-        // ToDo(Charles): Create non-trivial batches.
+        // ToDo(Charles): Create non-trivial batches. Currently, each batch is a copy of the full term store.
+        AtomStore trainFullAtomStore = trainFullTermStore.getAtomStore();
         for (int i = 0; i < numBatches; i++) {
-            batchTermStores.add((SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.createTermStore());
-
-            for (ReasonerTerm term : trainFullTermStore) {
-                batchTermStores.get(i).add(term);
+            // Create a new term store and atom store for each batch.
+            AtomStore batchAtomStore = new AtomStore();
+            for (GroundAtom atom : trainFullTermStore.getAtomStore()) {
+                // Make a copy of the atom so that the batch atom store can be modified without affecting the full atom store.
+                batchAtomStore.addAtom(atom.copy());
             }
+
+            SimpleTermStore<? extends ReasonerTerm> batchTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.createTermStore();
+            for (ReasonerTerm term : trainFullTermStore) {
+                ReasonerTerm batchTerm = term.copy();
+
+                batchTermStore.add(batchTerm);
+
+                int[] originalTermAtomIndexes = term.getAtomIndexes();
+                int[] batchTermAtomIndexes = batchTerm.getAtomIndexes();
+                for (int j = 0; j < batchTerm.size(); j++) {
+                    batchTermAtomIndexes[j] = batchAtomStore.getAtomIndex(trainFullAtomStore.getAtom(originalTermAtomIndexes[j]));
+                }
+            }
+            batchTermStores.add(batchTermStore);
         }
     }
 
