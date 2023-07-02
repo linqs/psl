@@ -62,7 +62,7 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
         ensureDualLCQPAtomsCapacity();
 
         super.add(term);
-        DualLCQPObjectiveTerm newTerm = (DualLCQPObjectiveTerm) term;
+        DualLCQPObjectiveTerm newTerm = (DualLCQPObjectiveTerm)term;
 
         int[] atomIndexes = newTerm.getAtomIndexes();
         float[] coefficients = newTerm.getCoefficients();

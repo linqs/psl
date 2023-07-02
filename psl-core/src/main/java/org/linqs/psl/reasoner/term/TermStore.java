@@ -73,6 +73,18 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
         return atomStore;
     }
 
+    public void setAtomStore(AtomStore newAtomStore) {
+        // Update atom indexes to align with the new atom store.
+        for (ReasonerTerm term : this) {
+            int[] termAtomIndexes = term.getAtomIndexes();
+            for (int j = 0; j < term.size(); j++) {
+                termAtomIndexes[j] = newAtomStore.getAtomIndex(atomStore.getAtom(termAtomIndexes[j]));
+            }
+        }
+
+        this.atomStore = newAtomStore;
+    }
+
     public TermGenerator<T> getTermGenerator() {
         return termGenerator;
     }

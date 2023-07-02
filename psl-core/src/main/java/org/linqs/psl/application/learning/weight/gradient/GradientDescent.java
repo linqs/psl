@@ -212,13 +212,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 ReasonerTerm batchTerm = term.copy();
 
                 batchTermStore.add(batchTerm);
-
-                int[] originalTermAtomIndexes = term.getAtomIndexes();
-                int[] batchTermAtomIndexes = batchTerm.getAtomIndexes();
-                for (int j = 0; j < batchTerm.size(); j++) {
-                    batchTermAtomIndexes[j] = batchAtomStore.getAtomIndex(trainFullAtomStore.getAtom(originalTermAtomIndexes[j]));
-                }
             }
+            batchTermStore.setAtomStore(batchAtomStore);
             batchTermStores.add(batchTermStore);
         }
     }
