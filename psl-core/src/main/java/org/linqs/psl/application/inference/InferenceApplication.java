@@ -214,6 +214,10 @@ public abstract class InferenceApplication implements ModelApplication {
         return termStore;
     }
 
+    public void setTermStore(TermStore termStore) {
+        this.termStore = termStore;
+    }
+
     public Database getDatabase() {
         return database;
     }

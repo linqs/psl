@@ -365,7 +365,7 @@ public class Options {
 
     public static final Option WLA_GRADIENT_DESCENT_NUM_BATCHES = new Option(
         "gradientdescent.numbatches",
-        2,
+        1,
         "The number of batches to use for gradient descent weight learning."
         + " The default is 1, which means that all training examples are used in each iteration."
     );

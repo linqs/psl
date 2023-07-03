@@ -47,7 +47,6 @@ public class StructuredPerceptron extends OptimalValue {
      */
     private void computeFullInferenceIncompatibility() {
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
-        inTrainingMAPState = true;
 
         computeCurrentIncompatibility(MAPIncompatibility);
         trainInferenceApplication.getReasoner().parallelComputeGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);

@@ -203,7 +203,7 @@ public abstract class Minimizer extends GradientDescent {
         super.postInitGroundModel();
 
         // Initialize latent and augmented inference warm start state objects.
-        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
 
         latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
@@ -291,11 +291,10 @@ public abstract class Minimizer extends GradientDescent {
 
         log.trace("Performing Latent Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
-        inTrainingMAPState = true;
 
         unfixLabeledRandomVariables();
 
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
 
         System.arraycopy(latentInferenceAtomValueState, 0, augmentedInferenceAtomValueState, 0, latentInferenceAtomValueState.length);
@@ -339,7 +338,7 @@ public abstract class Minimizer extends GradientDescent {
     protected void computeTotalAtomGradient() {
         float totalEnergyDifference = computeObjectiveDifference();
 
-        for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
+        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             float rvGradientDifference = augmentedRVAtomGradient[i] - MAPRVAtomGradient[i];
             float deepGradientDifference = augmentedDeepAtomGradient[i] - MAPDeepAtomGradient[i];
 
@@ -361,7 +360,6 @@ public abstract class Minimizer extends GradientDescent {
     private void computeFullInferenceStatistics() {
         log.trace("Running Full Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
-        inTrainingMAPState = true;
 
         computeCurrentIncompatibility(mapIncompatibility);
         computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
@@ -377,7 +375,6 @@ public abstract class Minimizer extends GradientDescent {
 
         log.trace("Running Augmented Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, augmentedInferenceTermState, augmentedInferenceAtomValueState);
-        inTrainingMAPState = true;
 
         computeCurrentIncompatibility(augmentedInferenceIncompatibility);
         computeCurrentSquaredIncompatibility(augmentedInferenceSquaredIncompatibility);
@@ -393,8 +390,6 @@ public abstract class Minimizer extends GradientDescent {
         for (WeightedArithmeticRule augmentedInferenceProxRule : proxRules) {
             augmentedInferenceProxRule.setActive(true);
         }
-
-        inTrainingMAPState = false;
     }
 
     /**
@@ -404,8 +399,6 @@ public abstract class Minimizer extends GradientDescent {
         for (WeightedArithmeticRule augmentedInferenceProxRule : proxRules) {
             augmentedInferenceProxRule.setActive(false);
         }
-
-        inTrainingMAPState = false;
     }
 
     @Override
@@ -485,10 +478,10 @@ public abstract class Minimizer extends GradientDescent {
             }
         }
 
-        GroundAtom[] atoms = trainInferenceApplication.getDatabase().getAtomStore().getAtoms();
+        GroundAtom[] atoms = trainInferenceApplication.getTermStore().getAtomStore().getAtoms();
         float augmentedInferenceLCQPRegularization = 0.0f;
         float fullInferenceLCQPRegularization = 0.0f;
-        for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
+        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             if (atoms[i].isFixed()) {
                 continue;
             }
@@ -541,7 +534,7 @@ public abstract class Minimizer extends GradientDescent {
         // Zero out the incompatibility first.
         Arrays.fill(incompatibilityArray, 0.0f);
 
-        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
 
         // Sums up the incompatibilities.
         for (Object rawTerm : trainInferenceApplication.getTermStore()) {
@@ -568,7 +561,7 @@ public abstract class Minimizer extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void fixLabeledRandomVariables() {
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
@@ -580,8 +573,6 @@ public abstract class Minimizer extends GradientDescent {
             latentInferenceAtomValueState[atomIndex] = observedAtom.getValue();
             randomVariableAtom.setValue(observedAtom.getValue());
         }
-
-        inTrainingMAPState = false;
     }
 
     /**
@@ -590,7 +581,7 @@ public abstract class Minimizer extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void unfixLabeledRandomVariables() {
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
@@ -598,7 +589,5 @@ public abstract class Minimizer extends GradientDescent {
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
             atomStore.getAtoms()[atomIndex] = randomVariableAtom;
         }
-
-        inTrainingMAPState = false;
     }
 }

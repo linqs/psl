@@ -39,7 +39,7 @@ public class BinaryCrossEntropy extends Minimizer {
 
     @Override
     protected float computeSupervisedLoss() {
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         float supervisedLoss = 0.0f;
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
@@ -58,7 +58,7 @@ public class BinaryCrossEntropy extends Minimizer {
 
     @Override
     protected void addSupervisedProxRuleObservedAtomValueGradient() {
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
