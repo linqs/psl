@@ -53,7 +53,9 @@ public abstract class Minimizer extends GradientDescent {
 
     protected float[] latentInferenceIncompatibility;
     protected TermState[] latentInferenceTermState;
+    protected List<TermState[]> batchLatentInferenceTermStates;
     protected float[] latentInferenceAtomValueState;
+    protected List<float[]> batchLatentInferenceAtomValueStates;
 
     protected float[] mapIncompatibility;
     protected float[] mapSquaredIncompatibility;
@@ -61,18 +63,28 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] augmentedInferenceIncompatibility;
     protected float[] augmentedInferenceSquaredIncompatibility;
     protected TermState[] augmentedInferenceTermState;
+    protected List<TermState[]> batchAugmentedInferenceTermStates;
+
     protected float[] augmentedInferenceAtomValueState;
+    protected List<float[]> batchAugmentedInferenceAtomValueStates;
+
 
     protected float[] augmentedRVAtomGradient;
     protected float[] augmentedDeepAtomGradient;
 
     protected List<Integer> rvAtomIndexToProxIndex;
+    protected List<List<Integer>> batchRVAtomIndexToProxIndexes;
     protected List<Integer> proxIndexToRVAtomIndex;
+    protected List<List<Integer>> batchProxIndexToRVAtomIndexes;
     protected WeightedArithmeticRule[] proxRules;
+    protected List<WeightedArithmeticRule[]> batchProxRules;
     protected UnmanagedObservedAtom[] proxRuleObservedAtoms;
+    protected List<UnmanagedObservedAtom[]> batchProxRuleObservedAtoms;
 
     protected int[] proxRuleObservedAtomIndexes;
+    protected List<int[]> batchProxRuleObservedAtomIndexes;
     protected float[] proxRuleObservedAtomValueGradient;
+    protected List<float[]> batchProxRuleObservedAtomValueGradients;
     protected final float proxRuleWeight;
 
     protected float parameterMovementTolerance;
@@ -212,6 +224,13 @@ public abstract class Minimizer extends GradientDescent {
 
         augmentedRVAtomGradient = new float[atomValues.length];
         augmentedDeepAtomGradient = new float[atomValues.length];
+    }
+
+    @Override
+    protected void setBatch(int batch) {
+        super.setBatch(batch);
+
+
     }
 
     @Override

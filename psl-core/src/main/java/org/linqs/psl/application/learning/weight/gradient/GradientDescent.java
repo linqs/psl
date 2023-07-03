@@ -31,7 +31,6 @@ import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 

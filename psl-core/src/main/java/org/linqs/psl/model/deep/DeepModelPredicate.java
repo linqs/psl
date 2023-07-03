@@ -30,6 +30,7 @@ import org.linqs.psl.util.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 public class DeepModelPredicate extends DeepModel {
@@ -47,6 +48,7 @@ public class DeepModelPredicate extends DeepModel {
     private int classSize;
     private int[] atomIndexes;
     private int[] dataIndexes;
+    private Map<Integer, Integer> atomIndexToDataIndex;
     private float[] gradients;
     private float[] symbolicGradients;
 
@@ -83,6 +85,7 @@ public class DeepModelPredicate extends DeepModel {
         atomIndexes = new int[validAtomIndexes.size()];
         gradients = new float[validAtomIndexes.size()];
         dataIndexes = new int[validDataIndexes.size()];
+        atomIndexToDataIndex = new HashMap<Integer, Integer>(validDataIndexes.size());
 
         for (int i = 0; i < atomIndexes.length; i++) {
             atomIndexes[i] = validAtomIndexes.get(i);
@@ -91,6 +94,7 @@ public class DeepModelPredicate extends DeepModel {
 
         for (int i = 0; i < dataIndexes.length; i++) {
             dataIndexes[i] = validDataIndexes.get(i);
+            atomIndexToDataIndex.put(atomIndexes[i], dataIndexes[i]);
         }
 
         validAtomIndexes.clear();
