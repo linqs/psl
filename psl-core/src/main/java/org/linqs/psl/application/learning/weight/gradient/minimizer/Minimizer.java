@@ -119,7 +119,6 @@ public abstract class Minimizer extends GradientDescent {
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
 
-        parameterMovement = Float.POSITIVE_INFINITY;
         parameterMovementTolerance = 1.0f / initialSquaredPenaltyCoefficient;
         finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
         constraintTolerance = (float)(1.0f / Math.pow(initialSquaredPenaltyCoefficient, 0.1f));
@@ -239,10 +238,7 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void gradientStep(int iteration) {
-        parameterMovement = 0.0f;
-        parameterMovement += weightGradientStep(iteration);
-        parameterMovement += internalParameterGradientStep(iteration);
-        atomGradientStep();
+        super.gradientStep(iteration);
 
         if ((iteration > 0) && (parameterMovement < parameterMovementTolerance)) {
             outerIteration++;

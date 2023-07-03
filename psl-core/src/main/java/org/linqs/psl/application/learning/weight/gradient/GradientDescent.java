@@ -96,6 +96,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected boolean normBreak;
     protected float objectiveTolerance;
     protected float normTolerance;
+    protected float parameterMovement;
+
 
     protected float l2Regularization;
     protected float logRegularization;
@@ -148,6 +150,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         objectiveTolerance = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_TOLERANCE.getFloat();
         normTolerance = Options.WLA_GRADIENT_DESCENT_NORM_TOLERANCE.getFloat();
         stoppingGradientNorm = Options.WLA_GRADIENT_DESCENT_STOPPING_GRADIENT_NORM.getFloat();
+        parameterMovement = Float.POSITIVE_INFINITY;
 
         l2Regularization = Options.WLA_GRADIENT_DESCENT_L2_REGULARIZATION.getFloat();
         logRegularization = Options.WLA_GRADIENT_DESCENT_LOG_REGULARIZATION.getFloat();
@@ -198,7 +201,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         // ToDo(Charles): Create non-trivial batches. Currently, each batch is a copy of the full term store.
-        AtomStore trainFullAtomStore = trainFullTermStore.getAtomStore();
         for (int i = 0; i < numBatches; i++) {
             // Create a new term store and atom store for each batch.
             AtomStore batchAtomStore = new AtomStore();
@@ -262,79 +264,80 @@ public abstract class GradientDescent extends WeightLearningApplication {
         long totalTime = 0;
         int iteration = 0;
         while (!breakGD) {
-            long start = System.currentTimeMillis();
+            for (int i = 0; i < numBatches; i++) {
+                long start = System.currentTimeMillis();
 
-            log.trace("Model: {}", mutableRules);
+                log.trace("Model: {}", mutableRules);
 
-            gradientStep(iteration);
+                gradientStep(iteration);
 
-            if (log.isTraceEnabled() && (evaluation != null)) {
-                // Compute the MAP state before evaluating so variables have assigned values.
-                computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
-                inTrainingMAPState = true;
+                if (log.isTraceEnabled() && (evaluation != null)) {
+                    // Compute the MAP state before evaluating so variables have assigned values.
+                    computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+                    inTrainingMAPState = true;
 
-                evaluation.compute(trainingMap);
-                currentTrainingEvaluationMetric = evaluation.getNormalizedRepMetric();
+                    evaluation.compute(trainingMap);
+                    currentTrainingEvaluationMetric = evaluation.getNormalizedRepMetric();
 
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.evalDeepModel();
-                }
-
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.predictDeepModel(true);
-                }
-
-                log.trace("MAP State Training Evaluation Metric: {}", currentTrainingEvaluationMetric);
-            }
-
-            if (runValidation) {
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.predictDeepModel(false);
-                }
-
-                computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
-                inValidationMAPState = true;
-
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.predictDeepModel(true);
-                }
-
-                evaluation.compute(validationMap);
-                currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
-                log.debug("MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
-
-                if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
-                    bestValidationEvaluationMetric = currentValidationEvaluationMetric;
-                    bestTrainingEvaluationMetric = currentTrainingEvaluationMetric;
-
-                    for (int i = 0; i < mutableRules.size(); i++) {
-                        bestWeights[i] = mutableRules.get(i).getWeight();
+                    for (DeepPredicate deepPredicate : deepPredicates) {
+                        deepPredicate.evalDeepModel();
                     }
 
-                    log.debug("New Best Validation Model: {}", mutableRules);
+                    for (DeepPredicate deepPredicate : deepPredicates) {
+                        deepPredicate.predictDeepModel(true);
+                    }
+
+                    log.trace("MAP State Training Evaluation Metric: {}", currentTrainingEvaluationMetric);
                 }
 
-                log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
+                if (runValidation) {
+                    for (DeepPredicate deepPredicate : deepPredicates) {
+                        deepPredicate.predictDeepModel(false);
+                    }
+
+                    computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
+                    inValidationMAPState = true;
+
+                    for (DeepPredicate deepPredicate : deepPredicates) {
+                        deepPredicate.predictDeepModel(true);
+                    }
+
+                    evaluation.compute(validationMap);
+                    currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
+                    log.debug("MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
+
+                    if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
+                        bestValidationEvaluationMetric = currentValidationEvaluationMetric;
+                        bestTrainingEvaluationMetric = currentTrainingEvaluationMetric;
+
+                        for (int j = 0; j < mutableRules.size(); j++) {
+                            bestWeights[j] = mutableRules.get(j).getWeight();
+                        }
+
+                        log.debug("New Best Validation Model: {}", mutableRules);
+                    }
+
+                    log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
+                }
+
+                computeIterationStatistics();
+
+                objective = computeTotalLoss();
+                computeTotalWeightGradient();
+                computeTotalAtomGradient();
+                if (clipWeightGradient) {
+                    clipWeightGradient();
+                }
+
+                long end = System.currentTimeMillis();
+
+                totalTime += end - start;
+                oldObjective = objective;
+
+                breakGD = breakOptimization(iteration, objective, oldObjective);
+                log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
+                        iteration, objective, computeGradientNorm(), (end - start));
             }
-
-            computeIterationStatistics();
-
-            objective = computeTotalLoss();
-            computeTotalWeightGradient();
-            computeTotalAtomGradient();
-            if (clipWeightGradient) {
-                clipWeightGradient();
-            }
-
-            long end = System.currentTimeMillis();
-
-            totalTime += end - start;
-            oldObjective = objective;
-
-            breakGD = breakOptimization(iteration, objective, oldObjective);
-            log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
-                    iteration, objective, computeGradientNorm(), (end - start));
-
             iteration++;
         }
 
@@ -423,9 +426,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * This method will call the gradient step methods for each parameter group: weights and internal parameters.
      */
     protected void gradientStep(int iteration) {
-        weightGradientStep(iteration);
-        internalParameterGradientStep(iteration);
-        atomGradientStep();
+        parameterMovement = 0.0f;
+        parameterMovement += weightGradientStep(iteration);
+        parameterMovement += internalParameterGradientStep(iteration);
+        parameterMovement += atomGradientStep();
     }
 
     /**
