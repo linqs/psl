@@ -73,7 +73,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected SimpleTermStore<? extends ReasonerTerm> trainFullTermStore;
     protected TermState[] trainMAPTermState;
+    protected List<TermState[]> batchMAPTermStates;
     protected float[] trainMAPAtomValueState;
+    protected List<float[]> batchMAPAtomValueStates;
+
 
     protected int numBatches;
     protected List<SimpleTermStore<? extends ReasonerTerm>> batchTermStores;
@@ -127,6 +130,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         numBatches = Options.WLA_GRADIENT_DESCENT_NUM_BATCHES.getInt();
         batchTermStores = new ArrayList<SimpleTermStore<? extends ReasonerTerm>>(numBatches);
+        batchMAPTermStates = new ArrayList<>(numBatches);
+        batchMAPAtomValueStates = new ArrayList<>(numBatches);
 
         validationMAPTermState = null;
         validationMAPAtomValueState = null;
@@ -206,6 +211,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             for (GroundAtom atom : trainFullTermStore.getAtomStore()) {
                 // Make a copy of the atom so that the batch atom store can be modified without affecting the full atom store.
                 batchAtomStore.addAtom(atom.copy());
+
             }
 
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.createTermStore();
@@ -216,6 +222,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
             batchTermStore.setAtomStore(batchAtomStore);
             batchTermStores.add(batchTermStore);
+
+            batchMAPTermStates.add(batchTermStore.saveState());
+            batchMAPAtomValueStates.add(Arrays.copyOf(batchAtomStore.getAtomValues(), batchAtomStore.getAtomValues().length));
         }
     }
 
@@ -375,10 +384,23 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void setBatch(int batch) {
         trainInferenceApplication.setTermStore(batchTermStores.get(batch));
+        trainMAPTermState = batchMAPTermStates.get(batch);
+        trainMAPAtomValueState = batchMAPAtomValueStates.get(batch);
+
+        // Set the deep predicate atom store and predict with the deep predicates again to ensure predictions are aligned with the batch.
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.getDeepModel().setAtomStore(batchTermStores.get(batch).getAtomStore());
+            deepPredicate.predictDeepModel(true);
+        }
     }
 
     protected void resetBatch() {
         trainInferenceApplication.setTermStore(trainFullTermStore);
+
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.getDeepModel().setAtomStore(trainFullTermStore.getAtomStore());
+            deepPredicate.predictDeepModel(true);
+        }
     }
 
     protected boolean breakOptimization(int iteration, float objective, float oldObjective) {

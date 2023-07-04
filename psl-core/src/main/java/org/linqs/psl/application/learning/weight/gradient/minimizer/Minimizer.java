@@ -229,8 +229,6 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected void setBatch(int batch) {
         super.setBatch(batch);
-
-
     }
 
     @Override

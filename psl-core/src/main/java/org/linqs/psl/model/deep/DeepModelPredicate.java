@@ -72,8 +72,6 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public synchronized int init() {
-        log.debug("Initializing deep model predicate: {}", predicate.getName());
-
         validateOptions();
 
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
@@ -132,7 +130,7 @@ public class DeepModelPredicate extends DeepModel {
         int atomIndex = 0;
 
         float change = 0.0f;
-        for(int index = 0; index < atomIndexes.length; index++) {
+        for (int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
             atomIndex = atomIndexes[index];
 
@@ -165,6 +163,7 @@ public class DeepModelPredicate extends DeepModel {
 
     public void setAtomStore(AtomStore atomStore) {
         this.atomStore = atomStore;
+        init();
     }
 
     public void setSymbolicGradients(float[] symbolicGradients) {
