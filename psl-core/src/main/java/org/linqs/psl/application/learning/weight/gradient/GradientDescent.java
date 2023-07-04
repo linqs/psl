@@ -72,8 +72,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected List<DeepPredicate> deepPredicates;
 
     protected SimpleTermStore<? extends ReasonerTerm> trainFullTermStore;
+    protected TermState[] trainFullMAPTermState;
     protected TermState[] trainMAPTermState;
     protected List<TermState[]> batchMAPTermStates;
+    protected float[] trainFullMAPAtomValueState;
     protected float[] trainMAPAtomValueState;
     protected List<float[]> batchMAPAtomValueStates;
 
@@ -125,7 +127,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         deepPredicates = new ArrayList<DeepPredicate>();
 
         trainFullTermStore = null;
+        trainFullMAPTermState = null;
         trainMAPTermState = null;
+        trainFullMAPAtomValueState = null;
         trainMAPAtomValueState = null;
 
         numBatches = Options.WLA_GRADIENT_DESCENT_NUM_BATCHES.getInt();
@@ -183,11 +187,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         validationInferenceApplication.setInitialValue(InitialValue.ATOM);
 
         // Initialize MPE state objects for warm starts.
-        trainMAPTermState = trainInferenceApplication.getTermStore().saveState();
+        trainFullMAPTermState = trainInferenceApplication.getTermStore().saveState();
+        trainMAPTermState = trainFullMAPTermState;
         validationMAPTermState = validationInferenceApplication.getTermStore().saveState();
 
         float[] trainAtomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
-        trainMAPAtomValueState = Arrays.copyOf(trainAtomValues, trainAtomValues.length);
+        trainFullMAPAtomValueState = Arrays.copyOf(trainAtomValues, trainAtomValues.length);
+        trainMAPAtomValueState = trainFullMAPAtomValueState;
 
         float[] validationAtomValues = validationInferenceApplication.getTermStore().getAtomStore().getAtomValues();
         validationMAPAtomValueState = Arrays.copyOf(validationAtomValues, validationAtomValues.length);
@@ -396,6 +402,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void resetBatch() {
         trainInferenceApplication.setTermStore(trainFullTermStore);
+        trainMAPTermState = trainFullMAPTermState;
+        trainMAPAtomValueState = trainFullMAPAtomValueState;
 
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.getDeepModel().setAtomStore(trainFullTermStore.getAtomStore());

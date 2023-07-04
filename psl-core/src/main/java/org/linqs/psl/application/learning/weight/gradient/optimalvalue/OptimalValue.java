@@ -20,11 +20,16 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +45,12 @@ import java.util.Map;
  */
 public abstract class OptimalValue extends GradientDescent {
     protected float[] latentInferenceIncompatibility;
+    protected TermState[] latentFullInferenceTermState;
     protected TermState[] latentInferenceTermState;
+    protected List<TermState[]> batchLatentInferenceTermStates;
     protected float[] latentInferenceAtomValueState;
+    protected float[] latentFullInferenceAtomValueState;
+    protected List<float[]> batchlatentInferenceAtomValueState;
 
     protected float[] rvLatentAtomGradient;
     protected float[] deepLatentAtomGradient;
@@ -51,8 +60,13 @@ public abstract class OptimalValue extends GradientDescent {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         latentInferenceIncompatibility = new float[mutableRules.size()];
+        latentFullInferenceTermState = null;
         latentInferenceTermState = null;
+        latentFullInferenceAtomValueState = null;
         latentInferenceAtomValueState = null;
+
+        batchLatentInferenceTermStates = new ArrayList<>(numBatches);
+        batchlatentInferenceAtomValueState = new ArrayList<>(numBatches);
     }
 
     @Override
@@ -60,12 +74,37 @@ public abstract class OptimalValue extends GradientDescent {
         super.postInitGroundModel();
 
         // Initialize latent inference warm start state objects.
-        latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
+        latentFullInferenceTermState = trainInferenceApplication.getTermStore().saveState();
+        latentInferenceTermState = latentFullInferenceTermState;
+
         float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
-        latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+        latentFullInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+        latentInferenceAtomValueState = latentFullInferenceAtomValueState;
 
         rvLatentAtomGradient = new float[atomValues.length];
         deepLatentAtomGradient = new float[atomValues.length];
+
+        for (int i = 0; i < numBatches; i++) {
+            SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchTermStores.get(i);
+            batchLatentInferenceTermStates.add(batchTermStore.saveState());
+            batchlatentInferenceAtomValueState.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
+        }
+    }
+
+    @Override
+    protected void setBatch(int batch) {
+        super.setBatch(batch);
+
+        latentInferenceTermState = batchLatentInferenceTermStates.get(batch);
+        latentInferenceAtomValueState = batchlatentInferenceAtomValueState.get(batch);
+    }
+
+    @Override
+    protected void resetBatch() {
+        super.resetBatch();
+
+        latentInferenceTermState = latentFullInferenceTermState;
+        latentInferenceAtomValueState = latentFullInferenceAtomValueState;
     }
 
     /**
