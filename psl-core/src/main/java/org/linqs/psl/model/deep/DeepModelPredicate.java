@@ -162,8 +162,15 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public void setAtomStore(AtomStore atomStore) {
+        setAtomStore(atomStore, false);
+    }
+
+    public void setAtomStore(AtomStore atomStore, boolean init) {
         this.atomStore = atomStore;
-        init();
+
+        if (init) {
+            init();
+        }
     }
 
     public void setSymbolicGradients(float[] symbolicGradients) {

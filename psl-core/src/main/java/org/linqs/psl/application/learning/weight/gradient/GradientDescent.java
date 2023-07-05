@@ -395,7 +395,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         // Set the deep predicate atom store and predict with the deep predicates again to ensure predictions are aligned with the batch.
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.getDeepModel().setAtomStore(batchTermStores.get(batch).getAtomStore());
+            deepPredicate.getDeepModel().setAtomStore(batchTermStores.get(batch).getAtomStore(), true);
             deepPredicate.predictDeepModel(true);
         }
     }
@@ -406,7 +406,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         trainMAPAtomValueState = trainFullMAPAtomValueState;
 
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.getDeepModel().setAtomStore(trainFullTermStore.getAtomStore());
+            deepPredicate.getDeepModel().setAtomStore(trainFullTermStore.getAtomStore(), true);
             deepPredicate.predictDeepModel(true);
         }
     }
