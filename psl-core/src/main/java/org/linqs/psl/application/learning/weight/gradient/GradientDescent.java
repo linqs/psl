@@ -80,8 +80,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected List<float[]> batchMAPAtomValueStates;
 
 
-    protected int numBatches;
-    protected List<SimpleTermStore<? extends ReasonerTerm>> batchTermStores;
+    protected LearningBatchGenerator batchGenerator;
 
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
@@ -132,10 +131,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         trainFullMAPAtomValueState = null;
         trainMAPAtomValueState = null;
 
-        numBatches = Options.WLA_GRADIENT_DESCENT_NUM_BATCHES.getInt();
-        batchTermStores = new ArrayList<SimpleTermStore<? extends ReasonerTerm>>(numBatches);
-        batchMAPTermStates = new ArrayList<>(numBatches);
-        batchMAPAtomValueStates = new ArrayList<>(numBatches);
+        batchGenerator = null;
+        batchMAPTermStates = new ArrayList<TermState[]>();
+        batchMAPAtomValueStates = new ArrayList<float[]>();
 
         validationMAPTermState = null;
         validationMAPAtomValueState = null;
@@ -210,27 +208,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
         }
 
-        // ToDo(Charles): Create non-trivial batches. Currently, each batch is a copy of the full term store.
-        for (int i = 0; i < numBatches; i++) {
-            // Create a new term store and atom store for each batch.
-            AtomStore batchAtomStore = new AtomStore();
-            for (GroundAtom atom : trainFullTermStore.getAtomStore()) {
-                // Make a copy of the atom so that the batch atom store can be modified without affecting the full atom store.
-                batchAtomStore.addAtom(atom.copy());
+        batchGenerator = new RandomNodeBatchGenerator(trainInferenceApplication);
+        batchGenerator.generateBatches();
 
-            }
-
-            SimpleTermStore<? extends ReasonerTerm> batchTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.createTermStore();
-            for (ReasonerTerm term : trainFullTermStore) {
-                ReasonerTerm batchTerm = term.copy();
-
-                batchTermStore.add(batchTerm);
-            }
-            batchTermStore.setAtomStore(batchAtomStore);
-            batchTermStores.add(batchTermStore);
-
+        for (SimpleTermStore<? extends ReasonerTerm> batchTermStore : batchGenerator.getBatchTermStores()) {
             batchMAPTermStates.add(batchTermStore.saveState());
-            batchMAPAtomValueStates.add(Arrays.copyOf(batchAtomStore.getAtomValues(), batchAtomStore.getAtomValues().length));
+            batchMAPAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
         }
     }
 
@@ -322,7 +305,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
             }
 
-            for (int i = 0; i < numBatches; i++) {
+            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
                 setBatch(i);
 
                 computeIterationStatistics();
@@ -389,13 +372,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void setBatch(int batch) {
-        trainInferenceApplication.setTermStore(batchTermStores.get(batch));
+        SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(batch);
+
+        trainInferenceApplication.setTermStore(batchTermStore);
         trainMAPTermState = batchMAPTermStates.get(batch);
         trainMAPAtomValueState = batchMAPAtomValueStates.get(batch);
 
         // Set the deep predicate atom store and predict with the deep predicates again to ensure predictions are aligned with the batch.
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.getDeepModel().setAtomStore(batchTermStores.get(batch).getAtomStore(), true);
+            deepPredicate.getDeepModel().setAtomStore(batchTermStore.getAtomStore(), true);
             deepPredicate.predictDeepModel(true);
         }
     }

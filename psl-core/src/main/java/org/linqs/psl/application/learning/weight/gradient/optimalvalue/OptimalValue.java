@@ -18,13 +18,10 @@
 package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
-import org.linqs.psl.application.learning.weight.gradient.minimizer.Minimizer;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -69,8 +66,8 @@ public abstract class OptimalValue extends GradientDescent {
         latentFullInferenceAtomValueState = null;
         latentInferenceAtomValueState = null;
 
-        batchLatentInferenceTermStates = new ArrayList<>(numBatches);
-        batchlatentInferenceAtomValueState = new ArrayList<>(numBatches);
+        batchLatentInferenceTermStates = new ArrayList<TermState[]>();
+        batchlatentInferenceAtomValueState = new ArrayList<float[]>();
     }
 
     @Override
@@ -88,8 +85,8 @@ public abstract class OptimalValue extends GradientDescent {
         rvLatentAtomGradient = new float[atomValues.length];
         deepLatentAtomGradient = new float[atomValues.length];
 
-        for (int i = 0; i < numBatches; i++) {
-            SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchTermStores.get(i);
+        for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+            SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(i);
             batchLatentInferenceTermStates.add(batchTermStore.saveState());
             batchlatentInferenceAtomValueState.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
         }
@@ -140,6 +137,12 @@ public abstract class OptimalValue extends GradientDescent {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+
+            if (atomIndex == -1) {
+                // This atom is not in the current batch.
+                continue;
+            }
+
             atomStore.getAtoms()[atomIndex] = observedAtom;
             atomStore.getAtomValues()[atomIndex] = observedAtom.getValue();
             latentInferenceAtomValueState[atomIndex] = observedAtom.getValue();
@@ -159,6 +162,12 @@ public abstract class OptimalValue extends GradientDescent {
             RandomVariableAtom randomVariableAtom = entry.getKey();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+
+            if (atomIndex == -1) {
+                // This atom is not in the current batch.
+                continue;
+            }
+
             atomStore.getAtoms()[atomIndex] = randomVariableAtom;
         }
     }

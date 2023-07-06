@@ -43,6 +43,10 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
         T newTerm = (T)term;
         terms.add(newTerm);
 
+        for (int atomIndex : newTerm.getAtomIndexes()) {
+            atomStore.getAtom(atomIndex).addTerm(newTerm);
+        }
+
         return 1;
     }
 

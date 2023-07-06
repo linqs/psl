@@ -41,7 +41,10 @@ public class ObservedAtom extends GroundAtom {
     }
 
     public GroundAtom copy() {
-        return new ObservedAtom(predicate, (Constant[])arguments, value, partition);
+        GroundAtom observedAtomCopy = new ObservedAtom(predicate, (Constant[])arguments, value, partition);
+        observedAtomCopy.terms.addAll(terms);
+
+        return observedAtomCopy;
     }
 
     /**

@@ -59,7 +59,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
 
     @Override
     public synchronized int add(ReasonerTerm term) {
-        init();
+        ensureLocalRecordsCapacity();
 
         long termIndex = size();
         super.add(term);
@@ -129,6 +129,16 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     private synchronized void init() {
         if (localRecords == null) {
             localRecords = new List[atomStore.getMaxRVAIndex() + 1];
+        }
+    }
+
+    private synchronized void ensureLocalRecordsCapacity() {
+        init();
+
+        if (localRecords.length <= atomStore.getMaxRVAIndex()) {
+            List[] newLocalRecords = new List[2 * (atomStore.getMaxRVAIndex() + 1)];
+            System.arraycopy(localRecords, 0, newLocalRecords, 0, localRecords.length);
+            localRecords = newLocalRecords;
         }
     }
 

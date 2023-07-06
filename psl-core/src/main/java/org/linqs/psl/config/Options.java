@@ -363,13 +363,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GRADIENT_DESCENT_NUM_BATCHES = new Option(
-        "gradientdescent.numbatches",
-        1,
-        "The number of batches to use for gradient descent weight learning."
-        + " The default is 1, which means that all training examples are used in each iteration."
-    );
-
     public static final Option WLA_GRADIENT_DESCENT_NUM_STEPS = new Option(
         "gradientdescent.numsteps",
         500,
@@ -706,6 +699,18 @@ public class Options {
         150,
         "The max number of locations to search.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES = new Option(
+        "randomnodebatchgenerator.numbatches",
+        10,
+        "The number of batches to sample for random node batch generator."
+    );
+
+    public static final Option RANDOM_NODE_BATCH_GENERATOR_BFS_DEPTH = new Option(
+        "randomnodebatchgenerator.bfsdepth",
+        1,
+        "The depth of the factor graph bfs search for random node batch generator."
     );
 
     public static final Option EVAL_AUC_REPRESENTATIVE = new Option(

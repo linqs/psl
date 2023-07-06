@@ -26,7 +26,7 @@ import org.linqs.psl.model.term.Constant;
  */
 public class RandomVariableAtom extends GroundAtom {
     /**
-     * Instantiation of GrondAtoms should typically be left to the Database so it can maintain a cache.
+     * Instantiation of GroundAtoms should typically be left to the Database so it can maintain a cache.
      */
     public RandomVariableAtom(StandardPredicate predicate, Constant[] args, float value, short partition) {
         super(predicate, args, value, partition);
@@ -37,7 +37,10 @@ public class RandomVariableAtom extends GroundAtom {
 
     @Override
     public GroundAtom copy() {
-        return new RandomVariableAtom((StandardPredicate)predicate, (Constant[])arguments, value, partition);
+        GroundAtom randomVariableAtomCopy = new RandomVariableAtom((StandardPredicate)predicate, (Constant[])arguments, value, partition);
+        randomVariableAtomCopy.terms.addAll(terms);
+
+        return randomVariableAtomCopy;
     }
 
     @Override

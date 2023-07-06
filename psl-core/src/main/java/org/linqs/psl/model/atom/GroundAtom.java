@@ -21,7 +21,11 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionTerm;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An Atom with only {@link Constant GroundTerms} for arguments.
@@ -33,6 +37,8 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
     protected float value;
     protected short partition;
     protected boolean fixed;
+
+    protected List<ReasonerTerm> terms;
 
     protected GroundAtom(Predicate predicate, Constant[] args, float value, short partition) {
         super(predicate, args);
@@ -47,9 +53,23 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         this.index = -1;
         this.partition = partition;
         this.fixed = true;
+
+        terms = new ArrayList<ReasonerTerm>();
     }
 
     public abstract GroundAtom copy();
+
+    public List<ReasonerTerm> getTerms() {
+        return terms;
+    }
+
+    public void addTerm(ReasonerTerm term) {
+        terms.add(term);
+    }
+
+    public void clearTerms() {
+        terms.clear();
+    }
 
     @Override
     public Constant[] getArguments() {

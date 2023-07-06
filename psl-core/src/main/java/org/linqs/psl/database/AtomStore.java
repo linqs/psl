@@ -39,6 +39,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     public static final int MIN_ALLOCATION = 100;
 
     protected int numAtoms;
+    protected int numRVAtoms;
     protected float[] atomValues;
     protected GroundAtom[] atoms;
     protected int maxRVAIndex;
@@ -48,6 +49,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         log.debug("Initializing AtomStore.");
 
         numAtoms = 0;
+        numRVAtoms = 0;
         maxRVAIndex = -1;
 
         double overallocationFactor = Options.ATOM_STORE_OVERALLOCATION_FACTOR.getDouble();
@@ -60,6 +62,10 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     public int size() {
         return numAtoms;
+    }
+
+    public int getNumRVAtoms() {
+        return numRVAtoms;
     }
 
     public int getMaxRVAIndex() {
@@ -186,6 +192,7 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         if (atom instanceof RandomVariableAtom) {
             maxRVAIndex = numAtoms;
+            numRVAtoms++;
         }
 
         numAtoms++;
@@ -193,6 +200,7 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     public void close() {
         numAtoms = 0;
+        numRVAtoms = 0;
         atomValues = null;
         atoms = null;
         maxRVAIndex = -1;

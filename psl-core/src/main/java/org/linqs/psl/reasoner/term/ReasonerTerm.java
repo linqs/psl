@@ -156,6 +156,11 @@ public abstract class ReasonerTerm {
         return atomIndexes;
     }
 
+    public void setAtomIndexes(int[] atomIndexes) {
+        assert (atomIndexes.length == size);
+        this.atomIndexes = atomIndexes;
+    }
+
     /**
      * Get the coefficients of the atoms involved in this term.
      * The coefficients are aligned with the atomIndexes array, i.e., the i'th entry in the coefficient array
