@@ -34,11 +34,7 @@ import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Learns weights for weighted rules in a model by optimizing an objective via Gradient Descent.
@@ -305,8 +301,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
             }
 
+            ArrayList<Integer> batchOrder = new ArrayList<Integer>(batchGenerator.getNumBatches());
             for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
-                setBatch(i);
+                batchOrder.add(i);
+            }
+            Collections.shuffle(batchOrder);
+            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+                setBatch(batchOrder.get(i));
 
                 computeIterationStatistics();
 

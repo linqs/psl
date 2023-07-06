@@ -83,6 +83,11 @@ public class ADMMReasoner extends Reasoner<ADMMObjectiveTerm> {
         initForOptimization(termStore);
 
         long numTerms = termStore.size();
+        if (numTerms == 0) {
+            log.warn("No ADMMObjectiveTerms to optimize.");
+            return 0.0;
+        }
+
         int numVariables = termStore.getNumVariables();
 
         termBlockSize = numTerms / (Parallel.getNumThreads() * 4) + 1;
