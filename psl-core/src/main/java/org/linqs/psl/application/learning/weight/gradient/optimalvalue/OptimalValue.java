@@ -137,7 +137,6 @@ public abstract class OptimalValue extends GradientDescent {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-
             if (atomIndex == -1) {
                 // This atom is not in the current batch.
                 continue;
@@ -162,7 +161,6 @@ public abstract class OptimalValue extends GradientDescent {
             RandomVariableAtom randomVariableAtom = entry.getKey();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-
             if (atomIndex == -1) {
                 // This atom is not in the current batch.
                 continue;

@@ -121,7 +121,7 @@ public final class MathUtils {
     }
 
     public static int compare(float a, float b) {
-        return compare(a, b, EPSILON_FLOAT);
+        return compare(a, b, STRICT_EPSILON_FLOAT);
     }
 
     /**

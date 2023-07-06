@@ -584,6 +584,11 @@ public abstract class Minimizer extends GradientDescent {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            if (atomIndex == -1) {
+                // This atom is not in the current batch.
+                continue;
+            }
+
             atomStore.getAtoms()[atomIndex] = observedAtom;
             atomStore.getAtomValues()[atomIndex] = observedAtom.getValue();
             latentInferenceAtomValueState[atomIndex] = observedAtom.getValue();
@@ -603,6 +608,11 @@ public abstract class Minimizer extends GradientDescent {
             RandomVariableAtom randomVariableAtom = entry.getKey();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            if (atomIndex == -1) {
+                // This atom is not in the current batch.
+                continue;
+            }
+
             atomStore.getAtoms()[atomIndex] = randomVariableAtom;
         }
     }
