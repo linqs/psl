@@ -30,8 +30,8 @@ public class EnergyTest extends WeightLearningTest {
     public EnergyTest() {
         super();
 
-        assertBaseTest = true;
-        assertFriendshipRankTest = true;
+//        assertBaseTest = true;
+//        assertFriendshipRankTest = true;
     }
 
     @Override

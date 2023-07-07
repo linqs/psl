@@ -51,7 +51,7 @@ public abstract class OptimalValue extends GradientDescent {
     protected List<TermState[]> batchLatentInferenceTermStates;
     protected float[] latentInferenceAtomValueState;
     protected float[] latentFullInferenceAtomValueState;
-    protected List<float[]> batchlatentInferenceAtomValueState;
+    protected List<float[]> batchLatentInferenceAtomValueStates;
 
     protected float[] rvLatentAtomGradient;
     protected float[] deepLatentAtomGradient;
@@ -67,7 +67,7 @@ public abstract class OptimalValue extends GradientDescent {
         latentInferenceAtomValueState = null;
 
         batchLatentInferenceTermStates = new ArrayList<TermState[]>();
-        batchlatentInferenceAtomValueState = new ArrayList<float[]>();
+        batchLatentInferenceAtomValueStates = new ArrayList<float[]>();
     }
 
     @Override
@@ -88,7 +88,7 @@ public abstract class OptimalValue extends GradientDescent {
         for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(i);
             batchLatentInferenceTermStates.add(batchTermStore.saveState());
-            batchlatentInferenceAtomValueState.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
+            batchLatentInferenceAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
         }
     }
 
@@ -97,7 +97,7 @@ public abstract class OptimalValue extends GradientDescent {
         super.setBatch(batch);
 
         latentInferenceTermState = batchLatentInferenceTermStates.get(batch);
-        latentInferenceAtomValueState = batchlatentInferenceAtomValueState.get(batch);
+        latentInferenceAtomValueState = batchLatentInferenceAtomValueStates.get(batch);
     }
 
     @Override

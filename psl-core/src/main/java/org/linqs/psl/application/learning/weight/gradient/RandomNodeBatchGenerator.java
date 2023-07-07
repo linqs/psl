@@ -22,6 +22,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
@@ -105,6 +106,20 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                             newAtomIndexes[j] = batchAtomStore.getAtomIndex(atom);
 
                             bfsNextDepthQueue.addAll(atom.getTerms());
+
+                            if (newBatchAtom.getPredicate() instanceof DeepPredicate) {
+                                for (GroundAtom classAtom : ((DeepPredicate)newBatchAtom.getPredicate()).getDeepModel().getClasses(newBatchAtom)) {
+                                    if (visitedAtoms.contains(classAtom)) {
+                                        continue;
+                                    }
+
+                                    GroundAtom newBatchClassAtom = classAtom.copy();
+                                    newBatchClassAtom.clearTerms();
+                                    batchAtomStore.addAtom(newBatchClassAtom);
+
+                                    visitedAtoms.add(classAtom);
+                                }
+                            }
                         }
 
                         ReasonerTerm newBatchTerm = term.copy();

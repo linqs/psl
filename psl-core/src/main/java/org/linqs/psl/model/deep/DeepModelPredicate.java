@@ -18,6 +18,7 @@
 package org.linqs.psl.model.deep;
 
 import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
@@ -31,6 +32,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DeepModelPredicate extends DeepModel {
@@ -99,6 +101,34 @@ public class DeepModelPredicate extends DeepModel {
         validDataIndexes.clear();
 
         return Integer.SIZE + maxDataIndex * Integer.SIZE + maxDataIndex * classSize * Float.SIZE;
+    }
+
+    public List<GroundAtom> getClasses(GroundAtom atom) {
+        Constant[] arguments = atom.getArguments();
+        ConstantType type = predicate.getArgumentType(arguments.length - 1);
+
+        // Get all the classes associated with this atom.
+        ArrayList<GroundAtom> classes = new ArrayList<GroundAtom>(classSize);
+        int atomIndex = -1;
+        QueryAtom queryAtom = null;
+        for (int index = 0; index < classSize; index++) {
+            arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
+
+            if (index == 0) {
+                queryAtom = new QueryAtom(predicate, arguments);
+            } else {
+                queryAtom.assume(predicate, arguments);
+            }
+
+            atomIndex = atomStore.getAtomIndex(queryAtom);
+            if (atomIndex == -1) {
+                break;
+            }
+
+            classes.add(atomStore.getAtom(atomIndex));
+        }
+
+        return classes;
     }
 
     public void writeFitData() {
