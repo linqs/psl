@@ -542,7 +542,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 break;
         }
 
-        return norm;
+        float deepAtomGradientNorm = MathUtils.pNorm(deepAtomGradient, stoppingGradientNorm);
+
+        return norm + deepAtomGradientNorm;
     }
 
     /**
