@@ -21,6 +21,7 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -81,7 +82,6 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                         if (visitedTerms.contains(term)) {
                             continue;
                         }
-
                         visitedTerms.add(term);
 
                         int[] originalAtomIndexes = term.getAtomIndexes();
@@ -101,7 +101,9 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                             batchAtomStore.addAtom(newBatchAtom);
                             newAtomIndexes[j] = batchAtomStore.getAtomIndex(newBatchAtom);
 
-                            bfsNextDepthQueue.addAll(atom.getTerms());
+                            if (!(atom instanceof ObservedAtom)) {
+                                bfsNextDepthQueue.addAll(atom.getTerms());
+                            }
 
                             if (newBatchAtom.getPredicate() instanceof DeepPredicate) {
                                 for (GroundAtom classAtom : ((DeepPredicate)newBatchAtom.getPredicate()).getDeepModel().getClasses(newBatchAtom)) {

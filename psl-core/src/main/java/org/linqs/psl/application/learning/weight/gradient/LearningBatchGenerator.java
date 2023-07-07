@@ -22,7 +22,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,10 +41,6 @@ public abstract class LearningBatchGenerator {
         this.fullTermStore = (SimpleTermStore<? extends ReasonerTerm>)inferenceApplication.getTermStore();
 
         batchTermStores = new ArrayList<SimpleTermStore<? extends ReasonerTerm>>();
-    }
-
-    public void shuffle() {
-        Collections.shuffle(batchTermStores);
     }
 
     public int getNumBatches() {
@@ -69,5 +64,12 @@ public abstract class LearningBatchGenerator {
         }
 
         batchTermStores.clear();
+    }
+
+    public void close() {
+        for (SimpleTermStore<? extends ReasonerTerm> termStore : batchTermStores) {
+            termStore.getAtomStore().close();
+            termStore.close();
+        }
     }
 }

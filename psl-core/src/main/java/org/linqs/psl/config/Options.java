@@ -703,7 +703,7 @@ public class Options {
 
     public static final Option RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES = new Option(
         "randomnodebatchgenerator.numbatches",
-        10,
+        32,
         "The number of batches to sample for random node batch generator."
     );
 

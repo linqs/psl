@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.application.inference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeNotNull;
 
 import org.linqs.psl.config.Options;

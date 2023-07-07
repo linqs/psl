@@ -798,4 +798,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected abstract void computeTotalAtomGradient();
+
+    @Override
+    public void close() {
+        super.close();
+
+        batchGenerator.close();
+    }
 }
