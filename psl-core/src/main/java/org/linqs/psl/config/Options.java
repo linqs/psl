@@ -709,7 +709,7 @@ public class Options {
 
     public static final Option RANDOM_NODE_BATCH_GENERATOR_BFS_DEPTH = new Option(
         "randomnodebatchgenerator.bfsdepth",
-        1,
+        3,
         "The depth of the factor graph bfs search for random node batch generator."
     );
 

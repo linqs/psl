@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 
+import org.junit.Before;
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.inference.mpe.DualBCDInference;
 import org.linqs.psl.application.inference.mpe.SGDInference;
@@ -30,8 +31,15 @@ public class EnergyTest extends WeightLearningTest {
     public EnergyTest() {
         super();
 
-//        assertBaseTest = true;
-//        assertFriendshipRankTest = true;
+        assertBaseTest = true;
+        assertFriendshipRankTest = true;
+    }
+
+    @Before
+    public void setup() {
+        super.setup();
+
+        Options.RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES.set(1);
     }
 
     @Override

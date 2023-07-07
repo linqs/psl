@@ -119,6 +119,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         MAPDeepAtomGradient = null;
 
         deepPredicates = new ArrayList<DeepPredicate>();
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                deepPredicates.add((DeepPredicate)predicate);
+            }
+        }
 
         trainFullTermStore = null;
         trainFullMAPTermState = null;
@@ -160,8 +165,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     @Override
     protected void postInitGroundModel() {
-        super.postInitGroundModel();
+        initializeInferenceApplication();
+        initializeBatches();
+        initializeFullWarmStarts();
+        initializeBatchWarmStarts();
+        initializeGradients();
+    }
 
+    protected void initializeInferenceApplication() {
         if (this.runValidation && (evaluation == null)) {
             throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
         }
@@ -178,7 +189,34 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // the atom values that were fixed to their warm start or true labels are preserved.
         trainInferenceApplication.setInitialValue(InitialValue.ATOM);
         validationInferenceApplication.setInitialValue(InitialValue.ATOM);
+    }
 
+    protected void initializeBatches() {
+        if (batchGenerator != null) {
+            batchGenerator.clear();
+        }
+
+        batchGenerator = new RandomNodeBatchGenerator(trainInferenceApplication);
+        batchGenerator.generateBatches();
+    }
+
+    protected void initializeBatchWarmStarts() {
+        for (SimpleTermStore<? extends ReasonerTerm> batchTermStore : batchGenerator.getBatchTermStores()) {
+            batchMAPTermStates.add(batchTermStore.saveState());
+            batchMAPAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(),
+                    batchTermStore.getAtomStore().getAtomValues().length));
+        }
+    }
+
+    protected void initializeGradients() {
+        rvAtomGradient = new float[trainFullMAPAtomValueState.length];
+        deepAtomGradient = new float[trainFullMAPAtomValueState.length];
+
+        MAPRVAtomGradient = new float[trainFullMAPAtomValueState.length];
+        MAPDeepAtomGradient = new float[trainFullMAPAtomValueState.length];
+    }
+
+    protected void initializeFullWarmStarts() {
         // Initialize MPE state objects for warm starts.
         trainFullMAPTermState = trainInferenceApplication.getTermStore().saveState();
         trainMAPTermState = trainFullMAPTermState;
@@ -190,26 +228,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         float[] validationAtomValues = validationInferenceApplication.getTermStore().getAtomStore().getAtomValues();
         validationMAPAtomValueState = Arrays.copyOf(validationAtomValues, validationAtomValues.length);
-
-        rvAtomGradient = new float[trainAtomValues.length];
-        deepAtomGradient = new float[trainAtomValues.length];
-
-        MAPRVAtomGradient = new float[trainAtomValues.length];
-        MAPDeepAtomGradient = new float[trainAtomValues.length];
-
-        for (Predicate predicate : Predicate.getAll()) {
-            if (predicate instanceof DeepPredicate) {
-                deepPredicates.add((DeepPredicate)predicate);
-            }
-        }
-
-        batchGenerator = new RandomNodeBatchGenerator(trainInferenceApplication);
-        batchGenerator.generateBatches();
-
-        for (SimpleTermStore<? extends ReasonerTerm> batchTermStore : batchGenerator.getBatchTermStores()) {
-            batchMAPTermStates.add(batchTermStore.saveState());
-            batchMAPAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
-        }
     }
 
     protected void initForLearning() {
@@ -306,6 +324,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
             Collections.shuffle(batchOrder);
             for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+                long batchStart = System.currentTimeMillis();
+
                 setBatch(batchOrder.get(i));
 
                 computeIterationStatistics();
@@ -317,9 +337,22 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
 
                 gradientStep(iteration);
+
+                objective = computeTotalLoss();
+
+                long batchEnd = System.currentTimeMillis();
+                log.trace("Batch: {} -- Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
+                        batchOrder.get(i), objective, computeGradientNorm(), (batchEnd - batchStart));
             }
             resetBatch();
 
+            computeIterationStatistics();
+
+            computeTotalWeightGradient();
+            computeTotalAtomGradient();
+            if (clipWeightGradient) {
+                clipWeightGradient();
+            }
             objective = computeTotalLoss();
 
             long end = System.currentTimeMillis();
@@ -797,7 +830,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    protected abstract void computeTotalAtomGradient();
+    protected void computeTotalAtomGradient() {
+        Arrays.fill(deepAtomGradient, 0.0f);
+        Arrays.fill(rvAtomGradient, 0.0f);
+
+        addLearningLossAtomGradient();
+    }
+
+    protected abstract void addLearningLossAtomGradient();
 
     @Override
     public void close() {

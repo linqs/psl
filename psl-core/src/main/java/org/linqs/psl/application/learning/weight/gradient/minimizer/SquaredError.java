@@ -46,6 +46,11 @@ public class SquaredError extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            if (atomIndex == -1) {
+                // This atom is not in the current batch.
+                continue;
+            }
+
             supervisedLoss += Math.pow(proxRuleObservedAtoms[rvAtomIndexToProxIndex.get(atomIndex)].getValue() - observedAtom.getValue(), 2.0f);
         }
 
@@ -61,6 +66,11 @@ public class SquaredError extends Minimizer {
             ObservedAtom observedAtom = entry.getValue();
 
             int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            if (atomIndex == -1) {
+                // This atom is not in the current batch.
+                continue;
+            }
+
             int proxRuleIndex = rvAtomIndexToProxIndex.get(atomIndex);
             proxRuleObservedAtomValueGradient[proxRuleIndex] += 2.0f * (proxRuleObservedAtoms[proxRuleIndex].getValue() - observedAtom.getValue());
         }

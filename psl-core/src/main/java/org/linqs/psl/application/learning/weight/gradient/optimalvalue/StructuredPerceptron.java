@@ -70,10 +70,10 @@ public class StructuredPerceptron extends OptimalValue {
     }
 
     @Override
-    protected void computeTotalAtomGradient() {
+    protected void addLearningLossAtomGradient() {
         for (int i = 0; i < rvAtomGradient.length; i++) {
-            rvAtomGradient[i] = rvLatentAtomGradient[i] - MAPRVAtomGradient[i];
-            deepAtomGradient[i] = deepLatentAtomGradient[i] - MAPDeepAtomGradient[i];
+            rvAtomGradient[i] += rvLatentAtomGradient[i] - MAPRVAtomGradient[i];
+            deepAtomGradient[i] += deepLatentAtomGradient[i] - MAPDeepAtomGradient[i];
         }
     }
 }

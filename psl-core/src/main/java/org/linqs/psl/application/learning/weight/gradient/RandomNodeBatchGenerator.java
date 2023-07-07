@@ -79,7 +79,7 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                     ArrayList<ReasonerTerm> bfsNextDepthQueue = new ArrayList<ReasonerTerm>();
 
                     for (ReasonerTerm term : bfsCurrentDepthQueue) {
-                        if (visitedTerms.contains(term)) {
+                        if (visitedTerms.contains(term) || !term.isActive()) {
                             continue;
                         }
                         visitedTerms.add(term);

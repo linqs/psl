@@ -196,8 +196,14 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      * after passing it through the clipGradient method to account for the standard [0, 1] box constraints.
      * Moreover, there should be no constraints other than the box constraints
      */
-    public void parallelComputeGradient(TermStore termStore,
-                                           float[] rvAtomGradient, float[] deepAtomGradient) {
+    public void parallelComputeGradient(TermStore termStore, float[] rvAtomGradient, float[] deepAtomGradient) {
+        Arrays.fill(rvAtomGradient, 0.0f);
+        Arrays.fill(deepAtomGradient, 0.0f);
+
+        if (termStore.size() == 0) {
+            return;
+        }
+
         int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
         int numTermBlocks = (int)Math.ceil(termStore.size() / (double)blockSize);
 
@@ -215,8 +221,6 @@ public abstract class Reasoner<T extends ReasonerTerm> {
 
         Parallel.count(numTermBlocks, new GradientWorker(termStore, workerRVAtomGradients, workerDeepGradients, blockSize));
 
-        Arrays.fill(rvAtomGradient, 0.0f);
-        Arrays.fill(deepAtomGradient, 0.0f);
         for(int j = 0; j < numTermBlocks; j++) {
             for(int i = 0; i < termStore.getNumVariables(); i++) {
                 rvAtomGradient[i] += workerRVAtomGradients[j][i];
