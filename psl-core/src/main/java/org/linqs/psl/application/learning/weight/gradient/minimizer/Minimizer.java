@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.gradient.minimizer;
 
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
@@ -36,6 +37,7 @@ import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber
 import org.linqs.psl.reasoner.duallcqp.DualBCDReasoner;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
@@ -52,8 +54,10 @@ public abstract class Minimizer extends GradientDescent {
     private static final Logger log = Logger.getLogger(Minimizer.class);
 
     protected float[] latentInferenceIncompatibility;
+    protected TermState[] latentFullInferenceTermState;
     protected TermState[] latentInferenceTermState;
     protected List<TermState[]> batchLatentInferenceTermStates;
+    protected float[] latentFullInferenceAtomValueState;
     protected float[] latentInferenceAtomValueState;
     protected List<float[]> batchLatentInferenceAtomValueStates;
 
@@ -62,9 +66,11 @@ public abstract class Minimizer extends GradientDescent {
 
     protected float[] augmentedInferenceIncompatibility;
     protected float[] augmentedInferenceSquaredIncompatibility;
+
+    protected TermState[] augmentedFullInferenceTermState;
     protected TermState[] augmentedInferenceTermState;
     protected List<TermState[]> batchAugmentedInferenceTermStates;
-
+    protected float[] augmentedFullInferenceAtomValueState;
     protected float[] augmentedInferenceAtomValueState;
     protected List<float[]> batchAugmentedInferenceAtomValueStates;
 
@@ -72,17 +78,24 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] augmentedRVAtomGradient;
     protected float[] augmentedDeepAtomGradient;
 
+    protected List<Integer> FullRVAtomIndexToProxIndex;
     protected List<Integer> rvAtomIndexToProxIndex;
+    protected List<List<Integer>> FullBatchRVAtomIndexToProxIndexes;
     protected List<List<Integer>> batchRVAtomIndexToProxIndexes;
+    protected List<Integer> FullProxIndexToRVAtomIndex;
     protected List<Integer> proxIndexToRVAtomIndex;
     protected List<List<Integer>> batchProxIndexToRVAtomIndexes;
+    protected WeightedArithmeticRule[] FullProxRules;
     protected WeightedArithmeticRule[] proxRules;
     protected List<WeightedArithmeticRule[]> batchProxRules;
+    protected UnmanagedObservedAtom[] FullProxRuleObservedAtoms;
     protected UnmanagedObservedAtom[] proxRuleObservedAtoms;
     protected List<UnmanagedObservedAtom[]> batchProxRuleObservedAtoms;
 
+    protected int[] FullProxRuleObservedAtomIndexes;
     protected int[] proxRuleObservedAtomIndexes;
     protected List<int[]> batchProxRuleObservedAtomIndexes;
+    protected float[] FullProxRuleObservedAtomValueGradient;
     protected float[] proxRuleObservedAtomValueGradient;
     protected List<float[]> batchProxRuleObservedAtomValueGradients;
     protected final float proxRuleWeight;
@@ -106,22 +119,37 @@ public abstract class Minimizer extends GradientDescent {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
         latentInferenceIncompatibility = new float[mutableRules.size()];
+        latentFullInferenceTermState = null;
         latentInferenceTermState = null;
+        batchLatentInferenceTermStates = new ArrayList<TermState[]>();
+        latentFullInferenceAtomValueState = null;
         latentInferenceAtomValueState = null;
+        batchLatentInferenceAtomValueStates = new ArrayList<float[]>();
 
         mapIncompatibility = new float[mutableRules.size()];
         mapSquaredIncompatibility = new float[mutableRules.size()];
 
         augmentedInferenceIncompatibility = new float[mutableRules.size()];
         augmentedInferenceSquaredIncompatibility = new float[mutableRules.size()];
+        augmentedFullInferenceTermState = null;
         augmentedInferenceTermState = null;
+        batchAugmentedInferenceTermStates = new ArrayList<TermState[]>();
+        augmentedFullInferenceAtomValueState = null;
         augmentedInferenceAtomValueState = null;
+        batchAugmentedInferenceAtomValueStates = new ArrayList<float[]>();
 
         rvAtomIndexToProxIndex = new ArrayList<Integer>();
+        batchRVAtomIndexToProxIndexes = new ArrayList<List<Integer>>();
         proxIndexToRVAtomIndex = new ArrayList<Integer>();
+        batchProxIndexToRVAtomIndexes = new ArrayList<List<Integer>>();
         proxRules = null;
+        batchProxRules = new ArrayList<WeightedArithmeticRule[]>();
         proxRuleObservedAtoms = null;
+        batchProxRuleObservedAtoms = new ArrayList<UnmanagedObservedAtom[]>();
+        proxRuleObservedAtomIndexes = null;
+        batchProxRuleObservedAtomIndexes = new ArrayList<int[]>();
         proxRuleObservedAtomValueGradient = null;
+        batchProxRuleObservedAtomValueGradients = new ArrayList<float[]>();
         proxRuleWeight = Options.MINIMIZER_PROX_RULE_WEIGHT.getFloat();
 
         initialSquaredPenaltyCoefficient = Options.MINIMIZER_INITIAL_SQUARED_PENALTY.getFloat();
@@ -140,28 +168,53 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void postInitGroundModel() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
+        initializeInferenceApplication();
+        initializeBatches();
 
-        // Create and add the augmented inference proximity terms.
-        int unFixedAtomCount = 0;
-        for (GroundAtom atom : atomStore) {
-            if (atom.isFixed()) {
-                continue;
+        for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+            batchRVAtomIndexToProxIndexes.add(new ArrayList<Integer>());
+            batchProxIndexToRVAtomIndexes.add(new ArrayList<Integer>());
+
+            SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(batch);
+            AtomStore atomStore = batchTermStore.getAtomStore();
+
+            // Create and add the augmented inference proximity terms.
+            int unFixedAtomCount = 0;
+            for (GroundAtom atom : atomStore) {
+                if (atom.isFixed()) {
+                    continue;
+                }
+
+                unFixedAtomCount++;
             }
 
-            unFixedAtomCount++;
+            batchProxRules.add(new WeightedArithmeticRule[unFixedAtomCount]);
+            batchProxRuleObservedAtoms.add(new UnmanagedObservedAtom[unFixedAtomCount]);
+            batchProxRuleObservedAtomIndexes.add(new int[unFixedAtomCount]);
+            batchProxRuleObservedAtomValueGradients.add(new float[unFixedAtomCount]);
+
+            initializeProxRules(batchGenerator.getBatchTermStore(batch), batchRVAtomIndexToProxIndexes.get(batch),
+                                batchProxIndexToRVAtomIndexes.get(batch), batchProxRules.get(batch),
+                                batchProxRuleObservedAtoms.get(batch), batchProxRuleObservedAtomIndexes.get(batch));
         }
 
-        // Add the proximity terms to the term store but do not merge the constants.
+        initializeFullWarmStarts();
+        initializeBatchWarmStarts();
+        initializeGradients();
+    }
+
+    private void initializeProxRules(SimpleTermStore<? extends ReasonerTerm> termStore,
+                                     List<Integer> rvAtomIndexToProxIndex, List<Integer> proxIndexToRVAtomIndex,
+                                     WeightedArithmeticRule[] proxRules, UnmanagedObservedAtom[] proxRuleObservedAtoms,
+                                     int[] proxRuleObservedAtomIndexes) {
+        AtomStore atomStore = termStore.getAtomStore();
+
+        // Create and add the proximity terms to the term store but do not merge the constants.
         // This is because we want to be able to update the constants without having to re-ground the rules.
         // If another process is creating terms then this procedure can cause terms to be created without merged constants.
-        boolean originalMergeConstants = trainInferenceApplication.getTermStore().getTermGenerator().getMergeConstants();
-        trainInferenceApplication.getTermStore().getTermGenerator().setMergeConstants(false);
+        boolean originalMergeConstants = termStore.getTermGenerator().getMergeConstants();
+        termStore.getTermGenerator().setMergeConstants(false);
 
-        proxRules = new WeightedArithmeticRule[unFixedAtomCount];
-        proxRuleObservedAtoms = new UnmanagedObservedAtom[unFixedAtomCount];
-        proxRuleObservedAtomIndexes = new int[unFixedAtomCount];
-        proxRuleObservedAtomValueGradient = new float[unFixedAtomCount];
         int originalAtomCount = atomStore.size();
         int proxRuleIndex = 0;
         for (int i = 0; i < originalAtomCount; i++) {
@@ -197,11 +250,11 @@ public abstract class Minimizer extends GradientDescent {
 
             proxRules[proxRuleIndex].setActive(false);
 
-            trainInferenceApplication.getTermStore().add(new WeightedGroundArithmeticRule(
+            termStore.add(new WeightedGroundArithmeticRule(
                     proxRules[proxRuleIndex], Arrays.asList(1.0f, -1.0f),
                     Arrays.asList(atom, proxRuleObservedAtoms[proxRuleIndex]),
                     FunctionComparator.LTE, 0.0f));
-            trainInferenceApplication.getTermStore().add(new WeightedGroundArithmeticRule(
+            termStore.add(new WeightedGroundArithmeticRule(
                     proxRules[proxRuleIndex], Arrays.asList(1.0f, -1.0f),
                     Arrays.asList(atom, proxRuleObservedAtoms[proxRuleIndex]),
                     FunctionComparator.GTE, 0.0f));
@@ -209,26 +262,58 @@ public abstract class Minimizer extends GradientDescent {
             proxRuleIndex++;
         }
 
-        trainInferenceApplication.getTermStore().getTermGenerator().setMergeConstants(originalMergeConstants);
+        termStore.getTermGenerator().setMergeConstants(originalMergeConstants);
+    }
 
-        super.postInitGroundModel();
+    @Override
+    protected void initializeFullWarmStarts() {
+        super.initializeFullWarmStarts();
 
-        // Initialize latent and augmented inference warm start state objects.
+        // Initialize latent warm start state objects.
         float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
 
         latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+    }
 
-        augmentedInferenceTermState = trainInferenceApplication.getTermStore().saveState();
-        augmentedInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
+    @Override
+    protected void initializeBatchWarmStarts() {
+        super.initializeBatchWarmStarts();
 
-        augmentedRVAtomGradient = new float[atomValues.length];
-        augmentedDeepAtomGradient = new float[atomValues.length];
+        for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+            SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(i);
+            batchLatentInferenceTermStates.add(batchTermStore.saveState());
+            batchLatentInferenceAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
+
+            batchAugmentedInferenceTermStates.add(batchTermStore.saveState());
+            batchAugmentedInferenceAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
+        }
+    }
+
+    @Override
+    protected void initializeGradients() {
+        super.initializeGradients();
+
+        augmentedRVAtomGradient = new float[trainFullMAPAtomValueState.length];
+        augmentedDeepAtomGradient = new float[trainFullMAPAtomValueState.length];
     }
 
     @Override
     protected void setBatch(int batch) {
         super.setBatch(batch);
+
+        latentInferenceTermState = batchLatentInferenceTermStates.get(batch);
+        latentInferenceAtomValueState = batchLatentInferenceAtomValueStates.get(batch);
+
+        augmentedInferenceTermState = batchAugmentedInferenceTermStates.get(batch);
+        augmentedInferenceAtomValueState = batchAugmentedInferenceAtomValueStates.get(batch);
+
+        proxRules = batchProxRules.get(batch);
+        rvAtomIndexToProxIndex = batchRVAtomIndexToProxIndexes.get(batch);
+        proxIndexToRVAtomIndex = batchProxIndexToRVAtomIndexes.get(batch);
+        proxRuleObservedAtoms = batchProxRuleObservedAtoms.get(batch);
+        proxRuleObservedAtomIndexes = batchProxRuleObservedAtomIndexes.get(batch);
+        proxRuleObservedAtomValueGradient = batchProxRuleObservedAtomValueGradients.get(batch);
     }
 
     @Override
@@ -327,6 +412,11 @@ public abstract class Minimizer extends GradientDescent {
             ObservedAtom observedAtom = entry.getValue();
 
             int rvAtomIndex = atomStore.getAtomIndex(randomVariableAtom);
+            if (rvAtomIndex == -1) {
+                // This atom is not in the current batch.
+                continue;
+            }
+
             int proxRuleIndex = rvAtomIndexToProxIndex.get(rvAtomIndex);
 
             proxRuleObservedAtoms[proxRuleIndex]._assumeValue(observedAtom.getValue());
@@ -351,15 +441,15 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     @Override
-    protected void computeTotalAtomGradient() {
+    protected void addLearningLossAtomGradient() {
         float totalEnergyDifference = computeObjectiveDifference();
 
         for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             float rvGradientDifference = augmentedRVAtomGradient[i] - MAPRVAtomGradient[i];
             float deepGradientDifference = augmentedDeepAtomGradient[i] - MAPDeepAtomGradient[i];
 
-            rvAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * rvGradientDifference + linearPenaltyCoefficient * rvGradientDifference;
-            deepAtomGradient[i] = squaredPenaltyCoefficient * totalEnergyDifference * deepGradientDifference + linearPenaltyCoefficient * deepGradientDifference;
+            rvAtomGradient[i] += squaredPenaltyCoefficient * totalEnergyDifference * rvGradientDifference + linearPenaltyCoefficient * rvGradientDifference;
+            deepAtomGradient[i] += squaredPenaltyCoefficient * totalEnergyDifference * deepGradientDifference + linearPenaltyCoefficient * deepGradientDifference;
         }
     }
 
