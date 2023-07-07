@@ -21,14 +21,19 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
+import org.linqs.psl.util.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 
 public class RandomNodeBatchGenerator extends LearningBatchGenerator {
+    private static final Logger log = Logger.getLogger(RandomNodeBatchGenerator.class);
+
     private final int numBatches;
     private final int batchSize;
     private final int bfsDepth;
@@ -67,15 +72,7 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                     continue;
                 }
 
-                // Make a copy of the atom so that the batch atom store can be modified without affecting the full atom store.
-                RandomVariableAtom newBatchRVAtom = (RandomVariableAtom)originalAtom.copy();
-                newBatchRVAtom.clearTerms();
-
-                if (!visitedAtoms.contains(originalAtom)) {
-                    batchAtomStore.addAtom(newBatchRVAtom);
-                }
-
-                // Perform a bfs on the factor graph starting from the sampled atoms to obtain batch terms.
+                // Perform a bfs on the factor graph starting from the sampled atom to obtain batch terms.
                 ArrayList<ReasonerTerm> bfsCurrentDepthQueue = new ArrayList<ReasonerTerm>(originalAtom.getTerms());
                 for (int depth = 0; depth < bfsDepth; depth++) {
                     ArrayList<ReasonerTerm> bfsNextDepthQueue = new ArrayList<ReasonerTerm>();
@@ -97,13 +94,12 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                                 newAtomIndexes[j] = batchAtomStore.getAtomIndex(atom);
                                 continue;
                             }
-
                             visitedAtoms.add(atom);
 
                             GroundAtom newBatchAtom = atom.copy();
                             newBatchAtom.clearTerms();
                             batchAtomStore.addAtom(newBatchAtom);
-                            newAtomIndexes[j] = batchAtomStore.getAtomIndex(atom);
+                            newAtomIndexes[j] = batchAtomStore.getAtomIndex(newBatchAtom);
 
                             bfsNextDepthQueue.addAll(atom.getTerms());
 
@@ -112,12 +108,13 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                                     if (visitedAtoms.contains(classAtom)) {
                                         continue;
                                     }
+                                    visitedAtoms.add(classAtom);
 
                                     GroundAtom newBatchClassAtom = classAtom.copy();
                                     newBatchClassAtom.clearTerms();
                                     batchAtomStore.addAtom(newBatchClassAtom);
 
-                                    visitedAtoms.add(classAtom);
+                                    bfsNextDepthQueue.addAll(classAtom.getTerms());
                                 }
                             }
                         }

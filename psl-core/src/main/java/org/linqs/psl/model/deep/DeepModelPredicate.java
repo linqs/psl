@@ -31,6 +31,7 @@ import org.linqs.psl.util.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +105,7 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public List<GroundAtom> getClasses(GroundAtom atom) {
-        Constant[] arguments = atom.getArguments();
+        Constant[] arguments = Arrays.copyOf(atom.getArguments(), atom.getArguments().length);
         ConstantType type = predicate.getArgumentType(arguments.length - 1);
 
         // Get all the classes associated with this atom.
