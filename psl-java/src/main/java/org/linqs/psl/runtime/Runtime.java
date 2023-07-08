@@ -168,11 +168,16 @@ public class Runtime {
             model = runLearning(config, result);
         }
 
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                predicate.close();
+            }
+        }
+
         if (RuntimeOptions.INFERENCE.getBoolean()) {
             runInference(config, model, result);
         }
 
-        // TODO(Connor): Closing DeepPredicates needs to occur after both learning and inference.
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
                 predicate.close();

@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.IteratorUtils;
@@ -229,6 +230,8 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
         for (GroundAtom atom : atomStore) {
             if (atom instanceof ObservedAtom) {
                 count.observed++;
+            } else if (atom.getPredicate() instanceof DeepPredicate) {
+                count.deep++;
             } else {
                 count.unobserved++;
             }
@@ -262,16 +265,18 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
     public class AtomCount {
         public int observed;
+        public int deep;
         public int unobserved;
 
         public AtomCount() {
             observed = 0;
+            deep = 0;
             unobserved = 0;
         }
 
         @Override
         public String toString() {
-            return String.format("%d unobserved and %d observed", unobserved, observed);
+            return String.format("%d unobserved, deep %d, and %d observed", unobserved, deep, observed);
         }
     }
 }

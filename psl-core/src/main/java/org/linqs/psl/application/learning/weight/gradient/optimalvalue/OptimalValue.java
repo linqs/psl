@@ -27,6 +27,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -106,6 +107,27 @@ public abstract class OptimalValue extends GradientDescent {
 
         latentInferenceTermState = latentFullInferenceTermState;
         latentInferenceAtomValueState = latentFullInferenceAtomValueState;
+    }
+
+    @Override
+    protected boolean breakOptimization(int iteration) {
+        if (super.breakOptimization(iteration)) {
+            return true;
+        }
+
+        if (runFullIterations) {
+            return false;
+        }
+
+        computeIterationStatistics();
+        computeTotalWeightGradient();
+        computeTotalAtomGradient();
+        if (normBreak && MathUtils.equals(computeGradientNorm(), 0.0f, normTolerance)) {
+            log.trace("Breaking Weight Learning. Gradient norm: {} is within tolerance: {}", computeGradientNorm(), normTolerance);
+            return true;
+        }
+
+        return false;
     }
 
     /**

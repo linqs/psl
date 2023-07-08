@@ -44,6 +44,7 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
 
         numBatches = Options.RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES.getInt();
         batchSize = (int) Math.ceil(((float) fullTermStore.getAtomStore().getNumRVAtoms()) / numBatches);
+        log.info("Batch size: {}", batchSize);
         bfsDepth = Options.RANDOM_NODE_BATCH_GENERATOR_BFS_DEPTH.getInt();
     }
 
@@ -56,7 +57,10 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
         ArrayList<GroundAtom> allAtoms = new ArrayList<GroundAtom>(Arrays.asList(Arrays.copyOf(fullTermStore.getAtomStore().getAtoms(), fullTermStore.getAtomStore().size())));
         Collections.shuffle(allAtoms);
 
+        ArrayList<GroundAtom> batchSourceAtoms = new ArrayList<GroundAtom>(batchSize);
+
         for (int i = 0; i < numBatches; i++) {
+            log.trace("Generating batch {}.", i);
             AtomStore batchAtomStore = new AtomStore();
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = (SimpleTermStore<? extends ReasonerTerm>)inferenceApplication.createTermStore();
             batchTermStore.setAtomStore(batchAtomStore);
@@ -65,13 +69,18 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
             HashSet<ReasonerTerm> visitedTerms = new HashSet<>();
             HashSet<GroundAtom> visitedAtoms = new HashSet<>();
 
+            batchSourceAtoms.clear();
+
             // The last batch may be smaller than the rest.
-            while ((batchAtomStore.size() < batchSize) && !allAtoms.isEmpty()) {
+            while ((batchSourceAtoms.size() < batchSize) && !allAtoms.isEmpty()) {
                 GroundAtom originalAtom = allAtoms.remove(0);
 
-                if (originalAtom.isFixed()) {
+                if (originalAtom instanceof ObservedAtom) {
                     continue;
                 }
+
+                log.trace("Sampled atom: {}", originalAtom);
+                batchSourceAtoms.add(originalAtom);
 
                 // Perform a bfs on the factor graph starting from the sampled atom to obtain batch terms.
                 ArrayList<ReasonerTerm> bfsCurrentDepthQueue = new ArrayList<ReasonerTerm>(originalAtom.getTerms());
@@ -128,6 +137,10 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
 
                     bfsCurrentDepthQueue = bfsNextDepthQueue;
                 }
+            }
+            log.trace("Batch {} atoms:.", i);
+            for (GroundAtom atom : batchAtomStore.getAtoms()) {
+                log.trace("{}", atom);
             }
         }
     }
