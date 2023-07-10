@@ -50,16 +50,16 @@ public abstract class DeepModel {
     protected Map<String, String> pythonOptions;
     protected String application;
 
-    private int port;
-    private String pythonModule;
-    private String sharedMemoryPath;
-    private Process pythonServerProcess;
-    private RandomAccessFile sharedFile;
+    protected int port;
+    protected String pythonModule;
+    protected String sharedMemoryPath;
+    protected Process pythonServerProcess;
+    protected RandomAccessFile sharedFile;
     protected MappedByteBuffer sharedBuffer;
-    private Socket socket;
-    private BufferedReader socketInput;
-    private PrintWriter socketOutput;
-    private boolean serverOpen;
+    protected Socket socket;
+    protected BufferedReader socketInput;
+    protected PrintWriter socketOutput;
+    protected boolean serverOpen;
 
     protected DeepModel(String deepModel) {
         this.deepModel = deepModel;
@@ -404,7 +404,7 @@ public abstract class DeepModel {
         return port;
     }
 
-    private static synchronized void freePort(int port) {
+    protected static synchronized void freePort(int port) {
         usedPorts.remove(Integer.valueOf(port));
     }
 }

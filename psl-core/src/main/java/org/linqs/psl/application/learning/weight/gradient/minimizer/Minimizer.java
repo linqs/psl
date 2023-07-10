@@ -187,6 +187,8 @@ public abstract class Minimizer extends GradientDescent {
 
         initializeFullWarmStarts();
         initializeBatchWarmStarts();
+        initializeFullDeepModelPredicates();
+        initializeBatchDeepModelPredicates();
         initializeGradients();
     }
 
@@ -313,6 +315,7 @@ public abstract class Minimizer extends GradientDescent {
         super.epochEnd();
 
         epochParameterMovement += proxRuleObservedAtomValueMovement;
+        log.trace("Epoch Prox Rule Observed Atom Value Movement: {}", proxRuleObservedAtomValueMovement);
 
         if (epochParameterMovement < parameterMovementTolerance) {
             outerIteration++;

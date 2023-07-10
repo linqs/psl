@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.deep;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
@@ -67,11 +68,49 @@ public class DeepModelPredicate extends DeepModel {
         this.classSize = -1;
         this.atomIndexes = null;
         this.dataIndexes = null;
-        this.gradients = null;
-        this.symbolicGradients = null;
+        this.atomIndexToDataIndex = null;
 
         this.validAtomIndexes = new ArrayList<Integer>();
         this.validDataIndexes = new ArrayList<Integer>();
+
+        this.gradients = null;
+        this.symbolicGradients = null;
+    }
+
+    public DeepModelPredicate copy() {
+        DeepModelPredicate copy = new DeepModelPredicate(predicate);
+
+        copy.pythonOptions = pythonOptions;
+
+        copy.application = application;
+
+        freePort(copy.port);
+        copy.port = this.port;
+
+        copy.pythonModule = pythonModule;
+        copy.sharedMemoryPath = sharedMemoryPath;
+        copy.pythonServerProcess = pythonServerProcess;
+        copy.sharedFile = sharedFile;
+        copy.sharedBuffer = sharedBuffer;
+        copy.socket = socket;
+        copy.socketInput = socketInput;
+        copy.socketOutput = socketOutput;
+        copy.serverOpen = serverOpen;
+
+        copy.atomStore = atomStore;
+
+        copy.classSize = classSize;
+        copy.atomIndexes = atomIndexes;
+        copy.dataIndexes = dataIndexes;
+        copy.atomIndexToDataIndex = atomIndexToDataIndex;
+
+        copy.validAtomIndexes = validAtomIndexes;
+        copy.validDataIndexes = validDataIndexes;
+
+        copy.gradients = gradients;
+        copy.symbolicGradients = symbolicGradients;
+
+        return copy;
     }
 
     public synchronized int init() {

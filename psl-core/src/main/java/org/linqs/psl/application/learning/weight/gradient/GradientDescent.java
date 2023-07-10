@@ -22,6 +22,7 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
@@ -66,6 +67,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float[] epochStartDeepAtomValues;
 
     protected List<DeepPredicate> deepPredicates;
+    protected Map<DeepPredicate, DeepModelPredicate> fullDeepModelPredicates;
+    protected Map<DeepPredicate, List<DeepModelPredicate>> batchDeepModelPredicates;
 
     protected SimpleTermStore<? extends ReasonerTerm> trainFullTermStore;
     protected TermState[] trainFullMAPTermState;
@@ -129,6 +132,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 deepPredicates.add((DeepPredicate)predicate);
             }
         }
+        fullDeepModelPredicates = new HashMap<DeepPredicate, DeepModelPredicate>();
+        batchDeepModelPredicates = new HashMap<DeepPredicate, List<DeepModelPredicate>>();
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            batchDeepModelPredicates.put(deepPredicate, new ArrayList<DeepModelPredicate>());
+        }
 
         trainFullTermStore = null;
         trainFullMAPTermState = null;
@@ -177,6 +185,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         initializeBatches();
         initializeFullWarmStarts();
         initializeBatchWarmStarts();
+        initializeFullDeepModelPredicates();
+        initializeBatchDeepModelPredicates();
         initializeGradients();
     }
 
@@ -213,6 +223,22 @@ public abstract class GradientDescent extends WeightLearningApplication {
             batchMAPTermStates.add(batchTermStore.saveState());
             batchMAPAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(),
                     batchTermStore.getAtomStore().getAtomValues().length));
+        }
+    }
+
+    protected void initializeFullDeepModelPredicates() {
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            fullDeepModelPredicates.put(deepPredicate, deepPredicate.getDeepModel());
+        }
+    }
+
+    protected void initializeBatchDeepModelPredicates() {
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            for (SimpleTermStore<? extends ReasonerTerm> batchTermStore : batchGenerator.getBatchTermStores()) {
+                DeepModelPredicate deepModelPredicate = deepPredicate.getDeepModel().copy();
+                deepModelPredicate.setAtomStore(batchTermStore.getAtomStore(), true);
+                batchDeepModelPredicates.get(deepPredicate).add(deepModelPredicate);
+            }
         }
     }
 
@@ -451,7 +477,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         // Set the deep predicate atom store and predict with the deep predicates again to ensure predictions are aligned with the batch.
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.getDeepModel().setAtomStore(batchTermStore.getAtomStore(), true);
+            deepPredicate.setDeepModel(batchDeepModelPredicates.get(deepPredicate).get(batch));
             deepPredicate.predictDeepModel(true);
         }
     }
@@ -462,7 +488,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         trainMAPAtomValueState = trainFullMAPAtomValueState;
 
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.getDeepModel().setAtomStore(trainFullTermStore.getAtomStore(), true);
+            deepPredicate.setDeepModel(fullDeepModelPredicates.get(deepPredicate));
             deepPredicate.predictDeepModel(true);
         }
     }
