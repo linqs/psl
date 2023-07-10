@@ -94,6 +94,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float stoppingGradientNorm;
     protected boolean clipWeightGradient;
 
+    protected int computePeriod;
     protected int maxNumSteps;
     protected boolean runFullIterations;
     protected boolean objectiveBreak;
@@ -165,6 +166,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         maxGradientMagnitude = Options.WLA_GRADIENT_DESCENT_MAX_GRADIENT.getFloat();
         maxGradientNorm = Options.WLA_GRADIENT_DESCENT_MAX_GRADIENT_NORM.getFloat();
 
+        computePeriod = Options.WLA_GRADIENT_DESCENT_COMPUTE_PERIOD.getInt();
         maxNumSteps = Options.WLA_GRADIENT_DESCENT_NUM_STEPS.getInt();
         runFullIterations = Options.WLA_GRADIENT_DESCENT_RUN_FULL_ITERATIONS.getBoolean();
         objectiveBreak = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK.getBoolean();
@@ -353,7 +355,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             totalTime += end - start;
 
-            breakGD = breakOptimization(iteration);
+            if (iteration % computePeriod == 0) {
+                breakGD = breakOptimization(iteration);
+            }
             log.trace("Epoch {} -- Iteration Time: {}", iteration, (end - start));
 
             iteration++;

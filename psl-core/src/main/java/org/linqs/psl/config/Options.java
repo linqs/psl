@@ -363,6 +363,13 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_COMPUTE_PERIOD = new Option(
+        "gradientdescent.computeperiod",
+        10,
+        "Compute some stats about the weight learner to for stopping criterion once for each period.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_NUM_STEPS = new Option(
         "gradientdescent.numsteps",
         500,
