@@ -171,6 +171,10 @@ public class DeepModelPredicate extends DeepModel {
         return classes;
     }
 
+    public int[] getAtomIndexes() {
+        return atomIndexes;
+    }
+
     public void writeFitData() {
         log.debug("Writing fit data for deep model predicate: {}", predicate.getName());
         for (int index = 0; index < gradients.length; index++) {

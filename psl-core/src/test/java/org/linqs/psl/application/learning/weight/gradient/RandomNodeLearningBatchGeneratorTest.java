@@ -42,7 +42,7 @@ public class RandomNodeLearningBatchGeneratorTest extends LearningBatchGenerator
         InferenceApplication inferenceApplication = getInference(info.model.getRules(), trainTargetDatabase);
 
         // Test that the generator respects the option and all atoms are in the one batch.
-        Options.RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES.set(1);
+        Options.RANDOM_NODE_BATCH_GENERATOR_BATCH_SIZE.set(999);
 
         LearningBatchGenerator batchGenerator = getGenerator(inferenceApplication);
         batchGenerator.generateBatches();

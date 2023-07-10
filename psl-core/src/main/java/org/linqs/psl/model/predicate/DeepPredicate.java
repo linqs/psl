@@ -47,6 +47,10 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     public void fitDeepPredicate(float[] symbolicGradients) {
+        if (deepModel.getAtomIndexes().length == 0) {
+            return;
+        }
+
         deepModel.setSymbolicGradients(symbolicGradients);
         deepModel.fitDeepModel();
     }
@@ -64,10 +68,18 @@ public class DeepPredicate extends StandardPredicate {
     }
 
     public float predictDeepModel(Boolean learning) {
+        if (deepModel.getAtomIndexes().length == 0) {
+            return 0.0f;
+        }
+
         return deepModel.predictDeepModel(learning);
     }
 
     public void evalDeepModel() {
+        if (deepModel.getAtomIndexes().length == 0) {
+            return;
+        }
+
         deepModel.evalDeepModel();
     }
 

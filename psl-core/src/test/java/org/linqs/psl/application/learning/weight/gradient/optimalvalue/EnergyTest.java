@@ -35,13 +35,6 @@ public class EnergyTest extends WeightLearningTest {
         assertFriendshipRankTest = true;
     }
 
-    @Before
-    public void setup() {
-        super.setup();
-
-        Options.RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES.set(1);
-    }
-
     @Override
     protected WeightLearningApplication getBaseWLA() {
         return new Energy(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,

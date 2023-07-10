@@ -708,10 +708,10 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES = new Option(
-        "randomnodebatchgenerator.numbatches",
+    public static final Option RANDOM_NODE_BATCH_GENERATOR_BATCH_SIZE = new Option(
+        "randomnodebatchgenerator.batchsize",
         32,
-        "The number of batches to sample for random node batch generator."
+        "The number of nodes to sample for each batch for random node batch generator."
     );
 
     public static final Option RANDOM_NODE_BATCH_GENERATOR_BFS_DEPTH = new Option(

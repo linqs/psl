@@ -42,9 +42,9 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
     public RandomNodeBatchGenerator(InferenceApplication inferenceApplication) {
         super(inferenceApplication);
 
-        numBatches = Options.RANDOM_NODE_BATCH_GENERATOR_NUM_BATCHES.getInt();
-        batchSize = (int) Math.ceil(((float) fullTermStore.getAtomStore().getNumRVAtoms()) / numBatches);
-        log.info("Batch size: {}", batchSize);
+        batchSize = Options.RANDOM_NODE_BATCH_GENERATOR_BATCH_SIZE.getInt();
+        numBatches = (int) Math.ceil(((float) fullTermStore.getAtomStore().getNumRVAtoms()) / batchSize);
+        log.trace("Batch size: " + batchSize + ", num batches: " + numBatches);
         bfsDepth = Options.RANDOM_NODE_BATCH_GENERATOR_BFS_DEPTH.getInt();
     }
 
@@ -58,17 +58,17 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
         Collections.shuffle(allAtoms);
 
         ArrayList<GroundAtom> batchSourceAtoms = new ArrayList<GroundAtom>(batchSize);
-
+        HashSet<ReasonerTerm> visitedTerms = new HashSet<>();
+        HashSet<GroundAtom> visitedAtoms = new HashSet<>();
         for (int i = 0; i < numBatches; i++) {
             AtomStore batchAtomStore = new AtomStore();
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = (SimpleTermStore<? extends ReasonerTerm>)inferenceApplication.createTermStore();
             batchTermStore.setAtomStore(batchAtomStore);
             batchTermStores.add(batchTermStore);
 
-            HashSet<ReasonerTerm> visitedTerms = new HashSet<>();
-            HashSet<GroundAtom> visitedAtoms = new HashSet<>();
-
             batchSourceAtoms.clear();
+            visitedTerms.clear();
+            visitedAtoms.clear();
 
             // The last batch may be smaller than the rest.
             while ((batchSourceAtoms.size() < batchSize) && !allAtoms.isEmpty()) {
@@ -90,6 +90,7 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                         }
                         visitedTerms.add(term);
 
+                        // The copied term with have different atom indexes to align with the new atom store for the batch.
                         int[] originalAtomIndexes = term.getAtomIndexes();
                         int[] newAtomIndexes = new int[term.getAtomIndexes().length];
                         for (int j = 0 ; j < term.size(); j ++) {
@@ -111,6 +112,7 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                                 bfsNextDepthQueue.addAll(atom.getTerms());
                             }
 
+                            // If this is a deep predicate, we need to add all the class atoms to the batch.
                             if (newBatchAtom.getPredicate() instanceof DeepPredicate) {
                                 for (GroundAtom classAtom : ((DeepPredicate)newBatchAtom.getPredicate()).getDeepModel().getClasses(newBatchAtom)) {
                                     if (visitedAtoms.contains(classAtom)) {
