@@ -190,18 +190,6 @@ public abstract class Minimizer extends GradientDescent {
         initializeGradients();
     }
 
-    @Override
-    protected void initForLearning() {
-        super.initForLearning();
-
-        for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
-            setBatch(i);
-
-            initializeProximityRuleConstants();
-        }
-        resetBatch();
-    }
-
     private void initializeProxRules(SimpleTermStore<? extends ReasonerTerm> termStore,
                                      List<Integer> rvAtomIndexToProxIndex, List<Integer> proxIndexToRVAtomIndex,
                                      WeightedArithmeticRule[] proxRules, UnmanagedObservedAtom[] proxRuleObservedAtoms,
@@ -456,6 +444,10 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected void computeIterationStatistics() {
         computeFullInferenceStatistics();
+
+        if (epoch == 0) {
+            initializeProximityRuleConstants();
+        }
 
         computeAugmentedInferenceStatistics();
 

@@ -102,6 +102,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float objectiveTolerance;
     protected float normTolerance;
     protected float epochParameterMovement;
+    protected int epoch;
 
 
     protected float l2Regularization;
@@ -175,6 +176,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         normTolerance = Options.WLA_GRADIENT_DESCENT_NORM_TOLERANCE.getFloat();
         stoppingGradientNorm = Options.WLA_GRADIENT_DESCENT_STOPPING_GRADIENT_NORM.getFloat();
         epochParameterMovement = Float.POSITIVE_INFINITY;
+        epoch = 0;
 
         l2Regularization = Options.WLA_GRADIENT_DESCENT_L2_REGULARIZATION.getFloat();
         logRegularization = Options.WLA_GRADIENT_DESCENT_LOG_REGULARIZATION.getFloat();
@@ -294,6 +296,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
         currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
         bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+        epoch = 0;
     }
 
     @Override
@@ -448,6 +451,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void epochEnd() {
+        epoch++;
         // Measure the movement in weights and deep atom values.
         epochParameterMovement = 0.0f;
 
