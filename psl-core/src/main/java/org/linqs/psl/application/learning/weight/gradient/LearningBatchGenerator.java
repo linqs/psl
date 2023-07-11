@@ -18,10 +18,17 @@
 package org.linqs.psl.application.learning.weight.gradient;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.atom.QueryAtom;
+import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -64,6 +71,35 @@ public abstract class LearningBatchGenerator {
         }
 
         batchTermStores.clear();
+    }
+
+    public List<GroundAtom> getClasses(GroundAtom atom, int classSize) {
+        Predicate predicate = atom.getPredicate();
+        Constant[] arguments = Arrays.copyOf(atom.getArguments(), atom.getArguments().length);
+        ConstantType type = atom.getPredicate().getArgumentType(arguments.length - 1);
+
+        // Get all the classes associated with this atom.
+        ArrayList<GroundAtom> classes = new ArrayList<GroundAtom>(classSize);
+        int atomIndex = -1;
+        QueryAtom queryAtom = null;
+        for (int index = 0; index < classSize; index++) {
+            arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
+
+            if (index == 0) {
+                queryAtom = new QueryAtom(predicate, arguments);
+            } else {
+                queryAtom.assume(predicate, arguments);
+            }
+
+            atomIndex = fullTermStore.getAtomStore().getAtomIndex(queryAtom);
+            if (atomIndex == -1) {
+                break;
+            }
+
+            classes.add(fullTermStore.getAtomStore().getAtom(atomIndex));
+        }
+
+        return classes;
     }
 
     public void close() {

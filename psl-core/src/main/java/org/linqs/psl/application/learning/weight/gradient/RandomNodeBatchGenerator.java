@@ -35,7 +35,6 @@ import java.util.HashSet;
 public class RandomNodeBatchGenerator extends LearningBatchGenerator {
     private static final Logger log = Logger.getLogger(RandomNodeBatchGenerator.class);
 
-    private final int numBatches;
     private final int batchSize;
     private final int bfsDepth;
 
@@ -43,8 +42,6 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
         super(inferenceApplication);
 
         batchSize = Options.RANDOM_NODE_BATCH_GENERATOR_BATCH_SIZE.getInt();
-        numBatches = (int) Math.ceil(((float) fullTermStore.getAtomStore().getNumRVAtoms()) / batchSize);
-        log.trace("Batch size: " + batchSize + ", num batches: " + numBatches);
         bfsDepth = Options.RANDOM_NODE_BATCH_GENERATOR_BFS_DEPTH.getInt();
     }
 
@@ -57,34 +54,52 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
         ArrayList<GroundAtom> allAtoms = new ArrayList<GroundAtom>(Arrays.asList(Arrays.copyOf(fullTermStore.getAtomStore().getAtoms(), fullTermStore.getAtomStore().size())));
         Collections.shuffle(allAtoms);
 
-        ArrayList<GroundAtom> batchSourceAtoms = new ArrayList<GroundAtom>(batchSize);
-        HashSet<ReasonerTerm> visitedTerms = new HashSet<>();
-        HashSet<GroundAtom> visitedAtoms = new HashSet<>();
-        for (int i = 0; i < numBatches; i++) {
+        HashSet<GroundAtom> batchSourceAtoms = new HashSet<GroundAtom>();
+        HashSet<ReasonerTerm> visitedTerms = new HashSet<ReasonerTerm>();
+        HashSet<GroundAtom> visitedAtoms = new HashSet<GroundAtom>();
+        int numBatches = 0;
+        while (!allAtoms.isEmpty()) {
             AtomStore batchAtomStore = new AtomStore();
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = (SimpleTermStore<? extends ReasonerTerm>)inferenceApplication.createTermStore();
             batchTermStore.setAtomStore(batchAtomStore);
             batchTermStores.add(batchTermStore);
 
-            batchSourceAtoms.clear();
             visitedTerms.clear();
             visitedAtoms.clear();
 
             // The last batch may be smaller than the rest.
-            while ((batchSourceAtoms.size() < batchSize) && !allAtoms.isEmpty()) {
+            int currentBatchSize = 0;
+            while ((currentBatchSize < batchSize) && !allAtoms.isEmpty()) {
                 GroundAtom originalAtom = allAtoms.remove(0);
 
-                if (originalAtom instanceof ObservedAtom) {
+                // Skip observed atoms and atoms that are not batch sources and atoms that are already batch sources.
+                if ((originalAtom instanceof ObservedAtom)
+                        || !Boolean.parseBoolean(originalAtom.getPredicate().getPredicateOptions().get("batch-source"))
+                        || batchSourceAtoms.contains(originalAtom)) {
                     continue;
                 }
                 batchSourceAtoms.add(originalAtom);
+                currentBatchSize++;
 
                 // Perform a bfs on the factor graph starting from the sampled atom to obtain batch terms.
-                HashSet<ReasonerTerm> bfsCurrentDepthQueue = new HashSet<ReasonerTerm>(originalAtom.getTerms());
-                for (int depth = 0; depth < bfsDepth; depth++) {
-                    HashSet<ReasonerTerm> bfsNextDepthQueue = new HashSet<ReasonerTerm>();
+                HashSet<ReasonerTerm> bfsCurrentDepth = new HashSet<ReasonerTerm>(originalAtom.getTerms());
 
-                    for (ReasonerTerm term : bfsCurrentDepthQueue) {
+                // If this is a categorical atom, add all the atoms and terms associated with the category atoms.
+                if (originalAtom.getPredicate().getPredicateOptions().containsKey("class-size")) {
+                    int classSize = Integer.parseInt(originalAtom.getPredicate().getPredicateOptions().get("class-size"));
+                    for (int i = 0; i < classSize; i++) {
+                        // Add the atoms and terms associated with the category atoms.
+                        for (GroundAtom groundAtom : getClasses(originalAtom, classSize)) {
+                            batchSourceAtoms.add(groundAtom);
+                            bfsCurrentDepth.addAll(groundAtom.getTerms());
+                        }
+                    }
+                }
+
+                for (int depth = 0; depth < bfsDepth; depth++) {
+                    HashSet<ReasonerTerm> bfsNextDepth = new HashSet<ReasonerTerm>();
+
+                    for (ReasonerTerm term : bfsCurrentDepth) {
                         if (visitedTerms.contains(term) || !term.isActive()) {
                             continue;
                         }
@@ -109,7 +124,7 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                             newAtomIndexes[j] = batchAtomStore.getAtomIndex(newBatchAtom);
 
                             if (!(atom instanceof ObservedAtom)) {
-                                bfsNextDepthQueue.addAll(atom.getTerms());
+                                bfsNextDepth.addAll(atom.getTerms());
                             }
 
                             // If this is a deep predicate, we need to add all the class atoms to the batch.
@@ -124,7 +139,7 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                                     newBatchClassAtom.clearTerms();
                                     batchAtomStore.addAtom(newBatchClassAtom);
 
-                                    bfsNextDepthQueue.addAll(classAtom.getTerms());
+                                    bfsNextDepth.addAll(classAtom.getTerms());
                                 }
                             }
                         }
@@ -134,9 +149,11 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                         batchTermStore.add(newBatchTerm);
                     }
 
-                    bfsCurrentDepthQueue = bfsNextDepthQueue;
+                    bfsCurrentDepth = bfsNextDepth;
                 }
             }
+            numBatches++;
         }
+        log.trace("Batch size: " + batchSize + ", num batches: " + numBatches);
     }
 }

@@ -255,9 +255,7 @@ public class DeepModelPredicate extends DeepModel {
      * Load predicate options that will be sent to python as strings and verify certain all required options exist.
      */
     private void validateOptions() {
-        for (Map.Entry<String, Object> entry : predicate.getPredicateOptions().entrySet()) {
-            pythonOptions.put(entry.getKey(), (String) entry.getValue());
-        }
+        pythonOptions.putAll(predicate.getPredicateOptions());
 
         if (FileUtils.makePath(pythonOptions.get(CONFIG_RELATIVE_DIR), pythonOptions.get(CONFIG_ENTITY_DATA_MAP_PATH)) == null) {
             throw new IllegalArgumentException(String.format(
