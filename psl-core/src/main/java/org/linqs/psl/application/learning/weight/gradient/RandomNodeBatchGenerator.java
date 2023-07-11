@@ -80,9 +80,9 @@ public class RandomNodeBatchGenerator extends LearningBatchGenerator {
                 batchSourceAtoms.add(originalAtom);
 
                 // Perform a bfs on the factor graph starting from the sampled atom to obtain batch terms.
-                ArrayList<ReasonerTerm> bfsCurrentDepthQueue = new ArrayList<ReasonerTerm>(originalAtom.getTerms());
+                HashSet<ReasonerTerm> bfsCurrentDepthQueue = new HashSet<ReasonerTerm>(originalAtom.getTerms());
                 for (int depth = 0; depth < bfsDepth; depth++) {
-                    ArrayList<ReasonerTerm> bfsNextDepthQueue = new ArrayList<ReasonerTerm>();
+                    HashSet<ReasonerTerm> bfsNextDepthQueue = new HashSet<ReasonerTerm>();
 
                     for (ReasonerTerm term : bfsCurrentDepthQueue) {
                         if (visitedTerms.contains(term) || !term.isActive()) {

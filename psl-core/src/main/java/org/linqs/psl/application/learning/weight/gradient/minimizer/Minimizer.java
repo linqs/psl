@@ -368,6 +368,7 @@ public abstract class Minimizer extends GradientDescent {
         }
 
         float totalObjectiveDifference = computeTotalObjectiveDifference();
+        log.trace("Iteration: {} -- Total Objective Difference: {}", totalObjectiveDifference);
         if (totalObjectiveDifference < finalConstraintTolerance) {
             log.trace("Breaking Weight Learning. Objective difference {} is less than final constraint tolerance {}.",
                     totalObjectiveDifference, finalConstraintTolerance);

@@ -358,7 +358,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             if (iteration % computePeriod == 0) {
                 breakGD = breakOptimization(iteration);
             }
-            log.trace("Epoch {} -- Iteration Time: {}", iteration, (end - start));
+            log.trace("Epoch: {} -- Iteration Time: {}", iteration, (end - start));
 
             iteration++;
         }
