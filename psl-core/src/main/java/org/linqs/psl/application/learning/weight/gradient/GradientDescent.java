@@ -387,6 +387,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         log.info("Final Model {} ", mutableRules);
         log.info("Total Weight Learning Time: {}", totalTime);
+
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.saveDeepModel();
+            deepPredicate.close();
+        }
     }
 
     protected void runMAPEvaluation() {

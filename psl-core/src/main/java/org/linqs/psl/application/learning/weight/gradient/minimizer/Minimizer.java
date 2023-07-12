@@ -406,7 +406,7 @@ public abstract class Minimizer extends GradientDescent {
         // Initialize the proximity rule constants to the truth if it exists or the latent MAP state.
         fixLabeledRandomVariables();
 
-        log.trace("Performing Latent Inference.");
+        log.trace("Running Latent Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
 
         unfixLabeledRandomVariables();
@@ -485,7 +485,6 @@ public abstract class Minimizer extends GradientDescent {
 
         computeCurrentIncompatibility(mapIncompatibility);
         computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
-
         trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);
     }
 
