@@ -20,10 +20,12 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.TermState;
+import org.linqs.psl.util.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +41,8 @@ import java.util.Map;
  * computing the incompatibility of the latent variable inference problem solution are provided in this class.
  */
 public abstract class OptimalValue extends GradientDescent {
+    private static final Logger log = Logger.getLogger(GradientDescent.class);
+
     protected float[] latentInferenceIncompatibility;
     protected TermState[] latentInferenceTermState;
     protected float[] latentInferenceAtomValueState;
@@ -80,6 +84,10 @@ public abstract class OptimalValue extends GradientDescent {
 
         computeCurrentIncompatibility(latentInferenceIncompatibility);
         trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            log.trace("Rule: {} , Latent inference incompatibility: {}", mutableRules.get(i), latentInferenceIncompatibility[i]);
+        }
 
         unfixLabeledRandomVariables();
     }

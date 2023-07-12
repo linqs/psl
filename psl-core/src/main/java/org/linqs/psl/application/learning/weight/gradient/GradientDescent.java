@@ -24,6 +24,7 @@ import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
@@ -229,7 +230,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         while (!breakGD) {
             long start = System.currentTimeMillis();
 
-            log.trace("Model: {}", mutableRules);
+            log.trace("Model:");
+            for (WeightedRule weightedRule: mutableRules) {
+                log.trace("{}", weightedRule);
+            }
 
             gradientStep(iteration);
 
@@ -464,6 +468,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             deepPredicate.fitDeepPredicate(deepAtomGradient);
             deepPredicateChange += deepPredicate.predictDeepModel(true);
         }
+
+        log.trace("Deep Predicate Change: {}", deepPredicateChange);
         return deepPredicateChange;
     }
 

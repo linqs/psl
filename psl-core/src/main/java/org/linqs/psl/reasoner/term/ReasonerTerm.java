@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
@@ -328,5 +329,55 @@ public class ReasonerTerm {
      */
     public void saveState(TermState termState) {
         // Pass.
+    }
+
+    @Override
+    public String toString() {
+        return toString(null);
+    }
+
+    public String toString(AtomStore atomStore) {
+        // weight * [max(coeffs^T * x - constant, 0.0)]^2
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(getWeight());
+        builder.append(" * ");
+
+        if (hinge) {
+            builder.append("max(0.0, ");
+        } else {
+            builder.append("(");
+        }
+
+        for (int i = 0; i < size; i++) {
+            builder.append("(");
+            builder.append(coefficients[i]);
+
+            if (atomStore == null) {
+                builder.append(" * <index:");
+                builder.append(atomIndexes[i]);
+                builder.append(">)");
+            } else {
+                builder.append(" * ");
+                builder.append(atomStore.getAtomValue(atomIndexes[i]));
+                builder.append(")");
+            }
+
+            if (i != size - 1) {
+                builder.append(" + ");
+            }
+        }
+
+        builder.append(" - ");
+        builder.append(constant);
+
+        builder.append(")");
+
+        if (squared) {
+            builder.append(" ^2");
+        }
+
+        return builder.toString();
     }
 }

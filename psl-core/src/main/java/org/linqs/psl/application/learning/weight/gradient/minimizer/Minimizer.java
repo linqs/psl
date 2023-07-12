@@ -244,11 +244,11 @@ public abstract class Minimizer extends GradientDescent {
         parameterMovement += internalParameterGradientStep(iteration);
         parameterMovement += atomGradientStep();
 
+        // Update the penalty coefficients and tolerance.
+        float totalObjectiveDifference = computeObjectiveDifference();
+
         if ((iteration > 0) && (parameterMovement < parameterMovementTolerance)) {
             outerIteration++;
-
-            // Update the penalty coefficients and tolerance.
-            float totalObjectiveDifference = computeObjectiveDifference();
 
             if (totalObjectiveDifference < constraintTolerance) {
                 if ((totalObjectiveDifference < finalConstraintTolerance) && (parameterMovement < finalParameterMovementTolerance)) {
@@ -263,11 +263,10 @@ public abstract class Minimizer extends GradientDescent {
                 constraintTolerance = (float)(1.0f / Math.pow(squaredPenaltyCoefficient, 0.1));
                 parameterMovementTolerance = (float)(1.0f / squaredPenaltyCoefficient);
             }
-
-            log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
-                    outerIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
-
         }
+
+        log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
+                outerIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
     }
 
     @Override
@@ -285,6 +284,8 @@ public abstract class Minimizer extends GradientDescent {
             atomValues[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
             augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
         }
+
+        log.trace("Proximity Rule Observed Atoms Value Movement: {}.", proxRuleObservedAtomsValueMovement);
 
         return proxRuleObservedAtomsValueMovement;
     }
