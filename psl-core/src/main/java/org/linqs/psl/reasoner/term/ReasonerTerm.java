@@ -198,17 +198,17 @@ public class ReasonerTerm {
         float value = computeInnerPotential(variableValues);
 
         if (comparator.equals(FunctionComparator.EQ)) {
-            if (MathUtils.isZero(value, MathUtils.RELAXED_EPSILON_FLOAT)) {
+            if (MathUtils.isZero(value, MathUtils.RELAXED_EPSILON)) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
         } else if (comparator.equals(FunctionComparator.LTE)) {
-            if (value <= MathUtils.RELAXED_EPSILON_FLOAT) {
+            if (value <= MathUtils.RELAXED_EPSILON) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
         } else if (comparator.equals(FunctionComparator.GTE)) {
-            if (value >= MathUtils.RELAXED_EPSILON_FLOAT) {
+            if (value >= MathUtils.RELAXED_EPSILON) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
