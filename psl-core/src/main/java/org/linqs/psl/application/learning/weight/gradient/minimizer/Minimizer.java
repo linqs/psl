@@ -285,8 +285,6 @@ public abstract class Minimizer extends GradientDescent {
             augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
         }
 
-        log.trace("Proximity Rule Observed Atoms Value Movement: {}.", proxRuleObservedAtomsValueMovement);
-
         return proxRuleObservedAtomsValueMovement;
     }
 

@@ -135,6 +135,7 @@ public class DeepModelPredicate extends DeepModel {
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
         }
+
         return change;
     }
 

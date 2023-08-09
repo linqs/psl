@@ -469,7 +469,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             deepPredicateChange += deepPredicate.predictDeepModel(true);
         }
 
-        log.trace("Deep Predicate Change: {}", deepPredicateChange);
         return deepPredicateChange;
     }
 
