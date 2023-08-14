@@ -74,6 +74,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
     protected boolean saveBestValidationWeights;
+    protected float[] bestValidationWeights;
+    double currentValidationEvaluationMetric;
+    double bestValidationEvaluationMetric;
 
     protected float baseStepSize;
     protected boolean scaleStepSize;
@@ -116,6 +119,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         validationMAPTermState = null;
         validationMAPAtomValueState = null;
         saveBestValidationWeights = Options.WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS.getBoolean();
+        bestValidationWeights = null;
+        currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+        bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
 
         if (saveBestValidationWeights && (!this.runValidation)) {
             throw new IllegalArgumentException("If saveBestValidationWeights is true, then runValidation must also be true.");
@@ -181,8 +187,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             case PROJECTED_GRADIENT:
                 // Initialize weights to be centered on the unit simplex.
                 simplexScaleWeights();
-                inTrainingMAPState = false;
-                inValidationMAPState = false;
 
                 break;
             default:
@@ -193,6 +197,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.predictDeepModel(true);
         }
+
+        bestValidationWeights = new float[mutableRules.size()];
+        for (int i = 0; i < mutableRules.size(); i++) {
+            bestValidationWeights[i] = mutableRules.get(i).getWeight();
+        }
+        currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+        bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
     }
 
     @Override
@@ -200,12 +211,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         boolean breakGD = false;
         float objective = 0.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
-
-        double currentTrainingEvaluationMetric = Double.NEGATIVE_INFINITY;
-        double bestTrainingEvaluationMetric = Double.NEGATIVE_INFINITY;
-
-        double currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
-        double bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
 
         float[] bestWeights = new float[mutableRules.size()];
 
@@ -226,74 +231,27 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.trace("{}", weightedRule);
             }
 
-            gradientStep(iteration);
-
             if (log.isTraceEnabled() && (evaluation != null)) {
-                log.trace("Running Inference.");
-                // Compute the MAP state before evaluating so variables have assigned values.
-                computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
-                inTrainingMAPState = true;
-
-                evaluation.compute(trainingMap);
-                currentTrainingEvaluationMetric = evaluation.getNormalizedRepMetric();
-
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.evalDeepModel();
-                }
-
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.predictDeepModel(true);
-                }
-                inTrainingMAPState = false;
-
-                log.trace("MAP State Training Evaluation Metric: {}", currentTrainingEvaluationMetric);
+                runMAPEvaluation();
+                log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
             }
 
             if (runValidation) {
-                for (int i = 0; i < deepPredicates.size(); i++) {
-                    DeepPredicate deepPredicate = deepPredicates.get(i);
-                    deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
-                    deepPredicate.predictDeepModel(false);
-                }
-                inTrainingMAPState = false;
-
-                log.trace("Running Validation Inference.");
-                computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
-                inValidationMAPState = true;
-
-                evaluation.compute(validationMap);
-                currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
-                log.debug("MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
-
-                if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
-                    bestValidationEvaluationMetric = currentValidationEvaluationMetric;
-                    bestTrainingEvaluationMetric = currentTrainingEvaluationMetric;
-
-                    for (int i = 0; i < mutableRules.size(); i++) {
-                        bestWeights[i] = mutableRules.get(i).getWeight();
-                    }
-
-                    log.debug("New Best Validation Model: {}", mutableRules);
-                }
-
-                log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
-
-                for (int i = 0; i < deepPredicates.size(); i++) {
-                    DeepPredicate deepPredicate = deepPredicates.get(i);
-                    deepPredicate.setDeepModel(deepModelPredicates.get(i));
-                    deepPredicate.predictDeepModel(true);
-                }
-                inValidationMAPState = false;
+                runValidationEvaluation();
+                log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
             }
 
             computeIterationStatistics();
 
             objective = computeTotalLoss();
+
             computeTotalWeightGradient();
             computeTotalAtomGradient();
             if (clipWeightGradient) {
                 clipWeightGradient();
             }
+
+            gradientStep(iteration);
 
             long end = System.currentTimeMillis();
 
@@ -314,28 +272,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
             for (int i = 0; i < mutableRules.size(); i++) {
                 mutableRules.get(i).setWeight(bestWeights[i]);
             }
-
-            inTrainingMAPState = false;
-            inValidationMAPState = false;
         }
 
         if (evaluation != null) {
-            computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
-            inTrainingMAPState = true;
-
-            evaluation.compute(trainingMap);
+            runMAPEvaluation();
             log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
         }
 
         if (runValidation) {
-            for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.predictDeepModel(false);
-            }
-
-            computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
-            inValidationMAPState = true;
-
-            evaluation.compute(validationMap);
+            runValidationEvaluation();
             log.info("Final MAP State Validation Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
         }
 
@@ -346,6 +291,56 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.saveDeepModel();
             deepPredicate.close();
+        }
+    }
+
+    protected void runMAPEvaluation() {
+        // Compute the MAP state before evaluating so variables have assigned values.
+        log.trace("Running Inference.");
+        computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+
+        evaluation.compute(trainingMap);
+
+        // Evaluate the deep predicates. This calls predict with learning set to false.
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.evalDeepModel();
+        }
+
+        // Predict with the deep predicates again to ensure predictions are made with learning set to true.
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.predictDeepModel(true);
+        }
+    }
+
+    protected void runValidationEvaluation() {
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+            deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
+            deepPredicate.predictDeepModel(false);
+        }
+
+        log.trace("Running Validation Inference.");
+        computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
+
+        evaluation.compute(validationMap);
+        currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
+
+        if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
+            bestValidationEvaluationMetric = currentValidationEvaluationMetric;
+
+            for (int j = 0; j < mutableRules.size(); j++) {
+                bestValidationWeights[j] = mutableRules.get(j).getWeight();
+            }
+
+            log.debug("New Best Validation Model: {}", mutableRules);
+        }
+        log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
+
+        // Predict with the deep predicates again to ensure predictions are made with learning set to true.
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+            deepPredicate.setDeepModel(deepModelPredicates.get(i));
+            deepPredicate.predictDeepModel(true);
         }
     }
 
