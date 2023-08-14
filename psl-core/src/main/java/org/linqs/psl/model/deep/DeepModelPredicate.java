@@ -68,7 +68,7 @@ public class DeepModelPredicate extends DeepModel {
         this.validDataIndexes = new ArrayList<Integer>();
     }
 
-    public DeepModelPredicate copy() {
+    public synchronized DeepModelPredicate copy() {
         DeepModelPredicate copy = new DeepModelPredicate(predicate);
 
         copy.pythonOptions = pythonOptions;
