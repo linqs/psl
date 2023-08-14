@@ -51,6 +51,14 @@ public class DeepPredicate extends StandardPredicate {
         deepModel.fitDeepModel();
     }
 
+    public DeepModelPredicate getDeepModel() {
+        return deepModel;
+    }
+
+    public void setDeepModel(DeepModelPredicate deepModel) {
+        this.deepModel = deepModel;
+    }
+
     public float predictDeepModel() {
         return deepModel.predictDeepModel(false);
     }

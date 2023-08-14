@@ -362,7 +362,7 @@ public abstract class Minimizer extends GradientDescent {
      * Compute the incompatibility of the mpe state and the gradient of the energy function at the mpe state.
      */
     private void computeFullInferenceStatistics() {
-        log.trace("Running Full Inference.");
+        log.trace("Running Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
 

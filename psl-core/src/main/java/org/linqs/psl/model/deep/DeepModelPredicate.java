@@ -68,6 +68,41 @@ public class DeepModelPredicate extends DeepModel {
         this.validDataIndexes = new ArrayList<Integer>();
     }
 
+    public DeepModelPredicate copy() {
+        DeepModelPredicate copy = new DeepModelPredicate(predicate);
+
+        copy.pythonOptions = pythonOptions;
+
+        copy.application = application;
+
+        freePort(copy.port);
+        copy.port = (this.port);
+
+        copy.pythonModule = pythonModule;
+        copy.sharedMemoryPath = sharedMemoryPath;
+        copy.pythonServerProcess = pythonServerProcess;
+        copy.sharedFile = sharedFile;
+        copy.sharedBuffer = sharedBuffer;
+        copy.socket = socket;
+        copy.socketInput = socketInput;
+        copy.socketOutput = socketOutput;
+        copy.serverOpen = serverOpen;
+
+        copy.atomStore = atomStore;
+
+        copy.classSize = classSize;
+        copy.atomIndexes = atomIndexes;
+        copy.dataIndexes = dataIndexes;
+
+        copy.validAtomIndexes = validAtomIndexes;
+        copy.validDataIndexes = validDataIndexes;
+
+        copy.gradients = gradients;
+        copy.symbolicGradients = symbolicGradients;
+
+        return copy;
+    }
+
     public synchronized int init() {
         log.debug("Initializing deep model predicate: {}", predicate.getName());
 
@@ -160,7 +195,15 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public void setAtomStore(AtomStore atomStore) {
+        setAtomStore(atomStore, false);
+    }
+
+    public void setAtomStore(AtomStore atomStore, boolean init) {
         this.atomStore = atomStore;
+
+        if (init) {
+            init();
+        }
     }
 
     public void setSymbolicGradients(float[] symbolicGradients) {

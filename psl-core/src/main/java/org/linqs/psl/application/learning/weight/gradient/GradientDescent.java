@@ -22,6 +22,7 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.GroundRule;
@@ -67,8 +68,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float[] MAPRVAtomGradient;
     protected float[] MAPDeepAtomGradient;
 
-    protected List<DeepPredicate> deepPredicates;
-
     protected TermState[] trainMAPTermState;
     protected float[] trainMAPAtomValueState;
 
@@ -110,8 +109,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         deepAtomGradient = null;
         MAPRVAtomGradient = null;
         MAPDeepAtomGradient = null;
-
-        deepPredicates = new ArrayList<DeepPredicate>();
 
         trainMAPTermState = null;
         trainMAPAtomValueState = null;
@@ -176,12 +173,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         MAPRVAtomGradient = new float[trainAtomValues.length];
         MAPDeepAtomGradient = new float[trainAtomValues.length];
-
-        for (Predicate predicate : Predicate.getAll()) {
-            if (predicate instanceof DeepPredicate) {
-                deepPredicates.add((DeepPredicate)predicate);
-            }
-        }
     }
 
     protected void initForLearning() {
@@ -238,6 +229,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             gradientStep(iteration);
 
             if (log.isTraceEnabled() && (evaluation != null)) {
+                log.trace("Running Inference.");
                 // Compute the MAP state before evaluating so variables have assigned values.
                 computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
                 inTrainingMAPState = true;
@@ -257,16 +249,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
 
             if (runValidation) {
-                for (DeepPredicate deepPredicate : deepPredicates) {
+                for (int i = 0; i < deepPredicates.size(); i++) {
+                    DeepPredicate deepPredicate = deepPredicates.get(i);
+                    deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
                     deepPredicate.predictDeepModel(false);
                 }
 
+                log.trace("Running Validation Inference.");
                 computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
                 inValidationMAPState = true;
-
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.predictDeepModel(true);
-                }
 
                 evaluation.compute(validationMap);
                 currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
@@ -284,6 +275,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
 
                 log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
+
+                for (int i = 0; i < deepPredicates.size(); i++) {
+                    DeepPredicate deepPredicate = deepPredicates.get(i);
+                    deepPredicate.setDeepModel(deepModelPredicates.get(i));
+                    deepPredicate.predictDeepModel(true);
+                }
             }
 
             computeIterationStatistics();

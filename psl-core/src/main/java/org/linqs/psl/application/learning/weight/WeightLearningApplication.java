@@ -22,6 +22,9 @@ import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.EvaluationInstance;
+import org.linqs.psl.model.deep.DeepModelPredicate;
+import org.linqs.psl.model.predicate.DeepPredicate;
+import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.Logger;
@@ -53,6 +56,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
     protected Database validationTargetDatabase;
     protected Database validationTruthDatabase;
+
+    protected List<DeepPredicate> deepPredicates;
+    protected List<DeepModelPredicate> deepModelPredicates;
+    protected List<DeepModelPredicate> validationDeepModelPredicates;
 
     protected boolean runValidation;
 
@@ -86,6 +93,10 @@ public abstract class WeightLearningApplication implements ModelApplication {
         this.validationTruthDatabase = validationTruthDatabase;
 
         this.runValidation = runValidation;
+
+        deepPredicates = new ArrayList<DeepPredicate>();
+        deepModelPredicates = new ArrayList<DeepModelPredicate>();
+        validationDeepModelPredicates = new ArrayList<DeepModelPredicate>();
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();
@@ -154,11 +165,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         InferenceApplication trainInferenceApplication = InferenceApplication.getInferenceApplication(Options.WLA_INFERENCE.getString(), allRules, trainTargetDatabase);
         trainInferenceApplication.loadDeepPredicates("learning");
-        InferenceApplication validationInferenceApplication = InferenceApplication.getInferenceApplication(Options.WLA_INFERENCE.getString(), allRules, validationTargetDatabase);
 
-        if (runValidation) {
-            validationInferenceApplication.loadDeepPredicates("inference");
-        }
+        InferenceApplication validationInferenceApplication = InferenceApplication.getInferenceApplication(Options.WLA_INFERENCE.getString(), allRules, validationTargetDatabase);
 
         initGroundModel(trainInferenceApplication, validationInferenceApplication);
     }
@@ -193,6 +201,17 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         if (Options.WLA_RANDOM_WEIGHTS.getBoolean()) {
             initRandomWeights();
+        }
+
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                deepPredicates.add((DeepPredicate)predicate);
+                deepModelPredicates.add(((DeepPredicate)predicate).getDeepModel());
+
+                DeepModelPredicate validationDeepModelPredicate = ((DeepPredicate)predicate).getDeepModel().copy();
+                validationDeepModelPredicate.setAtomStore(validationInferenceApplication.getDatabase().getAtomStore(), true);
+                validationDeepModelPredicates.add(((DeepPredicate)predicate).getDeepModel().copy());
+            }
         }
 
         postInitGroundModel();
