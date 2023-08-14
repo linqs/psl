@@ -244,6 +244,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 for (DeepPredicate deepPredicate : deepPredicates) {
                     deepPredicate.predictDeepModel(true);
                 }
+                inTrainingMAPState = false;
 
                 log.trace("MAP State Training Evaluation Metric: {}", currentTrainingEvaluationMetric);
             }
@@ -254,6 +255,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
                     deepPredicate.predictDeepModel(false);
                 }
+                inTrainingMAPState = false;
 
                 log.trace("Running Validation Inference.");
                 computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
@@ -281,6 +283,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     deepPredicate.setDeepModel(deepModelPredicates.get(i));
                     deepPredicate.predictDeepModel(true);
                 }
+                inValidationMAPState = false;
             }
 
             computeIterationStatistics();
