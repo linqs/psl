@@ -133,7 +133,7 @@ public class DeepModelPredicate extends DeepModel {
         return Integer.SIZE + maxDataIndex * Integer.SIZE + maxDataIndex * classSize * Float.SIZE;
     }
 
-    public void writeFitData() {
+    public synchronized void writeFitData() {
         log.debug("Writing fit data for deep model predicate: {}", predicate.getName());
         for (int index = 0; index < gradients.length; index++) {
             gradients[index] = symbolicGradients[atomIndexes[index]];
@@ -143,12 +143,12 @@ public class DeepModelPredicate extends DeepModel {
         writeGradientData(gradients);
     }
 
-    public void writePredictData() {
+    public synchronized void writePredictData() {
         log.debug("Writing predict data for deep model predicate: {}", predicate.getName());
         writeDataIndexData();
     }
 
-    public float readPredictData() {
+    public synchronized float readPredictData() {
         log.debug("Reading predict data for deep model predicate: {}", predicate.getName());
         int count = sharedBuffer.getInt();
         if (count != atomIndexes.length) {
@@ -174,7 +174,7 @@ public class DeepModelPredicate extends DeepModel {
         return change;
     }
 
-    public void writeEvalData() {
+    public synchronized void writeEvalData() {
         log.debug("Writing eval data for deep model predicate: {}", predicate.getName());
         writeDataIndexData();
     }
@@ -194,11 +194,11 @@ public class DeepModelPredicate extends DeepModel {
         validDataIndexes.clear();
     }
 
-    public void setAtomStore(AtomStore atomStore) {
+    public synchronized void setAtomStore(AtomStore atomStore) {
         setAtomStore(atomStore, false);
     }
 
-    public void setAtomStore(AtomStore atomStore, boolean init) {
+    public synchronized void setAtomStore(AtomStore atomStore, boolean init) {
         this.atomStore = atomStore;
 
         if (init) {
@@ -206,7 +206,7 @@ public class DeepModelPredicate extends DeepModel {
         }
     }
 
-    public void setSymbolicGradients(float[] symbolicGradients) {
+    public synchronized void setSymbolicGradients(float[] symbolicGradients) {
         this.symbolicGradients = symbolicGradients;
     }
 
@@ -311,13 +311,13 @@ public class DeepModelPredicate extends DeepModel {
         return dataIndex;
     }
 
-    private void writeGradientData(float[] data) {
+    private synchronized void writeGradientData(float[] data) {
         for (int i = 0; i < data.length; i++) {
             sharedBuffer.putFloat(data[i]);
         }
     }
 
-    private void writeDataIndexData() {
+    private synchronized void writeDataIndexData() {
         sharedBuffer.putInt(dataIndexes.length);
 
         for (int i = 0; i < dataIndexes.length; i++) {

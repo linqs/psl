@@ -142,7 +142,7 @@ public abstract class DeepModel {
         log.debug("Init deep model results for {} : {}", this, resultString);
     }
 
-    public void fitDeepModel() {
+    public synchronized void fitDeepModel() {
         log.debug("Fit deep model {}.", this);
 
         sharedBuffer.clear();
@@ -160,7 +160,7 @@ public abstract class DeepModel {
         log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
-    public float predictDeepModel(Boolean learning) {
+    public synchronized float predictDeepModel(Boolean learning) {
         log.debug("Predict deep model {}.", this);
 
         sharedBuffer.clear();
@@ -187,7 +187,7 @@ public abstract class DeepModel {
         return movement;
     }
 
-    public void evalDeepModel() {
+    public synchronized void evalDeepModel() {
         log.debug("Eval deep model {}.", this);
 
         sharedBuffer.clear();
@@ -205,7 +205,7 @@ public abstract class DeepModel {
         log.debug("Eval deep model result for {} : {}", this, resultString);
     }
 
-    public void saveDeepModel() {
+    public synchronized void saveDeepModel() {
         log.debug("Save deep model {}.", this);
 
         JSONObject message = new JSONObject();
@@ -246,7 +246,7 @@ public abstract class DeepModel {
         return result.toString();
     }
 
-    private void initServer(int bufferLength) {
+    private synchronized void initServer(int bufferLength) {
         // Do our best to make sure close() gets called.
         final DeepModel finalThis = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
