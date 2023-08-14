@@ -68,7 +68,7 @@ public class DeepModelPredicate extends DeepModel {
         this.validDataIndexes = new ArrayList<Integer>();
     }
 
-    public synchronized DeepModelPredicate copy() {
+    public DeepModelPredicate copy() {
         DeepModelPredicate copy = new DeepModelPredicate(predicate);
 
         copy.pythonOptions = pythonOptions;
@@ -103,7 +103,7 @@ public class DeepModelPredicate extends DeepModel {
         return copy;
     }
 
-    public synchronized int init() {
+    public int init() {
         log.debug("Initializing deep model predicate: {}", predicate.getName());
 
         validateOptions();
@@ -133,7 +133,7 @@ public class DeepModelPredicate extends DeepModel {
         return Integer.SIZE + maxDataIndex * Integer.SIZE + maxDataIndex * classSize * Float.SIZE;
     }
 
-    public synchronized void writeFitData() {
+    public void writeFitData() {
         log.debug("Writing fit data for deep model predicate: {}", predicate.getName());
         for (int index = 0; index < gradients.length; index++) {
             gradients[index] = symbolicGradients[atomIndexes[index]];
@@ -143,12 +143,12 @@ public class DeepModelPredicate extends DeepModel {
         writeGradientData(gradients);
     }
 
-    public synchronized void writePredictData() {
+    public void writePredictData() {
         log.debug("Writing predict data for deep model predicate: {}", predicate.getName());
         writeDataIndexData();
     }
 
-    public synchronized float readPredictData() {
+    public float readPredictData() {
         log.debug("Reading predict data for deep model predicate: {}", predicate.getName());
         int count = sharedBuffer.getInt();
         if (count != atomIndexes.length) {
@@ -174,13 +174,13 @@ public class DeepModelPredicate extends DeepModel {
         return change;
     }
 
-    public synchronized void writeEvalData() {
+    public void writeEvalData() {
         log.debug("Writing eval data for deep model predicate: {}", predicate.getName());
         writeDataIndexData();
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         super.close();
 
         classSize = -1;
@@ -194,11 +194,11 @@ public class DeepModelPredicate extends DeepModel {
         validDataIndexes.clear();
     }
 
-    public synchronized void setAtomStore(AtomStore atomStore) {
+    public void setAtomStore(AtomStore atomStore) {
         setAtomStore(atomStore, false);
     }
 
-    public synchronized void setAtomStore(AtomStore atomStore, boolean init) {
+    public void setAtomStore(AtomStore atomStore, boolean init) {
         this.atomStore = atomStore;
 
         if (init) {
@@ -206,7 +206,7 @@ public class DeepModelPredicate extends DeepModel {
         }
     }
 
-    public synchronized void setSymbolicGradients(float[] symbolicGradients) {
+    public void setSymbolicGradients(float[] symbolicGradients) {
         this.symbolicGradients = symbolicGradients;
     }
 
@@ -311,13 +311,13 @@ public class DeepModelPredicate extends DeepModel {
         return dataIndex;
     }
 
-    private synchronized void writeGradientData(float[] data) {
+    private void writeGradientData(float[] data) {
         for (int i = 0; i < data.length; i++) {
             sharedBuffer.putFloat(data[i]);
         }
     }
 
-    private synchronized void writeDataIndexData() {
+    private void writeDataIndexData() {
         sharedBuffer.putInt(dataIndexes.length);
 
         for (int i = 0; i < dataIndexes.length; i++) {

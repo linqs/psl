@@ -43,8 +43,8 @@ public abstract class DeepModel {
     protected static final String CONFIG_RELATIVE_DIR = "relative-dir";
 
     private static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
-    private static int startingPort = -1;
-    private static Map<Integer, DeepModel> usedPorts = null;
+    private static int startingPort = Options.PREDICATE_DEEP_PYTHON_PORT.getInt();
+    private static Map<Integer, DeepModel> usedPorts = new HashMap<Integer, DeepModel>();
 
     protected String deepModel;
     protected Map<String, String> pythonOptions;
@@ -66,8 +66,6 @@ public abstract class DeepModel {
 
         pythonOptions = new HashMap<String, String>();
         application = null;
-
-        initStatic();
 
         port = getOpenPort(this);
         pythonModule = Options.PREDICATE_DEEP_PYTHON_WRAPPER_MODULE.getString();
@@ -107,7 +105,7 @@ public abstract class DeepModel {
      */
     public abstract void writeEvalData();
 
-    public synchronized void initDeepModel(String application){
+    public void initDeepModel(String application){
         log.debug("Init deep model {}.", this);
         this.application = application;
 
@@ -142,7 +140,7 @@ public abstract class DeepModel {
         log.debug("Init deep model results for {} : {}", this, resultString);
     }
 
-    public synchronized void fitDeepModel() {
+    public void fitDeepModel() {
         log.debug("Fit deep model {}.", this);
 
         sharedBuffer.clear();
@@ -160,7 +158,7 @@ public abstract class DeepModel {
         log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
-    public synchronized float predictDeepModel(Boolean learning) {
+    public float predictDeepModel(Boolean learning) {
         log.debug("Predict deep model {}.", this);
 
         sharedBuffer.clear();
@@ -187,7 +185,7 @@ public abstract class DeepModel {
         return movement;
     }
 
-    public synchronized void evalDeepModel() {
+    public void evalDeepModel() {
         log.debug("Eval deep model {}.", this);
 
         sharedBuffer.clear();
@@ -205,7 +203,7 @@ public abstract class DeepModel {
         log.debug("Eval deep model result for {} : {}", this, resultString);
     }
 
-    public synchronized void saveDeepModel() {
+    public void saveDeepModel() {
         log.debug("Save deep model {}.", this);
 
         JSONObject message = new JSONObject();
@@ -218,7 +216,7 @@ public abstract class DeepModel {
         log.debug("Save deep model result for {} : {}", this, resultString);
     }
 
-    public synchronized void close() {
+    public void close() {
         log.debug("Close deep model {}.", this);
 
         if (pythonOptions != null) {
@@ -246,7 +244,7 @@ public abstract class DeepModel {
         return result.toString();
     }
 
-    private synchronized void initServer(int bufferLength) {
+    private void initServer(int bufferLength) {
         // Do our best to make sure close() gets called.
         final DeepModel finalThis = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -281,7 +279,7 @@ public abstract class DeepModel {
         }
     }
 
-    private synchronized void closeServer() {
+    private void closeServer() {
         if (socketOutput != null) {
             serverOpen = false;
             sleepForServer();
@@ -348,7 +346,7 @@ public abstract class DeepModel {
         }
     }
 
-    private synchronized JSONObject sendSocketMessage(JSONObject message) {
+    private JSONObject sendSocketMessage(JSONObject message) {
         if (!serverOpen) {
             // This should only happen when trying to close the server.
             return null;
@@ -379,18 +377,6 @@ public abstract class DeepModel {
         }
 
         return response;
-    }
-
-    /**
-     * Initialize the static portions of this class.
-     */
-    private static synchronized void initStatic() {
-        if (startingPort != -1) {
-            return;
-        }
-
-        startingPort = Options.PREDICATE_DEEP_PYTHON_PORT.getInt();
-        usedPorts = new HashMap<Integer, DeepModel>();
     }
 
     private static synchronized int getOpenPort(DeepModel model) {
