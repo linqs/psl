@@ -75,7 +75,6 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] proxRuleObservedAtomValueGradient;
     protected final float proxRuleWeight;
 
-    protected float parameterMovement;
     protected float parameterMovementTolerance;
     protected float finalParameterMovementTolerance;
     protected float constraintTolerance;
@@ -119,7 +118,6 @@ public abstract class Minimizer extends GradientDescent {
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
 
-        parameterMovement = Float.POSITIVE_INFINITY;
         parameterMovementTolerance = 1.0f / initialSquaredPenaltyCoefficient;
         finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
         constraintTolerance = (float)(1.0f / Math.pow(initialSquaredPenaltyCoefficient, 0.1f));

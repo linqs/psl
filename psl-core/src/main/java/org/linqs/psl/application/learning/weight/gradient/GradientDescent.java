@@ -87,10 +87,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected int maxNumSteps;
     protected boolean runFullIterations;
-    protected boolean objectiveBreak;
+    protected boolean movementBreak;
+    protected float parameterMovement;
+    protected float movementTolerance;
     protected boolean normBreak;
-    protected float objectiveTolerance;
     protected float normTolerance;
+    protected boolean objectiveBreak;
+    protected float objectiveTolerance;
 
     protected float l2Regularization;
     protected float logRegularization;
@@ -135,10 +138,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         maxNumSteps = Options.WLA_GRADIENT_DESCENT_NUM_STEPS.getInt();
         runFullIterations = Options.WLA_GRADIENT_DESCENT_RUN_FULL_ITERATIONS.getBoolean();
-        objectiveBreak = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK.getBoolean();
+        movementBreak = Options.WLA_GRADIENT_DESCENT_MOVEMENT_BREAK.getBoolean();
+        parameterMovement = Float.POSITIVE_INFINITY;
+        movementTolerance = Options.WLA_GRADIENT_DESCENT_MOVEMENT_TOLERANCE.getFloat();
         normBreak = Options.WLA_GRADIENT_DESCENT_NORM_BREAK.getBoolean();
-        objectiveTolerance = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_TOLERANCE.getFloat();
         normTolerance = Options.WLA_GRADIENT_DESCENT_NORM_TOLERANCE.getFloat();
+        objectiveBreak = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK.getBoolean();
+        objectiveTolerance = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_TOLERANCE.getFloat();
         stoppingGradientNorm = Options.WLA_GRADIENT_DESCENT_STOPPING_GRADIENT_NORM.getFloat();
 
         l2Regularization = Options.WLA_GRADIENT_DESCENT_L2_REGULARIZATION.getFloat();
@@ -354,13 +360,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
             return false;
         }
 
-        if (objectiveBreak && MathUtils.equals(objective, oldObjective, objectiveTolerance)) {
-            log.trace("Breaking Weight Learning. Objective change: {} is within tolerance: {}", Math.abs(objective - oldObjective), objectiveTolerance);
+        if (movementBreak && MathUtils.equals(parameterMovement, 0.0f, movementTolerance)) {
+            log.trace("Breaking Weight Learning. Parameter Movement: {} is within tolerance: {}", parameterMovement, movementTolerance);
             return true;
         }
 
         if (normBreak && MathUtils.equals(computeGradientNorm(), 0.0f, normTolerance)) {
             log.trace("Breaking Weight Learning. Gradient norm: {} is within tolerance: {}", computeGradientNorm(), normTolerance);
+            return true;
+        }
+
+        if (objectiveBreak && MathUtils.equals(objective, oldObjective, objectiveTolerance)) {
+            log.trace("Breaking Weight Learning. Objective change: {} is within tolerance: {}", Math.abs(objective - oldObjective), objectiveTolerance);
             return true;
         }
 
@@ -387,9 +398,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * This method will call the gradient step methods for each parameter group: weights and internal parameters.
      */
     protected void gradientStep(int iteration) {
-        weightGradientStep(iteration);
-        internalParameterGradientStep(iteration);
-        atomGradientStep();
+        parameterMovement = 0.0f;
+
+        parameterMovement += weightGradientStep(iteration);
+        parameterMovement += internalParameterGradientStep(iteration);
+        parameterMovement += atomGradientStep();
     }
 
     /**
@@ -491,6 +504,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 norm = computeGradientDescentNorm();
                 break;
         }
+
+        norm += MathUtils.pNorm(deepAtomGradient, 2);
 
         return norm;
     }

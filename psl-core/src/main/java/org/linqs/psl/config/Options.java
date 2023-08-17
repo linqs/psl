@@ -347,9 +347,25 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_MOVEMENT_BREAK = new Option(
+        "gradientdescent.movementbreak",
+        true,
+        "When the parameter movement between iterates is below the tolerance "
+        + " set by gradientdescent.movementtolerance, gradient descent weight learning is stopped."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_MOVEMENT_TOLERANCE = new Option(
+        "gradientdescent.movementtolerance",
+        1.0e-3f,
+        "If gradientdescent.runfulliterations=false and gradientdescent.movementbreak=true,"
+        + " then when the parameter movement between iterates is below this tolerance "
+        + " gradient descent weight learning is stopped.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_NORM_BREAK = new Option(
         "gradientdescent.normbreak",
-        true,
+        false,
         "When the gradient norm is below the tolerance "
         + " set by gradientdescent.normtolerance, gradient descent weight learning is stopped."
     );
