@@ -73,6 +73,7 @@ public abstract class Minimizer extends GradientDescent {
 
     protected int[] proxRuleObservedAtomIndexes;
     protected float[] proxRuleObservedAtomValueGradient;
+    protected final float proxRuleObservedAtomValueStepSize;
     protected final float proxRuleWeight;
 
     protected float parameterMovementTolerance;
@@ -109,6 +110,7 @@ public abstract class Minimizer extends GradientDescent {
         proxIndexToRVAtomIndex = new ArrayList<Integer>();
         proxRules = null;
         proxRuleObservedAtoms = null;
+        proxRuleObservedAtomValueStepSize = Options.MINIMIZER_PROX_VALUE_STEP_SIZE.getFloat();
         proxRuleObservedAtomValueGradient = null;
         proxRuleWeight = Options.MINIMIZER_PROX_RULE_WEIGHT.getFloat();
 
@@ -271,11 +273,10 @@ public abstract class Minimizer extends GradientDescent {
     protected float internalParameterGradientStep(int iteration) {
         float proxRuleObservedAtomsValueMovement = 0.0f;
         // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
-        float stepSize = computeStepSize(iteration);
         float[] atomValues = trainInferenceApplication.getTermStore().getDatabase().getAtomStore().getAtomValues();
         for (int i = 0; i < proxRules.length; i++) {
             float newProxRuleObservedAtomsValue = Math.min(Math.max(
-                    proxRuleObservedAtoms[i].getValue() - stepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
+                    proxRuleObservedAtoms[i].getValue() - proxRuleObservedAtomValueStepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
             proxRuleObservedAtomsValueMovement += Math.abs(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue);
 
             proxRuleObservedAtoms[i]._assumeValue(newProxRuleObservedAtomsValue);

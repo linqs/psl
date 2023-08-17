@@ -602,6 +602,13 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option MINIMIZER_PROX_VALUE_STEP_SIZE = new Option(
+        "minimizer.proxvaluestepsize",
+        0.01f,
+        "The step size of the proximity values for the augmented inference subproblem.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option MINIMIZER_PROX_RULE_WEIGHT = new Option(
         "minimizer.proxruleweight",
         0.01f,
