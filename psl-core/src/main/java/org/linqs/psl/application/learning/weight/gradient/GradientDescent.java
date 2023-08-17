@@ -265,8 +265,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             oldObjective = objective;
 
             breakGD = breakOptimization(iteration, objective, oldObjective);
-            log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
-                    iteration, objective, computeGradientNorm(), (end - start));
+            log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Parameter Movement: {}, Iteration Time: {}",
+                    iteration, objective, computeGradientNorm(), parameterMovement, (end - start));
 
             iteration++;
         }
