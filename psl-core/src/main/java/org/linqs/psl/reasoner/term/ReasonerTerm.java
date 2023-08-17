@@ -208,7 +208,7 @@ public class ReasonerTerm {
             }
             return Float.POSITIVE_INFINITY;
         } else if (comparator.equals(FunctionComparator.GTE)) {
-            if (value >= MathUtils.RELAXED_EPSILON) {
+            if (value >= -MathUtils.RELAXED_EPSILON) {
                 return 0.0f;
             }
             return Float.POSITIVE_INFINITY;
