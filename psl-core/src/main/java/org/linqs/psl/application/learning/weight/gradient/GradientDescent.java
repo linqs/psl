@@ -302,7 +302,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void runMAPEvaluation() {
         // Compute the MAP state before evaluating so variables have assigned values.
-        log.trace("Running Inference.");
+        log.trace("Running MAP Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
 
         evaluation.compute(trainingMap);
