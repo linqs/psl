@@ -20,7 +20,6 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
@@ -79,6 +78,7 @@ public abstract class OptimalValue extends GradientDescent {
     protected void computeLatentInferenceIncompatibility() {
         fixLabeledRandomVariables();
 
+        log.trace("Running Latent Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
         inTrainingMAPState = true;
 
