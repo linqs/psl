@@ -437,6 +437,18 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_TRAINING_COMPUTE_PERIOD = new Option(
+        "gradientdescent.trainingcomputeperiod",
+        1,
+        "Compute training evaluation every this many iterations of gradient descent weight learning."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_VALIDATION_COMPUTE_PERIOD = new Option(
+        "gradientdescent.validationcomputeperiod",
+        1,
+        "Compute validation evaluation every this many iterations of gradient descent weight learning."
+    );
+
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
         "gridsearch.weights",
         "0.001:0.01:0.1:1:10",

@@ -68,9 +68,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float[] MAPRVAtomGradient;
     protected float[] MAPDeepAtomGradient;
 
+    protected int trainingEvaluationComputePeriod;
     protected TermState[] trainMAPTermState;
     protected float[] trainMAPAtomValueState;
 
+    protected int validationEvaluationComputePeriod;
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
     protected boolean saveBestValidationWeights;
@@ -116,11 +118,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         MAPRVAtomGradient = null;
         MAPDeepAtomGradient = null;
 
+        trainingEvaluationComputePeriod = Options.WLA_GRADIENT_DESCENT_TRAINING_COMPUTE_PERIOD.getInt();
         trainMAPTermState = null;
         trainMAPAtomValueState = null;
 
         validationMAPTermState = null;
         validationMAPAtomValueState = null;
+        validationEvaluationComputePeriod = Options.WLA_GRADIENT_DESCENT_VALIDATION_COMPUTE_PERIOD.getInt();
         saveBestValidationWeights = Options.WLA_GRADIENT_DESCENT_SAVE_BEST_VALIDATION_WEIGHTS.getBoolean();
         bestValidationWeights = null;
         currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
@@ -237,12 +241,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.trace("{}", weightedRule);
             }
 
-            if (log.isTraceEnabled() && (evaluation != null)) {
+            if (log.isTraceEnabled() && (evaluation != null) && (iteration % trainingEvaluationComputePeriod == 0)) {
                 runMAPEvaluation();
                 log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
             }
 
-            if (runValidation) {
+            if (runValidation && (iteration % validationEvaluationComputePeriod == 0)) {
                 runValidationEvaluation();
                 log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
             }
