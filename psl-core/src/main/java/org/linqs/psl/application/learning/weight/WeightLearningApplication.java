@@ -210,7 +210,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
                 DeepModelPredicate validationDeepModelPredicate = ((DeepPredicate)predicate).getDeepModel().copy();
                 validationDeepModelPredicate.setAtomStore(validationInferenceApplication.getDatabase().getAtomStore(), true);
-                validationDeepModelPredicates.add(((DeepPredicate)predicate).getDeepModel().copy());
+                validationDeepModelPredicates.add(validationDeepModelPredicate);
             }
         }
 

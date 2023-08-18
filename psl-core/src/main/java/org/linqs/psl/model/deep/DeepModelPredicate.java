@@ -29,6 +29,7 @@ import org.linqs.psl.util.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 public class DeepModelPredicate extends DeepModel {
@@ -91,14 +92,31 @@ public class DeepModelPredicate extends DeepModel {
         copy.atomStore = atomStore;
 
         copy.classSize = classSize;
-        copy.atomIndexes = atomIndexes;
-        copy.dataIndexes = dataIndexes;
 
-        copy.validAtomIndexes = validAtomIndexes;
-        copy.validDataIndexes = validDataIndexes;
+        copy.atomIndexes = null;
+        if (atomIndexes != null) {
+            copy.atomIndexes = Arrays.copyOf(atomIndexes, atomIndexes.length);
+        }
 
-        copy.gradients = gradients;
-        copy.symbolicGradients = symbolicGradients;
+        copy.dataIndexes = null;
+        if (dataIndexes != null) {
+            copy.dataIndexes = Arrays.copyOf(dataIndexes, dataIndexes.length);
+        }
+
+        copy.validAtomIndexes = new ArrayList<Integer>(validAtomIndexes.size());
+        copy.validAtomIndexes.addAll(validAtomIndexes);
+        copy.validDataIndexes = new ArrayList<Integer>(validDataIndexes.size());
+        copy.validDataIndexes.addAll(validDataIndexes);
+
+        copy.gradients = null;
+        if (gradients != null) {
+            copy.gradients = Arrays.copyOf(gradients, gradients.length);
+        }
+
+        copy.symbolicGradients = null;
+        if (symbolicGradients != null) {
+            copy.symbolicGradients = Arrays.copyOf(symbolicGradients, symbolicGradients.length);
+        }
 
         return copy;
     }
