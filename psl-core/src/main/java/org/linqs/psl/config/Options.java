@@ -153,19 +153,6 @@ public class Options {
         Option.FLAG_NON_NEGATIVE
     );
 
-    public static final Option DUAL_LCQP_FIRST_ORDER_BREAK = new Option(
-        "duallcqp.firstorderbreak",
-        false,
-        "Stop the dual LCQP reasoner when the L-Infinity norm of the dual gradient is less than duallcqp.firstorderthreshold."
-    );
-
-    public static final Option DUAL_LCQP_FIRST_ORDER_THRESHOLD = new Option(
-        "duallcqp.firstorderthreshold",
-        0.001,
-        "Dual LCQP reasoners stop when the norm of the gradient is less than this threshold.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
     public static final Option DUAL_LCQP_MAX_ITER = new Option(
         "duallcqp.maxiterations",
         5000,

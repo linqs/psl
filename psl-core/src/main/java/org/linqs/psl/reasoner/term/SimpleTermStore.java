@@ -63,6 +63,7 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
         }
 
         // Unify the components of the atoms in this term.
+        // TODO(Charles): Potential optimization: do not allow union with fixed atoms.
         for (int i = 1; i < newTerm.size; i++) {
             int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(newTerm.atomIndexes[i]));
             GroundAtom nextRootAtom = atomStore.getAtom(nextAtomRootIndex);

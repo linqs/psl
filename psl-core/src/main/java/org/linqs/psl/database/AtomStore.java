@@ -239,6 +239,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     public synchronized int findAtomRoot(GroundAtom atom) {
+        // TODO(Charles): Potential optimization: do not allow atom parents to be fixed unless the atom is itself fixed.
         int atomIndex = getAtomIndex(atom);
         if (atomIndex == -1) {
             // This atom is not managed by this store.
