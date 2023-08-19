@@ -29,13 +29,16 @@ import org.linqs.psl.reasoner.duallcqp.term.DualLCQPAtom;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPObjectiveTerm;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A reasoner that performs block coordinate descent (BCD) on the dual problem of the
@@ -75,45 +78,57 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         ObjectiveResult objective = null;
         ObjectiveResult oldObjective = null;
 
+        log.trace("Starting optimization. Number of connected components: {}.", termStore.getConnectedComponents().size());
+
         long totalTime = 0;
-        boolean breakDualBCD = false;
         int iteration = 1;
-        while(!breakDualBCD) {
-            long start = System.currentTimeMillis();
-            internalOptimize(termStore);
-            long end = System.currentTimeMillis();
-            totalTime += end - start;
+        for (int componentIndex : termStore.getConnectedComponents().keySet()) {
+            boolean breakDualBCD = false;
 
-            if ((iteration - 1) % computePeriod == 0) {
-                primalVariableUpdate(termStore);
+            while (!breakDualBCD) {
+                long start = System.currentTimeMillis();
 
-                oldObjective = objective;
-                objective = parallelComputeObjective(termStore);
+                internalOptimize(termStore, componentIndex);
 
-                ObjectiveResult dualObjectiveResult = new ObjectiveResult(0.0f, 0);
-                double dualGradientNorm = parallelComputeDualObjectiveAndGradientNorm(termStore, dualObjectiveResult);
-                breakDualBCD = breakOptimization(iteration, termStore, objective, oldObjective, dualObjectiveResult, dualGradientNorm);
+                long end = System.currentTimeMillis();
+                totalTime += end - start;
 
-                log.trace("Iteration {} -- Primal Objective: {}, Violated Constraints: {}, Dual Objective: {}, Primal-dual gap: {}, Iteration Time: {}, Total Optimization Time: {}.",
-                        iteration, objective.objective, objective.violatedConstraints,
-                        dualObjectiveResult.objective, objective.objective - dualObjectiveResult.objective,
-                        (end - start), totalTime);
+                if ((iteration - 1) % computePeriod == 0) {
+                    primalVariableUpdate(termStore);
 
-                evaluate(termStore, iteration, evaluations, trainingMap);
+                    oldObjective = objective;
+                    objective = parallelComputeComponentObjective(termStore, componentIndex);
+
+                    ObjectiveResult dualObjectiveResult = new ObjectiveResult(0.0f, 0);
+                    double dualGradientNorm = parallelComputeComponentDualObjectiveAndGradientNorm(termStore, componentIndex, dualObjectiveResult);
+                    breakDualBCD = breakOptimization(iteration, termStore, objective, oldObjective, dualObjectiveResult);
+
+                    log.trace("Iteration {} -- Primal Objective: {}, Violated Constraints: {}, Dual Objective: {}, Primal-dual gap: {}, Iteration Time: {}, Total Optimization Time: {}.",
+                            iteration, objective.objective, objective.violatedConstraints,
+                            dualObjectiveResult.objective, objective.objective - dualObjectiveResult.objective,
+                            (end - start), totalTime);
+
+                    evaluate(termStore, iteration, evaluations, trainingMap);
+                }
+
+                iteration++;
             }
+            objective = null;
+            oldObjective = null;
 
-            iteration++;
+            iteration = 1;
         }
 
-        optimizationComplete(termStore, objective, totalTime, iteration - 1);
+        objective = parallelComputeObjective(termStore);
+        optimizationComplete(termStore, objective, totalTime);
 
         // Return the un-regularized quantification of the objective for consistency with
         // weight learning objectives and test assertions.
         return super.parallelComputeObjective(termStore).objective;
     }
 
-    protected void internalOptimize(DualLCQPTermStore termStore) {
-        for (DualLCQPObjectiveTerm term : termStore) {
+    protected void internalOptimize(DualLCQPTermStore termStore, int componentIndex) {
+        for (DualLCQPObjectiveTerm term : termStore.getConnectedComponents().get(componentIndex)) {
             if (!term.isActive()) {
                 continue;
             }
@@ -141,7 +156,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
     protected boolean breakOptimization(int iteration, TermStore<DualLCQPObjectiveTerm> termStore,
                                         ObjectiveResult objective, ObjectiveResult oldObjective,
-                                        ObjectiveResult dualObjectiveResult, double dualGradientNorm) {
+                                        ObjectiveResult dualObjectiveResult) {
         if (super.breakOptimization(iteration, termStore, objective, oldObjective)) {
             return true;
         }
@@ -154,13 +169,6 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         // Don't break if there are violated constraints.
         if (objective != null && objective.violatedConstraints > 0) {
             return false;
-        }
-
-        // Break if we have converged according to the first order stopping criterion on dual problem.
-        if (firstOrderBreak && MathUtils.isZero(dualGradientNorm, firstOrderTolerance)) {
-            log.trace("Breaking optimization. Dual gradient magnitude: {} below tolerance: {}.",
-                    dualGradientNorm, firstOrderTolerance);
-            return true;
         }
 
         // Break if we have converged according to the primal dual gap stopping criterion.
@@ -489,15 +497,37 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         return atomValueRegularization;
     }
 
-    protected double parallelComputeDualObjectiveAndGradientNorm(DualLCQPTermStore termStore, ObjectiveResult objectiveResult) {
-        int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
-        int numTermBlocks = (int)Math.ceil(termStore.size() / (float)blockSize);
+    private double computePrimalVariableComponentRegularization(TermStore<DualLCQPObjectiveTerm> termStore, int componentIndex) {
+        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        List<GroundAtom> connectedComponentAtoms = atomStore.getConnectedComponentAtoms(componentIndex);
+        float[] atomValues = atomStore.getAtomValues();
 
+        double atomValueRegularization = 0.0;
+        for (GroundAtom atom : connectedComponentAtoms) {
+            if (atom.isFixed()) {
+                continue;
+            }
+
+            atomValueRegularization += regularizationParameter * Math.pow(atomValues[atom.getIndex()], 2.0);
+        }
+
+        return atomValueRegularization;
+    }
+
+    protected double parallelComputeComponentDualObjectiveAndGradientNorm(
+            DualLCQPTermStore termStore, int componentIndex, ObjectiveResult objectiveResult) {
+        Map<Integer, List<DualLCQPObjectiveTerm>> connectedComponents = ((SimpleTermStore<DualLCQPObjectiveTerm>)termStore).getConnectedComponents();
+        List<DualLCQPObjectiveTerm> component = connectedComponents.get(componentIndex);
+
+        int blockSize = (int)(component.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(component.size() / (float)blockSize);
+
+        // TODO(Charles): Preallocate these arrays and share.
         double[] workerGradientMagnitudes = new double[numTermBlocks];
         double[] workerObjectives = new double[numTermBlocks];
 
-        Parallel.count(numTermBlocks, new DualTermObjectiveAndGradientMagnitudeWorker(
-                termStore, workerGradientMagnitudes, workerObjectives,
+        Parallel.count(numTermBlocks, new DualTermComponentObjectiveAndGradientMagnitudeWorker(
+                termStore, componentIndex, workerGradientMagnitudes, workerObjectives,
                 blockSize, regularizationParameter));
 
         double maxAbsGradient = 0.0;
@@ -511,21 +541,22 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         // The upper and lower bound constraints on the atoms are not stored in the term store,
         // so we need to compute their objective and gradient contribution here.
-        GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
+        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        List<GroundAtom> connectedComponentAtoms = atomStore.getConnectedComponentAtoms(componentIndex);
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
-        for(int i = 0; i < dualLCQPAtoms.length; i++) {
-            if (atoms[i] == null || atoms[i].isFixed()) {
+        for (GroundAtom atom : connectedComponentAtoms) {
+            if (atom.isFixed()) {
                 continue;
             }
 
-            objectiveValue += dualLCQPAtoms[i].getLowerBoundObjective(regularizationParameter);
-            double absLowerBoundPartial = Math.abs(dualLCQPAtoms[i].getLowerBoundPartial(regularizationParameter));
+            objectiveValue += dualLCQPAtoms[atom.getIndex()].getLowerBoundObjective(regularizationParameter);
+            double absLowerBoundPartial = Math.abs(dualLCQPAtoms[atom.getIndex()].getLowerBoundPartial(regularizationParameter));
             if (maxAbsGradient < absLowerBoundPartial) {
                 maxAbsGradient = absLowerBoundPartial;
             }
 
-            objectiveValue += dualLCQPAtoms[i].getUpperBoundObjective(regularizationParameter);
-            double absUpperBoundPartial = Math.abs(dualLCQPAtoms[i].getUpperBoundPartial(regularizationParameter));
+            objectiveValue += dualLCQPAtoms[atom.getIndex()].getUpperBoundObjective(regularizationParameter);
+            double absUpperBoundPartial = Math.abs(dualLCQPAtoms[atom.getIndex()].getUpperBoundPartial(regularizationParameter));
             if (maxAbsGradient < absUpperBoundPartial) {
                 maxAbsGradient = absUpperBoundPartial;
             }
@@ -535,19 +566,23 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         return maxAbsGradient;
     }
 
-    private static class DualTermObjectiveAndGradientMagnitudeWorker extends Parallel.Worker<Long> {
+    private static class DualTermComponentObjectiveAndGradientMagnitudeWorker extends Parallel.Worker<Long> {
         private final DualLCQPTermStore termStore;
+        private final List<DualLCQPObjectiveTerm> component;
+        private final int componentIndex;
         private final int blockSize;
         private final double regularizationParameter;
         private final double[] maxAbsGradients;
         private final double[] objectives;
 
-        public DualTermObjectiveAndGradientMagnitudeWorker(DualLCQPTermStore termStore,
+        public DualTermComponentObjectiveAndGradientMagnitudeWorker(DualLCQPTermStore termStore, int componentIndex,
                                                            double[] maxAbsGradients, double[] objectives,
                                                            int blockSize, double regularizationParameter) {
             super();
 
             this.termStore = termStore;
+            this.component = termStore.getConnectedComponents().get(componentIndex);
+            this.componentIndex = componentIndex;
             this.maxAbsGradients = maxAbsGradients;
             this.objectives = objectives;
             this.blockSize = blockSize;
@@ -556,12 +591,12 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         @Override
         public Object clone() {
-            return new DualTermObjectiveAndGradientMagnitudeWorker(termStore, maxAbsGradients, objectives, blockSize, regularizationParameter);
+            return new DualTermComponentObjectiveAndGradientMagnitudeWorker(termStore, componentIndex, maxAbsGradients, objectives, blockSize, regularizationParameter);
         }
 
         @Override
         public void work(long blockIndex, Long ignore) {
-            long numTerms = termStore.size();
+            long numTerms = component.size();
             int blockIntIndex = (int)blockIndex;
 
             maxAbsGradients[blockIntIndex] = 0.0;
@@ -573,7 +608,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                     break;
                 }
 
-                DualLCQPObjectiveTerm term = termStore.get(termIndex);
+                DualLCQPObjectiveTerm term = component.get(termIndex);
 
                 if (!term.isActive()) {
                     continue;

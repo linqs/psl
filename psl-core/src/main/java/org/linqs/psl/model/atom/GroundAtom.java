@@ -30,6 +30,13 @@ import org.linqs.psl.util.StringUtils;
  */
 public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>, FunctionTerm {
     protected int index;
+    /**
+     * The parent of a ground atom is an index of another ground atom in the atomStore holding the atom.
+     * The parent is used to implement an abstract disjoint-set data structure for keeping track of the
+     * connected components of the factor graph. This assumes the atoms are stored in a single atomStore
+     * and the terms the atom are connected to are stored in a single termStore.
+     */
+    protected int parent;
     protected float value;
     protected short partition;
     protected boolean fixed;
@@ -45,6 +52,7 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         this.value = value;
 
         this.index = -1;
+        this.parent = -1;
         this.partition = partition;
         this.fixed = true;
     }
@@ -70,10 +78,18 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         return index;
     }
 
+    public int getParent() {
+        return parent;
+    }
+
     public boolean isFixed() { return fixed; }
 
     public void setIndex(int index) {
         this.index = index;
+    }
+
+    public void setParent(int parent) {
+        this.parent = parent;
     }
 
     @Override

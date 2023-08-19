@@ -18,10 +18,8 @@
 package org.linqs.psl.database;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.UnmanagedObservedAtom;
@@ -35,10 +33,11 @@ import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -74,6 +73,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     private int numAtoms;
     private float[] atomValues;
     private GroundAtom[] atoms;
+    private Map<Integer, List<GroundAtom>> connectedComponentsAtoms;
     private int maxRVAIndex;
     private boolean storeAllAtoms;
 
@@ -87,6 +87,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         numAtoms = 0;
         atomValues = null;
         atoms = null;
+        connectedComponentsAtoms = null;
         maxRVAIndex = -1;
         storeAllAtoms = false;
 
@@ -122,6 +123,15 @@ public class AtomStore implements Iterable<GroundAtom> {
      */
     public GroundAtom[] getAtoms() {
         return atoms;
+    }
+
+
+    public Map<Integer, List<GroundAtom>> getConnectedComponentAtoms() {
+        return connectedComponentsAtoms;
+    }
+
+    public List<GroundAtom> getConnectedComponentAtoms(int index) {
+        return connectedComponentsAtoms.get(index);
     }
 
     public GroundAtom getAtom(int index) {
@@ -220,6 +230,62 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
     /**
+     * Find the root of the atom in the abstract disjoint-set data structure.
+     * Additionally, update the parent of the atoms along the path to the root to point to grandparents, i.e., perform path halving.
+     * This is to reduce the number of hops required to get to the root on the next call.
+     */
+    public synchronized int findAtomRoot(int atomIndex) {
+        return findAtomRoot(getAtom(atomIndex));
+    }
+
+    public synchronized int findAtomRoot(GroundAtom atom) {
+        int atomIndex = getAtomIndex(atom);
+        if (atomIndex == -1) {
+            // This atom is not managed by this store.
+            return -1;
+        }
+
+        int parentIndex = atom.getParent();
+        while (parentIndex != atomIndex) {
+            GroundAtom parentAtom = getAtom(parentIndex);
+            atom.setParent(parentAtom.getParent());
+
+            atomIndex = parentIndex;
+            atom = getAtom(parentIndex);
+            parentIndex = atom.getParent();
+        }
+
+        return atomIndex;
+    }
+
+    /**
+     * Merge the two atoms in the abstract disjoint-set data structure.
+     * The root of the first atom will be the root of the merged set.
+     */
+    public synchronized void union(GroundAtom atom1, GroundAtom atom2) {
+        // Replace nodes by their roots.
+        int root1 = findAtomRoot(atom1);
+        int root2 = findAtomRoot(atom2);
+
+        if (root1 == -1 || root2 == -1) {
+            // One of the atoms is not managed by this store.
+            return;
+        }
+
+        if (root1 == root2) {
+            // The atoms are already in the same set.
+            return;
+        }
+
+        // Merge the two sets.
+        GroundAtom rootAtom2 = getAtom(root2);
+        rootAtom2.setParent(root1);
+
+        connectedComponentsAtoms.get(root1).addAll(connectedComponentsAtoms.get(root2));
+        connectedComponentsAtoms.remove(root2);
+    }
+
+    /**
      * Synchronize the atoms (getAtoms()) with their values (getAtomValues()).
      * Return the RMSE between the atoms and their old values.
      */
@@ -315,10 +381,13 @@ public class AtomStore implements Iterable<GroundAtom> {
         }
 
         atom.setIndex(numAtoms);
+        atom.setParent(numAtoms);
 
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
         lookup.put(atom, numAtoms);
+        connectedComponentsAtoms.put(numAtoms, new ArrayList<GroundAtom>());
+        connectedComponentsAtoms.get(numAtoms).add(atom);
 
         if (atom instanceof RandomVariableAtom) {
             maxRVAIndex = numAtoms;
@@ -387,6 +456,7 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];
+        connectedComponentsAtoms = new HashMap<Integer, List<GroundAtom>>();
         lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
 
         // Load open predicates first (to get RVAs at a lower index).

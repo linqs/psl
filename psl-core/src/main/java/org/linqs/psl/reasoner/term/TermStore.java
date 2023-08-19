@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
@@ -33,6 +34,7 @@ import java.util.List;
  * A place to store terms that are to be optimized.
  */
 public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
+    protected AtomStore atomStore;
     protected Database database;
     protected TermGenerator<T> termGenerator;
 
@@ -40,6 +42,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
     public TermStore(Database database, TermGenerator<T> termGenerator) {
         this.database = database;
+        this.atomStore = database.getAtomStore();
         this.termGenerator = termGenerator;
         threadResourceKey = "termstore::objectid::" + System.identityHashCode(this);
     }
@@ -49,7 +52,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
      * User will use add(GroundRule) which will generate terms and call this method.
      * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
      */
-    protected abstract int add(GroundRule groundRule, T term, Hyperplane hyperplane);
+    protected abstract int add(ReasonerTerm term);
 
     /**
      * Remove any existing terms and prepare for a new set.
@@ -71,6 +74,10 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
     public Database getDatabase() {
         return database;
+    }
+
+    public AtomStore getAtomStore() {
+        return atomStore;
     }
 
     public TermGenerator<T> getTermGenerator() {
@@ -101,7 +108,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
         int count = 0;
         for (int i = 0; i < resources.newTerms.size(); i++) {
-            count += add(groundRule, resources.newTerms.get(i), resources.newHyperplane.get(i));
+            count += add(resources.newTerms.get(i));
         }
 
         resources.newTerms.clear();

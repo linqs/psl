@@ -50,7 +50,7 @@ public class StructuredPerceptron extends OptimalValue {
         inTrainingMAPState = true;
 
         computeCurrentIncompatibility(MAPIncompatibility);
-        trainInferenceApplication.getReasoner().parallelComputeGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);
     }
 
     @Override

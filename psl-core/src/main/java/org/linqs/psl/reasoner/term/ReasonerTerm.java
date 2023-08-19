@@ -24,7 +24,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.MathUtils;
 
-public class ReasonerTerm {
+public abstract class ReasonerTerm {
     /**
      * The specific type of term represented by this instance.
      */

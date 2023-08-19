@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.ArrayList;
@@ -56,23 +57,23 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     }
 
     @Override
-    protected synchronized int add(GroundRule groundRule, ADMMObjectiveTerm term, Hyperplane hyperplane) {
+    protected synchronized int add(ReasonerTerm term) {
         init();
 
         long termIndex = size();
-        super.add(groundRule, term, hyperplane);
+        super.add(term);
 
         // Add records of local variables.
-        for (int i = 0; i < hyperplane.size(); i++) {
-            int atomIndex = hyperplane.getVariable(i).getIndex();
+        int[] atomIndexes = term.getAtomIndexes();
+        for (int i = 0; i < term.size(); i++) {
 
             // All atoms should be unobserved here (obs should have been merged).
-            if (localRecords[atomIndex] == null) {
-                localRecords[atomIndex] = new ArrayList();
+            if (localRecords[atomIndexes[i]] == null) {
+                localRecords[atomIndexes[i]] = new ArrayList();
             }
 
             @SuppressWarnings("unchecked")
-            List<LocalRecord> records = (List<LocalRecord>)localRecords[atomIndex];
+            List<LocalRecord> records = (List<LocalRecord>)localRecords[atomIndexes[i]];
             records.add(new LocalRecord(termIndex, (short)i));
             numLocalVariables++;
         }
