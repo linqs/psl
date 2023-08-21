@@ -73,7 +73,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     private int numAtoms;
     private float[] atomValues;
     private GroundAtom[] atoms;
-    private Map<Integer, List<GroundAtom>> connectedComponentsAtoms;
+    private Map<Integer, List<Integer>> connectedComponentsAtomIndexes;
     private int maxRVAIndex;
     private boolean storeAllAtoms;
 
@@ -87,7 +87,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         numAtoms = 0;
         atomValues = null;
         atoms = null;
-        connectedComponentsAtoms = null;
+        connectedComponentsAtomIndexes = null;
         maxRVAIndex = -1;
         storeAllAtoms = false;
 
@@ -126,12 +126,12 @@ public class AtomStore implements Iterable<GroundAtom> {
     }
 
 
-    public Map<Integer, List<GroundAtom>> getConnectedComponentAtoms() {
-        return connectedComponentsAtoms;
+    public Map<Integer, List<Integer>> getConnectedComponentAtomIndexes() {
+        return connectedComponentsAtomIndexes;
     }
 
-    public List<GroundAtom> getConnectedComponentAtoms(int index) {
-        return connectedComponentsAtoms.get(index);
+    public List<Integer> getConnectedComponentAtomIndexes(int index) {
+        return connectedComponentsAtomIndexes.get(index);
     }
 
     public GroundAtom getAtom(int index) {
@@ -282,8 +282,8 @@ public class AtomStore implements Iterable<GroundAtom> {
         GroundAtom rootAtom2 = getAtom(root2);
         rootAtom2.setParent(root1);
 
-        connectedComponentsAtoms.get(root1).addAll(connectedComponentsAtoms.get(root2));
-        connectedComponentsAtoms.remove(root2);
+        connectedComponentsAtomIndexes.get(root1).addAll(connectedComponentsAtomIndexes.get(root2));
+        connectedComponentsAtomIndexes.remove(root2);
     }
 
     /**
@@ -387,8 +387,8 @@ public class AtomStore implements Iterable<GroundAtom> {
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
         lookup.put(atom, numAtoms);
-        connectedComponentsAtoms.put(numAtoms, new ArrayList<GroundAtom>());
-        connectedComponentsAtoms.get(numAtoms).add(atom);
+        connectedComponentsAtomIndexes.put(numAtoms, new ArrayList<Integer>());
+        connectedComponentsAtomIndexes.get(numAtoms).add(atom.getIndex());
 
         if (atom instanceof RandomVariableAtom) {
             maxRVAIndex = numAtoms;
@@ -457,7 +457,7 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];
-        connectedComponentsAtoms = new HashMap<Integer, List<GroundAtom>>();
+        connectedComponentsAtomIndexes = new HashMap<Integer, List<Integer>>();
         lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
 
         // Load open predicates first (to get RVAs at a lower index).

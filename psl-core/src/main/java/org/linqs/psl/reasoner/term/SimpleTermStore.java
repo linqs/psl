@@ -124,6 +124,10 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
         return connectedComponents;
     }
 
+    public List<Integer> getConnectedComponentKeys() {
+    	return new ArrayList<Integer>(connectedComponents.keySet());
+    }
+
     @Override
     public Iterator<T> iterator() {
         return allTerms.iterator();

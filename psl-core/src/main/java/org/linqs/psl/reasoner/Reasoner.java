@@ -241,12 +241,40 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     /**
      * Compute the total weighted objective of the terms in their current state.
      */
-    protected ObjectiveResult computeObjective(TermStore<T> termStore) {
+    protected static ObjectiveResult computeObjective(TermStore<? extends ReasonerTerm> termStore) {
         float objective = 0.0f;
         long violatedConstraints = 0;
         float[] variableValues = termStore.getVariableValues();
 
         for (ReasonerTerm term : termStore) {
+            if (!term.isActive()) {
+                continue;
+            }
+
+            if (term.isConstraint()) {
+                if (term.evaluate(variableValues) > 0.0f) {
+                    violatedConstraints++;
+                }
+            } else {
+                objective += term.evaluate(variableValues);
+            }
+        }
+
+        return new ObjectiveResult(objective, violatedConstraints);
+    }
+
+    protected static ObjectiveResult computeComponentObjective(TermStore<? extends ReasonerTerm> termStore, int componentIndex) {
+        assert (termStore instanceof SimpleTermStore);
+
+        SimpleTermStore<? extends ReasonerTerm> simpleTermStore = (SimpleTermStore<? extends ReasonerTerm>)termStore;
+
+        List<? extends ReasonerTerm> component = simpleTermStore.getConnectedComponents().get(componentIndex);
+
+        float objective = 0.0f;
+        long violatedConstraints = 0;
+        float[] variableValues = termStore.getVariableValues();
+
+        for (ReasonerTerm term : component) {
             if (!term.isActive()) {
                 continue;
             }
