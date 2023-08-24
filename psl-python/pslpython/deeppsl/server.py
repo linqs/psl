@@ -33,6 +33,7 @@ import traceback
 ENCODING = 'utf-8'
 MAX_MESSAGE_SIZE_BYTES = 2 ** 14
 
+
 class ConnectionHandler(object):
     def __init__(self):
         self._model = None
@@ -206,8 +207,6 @@ def main(port):
 
         keep_open = handler.handle_request(connection, data)
         if not keep_open:
-            connection.shutdown(socket.SHUT_RDWR)
-            sock.shutdown(socket.SHUT_RDWR)
             break
 
     connection.close()
@@ -223,6 +222,7 @@ def _load_args(args):
         sys.exit(1)
 
     return int(args.pop(0))
+
 
 if __name__ == '__main__':
     main(_load_args(list(sys.argv)))
