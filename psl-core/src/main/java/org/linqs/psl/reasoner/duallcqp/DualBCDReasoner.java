@@ -107,7 +107,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         }
     }
 
-    private static boolean breakOptimization(int iteration, TermStore<DualLCQPObjectiveTerm> termStore,
+    private static boolean breakOptimization(int iteration,
                                              ObjectiveResult primalObjectiveResult, ObjectiveResult oldPrimalObjectiveResult,
                                              ObjectiveResult dualObjectiveResult,
                                              int maxIterations, boolean runFullIterations,
@@ -116,6 +116,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                                              boolean primalDualBreak, double primalDualTolerance) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations)) {
+            log.trace("Breaking inference. Maximum number of iterations has been reached.");
             return true;
         }
 
@@ -445,7 +446,13 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     @Override
     protected ObjectiveResult parallelComputeObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
         ObjectiveResult objectiveResult = super.parallelComputeObjective(termStore);
+
+        log.trace("Unregularized Objective: {}", objectiveResult.objective);
+
         objectiveResult.objective += computePrimalVariableRegularization(termStore);
+
+        log.info("Regularization: {}", computePrimalVariableRegularization(termStore));
+
         return objectiveResult;
     }
 
@@ -586,7 +593,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                         primalObjectiveResult = DualBCDReasoner.computeComponentObjective(termStore, compenentId);
                         ObjectiveResult dualObjectiveResult = computeComponentDualObjective(termStore, compenentId);
 
-                        breakDualBCD = breakOptimization(iteration, termStore, primalObjectiveResult, oldPrimalObjectiveResult, dualObjectiveResult,
+                        breakDualBCD = breakOptimization(iteration, primalObjectiveResult, oldPrimalObjectiveResult, dualObjectiveResult,
                                 maxIterations, runFullIterations, objectiveBreak, objectiveTolerance, variableMovementBreak,
                                 primalDualBreak, primalDualTolerance);
                     }
