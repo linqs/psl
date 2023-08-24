@@ -240,11 +240,21 @@ public abstract class GradientDescent extends WeightLearningApplication {
             if (log.isTraceEnabled() && (evaluation != null)) {
                 runMAPEvaluation();
                 log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+
+                // Predict with the deep predicates again to ensure predictions are made with learning set to true.
+                for (DeepPredicate deepPredicate : deepPredicates) {
+                    deepPredicate.predictDeepModel(true);
+                }
             }
 
             if (runValidation) {
                 runValidationEvaluation();
                 log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
+
+                // Predict with the deep predicates again to ensure predictions are made with learning set to true.
+                for (DeepPredicate deepPredicate : deepPredicates) {
+                    deepPredicate.predictDeepModel(true);
+                }
             }
 
             computeIterationStatistics();
@@ -281,22 +291,39 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         if (evaluation != null) {
-            runMAPEvaluation();
-            log.info("Final MAP State Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+            double finalMAPStateEvaluation = 0.0f;
+            if (saveBestValidationWeights) {
+                finalMAPStateEvaluation = bestValidationEvaluationMetric;
+            } else {
+                runMAPEvaluation();
+                finalMAPStateEvaluation = evaluation.getNormalizedRepMetric();
+            }
+            log.info("Final MAP State Evaluation Metric: {}", finalMAPStateEvaluation);
         }
 
         if (runValidation) {
-            runValidationEvaluation();
-            log.info("Final MAP State Validation Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
+            double finalMAPStateValidationEvaluation = 0.0f;
+            if (saveBestValidationWeights) {
+                finalMAPStateValidationEvaluation = bestValidationEvaluationMetric;
+            } else {
+                runValidationEvaluation();
+                finalMAPStateValidationEvaluation = currentValidationEvaluationMetric;
+            }
+            log.info("Final MAP State Validation Evaluation Metric: {}", finalMAPStateValidationEvaluation);
         }
 
-        log.info("Final Model {} ", mutableRules);
-        log.info("Final Weight Learning Loss: {}, Final Gradient Magnitude: {}, Total optimization time: {}",
-                computeTotalLoss(), computeGradientNorm(), totalTime);
+        log.info("Final model {} ", mutableRules);
+        log.info("Total weight learning time: {}", totalTime);
 
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.saveDeepModel();
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+
+            if (!saveBestValidationWeights) {
+                deepPredicate.saveDeepModel();
+            }
+
             deepPredicate.close();
+            validationDeepModelPredicates.get(i).close();
         }
     }
 
@@ -311,14 +338,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.evalDeepModel();
         }
-
-        // Predict with the deep predicates again to ensure predictions are made with learning set to true.
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.predictDeepModel(true);
-        }
     }
 
     protected void runValidationEvaluation() {
+        // Set to validation deep model predicates.
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
             deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
@@ -334,19 +357,25 @@ public abstract class GradientDescent extends WeightLearningApplication {
         if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
             bestValidationEvaluationMetric = currentValidationEvaluationMetric;
 
+            // Save the best rule weights.
             for (int j = 0; j < mutableRules.size(); j++) {
                 bestValidationWeights[j] = mutableRules.get(j).getWeight();
+            }
+
+            // Save the best deep model weights.
+            for (int i = 0; i < deepPredicates.size(); i++) {
+                DeepPredicate deepPredicate = deepPredicates.get(i);
+                deepPredicate.saveDeepModel();
             }
 
             log.debug("New Best Validation Model: {}", mutableRules);
         }
         log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
 
-        // Predict with the deep predicates again to ensure predictions are made with learning set to true.
+        // Reset to training deep model predicates.
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
             deepPredicate.setDeepModel(deepModelPredicates.get(i));
-            deepPredicate.predictDeepModel(true);
         }
     }
 

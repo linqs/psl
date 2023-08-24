@@ -223,7 +223,7 @@ public abstract class DeepModel {
             pythonOptions.clear();
         }
 
-        if (socketOutput != null) {
+        if ((socketOutput != null) && (!socket.isClosed())) {
             JSONObject message = new JSONObject();
             message.put("task", "close");
             JSONObject response = sendSocketMessage(message);
@@ -286,8 +286,8 @@ public abstract class DeepModel {
             freePort(port);
 
             socketOutput.close();
-            socketOutput = null;
         }
+        socketOutput = null;
 
         if (socketInput != null) {
             try {
@@ -295,9 +295,8 @@ public abstract class DeepModel {
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
-
-            socketInput = null;
         }
+        socketInput = null;
 
         if (socket != null) {
             if (!socket.isClosed()) {
@@ -307,13 +306,10 @@ public abstract class DeepModel {
                     throw new RuntimeException(ex);
                 }
             }
-
-            socket = null;
         }
+        socket = null;
 
-        if (sharedBuffer != null) {
-            sharedBuffer = null;
-        }
+        sharedBuffer = null;
 
         if (sharedFile != null) {
             try {
@@ -322,17 +318,15 @@ public abstract class DeepModel {
             } catch (IOException ex) {
                 throw new RuntimeException("Failed to clean up shared file: " + sharedMemoryPath, ex);
             }
-
-            sharedFile = null;
         }
+        sharedFile = null;
 
         if (pythonServerProcess != null) {
             if (pythonServerProcess.isAlive()) {
                 pythonServerProcess.destroyForcibly();
             }
-
-            pythonServerProcess = null;
         }
+        pythonServerProcess = null;
     }
 
     /**
