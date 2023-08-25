@@ -302,10 +302,15 @@ public class DeepModelPredicate extends DeepModel {
                 // Add atom index and data index for each class.
                 type = predicate.getArgumentType(arguments.length - 1);
 
-                QueryAtom queryAtom = new QueryAtom(predicate, arguments);
+                QueryAtom queryAtom = null;
                 for (int index = 0; index < classSize; index++) {
                     arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
-                    queryAtom.assume(predicate, arguments);
+
+                    if (index == 0) {
+                        queryAtom = new QueryAtom(predicate, arguments);
+                    } else {
+                        queryAtom.assume(predicate, arguments);
+                    }
 
                     atomIndex = atomStore.getAtomIndex(queryAtom);
                     if (atomIndex == -1) {
