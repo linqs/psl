@@ -296,30 +296,30 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     }
 
     @Override
-    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
+    public long groundAll(TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback) {
         if (!validatedByDatabase) {
-            validateForGrounding(termStore.getDatabase());
+            validateForGrounding(database);
         }
 
         long termCount = 0;
         if (!hasSummation()) {
-            termCount = groundAllNonSummationRule(termStore, groundRuleCallback);
+            termCount = groundAllNonSummationRule(termStore, database, groundRuleCallback);
         } else {
-            termCount = groundAllSummationRule(termStore, groundRuleCallback);
+            termCount = groundAllSummationRule(termStore, database, groundRuleCallback);
         }
 
         log.debug("Grounded {} terms from rule {}", termCount, this);
         return termCount;
     }
 
-    private long groundAllNonSummationRule(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
+    private long groundAllNonSummationRule(TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback) {
         GroundingResources resources = getGroundingResources(expression);
 
-        try (ResultList results = termStore.getDatabase().executeQuery(new DatabaseQuery(expression.getQueryFormula(), false))) {
+        try (ResultList results = database.executeQuery(new DatabaseQuery(expression.getQueryFormula(), false))) {
             Map<Variable, Integer> variableMap = results.getVariableMap();
 
             for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
-                groundSingleNonSummationRule(results.get(groundingIndex), variableMap, termStore.getDatabase(), resources);
+                groundSingleNonSummationRule(results.get(groundingIndex), variableMap, database, resources);
             }
         }
 
@@ -392,21 +392,21 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     /**
      * Ground by first expanding summation atoms into normal ones and then calling the non-summation grounding.
      */
-    private long groundAllSummationRule(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback) {
-        GroundingResources resources = prepSummationGroundingResources(termStore.getDatabase());
+    private long groundAllSummationRule(TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback) {
+        GroundingResources resources = prepSummationGroundingResources(database);
 
         // Bail if there are no groundings.
         if (resources.flatExpression == null) {
             return 0;
         }
 
-        RawQuery rawQuery = getSummationRawQuery(termStore.getDatabase());
+        RawQuery rawQuery = getSummationRawQuery(database);
 
-        try (ResultList results = termStore.getDatabase().executeSQL(rawQuery)) {
+        try (ResultList results = database.executeSQL(rawQuery)) {
             Map<Variable, Integer> variableMap = results.getVariableMap();
 
             for (int groundingIndex = 0; groundingIndex < results.size(); groundingIndex++) {
-                groundSingleSummationRule(results.get(groundingIndex), variableMap, termStore.getDatabase(), resources);
+                groundSingleSummationRule(results.get(groundingIndex), variableMap, database, resources);
             }
         }
 

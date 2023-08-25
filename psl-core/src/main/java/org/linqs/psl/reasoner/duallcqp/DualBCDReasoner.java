@@ -91,7 +91,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
      * Map the current setting of the dual variables to primal variables.
      */
     protected static void primalVariableComponentUpdate(DualLCQPTermStore termStore, int componentIndex) {
-        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        AtomStore atomStore = termStore.getAtomStore();
         List<Integer> connectedComponentAtomIndexes = atomStore.getConnectedComponentAtomIndexes(componentIndex);
         float[] atomValues = atomStore.getAtomValues();
         GroundAtom[] atoms = atomStore.getAtoms();
@@ -170,7 +170,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         float[] coefficients = term.getCoefficients();
         int[] atomIndexes = term.getAtomIndexes();
-        GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
+        GroundAtom[] atoms = termStore.getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
         for (int i = 0; i < term.size(); i++) {
             if (atoms[atomIndexes[i]].isFixed()) {
@@ -211,7 +211,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         // Dual variables for atom bound constraints must be non-negative.
         int[] atomIndexes = term.getAtomIndexes();
-        GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
+        GroundAtom[] atoms = termStore.getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
         for (int i = 0; i < term.size(); i++) {
             if (atoms[atomIndexes[i]].isFixed()) {
@@ -254,7 +254,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         float[] coefficients = term.getCoefficients();
         int[] atomIndexes = term.getAtomIndexes();
-        GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
+        GroundAtom[] atoms = termStore.getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
 
         for (int i = 0; i < term.size(); i++) {
@@ -310,7 +310,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         double termDualPartial = 0.0;
         double observedConstant = 0.0;
 
-        GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
+        GroundAtom[] atoms = termStore.getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
         float[] coefficients = term.getCoefficients();
         int[] atomIndexes = term.getAtomIndexes();
@@ -364,7 +364,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         double potentialDualObjective = 0.0;
         double observedConstant = 0.0;
 
-        GroundAtom[] atoms = termStore.getDatabase().getAtomStore().getAtoms();
+        GroundAtom[] atoms = termStore.getAtomStore().getAtoms();
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
         float[] coefficients = term.getCoefficients();
         int[] atomIndexes = term.getAtomIndexes();
@@ -398,7 +398,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
     @Override
     public void computeOptimalValueGradient(TermStore<DualLCQPObjectiveTerm> termStore, float[] rvAtomGradient, float[] deepAtomGradient) {
-        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        AtomStore atomStore = termStore.getAtomStore();
         GroundAtom[] atoms = atomStore.getAtoms();
 
         Arrays.fill(rvAtomGradient, 0.0f);
@@ -470,7 +470,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     }
 
     private static double computePrimalVariableRegularization(TermStore<DualLCQPObjectiveTerm> termStore) {
-        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        AtomStore atomStore = termStore.getAtomStore();
         GroundAtom[] atoms = atomStore.getAtoms();
         float[] atomValues = atomStore.getAtomValues();
 
@@ -487,7 +487,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     }
 
     private static double computePrimalVariableComponentRegularization(TermStore<DualLCQPObjectiveTerm> termStore, int componentIndex) {
-        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        AtomStore atomStore = termStore.getAtomStore();
         List<Integer> connectedComponentAtomIndexes = atomStore.getConnectedComponentAtomIndexes(componentIndex);
         float[] atomValues = atomStore.getAtomValues();
         GroundAtom[] atoms = atomStore.getAtoms();
@@ -522,7 +522,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         // The upper and lower bound constraints on the atoms are not stored in the term store,
         // so we need to compute their objective and gradient contribution here.
-        AtomStore atomStore = termStore.getDatabase().getAtomStore();
+        AtomStore atomStore = termStore.getAtomStore();
         GroundAtom[] atoms = atomStore.getAtoms();
         List<Integer> connectedComponentAtomIndexes = atomStore.getConnectedComponentAtomIndexes(componentIndex);
         DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();

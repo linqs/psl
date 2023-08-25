@@ -17,9 +17,8 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.database.AtomStore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,8 +38,8 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
      */
     protected Map<Integer, List<T>> connectedComponents;
 
-    public SimpleTermStore(Database database, TermGenerator<T> termGenerator) {
-        super(database, termGenerator);
+    public SimpleTermStore(AtomStore atomStore, TermGenerator<T> termGenerator) {
+        super(atomStore, termGenerator);
         allTerms = new ArrayList<T>();
         connectedComponents = new HashMap<Integer, List<T>>();
     }
@@ -63,7 +62,6 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
         }
 
         // Unify the components of the atoms in this term.
-        // TODO(Charles): Potential optimization: do not allow union with fixed atoms.
         for (int i = 1; i < newTerm.size; i++) {
             int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(newTerm.atomIndexes[i]));
             GroundAtom nextRootAtom = atomStore.getAtom(nextAtomRootIndex);

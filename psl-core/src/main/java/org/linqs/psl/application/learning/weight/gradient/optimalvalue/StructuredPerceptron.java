@@ -37,7 +37,7 @@ public class StructuredPerceptron extends OptimalValue {
     }
 
     @Override
-    protected void computeIterationStatistics() {
+    protected void computeIterationStatistics(int epoch) {
         computeLatentInferenceIncompatibility();
         computeFullInferenceIncompatibility();
     }

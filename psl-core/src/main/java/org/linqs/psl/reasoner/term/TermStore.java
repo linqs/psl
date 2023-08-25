@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -35,14 +34,12 @@ import java.util.List;
  */
 public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
     protected AtomStore atomStore;
-    protected Database database;
     protected TermGenerator<T> termGenerator;
 
     private final String threadResourceKey;
 
-    public TermStore(Database database, TermGenerator<T> termGenerator) {
-        this.database = database;
-        this.atomStore = database.getAtomStore();
+    public TermStore(AtomStore atomStore, TermGenerator<T> termGenerator) {
+        this.atomStore = atomStore;
         this.termGenerator = termGenerator;
         threadResourceKey = "termstore::objectid::" + System.identityHashCode(this);
     }
@@ -71,10 +68,6 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
     public abstract Iterator<T> iterator();
 
     public abstract long size();
-
-    public Database getDatabase() {
-        return database;
-    }
 
     public AtomStore getAtomStore() {
         return atomStore;
@@ -123,14 +116,14 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
      * Does NOT clear().
      */
     public void reset() {
-        database.getAtomStore().resetValues();
+        atomStore.resetValues();
     }
 
     /**
      * Sync all the atom values into atoms.
      */
     public double sync() {
-        return database.getAtomStore().sync();
+        return atomStore.sync();
     }
 
     /**
@@ -140,7 +133,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
         clear();
 
         termGenerator = null;
-        database = null;
+        atomStore = null;
     }
 
     /**
@@ -198,21 +191,21 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
      * Get all the atoms associated with each variable from the AtomStore.
      */
     public GroundAtom[] getVariableAtoms() {
-        return database.getAtomStore().getAtoms();
+        return atomStore.getAtoms();
     }
 
     /**
      * Get all the variable (atom) values from the AtomStore.
      */
     public float[] getVariableValues() {
-        return database.getAtomStore().getAtomValues();
+        return atomStore.getAtomValues();
     }
 
     /**
      * Get the total number of all (obs/unobs) variables.
      */
     public int getNumVariables() {
-        return database.getAtomStore().size();
+        return atomStore.size();
     }
 
     /**
@@ -221,7 +214,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
     public AtomCount getVariableCounts() {
         AtomCount count = new AtomCount();
 
-        for (GroundAtom atom : database.getAtomStore()) {
+        for (GroundAtom atom : atomStore) {
             if (atom instanceof ObservedAtom) {
                 count.observed++;
             } else {

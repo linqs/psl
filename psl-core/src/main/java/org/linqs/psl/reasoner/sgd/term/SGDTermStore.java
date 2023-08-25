@@ -17,15 +17,11 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.database.Database;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 public class SGDTermStore extends SimpleTermStore<SGDObjectiveTerm> {
-    public SGDTermStore(Database database) {
-        super(database, new SGDTermGenerator());
-    }
-
-    public SGDTermStore(Database database, boolean mergeConstants, boolean warnOnConstraint) {
-        super(database, new SGDTermGenerator(mergeConstants, warnOnConstraint));
+    public SGDTermStore(AtomStore atomStore) {
+        super(atomStore, new SGDTermGenerator());
     }
 }

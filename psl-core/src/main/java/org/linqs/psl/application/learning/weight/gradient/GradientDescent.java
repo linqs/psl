@@ -22,10 +22,7 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
-import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
@@ -34,7 +31,6 @@ import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -164,7 +160,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
         }
 
-        if (!((!runValidation) || (validationInferenceApplication.getDatabase().getAtomStore().size() > 0))) {
+        if (!((!runValidation) || (validationInferenceApplication.getTermStore().getAtomStore().size() > 0))) {
             throw new IllegalStateException("If validation is being run, then validation data must be provided in the runtime.json file.");
         }
 
@@ -178,10 +174,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         trainMAPTermState = trainInferenceApplication.getTermStore().saveState();
         validationMAPTermState = validationInferenceApplication.getTermStore().saveState();
 
-        float[] trainAtomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] trainAtomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
         trainMAPAtomValueState = Arrays.copyOf(trainAtomValues, trainAtomValues.length);
 
-        float[] validationAtomValues = validationInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] validationAtomValues = validationInferenceApplication.getTermStore().getAtomStore().getAtomValues();
         validationMAPAtomValueState = Arrays.copyOf(validationAtomValues, validationAtomValues.length);
 
         rvAtomGradient = new float[trainAtomValues.length];
@@ -221,18 +217,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
         boolean breakGD = false;
         float objective = 0.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
-
-        float[] bestWeights = new float[mutableRules.size()];
-
+        
         log.info("Gradient Descent Weight Learning Start.");
         initForLearning();
 
-        for (int i = 0; i < bestWeights.length; i++) {
-            bestWeights[i] = mutableRules.get(i).getWeight();
-        }
-
         long totalTime = 0;
-        int iteration = 0;
+        int epoch = 0;
         while (!breakGD) {
             long start = System.currentTimeMillis();
 
@@ -261,7 +251,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
             }
 
-            computeIterationStatistics();
+            computeIterationStatistics(epoch);
 
             objective = computeTotalLoss();
 
@@ -271,18 +261,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 clipWeightGradient();
             }
 
-            gradientStep(iteration);
+            gradientStep(epoch);
 
             long end = System.currentTimeMillis();
 
             totalTime += end - start;
             oldObjective = objective;
 
-            breakGD = breakOptimization(iteration, objective, oldObjective);
+            breakGD = breakOptimization(epoch, objective, oldObjective);
             log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Parameter Movement: {}, Iteration Time: {}",
-                    iteration, objective, computeGradientNorm(), parameterMovement, (end - start));
+                    epoch, objective, computeGradientNorm(), parameterMovement, (end - start));
 
-            iteration++;
+            epoch++;
         }
 
         log.info("Gradient Descent Weight Learning Finished.");
@@ -290,7 +280,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         if (saveBestValidationWeights) {
             // Reset rule weights to bestWeights.
             for (int i = 0; i < mutableRules.size(); i++) {
-                mutableRules.get(i).setWeight(bestWeights[i]);
+                mutableRules.get(i).setWeight(bestValidationWeights[i]);
             }
         }
 
@@ -681,7 +671,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                                                 TermState[] warmStartTermState, float[] warmStartAtomValueState) {
         // Warm start inference with previous termState.
         inferenceApplication.getTermStore().loadState(warmStartTermState);
-        AtomStore atomStore = inferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = inferenceApplication.getTermStore().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
         for (int i = 0; i < atomStore.size(); i++) {
             if (atomStore.getAtom(i).isFixed()) {
@@ -697,7 +687,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         // Save the MPE state for future warm starts.
         inferenceApplication.getTermStore().saveState(warmStartTermState);
-        float[] mpeAtomValues = inferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] mpeAtomValues = inferenceApplication.getTermStore().getAtomStore().getAtomValues();
         System.arraycopy(mpeAtomValues, 0, warmStartAtomValueState, 0, mpeAtomValues.length);
     }
 
@@ -708,7 +698,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // Zero out the incompatibility first.
         Arrays.fill(incompatibilityArray, 0.0f);
 
-        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
 
         // Sums up the incompatibilities.
         for (Object rawTerm : trainInferenceApplication.getTermStore()) {
@@ -732,7 +722,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Method called at the start of every gradient descent iteration to
      * compute statistics needed for loss and gradient computations.
      */
-    protected abstract void computeIterationStatistics();
+    protected abstract void computeIterationStatistics(int epoch);
 
     /**
      * Method for computing the total regularized loss.

@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.term;
 
-import org.linqs.psl.database.Database;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.rule.GroundRule;
 
 import java.util.ArrayList;
@@ -32,8 +32,8 @@ import java.util.List;
 public class DummyTermStore<T extends ReasonerTerm> extends TermStore<T> {
     private long count;
 
-    public DummyTermStore(Database database) {
-        super(database, null);
+    public DummyTermStore(AtomStore atomStore) {
+        super(atomStore, null);
         count = 0l;
     }
 

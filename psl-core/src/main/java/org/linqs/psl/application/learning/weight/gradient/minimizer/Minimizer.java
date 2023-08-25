@@ -81,7 +81,6 @@ public abstract class Minimizer extends GradientDescent {
     protected float constraintTolerance;
     protected float finalConstraintTolerance;
 
-    protected boolean initializedProxRuleConstants;
     protected int outerIteration;
 
     protected final float initialSquaredPenaltyCoefficient;
@@ -124,13 +123,12 @@ public abstract class Minimizer extends GradientDescent {
         finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
         constraintTolerance = (float)(1.0f / Math.pow(initialSquaredPenaltyCoefficient, 0.1f));
         finalConstraintTolerance = Options.MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE.getFloat();
-        initializedProxRuleConstants = false;
         outerIteration = 1;
     }
 
     @Override
     protected void postInitGroundModel() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         // Create and add the augmented inference proximity terms.
         int unFixedAtomCount = 0;
@@ -204,7 +202,7 @@ public abstract class Minimizer extends GradientDescent {
         super.postInitGroundModel();
 
         // Initialize latent and augmented inference warm start state objects.
-        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
 
         latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
@@ -273,7 +271,7 @@ public abstract class Minimizer extends GradientDescent {
     protected float internalParameterGradientStep(int iteration) {
         float proxRuleObservedAtomsValueMovement = 0.0f;
         // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
-        float[] atomValues = trainInferenceApplication.getTermStore().getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
         for (int i = 0; i < proxRules.length; i++) {
             float newProxRuleObservedAtomsValue = Math.min(Math.max(
                     proxRuleObservedAtoms[i].getValue() - proxRuleObservedAtomValueStepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
@@ -291,13 +289,13 @@ public abstract class Minimizer extends GradientDescent {
         // Initialize the proximity rule constants to the truth if it exists or the latent MAP state.
         fixLabeledRandomVariables();
 
-        log.trace("Performing Latent Inference.");
+        log.trace("Running Latent Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
         inTrainingMAPState = true;
 
         unfixLabeledRandomVariables();
 
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
 
         System.arraycopy(latentInferenceAtomValueState, 0, augmentedInferenceAtomValueState, 0, latentInferenceAtomValueState.length);
@@ -320,15 +318,13 @@ public abstract class Minimizer extends GradientDescent {
             atomValues[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
             augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
         }
-
-        initializedProxRuleConstants = true;
     }
 
     @Override
-    protected void computeIterationStatistics() {
+    protected void computeIterationStatistics(int epoch) {
         computeFullInferenceStatistics();
 
-        if (!initializedProxRuleConstants) {
+        if (epoch == 0) {
             initializeProximityRuleConstants();
         }
 
@@ -341,7 +337,7 @@ public abstract class Minimizer extends GradientDescent {
     protected void computeTotalAtomGradient() {
         float totalEnergyDifference = computeObjectiveDifference();
 
-        for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
+        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             float rvGradientDifference = augmentedRVAtomGradient[i] - MAPRVAtomGradient[i];
             float deepGradientDifference = augmentedDeepAtomGradient[i] - MAPDeepAtomGradient[i];
 
@@ -487,10 +483,10 @@ public abstract class Minimizer extends GradientDescent {
             }
         }
 
-        GroundAtom[] atoms = trainInferenceApplication.getDatabase().getAtomStore().getAtoms();
+        GroundAtom[] atoms = trainInferenceApplication.getTermStore().getAtomStore().getAtoms();
         float augmentedInferenceLCQPRegularization = 0.0f;
         float fullInferenceLCQPRegularization = 0.0f;
-        for (int i = 0; i < trainInferenceApplication.getDatabase().getAtomStore().size(); i++) {
+        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             if (atoms[i].isFixed()) {
                 continue;
             }
@@ -543,7 +539,7 @@ public abstract class Minimizer extends GradientDescent {
         // Zero out the incompatibility first.
         Arrays.fill(incompatibilityArray, 0.0f);
 
-        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
 
         // Sums up the incompatibilities.
         for (Object rawTerm : trainInferenceApplication.getTermStore()) {
@@ -570,7 +566,7 @@ public abstract class Minimizer extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void fixLabeledRandomVariables() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
@@ -592,7 +588,7 @@ public abstract class Minimizer extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void unfixLabeledRandomVariables() {
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();

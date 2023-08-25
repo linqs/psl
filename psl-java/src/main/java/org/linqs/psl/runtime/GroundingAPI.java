@@ -129,7 +129,7 @@ public final class GroundingAPI extends Runtime {
 
         Database database = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
         AtomStore atomStore = database.getAtomStore();
-        TermStore store = new DummyTermStore(database);
+        TermStore store = new DummyTermStore(database.getAtomStore());
 
         final List<GroundRuleInfo> groundRules = new ArrayList<GroundRuleInfo>();
 
@@ -145,7 +145,7 @@ public final class GroundingAPI extends Runtime {
             }
         });
 
-        Grounding.groundAll(rules, store);
+        Grounding.groundAll(rules, store, database);
         Grounding.setGroundRuleCallback(null);
 
         if (groundAtoms == null) {
