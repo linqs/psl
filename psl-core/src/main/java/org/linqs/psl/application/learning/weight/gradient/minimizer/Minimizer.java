@@ -290,7 +290,7 @@ public abstract class Minimizer extends GradientDescent {
         // Initialize the proximity rule constants to the truth if it exists or the latent MAP state.
         fixLabeledRandomVariables();
 
-        log.trace("Performing Latent Inference.");
+        log.trace("Running Latent Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
         inTrainingMAPState = true;
 
