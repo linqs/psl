@@ -231,7 +231,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.trace("{}", weightedRule);
             }
 
-            if (log.isTraceEnabled() && (evaluation != null) && (iteration % trainingEvaluationComputePeriod == 0)) {
+            if (log.isTraceEnabled() && (evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
                 runMAPEvaluation();
                 log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
 
@@ -241,7 +241,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
             }
 
-            if (runValidation && (iteration % validationEvaluationComputePeriod == 0)) {
+            if (runValidation && (epoch % validationEvaluationComputePeriod == 0)) {
                 runValidationEvaluation();
                 log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
 
