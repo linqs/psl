@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.duallcqp.term;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -31,8 +30,8 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     // The array of DualLCQPAtoms is aligned with the atoms in the AtomStore.
     protected DualLCQPAtom[] dualLCQPAtoms;
 
-    public DualLCQPTermStore(Database database) {
-        super(database, new DualLCQPTermGenerator());
+    public DualLCQPTermStore(AtomStore atomStore) {
+        super(atomStore, new DualLCQPTermGenerator());
 
         dualLCQPAtoms = new DualLCQPAtom[AtomStore.MIN_ALLOCATION];
         for (int i = 0; i < dualLCQPAtoms.length; i++) {
@@ -42,8 +41,6 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
 
     public synchronized void init() {
         if (dualLCQPAtoms == null) {
-            AtomStore atomStore = database.getAtomStore();
-
             dualLCQPAtoms = new DualLCQPAtom[atomStore.size()];
             for (int i = 0; i < dualLCQPAtoms.length; i++) {
                 dualLCQPAtoms[i] = new DualLCQPAtom();
@@ -82,8 +79,8 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     }
 
     private synchronized void ensureDualLCQPAtomsCapacity() {
-        if (dualLCQPAtoms.length < database.getAtomStore().size()) {
-            DualLCQPAtom[] newDualLCQPAtoms = new DualLCQPAtom[database.getAtomStore().size()];
+        if (dualLCQPAtoms.length < atomStore.size()) {
+            DualLCQPAtom[] newDualLCQPAtoms = new DualLCQPAtom[atomStore.size()];
             System.arraycopy(dualLCQPAtoms, 0, newDualLCQPAtoms, 0, dualLCQPAtoms.length);
             for (int i = dualLCQPAtoms.length; i < newDualLCQPAtoms.length; i++) {
                 newDualLCQPAtoms[i] = new DualLCQPAtom();

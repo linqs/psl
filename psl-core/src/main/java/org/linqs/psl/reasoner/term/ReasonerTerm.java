@@ -306,7 +306,6 @@ public class ReasonerTerm {
         return 2.0f * innerPotential * coefficients[varId];
     }
 
-
     /**
      * Load the provided state of the term.
      * By default, reasoner terms hold no state information.

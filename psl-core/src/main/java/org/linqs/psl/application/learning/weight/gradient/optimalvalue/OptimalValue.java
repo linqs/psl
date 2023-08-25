@@ -64,7 +64,7 @@ public abstract class OptimalValue extends GradientDescent {
 
         // Initialize latent inference warm start state objects.
         latentInferenceTermState = trainInferenceApplication.getTermStore().saveState();
-        float[] atomValues = trainInferenceApplication.getDatabase().getAtomStore().getAtomValues();
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
         latentInferenceAtomValueState = Arrays.copyOf(atomValues, atomValues.length);
 
         rvLatentAtomGradient = new float[atomValues.length];
@@ -98,7 +98,7 @@ public abstract class OptimalValue extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void fixLabeledRandomVariables() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
@@ -120,7 +120,7 @@ public abstract class OptimalValue extends GradientDescent {
      * with the same predicates and arguments having the same hash.
      */
     protected void unfixLabeledRandomVariables() {
-        AtomStore atomStore = trainInferenceApplication.getDatabase().getAtomStore();
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();

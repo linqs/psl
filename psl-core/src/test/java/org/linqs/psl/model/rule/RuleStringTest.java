@@ -164,7 +164,7 @@ public class RuleStringTest extends PSLBaseTest {
 
     @Test
     public void testGroundLogicalRuleString() {
-        TermStore store = new DummyTermStore(database);
+        TermStore store = new DummyTermStore(database.getAtomStore());
 
         Rule rule;
         List<String> expected;
@@ -178,7 +178,7 @@ public class RuleStringTest extends PSLBaseTest {
             "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) .",
             "( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ."
         );
-        groundAndCompare(expected, rule, store);
+        groundAndCompare(expected, rule, store, database);
 
         // Weighted, Squared
         rule = new WeightedLogicalRule(logicalBaseRule, 10.0f, true);
@@ -188,7 +188,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') ) ^2",
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') ) ^2"
         );
-        groundAndCompare(expected, rule, store);
+        groundAndCompare(expected, rule, store, database);
 
         // Weighted, Not Squared
         rule = new WeightedLogicalRule(logicalBaseRule, 10.0f, false);
@@ -198,12 +198,12 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Alice') ) | DOUBLEPREDICATE('Bob', 'Alice') )",
             "10.0: ( ~( SINGLEPREDICATE('Bob') ) | ~( SINGLEPREDICATE('Bob') ) | DOUBLEPREDICATE('Bob', 'Bob') )"
         );
-        groundAndCompare(expected, rule, store);
+        groundAndCompare(expected, rule, store, database);
     }
 
     @Test
     public void testGroundArithmeticRuleString() {
-        TermStore store = new DummyTermStore(database);
+        TermStore store = new DummyTermStore(database.getAtomStore());
 
         Rule rule;
         List<String> expected;
@@ -216,7 +216,7 @@ public class RuleStringTest extends PSLBaseTest {
             "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Alice') + 1.0 * DOUBLEPREDICATE('Bob', 'Alice') = 1.0 .",
             "1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') = 1.0 ."
         );
-        groundAndCompare(expected, rule, store);
+        groundAndCompare(expected, rule, store, database);
 
         // Weighted, Squared
         rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0f, true);
@@ -230,7 +230,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') <= 1.0 ^2",
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0 ^2"
         );
-        groundAndCompare(expected, rule, store);
+        groundAndCompare(expected, rule, store, database);
 
         // Weighted, Not Squared
         rule = new WeightedArithmeticRule(arithmeticBaseRule, 10.0f, false);
@@ -244,7 +244,7 @@ public class RuleStringTest extends PSLBaseTest {
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') <= 1.0",
             "10.0: 1.0 * SINGLEPREDICATE('Bob') + 1.0 * SINGLEPREDICATE('Bob') + 1.0 * DOUBLEPREDICATE('Bob', 'Bob') >= 1.0"
         );
-        groundAndCompare(expected, rule, store);
+        groundAndCompare(expected, rule, store, database);
     }
 
     @Test

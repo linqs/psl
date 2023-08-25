@@ -17,7 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.database.Database;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -35,8 +35,8 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
 
     private int numLocalVariables;
 
-    public ADMMTermStore(Database database) {
-        super(database, new ADMMTermGenerator());
+    public ADMMTermStore(AtomStore atomStore) {
+        super(atomStore, new ADMMTermGenerator());
 
         numLocalVariables = 0;
         localRecords = null;
@@ -108,7 +108,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
         super.reset();
 
         if (localRecords != null) {
-            float[] consensusValues = database.getAtomStore().getAtomValues();
+            float[] consensusValues = atomStore.getAtomValues();
             for (int i = 0; i < localRecords.length; i++) {
                 if (localRecords[i] == null) {
                     continue;
@@ -125,7 +125,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
 
     private synchronized void init() {
         if (localRecords == null) {
-            localRecords = new List[database.getAtomStore().getMaxRVAIndex() + 1];
+            localRecords = new List[atomStore.getMaxRVAIndex() + 1];
         }
     }
 

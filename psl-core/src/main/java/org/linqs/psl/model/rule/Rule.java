@@ -38,7 +38,7 @@ import java.util.Set;
  * A Rule must instantiate only WeightedGroundRules or only UnweightedGroundRules.
  */
 public interface Rule extends Serializable {
-    public long groundAll(TermStore termStore, Grounding.GroundRuleCallback groundRuleCallback);
+    public long groundAll(TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback);
 
     /**
      * A boolean indicating whether this rule is active during inference.

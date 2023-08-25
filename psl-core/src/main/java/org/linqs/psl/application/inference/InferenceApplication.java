@@ -114,7 +114,7 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     protected TermStore createTermStore() {
-        return new ADMMTermStore(database);
+        return new ADMMTermStore(database.getAtomStore());
     }
 
     /**
@@ -124,7 +124,7 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void completeInitialize() {
         log.info("Grounding out model.");
-        long termCount = Grounding.groundAll(rules, termStore);
+        long termCount = Grounding.groundAll(rules, termStore, database);
         log.info("Grounding complete.");
         log.debug("Generated {} terms.", termCount);
     }

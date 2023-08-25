@@ -41,6 +41,6 @@ public class SGDInference extends MPEInference {
 
     @Override
     protected TermStore createTermStore() {
-        return new SGDTermStore(database);
+        return new SGDTermStore(database.getAtomStore());
     }
 }
