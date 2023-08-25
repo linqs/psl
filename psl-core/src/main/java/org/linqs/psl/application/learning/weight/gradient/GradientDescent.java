@@ -222,7 +222,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         initForLearning();
 
         long totalTime = 0;
-        int iteration = 0;
+        int epoch = 0;
         while (!breakGD) {
             long start = System.currentTimeMillis();
 
@@ -251,7 +251,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
             }
 
-            computeIterationStatistics();
+            computeIterationStatistics(epoch);
 
             objective = computeTotalLoss();
 
@@ -261,18 +261,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 clipWeightGradient();
             }
 
-            gradientStep(iteration);
+            gradientStep(epoch);
 
             long end = System.currentTimeMillis();
 
             totalTime += end - start;
             oldObjective = objective;
 
-            breakGD = breakOptimization(iteration, objective, oldObjective);
+            breakGD = breakOptimization(epoch, objective, oldObjective);
             log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Parameter Movement: {}, Iteration Time: {}",
-                    iteration, objective, computeGradientNorm(), parameterMovement, (end - start));
+                    epoch, objective, computeGradientNorm(), parameterMovement, (end - start));
 
-            iteration++;
+            epoch++;
         }
 
         log.info("Gradient Descent Weight Learning Finished.");
@@ -722,7 +722,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Method called at the start of every gradient descent iteration to
      * compute statistics needed for loss and gradient computations.
      */
-    protected abstract void computeIterationStatistics();
+    protected abstract void computeIterationStatistics(int epoch);
 
     /**
      * Method for computing the total regularized loss.

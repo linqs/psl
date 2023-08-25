@@ -45,7 +45,7 @@ public class Energy extends OptimalValue {
     }
 
     @Override
-    protected void computeIterationStatistics() {
+    protected void computeIterationStatistics(int epoch) {
         computeLatentInferenceIncompatibility();
     }
 

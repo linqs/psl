@@ -80,7 +80,6 @@ public abstract class Minimizer extends GradientDescent {
     protected float constraintTolerance;
     protected float finalConstraintTolerance;
 
-    protected boolean initializedProxRuleConstants;
     protected int outerIteration;
 
     protected final float initialSquaredPenaltyCoefficient;
@@ -122,7 +121,6 @@ public abstract class Minimizer extends GradientDescent {
         finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
         constraintTolerance = (float)(1.0f / Math.pow(initialSquaredPenaltyCoefficient, 0.1f));
         finalConstraintTolerance = Options.MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE.getFloat();
-        initializedProxRuleConstants = false;
         outerIteration = 1;
     }
 
@@ -319,15 +317,13 @@ public abstract class Minimizer extends GradientDescent {
             atomValues[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
             augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
         }
-
-        initializedProxRuleConstants = true;
     }
 
     @Override
-    protected void computeIterationStatistics() {
+    protected void computeIterationStatistics(int epoch) {
         computeFullInferenceStatistics();
 
-        if (!initializedProxRuleConstants) {
+        if (epoch == 0) {
             initializeProximityRuleConstants();
         }
 
