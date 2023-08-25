@@ -217,15 +217,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         boolean breakGD = false;
         float objective = 0.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
-
-        float[] bestWeights = new float[mutableRules.size()];
-
+        
         log.info("Gradient Descent Weight Learning Start.");
         initForLearning();
-
-        for (int i = 0; i < bestWeights.length; i++) {
-            bestWeights[i] = mutableRules.get(i).getWeight();
-        }
 
         long totalTime = 0;
         int iteration = 0;
@@ -286,7 +280,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         if (saveBestValidationWeights) {
             // Reset rule weights to bestWeights.
             for (int i = 0; i < mutableRules.size(); i++) {
-                mutableRules.get(i).setWeight(bestWeights[i]);
+                mutableRules.get(i).setWeight(bestValidationWeights[i]);
             }
         }
 
