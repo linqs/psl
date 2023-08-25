@@ -18,6 +18,7 @@
 package org.linqs.psl.model.deep;
 
 import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.term.Constant;
@@ -301,9 +302,12 @@ public class DeepModelPredicate extends DeepModel {
                 // Add atom index and data index for each class.
                 type = predicate.getArgumentType(arguments.length - 1);
 
+                QueryAtom queryAtom = new QueryAtom(predicate, arguments);
                 for (int index = 0; index < classSize; index++) {
                     arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
-                    atomIndex = atomStore.getAtomIndex(predicate, arguments);
+                    queryAtom.assume(predicate, arguments);
+
+                    atomIndex = atomStore.getAtomIndex(queryAtom);
                     if (atomIndex == -1) {
                         break;
                     }
