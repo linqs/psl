@@ -18,9 +18,6 @@
 package org.linqs.psl.reasoner.duallcqp.term;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 
@@ -57,16 +54,15 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     }
 
     @Override
-    public synchronized int add(ReasonerTerm term) {
+    public synchronized int add(DualLCQPObjectiveTerm term) {
         ensureDualLCQPAtomsCapacity();
 
         super.add(term);
-        DualLCQPObjectiveTerm newTerm = (DualLCQPObjectiveTerm)term;
 
-        int[] atomIndexes = newTerm.getAtomIndexes();
-        float[] coefficients = newTerm.getCoefficients();
-        for (int i = 0; i < newTerm.size(); i++) {
-            dualLCQPAtoms[atomIndexes[i]].addTerm(newTerm, coefficients[i]);
+        int[] atomIndexes = term.getAtomIndexes();
+        float[] coefficients = term.getCoefficients();
+        for (int i = 0; i < term.size(); i++) {
+            dualLCQPAtoms[atomIndexes[i]].addTerm(term, coefficients[i]);
         }
 
         return 1;

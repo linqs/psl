@@ -38,7 +38,7 @@ public class DummyTermStore<T extends ReasonerTerm> extends TermStore<T> {
     }
 
     @Override
-    public synchronized int add(ReasonerTerm term) {
+    public synchronized int add(T term) {
         count++;
         return 1;
     }

@@ -34,9 +34,8 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
     }
 
     @Override
-    public synchronized int add(ReasonerTerm term) {
-        T newTerm = (T)term;
-        terms.add(newTerm);
+    public synchronized int add(T term) {
+        terms.add(term);
 
         return 1;
     }

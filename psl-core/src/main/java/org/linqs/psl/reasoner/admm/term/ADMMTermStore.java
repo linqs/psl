@@ -55,7 +55,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     }
 
     @Override
-    public synchronized int add(ReasonerTerm term) {
+    public synchronized int add(ADMMObjectiveTerm term) {
         ensureLocalRecordsCapacity();
 
         long termIndex = size();
