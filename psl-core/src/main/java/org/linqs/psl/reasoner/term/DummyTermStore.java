@@ -38,7 +38,7 @@ public class DummyTermStore<T extends ReasonerTerm> extends TermStore<T> {
     }
 
     @Override
-    protected synchronized int add(GroundRule groundRule, T term, Hyperplane hyperplane) {
+    public synchronized int add(ReasonerTerm term) {
         count++;
         return 1;
     }
@@ -80,6 +80,6 @@ public class DummyTermStore<T extends ReasonerTerm> extends TermStore<T> {
 
     @Override
     public int add(GroundRule groundRule) {
-        return add(groundRule, null, null);
+        return add((T)null);
     }
 }

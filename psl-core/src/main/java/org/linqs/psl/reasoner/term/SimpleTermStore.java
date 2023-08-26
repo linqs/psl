@@ -18,7 +18,6 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.model.rule.GroundRule;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -34,14 +33,11 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
         terms = new ArrayList<T>();
     }
 
-    /**
-     * An internal add that will always be called to add new terms.
-     * User will use add(GroundRule) which will generate terms and call this method.
-     * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
-     */
     @Override
-    protected synchronized int add(GroundRule groundRule, T term, Hyperplane hyperplane) {
-        terms.add(term);
+    public synchronized int add(ReasonerTerm term) {
+        T newTerm = (T)term;
+        terms.add(newTerm);
+
         return 1;
     }
 

@@ -18,8 +18,6 @@
 package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.GroundRule;
@@ -47,11 +45,10 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
     }
 
     /**
-     * An internal add that will always be called to add new terms.
-     * User will use add(GroundRule) which will generate terms and call this method.
+     * An add that will always be called to add new terms.
      * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
      */
-    protected abstract int add(GroundRule groundRule, T term, Hyperplane hyperplane);
+    public abstract int add(ReasonerTerm term);
 
     /**
      * Remove any existing terms and prepare for a new set.
@@ -103,7 +100,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
         int count = 0;
         for (int i = 0; i < resources.newTerms.size(); i++) {
-            count += add(groundRule, resources.newTerms.get(i), resources.newHyperplane.get(i));
+            count += add(resources.newTerms.get(i));
         }
 
         resources.newTerms.clear();
