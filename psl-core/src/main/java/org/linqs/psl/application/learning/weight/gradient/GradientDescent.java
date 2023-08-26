@@ -369,8 +369,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    protected boolean breakOptimization(int iteration, float objective, float oldObjective) {
-        if (iteration > maxNumSteps) {
+    protected boolean breakOptimization(int epoch, float objective, float oldObjective) {
+        if (epoch > maxNumSteps) {
             log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
         }
@@ -416,11 +416,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Take a step in the direction of the negative gradient.
      * This method will call the gradient step methods for each parameter group: weights and internal parameters.
      */
-    protected void gradientStep(int iteration) {
+    protected void gradientStep(int epoch) {
         parameterMovement = 0.0f;
 
-        parameterMovement += weightGradientStep(iteration);
-        parameterMovement += internalParameterGradientStep(iteration);
+        parameterMovement += weightGradientStep(epoch);
+        parameterMovement += internalParameterGradientStep(epoch);
         parameterMovement += atomGradientStep();
     }
 
@@ -428,7 +428,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Take a step in the direction of the negative gradient of the internal parameters.
      * This method is a no-op for the abstract class. Children should override this method if they have internal parameters.
      */
-    protected float internalParameterGradientStep(int iteration) {
+    protected float internalParameterGradientStep(int epoch) {
         // Do nothing.
         return 0.0f;
     }
@@ -437,14 +437,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Take a step in the direction of the negative gradient of the weights.
      * Return the total change in the weights.
      */
-    protected float weightGradientStep(int iteration) {
+    protected float weightGradientStep(int epoch) {
         float weightChange = 0.0f;
         float[] oldWeights = new float[mutableRules.size()];
         for (int i = 0; i < mutableRules.size(); i++) {
             oldWeights[i] = mutableRules.get(i).getWeight();
         }
 
-        float stepSize = computeStepSize(iteration);
+        float stepSize = computeStepSize(epoch);
 
         switch (gdExtension) {
             case MIRROR_DESCENT:
@@ -499,11 +499,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         return deepPredicateChange;
     }
 
-    protected float computeStepSize(int iteration) {
+    protected float computeStepSize(int epoch) {
         float stepSize = baseStepSize;
 
         if (scaleStepSize) {
-            stepSize /= (iteration + 1);
+            stepSize /= (epoch + 1);
         }
 
         return stepSize;
