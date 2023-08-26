@@ -45,25 +45,24 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
     }
 
     @Override
-    protected synchronized int add(ReasonerTerm term) {
-        T newTerm = (T)term;
-        allTerms.add(newTerm);
+    public synchronized int add(T term) {
+        allTerms.add(term);
 
         // Add to the connected component map.
-        int termRootIndex = atomStore.findAtomRoot(atomStore.getAtom(newTerm.atomIndexes[0]));
+        int termRootIndex = atomStore.findAtomRoot(atomStore.getAtom(term.atomIndexes[0]));
         GroundAtom rootAtom = atomStore.getAtom(termRootIndex);
 
         if (connectedComponents.containsKey(termRootIndex)) {
-            connectedComponents.get(termRootIndex).add(newTerm);
+            connectedComponents.get(termRootIndex).add(term);
         } else {
             ArrayList<T> component = new ArrayList<T>();
-            component.add(newTerm);
+            component.add(term);
             connectedComponents.put(termRootIndex, component);
         }
 
         // Unify the components of the atoms in this term.
-        for (int i = 1; i < newTerm.size; i++) {
-            int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(newTerm.atomIndexes[i]));
+        for (int i = 1; i < term.size; i++) {
+            int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(term.atomIndexes[i]));
             GroundAtom nextRootAtom = atomStore.getAtom(nextAtomRootIndex);
 
             if (nextAtomRootIndex == termRootIndex) {

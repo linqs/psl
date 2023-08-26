@@ -268,7 +268,7 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     @Override
-    protected float internalParameterGradientStep(int iteration) {
+    protected float internalParameterGradientStep(int epoch) {
         float proxRuleObservedAtomsValueMovement = 0.0f;
         // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
         float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();

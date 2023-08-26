@@ -45,11 +45,10 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
     }
 
     /**
-     * An internal add that will always be called to add new terms.
-     * User will use add(GroundRule) which will generate terms and call this method.
+     * An add that will always be called to add new terms.
      * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
      */
-    protected abstract int add(ReasonerTerm term);
+    public abstract int add(T term);
 
     /**
      * Remove any existing terms and prepare for a new set.

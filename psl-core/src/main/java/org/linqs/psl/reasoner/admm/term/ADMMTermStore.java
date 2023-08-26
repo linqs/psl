@@ -18,9 +18,6 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.ArrayList;
@@ -57,8 +54,8 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     }
 
     @Override
-    protected synchronized int add(ReasonerTerm term) {
-        init();
+    public synchronized int add(ADMMObjectiveTerm term) {
+        ensureLocalRecordsCapacity();
 
         long termIndex = size();
         super.add(term);
@@ -66,7 +63,6 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
         // Add records of local variables.
         int[] atomIndexes = term.getAtomIndexes();
         for (int i = 0; i < term.size(); i++) {
-
             // All atoms should be unobserved here (obs should have been merged).
             if (localRecords[atomIndexes[i]] == null) {
                 localRecords[atomIndexes[i]] = new ArrayList();
@@ -124,7 +120,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
         }
     }
 
-    private synchronized void init() {
+    private synchronized void ensureLocalRecordsCapacity() {
         if (localRecords == null) {
             localRecords = new List[atomStore.getMaxRVAIndex() + 1];
         }
