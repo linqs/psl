@@ -373,6 +373,13 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option WLA_CONNECTED_COMPONENT_BATCH_SIZE = new Option(
+        "connectedcomponents.batchsize",
+        32,
+        "The number of connected components to include in a batch.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK = new Option(
         "gradientdescent.objectivebreak",
         false,

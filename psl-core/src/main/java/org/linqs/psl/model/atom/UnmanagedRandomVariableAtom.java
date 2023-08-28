@@ -33,6 +33,11 @@ public final class UnmanagedRandomVariableAtom extends RandomVariableAtom {
     }
 
     @Override
+    public UnmanagedRandomVariableAtom copy() {
+        return new UnmanagedRandomVariableAtom((StandardPredicate)predicate, (Constant[]) arguments, value);
+    }
+
+    @Override
     public boolean isManaged() {
         return false;
     }

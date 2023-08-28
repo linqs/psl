@@ -40,7 +40,7 @@ public class ADMMInference extends MPEInference {
     }
 
     @Override
-    protected TermStore createTermStore() {
+    public TermStore createTermStore() {
         return new ADMMTermStore(database.getAtomStore());
     }
 }

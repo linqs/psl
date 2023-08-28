@@ -48,7 +48,7 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
      * An add that will always be called to add new terms.
      * This may be called in parallel, it is up to implementing classes to guarantee thread safety.
      */
-    public abstract int add(T term);
+    public abstract int add(ReasonerTerm term);
 
     /**
      * Remove any existing terms and prepare for a new set.
@@ -70,6 +70,18 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
     public AtomStore getAtomStore() {
         return atomStore;
+    }
+
+    public void setAtomStore(AtomStore newAtomStore) {
+        // Update atom indexes to align with the new atom store.
+        for (ReasonerTerm term : this) {
+            int[] termAtomIndexes = term.getAtomIndexes();
+            for (int j = 0; j < term.size(); j++) {
+                termAtomIndexes[j] = newAtomStore.getAtomIndex(atomStore.getAtom(termAtomIndexes[j]));
+            }
+        }
+
+        this.atomStore = newAtomStore;
     }
 
     public TermGenerator<T> getTermGenerator() {

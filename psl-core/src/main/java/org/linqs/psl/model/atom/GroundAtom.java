@@ -57,6 +57,8 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         this.fixed = true;
     }
 
+    public abstract GroundAtom copy();
+
     @Override
     public Constant[] getArguments() {
         return (Constant[])arguments;

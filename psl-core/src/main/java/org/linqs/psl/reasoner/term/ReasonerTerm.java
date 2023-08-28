@@ -24,6 +24,8 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.util.MathUtils;
 
+import java.util.Arrays;
+
 public abstract class ReasonerTerm {
     /**
      * The specific type of term represented by this instance.
@@ -71,6 +73,22 @@ public abstract class ReasonerTerm {
             atomIndexes[i] = atoms[i].getIndex();
         }
     }
+
+    public ReasonerTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
+                        Rule rule, boolean squared, boolean hinge, FunctionComparator comparator) {
+        this.rule = rule;
+        this.comparator = comparator;
+        this.squared = squared;
+        this.hinge = hinge;
+        termType = getTermType();
+
+        this.size = size;
+        this.coefficients = Arrays.copyOf(coefficients, size);
+        this.constant = constant;
+        this.atomIndexes = Arrays.copyOf(atomIndexes, size);
+    }
+
+    public abstract ReasonerTerm copy();
 
     /**
      * Get the specific type of term this instance represents.
@@ -136,6 +154,11 @@ public abstract class ReasonerTerm {
      */
     public int[] getAtomIndexes() {
         return atomIndexes;
+    }
+
+    public void setAtomIndexes(int[] atomIndexes) {
+        assert (atomIndexes.length == size);
+        this.atomIndexes = atomIndexes;
     }
 
     /**

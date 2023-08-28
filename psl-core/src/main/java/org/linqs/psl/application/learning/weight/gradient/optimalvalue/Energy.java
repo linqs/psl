@@ -45,7 +45,7 @@ public class Energy extends OptimalValue {
     }
 
     @Override
-    protected void computeIterationStatistics(int epoch) {
+    protected void computeIterationStatistics() {
         computeLatentInferenceIncompatibility();
     }
 
@@ -58,6 +58,9 @@ public class Energy extends OptimalValue {
 
     @Override
     protected void computeTotalAtomGradient() {
+        Arrays.fill(rvAtomGradient, 0.0f);
+        Arrays.fill(deepAtomGradient, 0.0f);
+
         System.arraycopy(deepLatentAtomGradient, 0, deepAtomGradient, 0, deepLatentAtomGradient.length);
     }
 }

@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.ArrayList;
@@ -40,6 +41,17 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
         localRecords = null;
     }
 
+    @Override
+    public ADMMTermStore copy() {
+        ADMMTermStore admmTermStoreCopy = new ADMMTermStore(atomStore.copy());
+
+        for (ADMMObjectiveTerm term : allTerms) {
+            admmTermStoreCopy.add(term.copy());
+        }
+
+        return admmTermStoreCopy;
+    }
+
     @SuppressWarnings("unchecked")
     public List<LocalRecord> getLocalRecords(int variableIndex) {
         if (localRecords == null || variableIndex >= localRecords.length) {
@@ -54,7 +66,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     }
 
     @Override
-    public synchronized int add(ADMMObjectiveTerm term) {
+    public synchronized int add(ReasonerTerm term) {
         ensureLocalRecordsCapacity();
 
         long termIndex = size();
@@ -123,6 +135,12 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
     private synchronized void ensureLocalRecordsCapacity() {
         if (localRecords == null) {
             localRecords = new List[atomStore.getMaxRVAIndex() + 1];
+        }
+
+        if (localRecords.length <= atomStore.getMaxRVAIndex()) {
+            List[] newLocalRecords = new List[2 * (atomStore.getMaxRVAIndex() + 1)];
+            System.arraycopy(localRecords, 0, newLocalRecords, 0, localRecords.length);
+            localRecords = newLocalRecords;
         }
     }
 

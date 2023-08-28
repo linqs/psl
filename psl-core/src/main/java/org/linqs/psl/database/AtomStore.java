@@ -64,6 +64,16 @@ public class AtomStore implements Iterable<GroundAtom> {
         lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
     }
 
+    public AtomStore copy() {
+        AtomStore atomStoreCopy = new AtomStore();
+
+        for (int i = 0; i < numAtoms; i++) {
+            atomStoreCopy.addAtom(atoms[i].copy());
+        }
+
+        return atomStoreCopy;
+    }
+
     public int size() {
         return numAtoms;
     }

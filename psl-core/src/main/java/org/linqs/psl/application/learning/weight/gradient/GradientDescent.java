@@ -19,18 +19,24 @@ package org.linqs.psl.application.learning.weight.gradient;
 
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.gradient.batchgenerator.BatchGenerator;
+import org.linqs.psl.application.learning.weight.gradient.batchgenerator.ConnectedComponentBatchGenerator;
+import org.linqs.psl.application.learning.weight.gradient.batchgenerator.FullBatchGenerator;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -61,12 +67,23 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float[] weightGradient;
     protected float[] rvAtomGradient;
     protected float[] deepAtomGradient;
-    protected float[] MAPRVAtomGradient;
-    protected float[] MAPDeepAtomGradient;
+    protected float[] MAPRVAtomEnergyGradient;
+    protected float[] MAPDeepAtomEnergyGradient;
+    protected float[] epochStartWeights;
+    protected float[] epochStartDeepAtomValues;
 
     protected int trainingEvaluationComputePeriod;
+    protected SimpleTermStore<? extends ReasonerTerm> trainFullTermStore;
+    protected List<DeepModelPredicate> trainFullDeepModelPredicates;
+    protected TermState[] trainFullMAPTermState;
+    protected float[] trainFullMAPAtomValueState;
+
     protected TermState[] trainMAPTermState;
     protected float[] trainMAPAtomValueState;
+
+    protected BatchGenerator batchGenerator;
+    protected List<TermState[]> batchMAPTermStates;
+    protected List<float[]> batchMAPAtomValueStates;
 
     protected int validationEvaluationComputePeriod;
     protected TermState[] validationMAPTermState;
@@ -88,10 +105,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected boolean movementBreak;
     protected float parameterMovement;
     protected float movementTolerance;
-    protected boolean normBreak;
-    protected float normTolerance;
-    protected boolean objectiveBreak;
-    protected float objectiveTolerance;
 
     protected float l2Regularization;
     protected float logRegularization;
@@ -111,12 +124,24 @@ public abstract class GradientDescent extends WeightLearningApplication {
         weightGradient = new float[mutableRules.size()];
         rvAtomGradient = null;
         deepAtomGradient = null;
-        MAPRVAtomGradient = null;
-        MAPDeepAtomGradient = null;
+        MAPRVAtomEnergyGradient = null;
+        MAPDeepAtomEnergyGradient = null;
 
         trainingEvaluationComputePeriod = Options.WLA_GRADIENT_DESCENT_TRAINING_COMPUTE_PERIOD.getInt();
+        trainFullTermStore = null;
+        trainFullDeepModelPredicates = null;
+        trainFullMAPTermState = null;
+        trainFullMAPAtomValueState = null;
+
         trainMAPTermState = null;
         trainMAPAtomValueState = null;
+
+        batchGenerator = null;
+        batchMAPTermStates = null;
+        batchMAPAtomValueStates = null;
+
+        epochStartWeights = null;
+        epochStartDeepAtomValues = null;
 
         validationMAPTermState = null;
         validationMAPAtomValueState = null;
@@ -141,10 +166,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         movementBreak = Options.WLA_GRADIENT_DESCENT_MOVEMENT_BREAK.getBoolean();
         parameterMovement = Float.POSITIVE_INFINITY;
         movementTolerance = Options.WLA_GRADIENT_DESCENT_MOVEMENT_TOLERANCE.getFloat();
-        normBreak = Options.WLA_GRADIENT_DESCENT_NORM_BREAK.getBoolean();
-        normTolerance = Options.WLA_GRADIENT_DESCENT_NORM_TOLERANCE.getFloat();
-        objectiveBreak = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK.getBoolean();
-        objectiveTolerance = Options.WLA_GRADIENT_DESCENT_OBJECTIVE_TOLERANCE.getFloat();
         stoppingGradientNorm = Options.WLA_GRADIENT_DESCENT_STOPPING_GRADIENT_NORM.getFloat();
 
         l2Regularization = Options.WLA_GRADIENT_DESCENT_L2_REGULARIZATION.getFloat();
@@ -156,6 +177,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void postInitGroundModel() {
         super.postInitGroundModel();
 
+        initializeFullModels();
+        initializeBatches();
+        initializeInternalParameters();
+        initializeFullWarmStarts();
+        initializeBatchWarmStarts();
+        initializeGradients();
+    }
+
+    protected void initializeFullModels() {
         if (this.runValidation && (evaluation == null)) {
             throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
         }
@@ -164,27 +194,65 @@ public abstract class GradientDescent extends WeightLearningApplication {
             throw new IllegalStateException("If validation is being run, then validation data must be provided in the runtime.json file.");
         }
 
+        assert trainInferenceApplication.getTermStore() instanceof SimpleTermStore;
+        this.trainFullTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.getTermStore();
+
+        trainFullDeepModelPredicates = deepModelPredicates;
+
         // Set the initial value of atoms to be the current atom value.
         // This ensures that when the inference application is reset before computing the MAP state
         // the atom values that were fixed to their warm start or true labels are preserved.
         trainInferenceApplication.setInitialValue(InitialValue.ATOM);
         validationInferenceApplication.setInitialValue(InitialValue.ATOM);
 
+        // Initialize epoch start weights and deep atom values.
+        epochStartWeights = new float[mutableRules.size()];
+        epochStartDeepAtomValues = new float[trainFullTermStore.getAtomStore().size()];
+    }
+
+    protected void initializeBatches() {
+        if (batchGenerator != null) {
+            batchGenerator.clear();
+        }
+
+        batchGenerator = new ConnectedComponentBatchGenerator(trainInferenceApplication, trainFullTermStore, deepPredicates);
+        batchGenerator.generateBatches();
+    }
+
+    protected void initializeInternalParameters() {
+        // By default, do nothing.
+        // Child classes should override this method to add internal parameters.
+    }
+
+    protected void initializeFullWarmStarts() {
         // Initialize MPE state objects for warm starts.
-        trainMAPTermState = trainInferenceApplication.getTermStore().saveState();
+        trainFullMAPTermState = trainInferenceApplication.getTermStore().saveState();
         validationMAPTermState = validationInferenceApplication.getTermStore().saveState();
 
         float[] trainAtomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
-        trainMAPAtomValueState = Arrays.copyOf(trainAtomValues, trainAtomValues.length);
+        trainFullMAPAtomValueState = Arrays.copyOf(trainAtomValues, trainAtomValues.length);
 
         float[] validationAtomValues = validationInferenceApplication.getTermStore().getAtomStore().getAtomValues();
         validationMAPAtomValueState = Arrays.copyOf(validationAtomValues, validationAtomValues.length);
+    }
 
-        rvAtomGradient = new float[trainAtomValues.length];
-        deepAtomGradient = new float[trainAtomValues.length];
+    protected void initializeBatchWarmStarts() {
+        batchMAPTermStates = new ArrayList<TermState[]>(batchGenerator.getNumBatches());
+        batchMAPAtomValueStates = new ArrayList<float[]>(batchGenerator.getNumBatches());
+        for (SimpleTermStore<? extends ReasonerTerm> batchTermStore : batchGenerator.getBatchTermStores()) {
+            batchMAPTermStates.add(batchTermStore.saveState());
 
-        MAPRVAtomGradient = new float[trainAtomValues.length];
-        MAPDeepAtomGradient = new float[trainAtomValues.length];
+            float[] batchAtomValues = batchTermStore.getAtomStore().getAtomValues();
+            batchMAPAtomValueStates.add(Arrays.copyOf(batchAtomValues, batchAtomValues.length));
+        }
+    }
+
+    protected void initializeGradients() {
+        rvAtomGradient = new float[trainFullMAPAtomValueState.length];
+        deepAtomGradient = new float[trainFullMAPAtomValueState.length];
+
+        MAPRVAtomEnergyGradient = new float[trainFullMAPAtomValueState.length];
+        MAPDeepAtomEnergyGradient = new float[trainFullMAPAtomValueState.length];
     }
 
     protected void initForLearning() {
@@ -210,13 +278,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
         currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
         bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+
+        trainMAPTermState = trainFullMAPTermState;
+        trainMAPAtomValueState = trainFullMAPAtomValueState;
     }
 
     @Override
     protected void doLearn() {
         boolean breakGD = false;
-        float objective = 0.0f;
-        float oldObjective = Float.POSITIVE_INFINITY;
         
         log.info("Gradient Descent Weight Learning Start.");
         initForLearning();
@@ -251,28 +320,40 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
             }
 
-            computeIterationStatistics(epoch);
+            epochStart(epoch);
+            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+                long batchStart = System.currentTimeMillis();
 
-            objective = computeTotalLoss();
+                setBatch(i);
 
-            computeTotalWeightGradient();
-            computeTotalAtomGradient();
-            if (clipWeightGradient) {
-                clipWeightGradient();
+                computeIterationStatistics();
+
+                computeTotalWeightGradient();
+                computeTotalAtomGradient();
+                if (clipWeightGradient) {
+                    clipWeightGradient();
+                }
+
+                gradientStep(epoch);
+
+                float batchObjective = computeTotalLoss();
+
+                long batchEnd = System.currentTimeMillis();
+
+                log.trace("Batch: {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
+                        i, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
             }
-
-            gradientStep(epoch);
+            epoch++;
+            setFullTrainModel();
+            measureEpochParameterMovement();
+            epochEnd(epoch);
 
             long end = System.currentTimeMillis();
-
             totalTime += end - start;
-            oldObjective = objective;
 
-            breakGD = breakOptimization(epoch, objective, oldObjective);
-            log.trace("Iteration {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Parameter Movement: {}, Iteration Time: {}",
-                    epoch, objective, computeGradientNorm(), parameterMovement, (end - start));
+            log.trace("Epoch: {} -- Iteration Time: {}", epoch, (end - start));
 
-            epoch++;
+            breakGD = breakOptimization(epoch);
         }
 
         log.info("Gradient Descent Weight Learning Finished.");
@@ -321,6 +402,81 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
+    protected void epochStart(int epoch) {
+        for (int i = 0; i < epochStartDeepAtomValues.length; i++) {
+            if (trainFullTermStore.getAtomStore().getAtom(i).getPredicate() instanceof DeepPredicate) {
+                epochStartDeepAtomValues[i] = trainFullTermStore.getAtomStore().getAtomValues()[i];
+            } else {
+                epochStartDeepAtomValues[i] = -1.0f;
+            }
+        }
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            epochStartWeights[i] = mutableRules.get(i).getWeight();
+        }
+    }
+
+    protected void epochEnd(int epoch) {
+        // By default, do nothing. Child classes can override this method to perform actions at the end of an epoch.
+        // This method is called after the epoch parameter movement is measured and the model is reset to the full training model
+        // but before measuring the stopping condition.
+    }
+
+    protected void measureEpochParameterMovement() {
+        // Measure the movement in weights and deep atom values.
+        parameterMovement = 0.0f;
+
+        float weightMovement = 0.0f;
+        float deepAtomValueMovement = 0.0f;
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weightMovement += Math.abs(epochStartWeights[i] - mutableRules.get(i).getWeight());
+        }
+        log.trace("Epoch Weight Movement: {}", weightMovement);
+
+        for (int i = 0; i < epochStartDeepAtomValues.length; i++) {
+            if (trainFullTermStore.getAtomStore().getAtom(i).getPredicate() instanceof DeepPredicate) {
+                deepAtomValueMovement += Math.abs(epochStartDeepAtomValues[i] - trainFullTermStore.getAtomStore().getAtomValues()[i]);
+            }
+        }
+        log.trace("Epoch Deep Atom Value Movement: {}", deepAtomValueMovement);
+
+        // By default, there are no internal parameters.
+        // Child classes should override this method to add internal parameter movement.
+
+        parameterMovement = weightMovement + deepAtomValueMovement;
+    }
+
+    protected void setBatch(int batch) {
+        SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(batch);
+        List<DeepModelPredicate> batchDeepModelPredicates = batchGenerator.getBatchDeepModelPredicates(batch);
+
+        trainInferenceApplication.setTermStore(batchTermStore);
+        trainMAPTermState = batchMAPTermStates.get(batch);
+        trainMAPAtomValueState = batchMAPAtomValueStates.get(batch);
+
+        // Set the deep predicate atom store and predict with the deep predicates again to ensure predictions are aligned with the batch.
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+            deepPredicate.setDeepModel(batchDeepModelPredicates.get(i));
+            deepPredicate.predictDeepModel(true);
+        }
+    }
+
+    protected void setFullTrainModel() {
+        trainInferenceApplication.setTermStore(trainFullTermStore);
+        trainMAPTermState = trainFullMAPTermState;
+        trainMAPAtomValueState = trainFullMAPAtomValueState;
+
+        // Set the deep predicate atom store and predict with the deep predicates again
+        // to ensure predictions are aligned with the full training model.
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+            deepPredicate.setDeepModel(deepModelPredicates.get(i));
+            deepPredicate.predictDeepModel(false);
+        }
+    }
+
     protected void runMAPEvaluation() {
         // Compute the MAP state before evaluating so variables have assigned values.
         log.trace("Running MAP Inference.");
@@ -357,8 +513,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
 
             // Save the best deep model weights.
-            for (int i = 0; i < deepPredicates.size(); i++) {
-                DeepPredicate deepPredicate = deepPredicates.get(i);
+            for (DeepPredicate deepPredicate : deepPredicates) {
                 deepPredicate.saveDeepModel();
             }
 
@@ -373,7 +528,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    protected boolean breakOptimization(int epoch, float objective, float oldObjective) {
+    protected boolean breakOptimization(int epoch) {
         if (epoch > maxNumSteps) {
             log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
@@ -385,16 +540,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         if (movementBreak && MathUtils.equals(parameterMovement, 0.0f, movementTolerance)) {
             log.trace("Breaking Weight Learning. Parameter Movement: {} is within tolerance: {}", parameterMovement, movementTolerance);
-            return true;
-        }
-
-        if (normBreak && MathUtils.equals(computeGradientNorm(), 0.0f, normTolerance)) {
-            log.trace("Breaking Weight Learning. Gradient norm: {} is within tolerance: {}", computeGradientNorm(), normTolerance);
-            return true;
-        }
-
-        if (objectiveBreak && MathUtils.equals(objective, oldObjective, objectiveTolerance)) {
-            log.trace("Breaking Weight Learning. Objective change: {} is within tolerance: {}", Math.abs(objective - oldObjective), objectiveTolerance);
             return true;
         }
 
@@ -421,33 +566,24 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * This method will call the gradient step methods for each parameter group: weights and internal parameters.
      */
     protected void gradientStep(int epoch) {
-        parameterMovement = 0.0f;
-
-        parameterMovement += weightGradientStep(epoch);
-        parameterMovement += internalParameterGradientStep(epoch);
-        parameterMovement += atomGradientStep();
+        weightGradientStep(epoch);
+        internalParameterGradientStep(epoch);
+        atomGradientStep();
     }
 
     /**
      * Take a step in the direction of the negative gradient of the internal parameters.
-     * This method is a no-op for the abstract class. Children should override this method if they have internal parameters.
+     * This method does nothing by default. Children should override this method if they have internal parameters.
      */
-    protected float internalParameterGradientStep(int epoch) {
+    protected void internalParameterGradientStep(int epoch) {
         // Do nothing.
-        return 0.0f;
     }
 
     /**
      * Take a step in the direction of the negative gradient of the weights.
      * Return the total change in the weights.
      */
-    protected float weightGradientStep(int epoch) {
-        float weightChange = 0.0f;
-        float[] oldWeights = new float[mutableRules.size()];
-        for (int i = 0; i < mutableRules.size(); i++) {
-            oldWeights[i] = mutableRules.get(i).getWeight();
-        }
-
+    protected void weightGradientStep(int epoch) {
         float stepSize = computeStepSize(epoch);
 
         switch (gdExtension) {
@@ -485,22 +621,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         inTrainingMAPState = false;
         inValidationMAPState = false;
-
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weightChange += Math.abs(oldWeights[i] - mutableRules.get(i).getWeight());
-        }
-
-        return weightChange;
     }
 
-    protected float atomGradientStep() {
-        float deepPredicateChange = 0.0f;
+    protected void atomGradientStep() {
         for (DeepPredicate deepPredicate : deepPredicates) {
             deepPredicate.fitDeepPredicate(deepAtomGradient);
-            deepPredicateChange += deepPredicate.predictDeepModel(true);
         }
-
-        return deepPredicateChange;
     }
 
     protected float computeStepSize(int epoch) {
@@ -722,7 +848,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Method called at the start of every gradient descent iteration to
      * compute statistics needed for loss and gradient computations.
      */
-    protected abstract void computeIterationStatistics(int epoch);
+    protected abstract void computeIterationStatistics();
 
     /**
      * Method for computing the total regularized loss.
