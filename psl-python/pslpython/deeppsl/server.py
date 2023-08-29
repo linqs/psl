@@ -67,6 +67,8 @@ class ConnectionHandler(object):
             result = self._init(request)
         elif request['task'] == 'fit':
             result = self._fit(request)
+        elif request['task'] == 'epoch_end':
+            result = self._epoch_end(request)
         elif request['task'] == 'predict':
             result = self._predict(request)
         elif request['task'] == 'predict_learn':
@@ -113,6 +115,9 @@ class ConnectionHandler(object):
             return self._model.fit_weight(options=options)
         else:
             raise ValueError("Unknown deep model type in fit: '%s'." % (deep_model,))
+
+    def _epoch_end(self, request):
+        return self._model.epoch_end(options=request.get('options', {}))
 
     def _predict(self, request):
         deep_model = request['deep_model']

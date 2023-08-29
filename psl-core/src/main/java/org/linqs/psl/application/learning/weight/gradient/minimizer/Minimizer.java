@@ -25,6 +25,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.UnmanagedObservedAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -323,7 +324,13 @@ public abstract class Minimizer extends GradientDescent {
 
                 initializeProximityRuleConstants();
             }
+
             setFullTrainModel();
+
+            // Predict with the deep predicates again to ensure predictions are aligned with the full training model.
+            for (DeepPredicate deepPredicate : deepPredicates) {
+                deepPredicate.predictDeepModel(true);
+            }
         }
 
         proxRuleObservedAtomsValueEpochMovement = 0.0f;
@@ -537,7 +544,13 @@ public abstract class Minimizer extends GradientDescent {
 
             totalObjectiveDifference += computeObjectiveDifference();
         }
+
         setFullTrainModel();
+
+        // Predict with the deep predicates again to ensure predictions are aligned with the full training model.
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.predictDeepModel(true);
+        }
 
         return totalObjectiveDifference;
     }

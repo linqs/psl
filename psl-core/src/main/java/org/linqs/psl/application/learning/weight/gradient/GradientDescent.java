@@ -344,7 +344,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
                         i, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
             }
             epoch++;
+
             setFullTrainModel();
+
+            // Predict with the deep predicates again to ensure predictions are aligned with the full training model.
+            for (DeepPredicate deepPredicate : deepPredicates) {
+                deepPredicate.predictDeepModel(true);
+            }
+
             measureEpochParameterMovement();
             epochEnd(epoch);
 
@@ -414,12 +421,17 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (int i = 0; i < mutableRules.size(); i++) {
             epochStartWeights[i] = mutableRules.get(i).getWeight();
         }
+
+        batchGenerator.shuffle();
     }
 
     protected void epochEnd(int epoch) {
-        // By default, do nothing. Child classes can override this method to perform actions at the end of an epoch.
         // This method is called after the epoch parameter movement is measured and the model is reset to the full training model
         // but before measuring the stopping condition.
+        // Child classes should override this method to add additional functionality.
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.epochEnd();
+        }
     }
 
     protected void measureEpochParameterMovement() {
@@ -468,12 +480,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         trainMAPTermState = trainFullMAPTermState;
         trainMAPAtomValueState = trainFullMAPAtomValueState;
 
-        // Set the deep predicate atom store and predict with the deep predicates again
-        // to ensure predictions are aligned with the full training model.
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
             deepPredicate.setDeepModel(deepModelPredicates.get(i));
-            deepPredicate.predictDeepModel(false);
         }
     }
 

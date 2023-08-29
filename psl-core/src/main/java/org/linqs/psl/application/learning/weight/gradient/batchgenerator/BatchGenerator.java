@@ -22,6 +22,7 @@ import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +84,10 @@ public abstract class BatchGenerator {
                 batchDeepModelPredicates.get(i).add(batchDeepModelPredicate);
             }
         }
+    }
+
+    public void shuffle() {
+        RandUtils.pairedShuffle(batchTermStores, batchDeepModelPredicates);
     }
 
     public abstract void generateBatchTermStores();
