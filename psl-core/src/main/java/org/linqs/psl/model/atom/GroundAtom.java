@@ -80,15 +80,15 @@ public abstract class GroundAtom extends Atom implements Comparable<GroundAtom>,
         return index;
     }
 
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
     public int getParent() {
         return parent;
     }
 
     public boolean isFixed() { return fixed; }
-
-    public void setIndex(int index) {
-        this.index = index;
-    }
 
     public void setParent(int parent) {
         this.parent = parent;

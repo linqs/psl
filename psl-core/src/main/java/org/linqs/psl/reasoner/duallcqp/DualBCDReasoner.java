@@ -103,7 +103,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                 continue;
             }
 
-            atomValues[atom.getIndex()] = termStore.getDualLCQPAtom(atom.getIndex()).getPrimal(regularizationParameter);
+            atomValues[atomIndex] = termStore.getDualLCQPAtom(atomIndex).getPrimal(regularizationParameter);
         }
     }
 
@@ -500,7 +500,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                 continue;
             }
 
-            atomValueRegularization += regularizationParameter * Math.pow(atomValues[atom.getIndex()], 2.0);
+            atomValueRegularization += regularizationParameter * Math.pow(atomValues[atomIndex], 2.0);
         }
 
         return atomValueRegularization;
@@ -533,8 +533,8 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                 continue;
             }
 
-            objectiveValue += dualLCQPAtoms[atom.getIndex()].getLowerBoundObjective(regularizationParameter);
-            objectiveValue += dualLCQPAtoms[atom.getIndex()].getUpperBoundObjective(regularizationParameter);
+            objectiveValue += dualLCQPAtoms[atomIndex].getLowerBoundObjective(regularizationParameter);
+            objectiveValue += dualLCQPAtoms[atomIndex].getUpperBoundObjective(regularizationParameter);
         }
 
         return new ObjectiveResult((float)(-0.5 * objectiveValue), 0);

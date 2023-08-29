@@ -270,7 +270,7 @@ public class AtomStore implements Iterable<GroundAtom> {
         atomValues[numAtoms] = atom.getValue();
         lookup.put(atom, numAtoms);
         connectedComponentsAtomIndexes.put(numAtoms, new ArrayList<Integer>());
-        connectedComponentsAtomIndexes.get(numAtoms).add(atom.getIndex());
+        connectedComponentsAtomIndexes.get(numAtoms).add(numAtoms);
 
         if (atom instanceof RandomVariableAtom) {
             maxRVAIndex = numAtoms;
