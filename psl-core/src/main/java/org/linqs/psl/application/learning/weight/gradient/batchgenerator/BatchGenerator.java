@@ -86,10 +86,6 @@ public abstract class BatchGenerator {
         }
     }
 
-    public void shuffle() {
-        RandUtils.pairedShuffle(batchTermStores, batchDeepModelPredicates);
-    }
-
     public abstract void generateBatchTermStores();
 
     public void clear() {

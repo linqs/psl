@@ -35,6 +35,7 @@ import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -320,11 +321,19 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
             }
 
+            ArrayList<Integer> batchPermutation = new ArrayList<Integer>(batchGenerator.getNumBatches());
+            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+                batchPermutation.set(i, i);
+            }
+            RandUtils.shuffle(batchPermutation);
+
             epochStart(epoch);
             for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+                int batchId = batchPermutation.get(i);
+
                 long batchStart = System.currentTimeMillis();
 
-                setBatch(i);
+                setBatch(batchId);
 
                 computeIterationStatistics();
 
@@ -341,7 +350,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 long batchEnd = System.currentTimeMillis();
 
                 log.trace("Batch: {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
-                        i, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
+                        batchId, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
             }
             epoch++;
 
@@ -421,8 +430,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (int i = 0; i < mutableRules.size(); i++) {
             epochStartWeights[i] = mutableRules.get(i).getWeight();
         }
-
-        batchGenerator.shuffle();
     }
 
     protected void epochEnd(int epoch) {
