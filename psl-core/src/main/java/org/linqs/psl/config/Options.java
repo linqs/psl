@@ -373,6 +373,13 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_TRAINING_STOP_COMPUTE_PERIOD = new Option(
+        "gradientdescent.stopcomputeperiod",
+        10,
+        "The period at which the gradient descent weight learner will measure the stopping criterion.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option WLA_CONNECTED_COMPONENT_BATCH_SIZE = new Option(
         "connectedcomponents.batchsize",
         32,

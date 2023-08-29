@@ -326,11 +326,6 @@ public abstract class Minimizer extends GradientDescent {
             }
 
             setFullTrainModel();
-
-            // Predict with the deep predicates again to ensure predictions are aligned with the full training model.
-            for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.predictDeepModel(true);
-            }
         }
 
         proxRuleObservedAtomsValueEpochMovement = 0.0f;
@@ -546,11 +541,6 @@ public abstract class Minimizer extends GradientDescent {
         }
 
         setFullTrainModel();
-
-        // Predict with the deep predicates again to ensure predictions are aligned with the full training model.
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.predictDeepModel(true);
-        }
 
         return totalObjectiveDifference;
     }

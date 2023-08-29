@@ -101,6 +101,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float stoppingGradientNorm;
     protected boolean clipWeightGradient;
 
+    protected int trainingStopComputePeriod;
     protected int maxNumSteps;
     protected boolean runFullIterations;
     protected boolean movementBreak;
@@ -162,6 +163,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         maxGradientMagnitude = Options.WLA_GRADIENT_DESCENT_MAX_GRADIENT.getFloat();
         maxGradientNorm = Options.WLA_GRADIENT_DESCENT_MAX_GRADIENT_NORM.getFloat();
 
+        trainingStopComputePeriod = Options.WLA_GRADIENT_DESCENT_TRAINING_STOP_COMPUTE_PERIOD.getInt();
         maxNumSteps = Options.WLA_GRADIENT_DESCENT_NUM_STEPS.getInt();
         runFullIterations = Options.WLA_GRADIENT_DESCENT_RUN_FULL_ITERATIONS.getBoolean();
         movementBreak = Options.WLA_GRADIENT_DESCENT_MOVEMENT_BREAK.getBoolean();
@@ -294,8 +296,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         long totalTime = 0;
         int epoch = 0;
         while (!breakGD) {
-            long start = System.currentTimeMillis();
-
             log.trace("Model:");
             for (WeightedRule weightedRule: mutableRules) {
                 log.trace("{}", weightedRule);
@@ -323,10 +323,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             ArrayList<Integer> batchPermutation = new ArrayList<Integer>(batchGenerator.getNumBatches());
             for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
-                batchPermutation.set(i, i);
+                batchPermutation.add(i);
             }
             RandUtils.shuffle(batchPermutation);
 
+            long start = System.currentTimeMillis();
             epochStart(epoch);
             for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
                 int batchId = batchPermutation.get(i);
@@ -354,23 +355,25 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
             epoch++;
 
-            setFullTrainModel();
-
-            // Predict with the deep predicates again to ensure predictions are aligned with the full training model.
             for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.predictDeepModel(true);
+                deepPredicate.epochEnd();
             }
-
-            measureEpochParameterMovement();
-            epochEnd(epoch);
 
             long end = System.currentTimeMillis();
             totalTime += end - start;
 
             log.trace("Epoch: {} -- Iteration Time: {}", epoch, (end - start));
 
-            breakGD = breakOptimization(epoch);
+            if (epoch % trainingStopComputePeriod == 0) {
+                setFullTrainModel();
+
+                measureEpochParameterMovement();
+                epochEnd(epoch);
+
+                breakGD = breakOptimization(epoch);
+            }
         }
+        setFullTrainModel();
 
         log.info("Gradient Descent Weight Learning Finished.");
 
@@ -433,12 +436,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void epochEnd(int epoch) {
-        // This method is called after the epoch parameter movement is measured and the model is reset to the full training model
-        // but before measuring the stopping condition.
+        // This method is called after the epoch parameter movement is measured and the model is reset to the full training model.
         // Child classes should override this method to add additional functionality.
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.epochEnd();
-        }
     }
 
     protected void measureEpochParameterMovement() {
@@ -490,6 +489,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
             deepPredicate.setDeepModel(deepModelPredicates.get(i));
+            deepPredicate.predictDeepModel(true);
         }
     }
 
