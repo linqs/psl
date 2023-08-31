@@ -327,8 +327,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
             RandUtils.shuffle(batchPermutation);
 
+            if (epoch % trainingStopComputePeriod == 0) {
+                epochStart(epoch);
+            }
+
             long start = System.currentTimeMillis();
-            epochStart(epoch);
             for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
                 int batchId = batchPermutation.get(i);
 
