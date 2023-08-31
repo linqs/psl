@@ -356,7 +356,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.trace("Batch: {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
                         batchId, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
             }
-            epoch++;
 
             for (DeepPredicate deepPredicate : deepPredicates) {
                 deepPredicate.epochEnd();
@@ -364,8 +363,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             long end = System.currentTimeMillis();
             totalTime += end - start;
-
-            log.trace("Epoch: {} -- Iteration Time: {}", epoch, (end - start));
 
             if (epoch % trainingStopComputePeriod == 0) {
                 setFullTrainModel();
@@ -375,6 +372,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 breakGD = breakOptimization(epoch);
             }
+
+            epoch++;
+            log.trace("Epoch: {} -- Iteration Time: {}", epoch, (end - start));
         }
         setFullTrainModel();
 
