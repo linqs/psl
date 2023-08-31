@@ -295,7 +295,7 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected boolean breakOptimization(int iteration) {
-        if (iteration > maxNumSteps) {
+        if (iteration >= maxNumSteps) {
             log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
         }

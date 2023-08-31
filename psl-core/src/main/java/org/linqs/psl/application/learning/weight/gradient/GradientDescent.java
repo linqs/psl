@@ -328,6 +328,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             RandUtils.shuffle(batchPermutation);
 
             if (epoch % trainingStopComputePeriod == 0) {
+                setFullTrainModel();
+
                 epochStart(epoch);
             }
 
@@ -548,7 +550,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected boolean breakOptimization(int epoch) {
-        if (epoch > maxNumSteps) {
+        if (epoch >= maxNumSteps) {
             log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
             return true;
         }
