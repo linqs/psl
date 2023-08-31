@@ -335,6 +335,8 @@ public abstract class Minimizer extends GradientDescent {
     protected void measureEpochParameterMovement() {
         super.measureEpochParameterMovement();
 
+        log.trace("Epoch Internal Parameter Movement: {}", proxRuleObservedAtomsValueEpochMovement);
+
         parameterMovement += proxRuleObservedAtomsValueEpochMovement;
     }
 

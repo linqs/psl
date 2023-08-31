@@ -302,6 +302,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
 
             if (log.isTraceEnabled() && (evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
+                setFullTrainModel();
+
                 runMAPEvaluation();
                 log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
 
