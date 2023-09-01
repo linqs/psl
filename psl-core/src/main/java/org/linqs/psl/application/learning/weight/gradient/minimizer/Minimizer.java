@@ -25,7 +25,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.UnmanagedObservedAtom;
-import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
@@ -54,11 +53,13 @@ public abstract class Minimizer extends GradientDescent {
     private static final Logger log = Logger.getLogger(Minimizer.class);
 
     protected float[] latentInferenceIncompatibility;
-
     protected TermState[] latentInferenceTermState;
     protected float[] latentInferenceAtomValueState;
     protected List<TermState[]> batchLatentInferenceTermStates;
     protected List<float[]> batchLatentInferenceAtomValueStates;
+    protected float[] rvLatentAtomGradient;
+    protected float[] deepLatentAtomGradient;
+    protected float energyLossCoefficient;
 
     protected float[] mapIncompatibility;
     protected float[] mapSquaredIncompatibility;
@@ -117,17 +118,21 @@ public abstract class Minimizer extends GradientDescent {
         latentInferenceAtomValueState = null;
         batchLatentInferenceTermStates = new ArrayList<TermState[]>();
         batchLatentInferenceAtomValueStates = new ArrayList<float[]>();
+        rvLatentAtomGradient = null;
+        deepLatentAtomGradient = null;
+        energyLossCoefficient = Options.MINIMIZER_ENERGY_LOSS_COEFFICIENT.getFloat();
 
         mapIncompatibility = new float[mutableRules.size()];
         mapSquaredIncompatibility = new float[mutableRules.size()];
 
         augmentedInferenceIncompatibility = new float[mutableRules.size()];
         augmentedInferenceSquaredIncompatibility = new float[mutableRules.size()];
-
         augmentedInferenceTermState = null;
         augmentedInferenceAtomValueState = null;
         batchAugmentedInferenceTermStates = new ArrayList<TermState[]>();
-        batchAugmentedInferenceAtomValueStates = new ArrayList<float[]>();;
+        batchAugmentedInferenceAtomValueStates = new ArrayList<float[]>();
+        augmentedRVAtomEnergyGradient = null;
+        augmentedDeepAtomEnergyGradient = null;
 
         proxRuleWeight = Options.MINIMIZER_PROX_RULE_WEIGHT.getFloat();
         proxRules = null;
@@ -270,6 +275,9 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected void initializeGradients() {
         super.initializeGradients();
+
+        rvLatentAtomGradient = new float[trainFullMAPAtomValueState.length];
+        deepLatentAtomGradient = new float[trainFullMAPAtomValueState.length];
 
         augmentedRVAtomEnergyGradient = new float[trainFullMAPAtomValueState.length];
         augmentedDeepAtomEnergyGradient = new float[trainFullMAPAtomValueState.length];
@@ -428,31 +436,11 @@ public abstract class Minimizer extends GradientDescent {
     protected void computeIterationStatistics() {
         computeFullInferenceStatistics();
 
+        computeLatentInferenceIncompatibility();
+
         computeAugmentedInferenceStatistics();
 
         computeProxRuleObservedAtomValueGradient();
-    }
-
-    @Override
-    protected void computeTotalAtomGradient() {
-        Arrays.fill(rvAtomGradient, 0.0f);
-        Arrays.fill(deepAtomGradient, 0.0f);
-
-        float objectiveDifference = computeObjectiveDifference();
-
-        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
-            GroundAtom atom = trainInferenceApplication.getTermStore().getAtomStore().getAtom(i);
-
-            if (atom instanceof ObservedAtom) {
-                continue;
-            }
-
-            float rvEnergyGradientDifference = augmentedRVAtomEnergyGradient[i] - MAPRVAtomEnergyGradient[i];
-            float deepAtomEnergyGradientDifference = augmentedDeepAtomEnergyGradient[i] - MAPDeepAtomEnergyGradient[i];
-
-            rvAtomGradient[i] = squaredPenaltyCoefficient * objectiveDifference * rvEnergyGradientDifference + linearPenaltyCoefficient * rvEnergyGradientDifference;
-            deepAtomGradient[i] = squaredPenaltyCoefficient * objectiveDifference * deepAtomEnergyGradientDifference + linearPenaltyCoefficient * deepAtomEnergyGradientDifference;
-        }
     }
 
     protected void computeProxRuleObservedAtomValueGradient() {
@@ -494,6 +482,23 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     /**
+     * Compute the latent inference problem solution incompatibility.
+     * RandomVariableAtoms with labels are fixed to their observed (truth) value.
+     */
+    protected void computeLatentInferenceIncompatibility() {
+        fixLabeledRandomVariables();
+
+        log.trace("Running Latent Inference.");
+        computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
+        inTrainingMAPState = true;
+
+        computeCurrentIncompatibility(latentInferenceIncompatibility);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
+
+        unfixLabeledRandomVariables();
+    }
+
+    /**
      * Set the proximity term constants for the augmented inference problem.
      */
     private void activateAugmentedInferenceProxTerms() {
@@ -521,11 +526,18 @@ public abstract class Minimizer extends GradientDescent {
         float supervisedLoss = computeSupervisedLoss();
         float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
 
-        log.trace("Total Prox Loss: {}, Total objective difference: {}, Supervised Loss: {}",
-                totalProxValue, objectiveDifference, supervisedLoss);
+        float latentInferenceEnergy = 0.0f;
+        for (int i = 0; i < mutableRules.size(); i++) {
+            latentInferenceEnergy += mutableRules.get(i).getWeight() * latentInferenceIncompatibility[i];
+        }
+
+        log.trace("Total Prox Loss: {}, Total objective difference: {}, Supervised Loss: {}, Energy Loss: {}.",
+                totalProxValue, objectiveDifference, supervisedLoss, latentInferenceEnergy);
 
         return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(objectiveDifference, 2.0f)
-                + linearPenaltyCoefficient * (objectiveDifference) + supervisedLoss;
+                + linearPenaltyCoefficient * (objectiveDifference)
+                + supervisedLoss
+                + energyLossCoefficient * latentInferenceEnergy;
     }
 
     /**
@@ -590,6 +602,39 @@ public abstract class Minimizer extends GradientDescent {
         for (int i = 0; i < mutableRules.size(); i++) {
             weightGradient[i] += linearPenaltyCoefficient * incompatibilityDifference[i];
             weightGradient[i] += squaredPenaltyCoefficient * (totalEnergyDifference + totalProxValue) * incompatibilityDifference[i];
+        }
+
+        addEnergyLossWeightGradient();
+    }
+
+    protected void addEnergyLossWeightGradient() {
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weightGradient[i] += energyLossCoefficient * latentInferenceIncompatibility[i];
+        }
+    }
+
+    @Override
+    protected void computeTotalAtomGradient() {
+        Arrays.fill(rvAtomGradient, 0.0f);
+        Arrays.fill(deepAtomGradient, 0.0f);
+
+        float objectiveDifference = computeObjectiveDifference();
+
+        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
+            GroundAtom atom = trainInferenceApplication.getTermStore().getAtomStore().getAtom(i);
+
+            if (atom instanceof ObservedAtom) {
+                continue;
+            }
+
+            float rvEnergyGradientDifference = augmentedRVAtomEnergyGradient[i] - MAPRVAtomEnergyGradient[i];
+            float deepAtomEnergyGradientDifference = augmentedDeepAtomEnergyGradient[i] - MAPDeepAtomEnergyGradient[i];
+
+            rvAtomGradient[i] = squaredPenaltyCoefficient * objectiveDifference * rvEnergyGradientDifference
+                    + linearPenaltyCoefficient * rvEnergyGradientDifference;
+            deepAtomGradient[i] = squaredPenaltyCoefficient * objectiveDifference * deepAtomEnergyGradientDifference
+                    + linearPenaltyCoefficient * deepAtomEnergyGradientDifference
+                    + energyLossCoefficient * deepLatentAtomGradient[i];
         }
     }
 

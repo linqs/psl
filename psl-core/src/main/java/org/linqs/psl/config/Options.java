@@ -579,6 +579,13 @@ public class Options {
         "Shuffle the terms before each return of iterator()."
     );
 
+    public static final Option MINIMIZER_ENERGY_LOSS_COEFFICIENT = new Option(
+        "minimizer.energylosscoefficient",
+        1.0f,
+        "The coefficient of the energy loss term in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE = new Option(
         "minimizer.finalparametermovementconvergencetolerance",
         0.01f,

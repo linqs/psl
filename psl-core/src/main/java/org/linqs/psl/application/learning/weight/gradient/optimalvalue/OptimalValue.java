@@ -65,6 +65,9 @@ public abstract class OptimalValue extends GradientDescent {
         latentInferenceAtomValueState = null;
         batchLatentInferenceTermStates = new ArrayList<TermState[]>();
         batchLatentInferenceAtomValueStates = new ArrayList<float[]>();
+
+        rvLatentAtomGradient = null;
+        deepLatentAtomGradient = null;
     }
 
     @Override
