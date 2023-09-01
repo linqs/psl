@@ -350,22 +350,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GRADIENT_DESCENT_NORM_BREAK = new Option(
-        "gradientdescent.normbreak",
-        false,
-        "When the gradient norm is below the tolerance "
-        + " set by gradientdescent.normtolerance, gradient descent weight learning is stopped."
-    );
-
-    public static final Option WLA_GRADIENT_DESCENT_NORM_TOLERANCE = new Option(
-        "gradientdescent.normtolerance",
-        1.0e-3f,
-        "If gradientdescent.runfulliterations=false and gradientdescent.normbreak=true,"
-        + " then when the norm of the gradient is below this tolerance "
-        + " gradient descent weight learning is stopped.",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option WLA_GRADIENT_DESCENT_NUM_STEPS = new Option(
         "gradientdescent.numsteps",
         500,
@@ -387,22 +371,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK = new Option(
-        "gradientdescent.objectivebreak",
-        false,
-        "When the objective change between iterates is below the tolerance "
-        + " set by gradientdescent.objectivetolerance, gradient descent weight learning is stopped."
-    );
-
-    public static final Option WLA_GRADIENT_DESCENT_OBJECTIVE_TOLERANCE = new Option(
-        "gradientdescent.objectivetolerance",
-        1.0e-5f,
-        "If gradientdescent.runfulliterations=false and gradientdescent.objectivebreak=true,"
-        + " then when the objective change between iterates is below this tolerance"
-        + " gradient descent weight learning is stopped.",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option WLA_GRADIENT_DESCENT_RUN_FULL_ITERATIONS = new Option(
         "gradientdescent.runfulliterations",
         false,
@@ -416,6 +384,7 @@ public class Options {
         "Save the weights that obtained the best validation evaluation."
         + " If true, then gradientdescent.runvalidation must be true."
     );
+
 
     public static final Option WLA_GRADIENT_DESCENT_SCALE_STEP = new Option(
         "gradientdescent.scalestepsize",
@@ -444,10 +413,22 @@ public class Options {
         "Compute training evaluation every this many iterations of gradient descent weight learning."
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_VALIDATION_BREAK = new Option(
+        "gradientdescent.validationbreak",
+        false,
+        "Break gradient descent weight learning when the validation evaluation stops improving."
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_VALIDATION_COMPUTE_PERIOD = new Option(
         "gradientdescent.validationcomputeperiod",
         1,
         "Compute validation evaluation every this many iterations of gradient descent weight learning."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_VALIDATION_PATIENCE = new Option(
+        "gradientdescent.validationpatience",
+        25,
+        "Break gradient descent weight learning when the validation evaluation stops improving after this many epochs."
     );
 
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(

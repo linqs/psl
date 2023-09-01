@@ -310,14 +310,19 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     @Override
-    protected boolean breakOptimization(int iteration) {
-        if (iteration >= maxNumSteps) {
-            log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
+    protected boolean breakOptimization(int epoch) {
+        if (epoch >= maxNumSteps) {
+            log.trace("Breaking Weight Learning. Reached maximum number of epochs: {}", maxNumSteps);
             return true;
         }
 
         if (runFullIterations) {
             return false;
+        }
+
+        if (validationBreak && (epoch - lastValidationImprovementEpoch) > validationPatience) {
+            log.trace("Breaking Weight Learning. No improvement in validation evaluation metric for {} epochs.", (epoch - lastValidationImprovementEpoch));
+            return true;
         }
 
         float totalObjectiveDifference = computeTotalObjectiveDifference();

@@ -87,6 +87,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected List<float[]> batchMAPAtomValueStates;
 
     protected int validationEvaluationComputePeriod;
+    protected boolean validationBreak;
+    protected int validationPatience;
+    protected int lastValidationImprovementEpoch;
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
     protected boolean saveBestValidationWeights;
@@ -152,6 +155,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         bestValidationWeights = null;
         currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
         bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+        validationBreak = Options.WLA_GRADIENT_DESCENT_VALIDATION_BREAK.getBoolean();
+        validationPatience = Options.WLA_GRADIENT_DESCENT_VALIDATION_PATIENCE.getInt();
+        lastValidationImprovementEpoch = 0;
 
         if (saveBestValidationWeights && (!this.runValidation)) {
             throw new IllegalArgumentException("If saveBestValidationWeights is true, then runValidation must also be true.");
@@ -307,7 +313,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
 
             if (runValidation && (epoch % validationEvaluationComputePeriod == 0)) {
-                runValidationEvaluation();
+                runValidationEvaluation(epoch);
                 log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
             }
 
@@ -389,7 +395,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             if (saveBestValidationWeights) {
                 finalMAPStateValidationEvaluation = bestValidationEvaluationMetric;
             } else {
-                runValidationEvaluation();
+                runValidationEvaluation(epoch);
                 finalMAPStateValidationEvaluation = currentValidationEvaluationMetric;
             }
             log.info("Final MAP State Validation Evaluation Metric: {}", finalMAPStateValidationEvaluation);
@@ -510,7 +516,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    protected void runValidationEvaluation() {
+    protected void runValidationEvaluation(int epoch) {
         setValidationModel();
 
         log.trace("Running Validation Inference.");
@@ -520,6 +526,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
 
         if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
+            lastValidationImprovementEpoch = epoch;
+
             bestValidationEvaluationMetric = currentValidationEvaluationMetric;
 
             // Save the best rule weights.
@@ -539,12 +547,17 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected boolean breakOptimization(int epoch) {
         if (epoch >= maxNumSteps) {
-            log.trace("Breaking Weight Learning. Reached maximum number of iterations: {}", maxNumSteps);
+            log.trace("Breaking Weight Learning. Reached maximum number of epochs: {}", maxNumSteps);
             return true;
         }
 
         if (runFullIterations) {
             return false;
+        }
+
+        if (validationBreak && (epoch - lastValidationImprovementEpoch) > validationPatience) {
+            log.trace("Breaking Weight Learning. No improvement in validation evaluation metric for {} epochs.", (epoch - lastValidationImprovementEpoch));
+            return true;
         }
 
         if (movementBreak && MathUtils.equals(parameterMovement, 0.0f, movementTolerance)) {
