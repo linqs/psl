@@ -302,25 +302,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
 
             if (log.isTraceEnabled() && (evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
-                setFullTrainModel();
-
                 runMAPEvaluation();
                 log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
-
-                // Predict with the deep predicates again to ensure predictions are made with learning set to true.
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.predictDeepModel(true);
-                }
             }
 
             if (runValidation && (epoch % validationEvaluationComputePeriod == 0)) {
                 runValidationEvaluation();
                 log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
-
-                // Predict with the deep predicates again to ensure predictions are made with learning set to true.
-                for (DeepPredicate deepPredicate : deepPredicates) {
-                    deepPredicate.predictDeepModel(true);
-                }
             }
 
             ArrayList<Integer> batchPermutation = new ArrayList<Integer>(batchGenerator.getNumBatches());
@@ -330,8 +318,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             RandUtils.shuffle(batchPermutation);
 
             if (epoch % trainingStopComputePeriod == 0) {
-                setFullTrainModel();
-
                 epochStart(epoch);
             }
 
@@ -369,8 +355,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             totalTime += end - start;
 
             if (epoch % trainingStopComputePeriod == 0) {
-                setFullTrainModel();
-
                 measureEpochParameterMovement();
                 epochEnd(epoch);
 
@@ -380,8 +364,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             epoch++;
             log.trace("Epoch: {} -- Iteration Time: {}", epoch, (end - start));
         }
-        setFullTrainModel();
-
         log.info("Gradient Descent Weight Learning Finished.");
 
         if (saveBestValidationWeights) {
@@ -416,6 +398,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         log.info("Final model {} ", mutableRules);
         log.info("Total weight learning time: {}", totalTime);
 
+        setFullTrainModel();
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
 
@@ -429,6 +412,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void epochStart(int epoch) {
+        setFullTrainModel();
         for (int i = 0; i < epochStartDeepAtomValues.length; i++) {
             if (trainFullTermStore.getAtomStore().getAtom(i).getPredicate() instanceof DeepPredicate) {
                 epochStartDeepAtomValues[i] = trainFullTermStore.getAtomStore().getAtomValues()[i];
@@ -448,6 +432,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void measureEpochParameterMovement() {
+        setFullTrainModel();
+
         // Measure the movement in weights and deep atom values.
         parameterMovement = 0.0f;
 
@@ -500,7 +486,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
+    protected void setValidationModel() {
+        // Set to validation deep model predicates.
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+            deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
+            deepPredicate.predictDeepModel(false);
+        }
+    }
+
     protected void runMAPEvaluation() {
+        setFullTrainModel();
+
         // Compute the MAP state before evaluating so variables have assigned values.
         log.trace("Running MAP Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
@@ -514,12 +511,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void runValidationEvaluation() {
-        // Set to validation deep model predicates.
-        for (int i = 0; i < deepPredicates.size(); i++) {
-            DeepPredicate deepPredicate = deepPredicates.get(i);
-            deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
-            deepPredicate.predictDeepModel(false);
-        }
+        setValidationModel();
 
         log.trace("Running Validation Inference.");
         computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
@@ -543,12 +535,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             log.debug("New Best Validation Model: {}", mutableRules);
         }
         log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
-
-        // Reset to training deep model predicates.
-        for (int i = 0; i < deepPredicates.size(); i++) {
-            DeepPredicate deepPredicate = deepPredicates.get(i);
-            deepPredicate.setDeepModel(deepModelPredicates.get(i));
-        }
     }
 
     protected boolean breakOptimization(int epoch) {

@@ -107,6 +107,7 @@ public abstract class Minimizer extends GradientDescent {
     protected float squaredPenaltyCoefficientIncreaseRate;
     protected final float initialLinearPenaltyCoefficient;
     protected float linearPenaltyCoefficient;
+    protected List<Float> batchLinearPenaltyCoefficients;
 
     public Minimizer(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
@@ -158,6 +159,7 @@ public abstract class Minimizer extends GradientDescent {
         squaredPenaltyCoefficientIncreaseRate = Options.MINIMIZER_SQUARED_PENALTY_INCREASE_RATE.getFloat();
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
+        batchLinearPenaltyCoefficients = new ArrayList<Float>();
 
         parameterMovementTolerance = 1.0f / initialSquaredPenaltyCoefficient;
         finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
@@ -168,7 +170,11 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void initializeInternalParameters() {
+        super.initializeInternalParameters();
+
         for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+            batchLinearPenaltyCoefficients.add(initialLinearPenaltyCoefficient);
+
             batchRVAtomIndexToProxRuleIndexes.add(new ArrayList<Integer>());
             batchProxRuleIndexToRVAtomIndexes.add(new ArrayList<Integer>());
 
@@ -299,6 +305,8 @@ public abstract class Minimizer extends GradientDescent {
         proxRuleObservedAtoms = batchProxRuleObservedAtoms.get(batch);
         proxRuleObservedAtomIndexes = batchProxRuleObservedAtomIndexes.get(batch);
         proxRuleObservedAtomValueGradient = batchProxRuleObservedAtomValueGradients.get(batch);
+
+        linearPenaltyCoefficient = batchLinearPenaltyCoefficients.get(batch);
     }
 
     @Override
@@ -332,8 +340,6 @@ public abstract class Minimizer extends GradientDescent {
 
                 initializeProximityRuleConstants();
             }
-
-            setFullTrainModel();
         }
 
         proxRuleObservedAtomsValueEpochMovement = 0.0f;
@@ -363,7 +369,16 @@ public abstract class Minimizer extends GradientDescent {
                     // Learning has converged.
                     return;
                 }
-                linearPenaltyCoefficient = linearPenaltyCoefficient + 2 * squaredPenaltyCoefficient * totalObjectiveDifference;
+
+                for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+                    setBatch(batch);
+
+                    // We need to recompute the iteration statistics for each batch because the parameters may have changed.
+                    computeIterationStatistics();
+
+                    float batchObjectiveDifference = computeObjectiveDifference();
+                    batchLinearPenaltyCoefficients.set(batch, batchLinearPenaltyCoefficients.get(batch) + 2 * squaredPenaltyCoefficient * batchObjectiveDifference);
+                }
                 constraintTolerance = (float)(constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9));
                 parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
             } else {
@@ -553,8 +568,6 @@ public abstract class Minimizer extends GradientDescent {
 
             totalObjectiveDifference += computeObjectiveDifference();
         }
-
-        setFullTrainModel();
 
         return totalObjectiveDifference;
     }
