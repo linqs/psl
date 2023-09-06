@@ -96,6 +96,13 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      */
     public void close() {}
 
+    public void clear() {
+        prevVariableValues = null;
+
+        workerRVAtomGradients = null;
+        workerDeepGradients = null;
+    }
+
     /**
      * Set a budget (given as a proportion of the max budget).
      */
@@ -126,6 +133,8 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         log.info("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}",
                 finalObjective.objective, finalObjective.violatedConstraints, totalTime);
         log.debug("Movement of variables from initial state: {}", change);
+
+        clear();
     }
 
     /**
@@ -218,7 +227,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         Arrays.fill(rvAtomGradient, 0.0f);
         Arrays.fill(deepAtomGradient, 0.0f);
         for(int j = 0; j < numTermBlocks; j++) {
-            for(int i = 0; i < termStore.getNumVariables(); i++) {
+            for(int i = 0; i < termStore.getAtomStore().getMaxRVAIndex(); i++) {
                 rvAtomGradient[i] += workerRVAtomGradients[j][i];
                 deepAtomGradient[i] += workerDeepGradients[j][i];
             }

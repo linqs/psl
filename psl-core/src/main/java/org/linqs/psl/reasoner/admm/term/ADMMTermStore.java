@@ -134,7 +134,7 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
 
     private synchronized void ensureLocalRecordsCapacity() {
         if (localRecords == null) {
-            localRecords = new List[atomStore.getMaxRVAIndex() + 1];
+            localRecords = new List[atomStore.size() + 1];
         }
 
         if (localRecords.length <= atomStore.size()) {
