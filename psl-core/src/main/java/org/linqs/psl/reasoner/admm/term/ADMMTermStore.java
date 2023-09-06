@@ -137,8 +137,8 @@ public class ADMMTermStore extends SimpleTermStore<ADMMObjectiveTerm> {
             localRecords = new List[atomStore.getMaxRVAIndex() + 1];
         }
 
-        if (localRecords.length <= atomStore.getMaxRVAIndex()) {
-            List[] newLocalRecords = new List[2 * (atomStore.getMaxRVAIndex() + 1)];
+        if (localRecords.length <= atomStore.size()) {
+            List[] newLocalRecords = new List[2 * (atomStore.size() + 1)];
             System.arraycopy(localRecords, 0, newLocalRecords, 0, localRecords.length);
             localRecords = newLocalRecords;
         }
