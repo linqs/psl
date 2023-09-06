@@ -54,10 +54,14 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     protected final int computePeriod;
 
     public DualBCDReasoner() {
+        super();
+
         maxIterations = Options.DUAL_LCQP_MAX_ITER.getInt();
         computePeriod = Options.DUAL_LCQP_COMPUTE_PERIOD.getInt();
         primalDualBreak = Options.DUAL_LCQP_PRIMAL_DUAL_BREAK.getBoolean();
         primalDualTolerance = Options.DUAL_LCQP_PRIMAL_DUAL_THRESHOLD.getDouble();
+
+        assert !variableMovementBreak || ((computePeriod == 1) && (variableMovementNorm == Float.POSITIVE_INFINITY));
     }
 
     @Override
@@ -90,12 +94,13 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     /**
      * Map the current setting of the dual variables to primal variables.
      */
-    protected static void primalVariableComponentUpdate(DualLCQPTermStore termStore, int componentIndex) {
+    protected static float primalVariableComponentUpdate(DualLCQPTermStore termStore, int componentIndex) {
         AtomStore atomStore = termStore.getAtomStore();
         List<Integer> connectedComponentAtomIndexes = atomStore.getConnectedComponentAtomIndexes(componentIndex);
         float[] atomValues = atomStore.getAtomValues();
         GroundAtom[] atoms = atomStore.getAtoms();
 
+        float variableMovement = 0.0f;
         for (Integer atomIndex : connectedComponentAtomIndexes) {
             GroundAtom atom = atoms[atomIndex];
 
@@ -103,8 +108,16 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                 continue;
             }
 
+            float oldValue = atomValues[atomIndex];
             atomValues[atomIndex] = termStore.getDualLCQPAtom(atomIndex).getPrimal(regularizationParameter);
+
+            // Update the variable movement to be the largest absolute change in any variable.
+            if (Math.abs(atomValues[atomIndex] - oldValue) > variableMovement) {
+                variableMovement = Math.abs(atomValues[atomIndex] - oldValue);
+            }
         }
+
+        return variableMovement;
     }
 
     private static boolean breakOptimization(int iteration,
@@ -112,7 +125,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                                              ObjectiveResult dualObjectiveResult,
                                              int maxIterations, boolean runFullIterations,
                                              boolean objectiveBreak, double objectiveTolerance,
-                                             boolean variableMovementBreak,
+                                             boolean variableMovementBreak, float variableMovementTolerance, float variableMovement,
                                              boolean primalDualBreak, double primalDualTolerance) {
         // Always break when the allocated iterations is up.
         if (iteration > (int)(maxIterations)) {
@@ -137,8 +150,8 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         }
 
         // Break if two consecutive iterates are less than the variable movement tolerance.
-        if (variableMovementBreak) {
-            throw new UnsupportedOperationException("Variable movement break is not supported by DualBCDReasoner.");
+        if (variableMovementBreak && (variableMovement < variableMovementTolerance)) {
+            return true;
         }
 
         // Break if we have converged according to the primal dual gap stopping criterion.
@@ -587,14 +600,15 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
                     }
 
                     if ((iteration - 1) % computePeriod == 0) {
-                        primalVariableComponentUpdate(termStore, compenentId);
+                        float variableMovement = primalVariableComponentUpdate(termStore, compenentId);
 
                         oldPrimalObjectiveResult = primalObjectiveResult;
                         primalObjectiveResult = DualBCDReasoner.computeComponentObjective(termStore, compenentId);
                         ObjectiveResult dualObjectiveResult = computeComponentDualObjective(termStore, compenentId);
 
                         breakDualBCD = breakOptimization(iteration, primalObjectiveResult, oldPrimalObjectiveResult, dualObjectiveResult,
-                                maxIterations, runFullIterations, objectiveBreak, objectiveTolerance, variableMovementBreak,
+                                maxIterations, runFullIterations, objectiveBreak, objectiveTolerance,
+                                variableMovementBreak, variableMovementTolerance, variableMovement,
                                 primalDualBreak, primalDualTolerance);
                     }
 
