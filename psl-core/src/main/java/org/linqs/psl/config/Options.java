@@ -280,6 +280,12 @@ public class Options {
         "The search space for a GaussianProcessKernel."
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_BATCH_GENERATOR = new Option(
+        "gradientdescent.batchgenerator",
+        "FullBatchGenerator",
+        "The batch generator to use for gradient descent weight learning. The default is FullBatchGenerator."
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_CLIP_GRADIENT = new Option(
         "gradientdescent.clipweightgradient",
         true,

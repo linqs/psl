@@ -551,7 +551,7 @@ public abstract class Minimizer extends GradientDescent {
             latentInferenceEnergy += mutableRules.get(i).getWeight() * latentInferenceIncompatibility[i];
         }
 
-        log.trace("Total Prox Loss: {}, Total objective difference: {}, Supervised Loss: {}, Energy Loss: {}.",
+        log.trace("Prox Loss: {}, Objective difference: {}, Supervised Loss: {}, Energy Loss: {}.",
                 totalProxValue, objectiveDifference, supervisedLoss, latentInferenceEnergy);
 
         return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(objectiveDifference, 2.0f)

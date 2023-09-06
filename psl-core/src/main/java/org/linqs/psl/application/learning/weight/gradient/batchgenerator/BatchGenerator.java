@@ -22,8 +22,10 @@ import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
-import org.linqs.psl.util.RandUtils;
+import org.linqs.psl.util.Reflection;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,5 +114,47 @@ public abstract class BatchGenerator {
             deepModelPredicates.clear();
         }
         batchDeepModelPredicates.clear();
+    }
+
+    /**
+     * Construct a batch generator.
+     * Look for a constructor like: (InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates).
+     */
+    public static BatchGenerator getBatchGenerator(String name, InferenceApplication inferenceApplication,
+                                                   SimpleTermStore<? extends ReasonerTerm> fullTermStore,
+                                                   List<DeepPredicate> deepPredicates) {
+        String className = Reflection.resolveClassName(name);
+        if (className == null) {
+            throw new IllegalArgumentException("Could not find class: " + name);
+        }
+
+        Class<? extends BatchGenerator> classObject = null;
+        try {
+            @SuppressWarnings("unchecked")
+            Class<? extends BatchGenerator> uncheckedClassObject = (Class<? extends BatchGenerator>)Class.forName(className);
+            classObject = uncheckedClassObject;
+        } catch (ClassNotFoundException ex) {
+            throw new IllegalArgumentException("Could not find class: " + className, ex);
+        }
+
+        Constructor<? extends BatchGenerator> constructor = null;
+        try {
+            constructor = classObject.getConstructor(InferenceApplication.class, SimpleTermStore.class, List.class);
+        } catch (NoSuchMethodException ex) {
+            throw new IllegalArgumentException("No suitable constructor found for batch generator: " + className + ".", ex);
+        }
+
+        BatchGenerator batchGenerator = null;
+        try {
+            batchGenerator = constructor.newInstance(inferenceApplication, fullTermStore, deepPredicates);
+        } catch (InstantiationException ex) {
+            throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
+        } catch (IllegalAccessException ex) {
+            throw new RuntimeException("Insufficient access to constructor for " + className, ex);
+        } catch (InvocationTargetException ex) {
+            throw new RuntimeException("Error thrown while constructing " + className, ex);
+        }
+
+        return batchGenerator;
     }
 }

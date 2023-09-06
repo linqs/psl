@@ -224,7 +224,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             batchGenerator.clear();
         }
 
-        batchGenerator = new ConnectedComponentBatchGenerator(trainInferenceApplication, trainFullTermStore, deepPredicates);
+        batchGenerator = BatchGenerator.getBatchGenerator(Options.WLA_GRADIENT_DESCENT_BATCH_GENERATOR.getString(),
+                trainInferenceApplication, trainFullTermStore, deepPredicates);
         batchGenerator.generateBatches();
     }
 
