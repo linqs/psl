@@ -48,8 +48,8 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
     public static final double regularizationParameter = Options.DUAL_LCQP_REGULARIZATION.getDouble();
 
-    private final boolean primalDualBreak;
-    private final double primalDualTolerance;
+    protected final boolean primalDualBreak;
+    protected final double primalDualTolerance;
 
     protected final int computePeriod;
 
@@ -73,6 +73,16 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         termStore.initForOptimization();
         initForOptimization(termStore);
 
+        long totalTime = internalOptimize(termStore, evaluations, trainingMap);
+
+        optimizationComplete(termStore, parallelComputeObjective(termStore), totalTime);
+
+        // Return the un-regularized quantification of the objective for consistency with
+        // weight learning objectives and test assertions.
+        return super.parallelComputeObjective(termStore).objective;
+    }
+
+    protected long internalOptimize(DualLCQPTermStore termStore, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
         log.trace("Starting optimization. Number of connected components: {}.", termStore.getConnectedComponents().size());
 
         long start = System.currentTimeMillis();
@@ -84,11 +94,33 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
         evaluate(termStore, 1, evaluations, trainingMap);
 
-        optimizationComplete(termStore, parallelComputeObjective(termStore), totalTime);
+        return totalTime;
+    }
 
-        // Return the un-regularized quantification of the objective for consistency with
-        // weight learning objectives and test assertions.
-        return super.parallelComputeObjective(termStore).objective;
+    /**
+     * Map the current setting of the dual variables to primal variables.
+     */
+    protected float primalVariableUpdate(DualLCQPTermStore termStore) {
+        AtomStore atomStore = termStore.getAtomStore();
+        GroundAtom[] atoms = atomStore.getAtoms();
+        float[] atomValues = atomStore.getAtomValues();
+
+        float variableMovement = 0.0f;
+        for (int i = 0; i < atomStore.size(); i ++) {
+            if (atoms[i].isFixed()) {
+                continue;
+            }
+
+            float oldValue = atomValues[i];
+            atomValues[i] = termStore.getDualLCQPAtom(i).getPrimal(regularizationParameter);
+
+            // Update the variable movement to be the largest absolute change in any variable.
+            if (Math.abs(atomValues[i] - oldValue) > variableMovement) {
+                variableMovement = Math.abs(atomValues[i] - oldValue);
+            }
+        }
+
+        return variableMovement;
     }
 
     /**
@@ -120,7 +152,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         return variableMovement;
     }
 
-    private static boolean breakOptimization(int iteration,
+    protected static boolean breakOptimization(int iteration,
                                              ObjectiveResult primalObjectiveResult, ObjectiveResult oldPrimalObjectiveResult,
                                              ObjectiveResult dualObjectiveResult,
                                              int maxIterations, boolean runFullIterations,
@@ -459,13 +491,7 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
     @Override
     protected ObjectiveResult parallelComputeObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
         ObjectiveResult objectiveResult = super.parallelComputeObjective(termStore);
-
-        log.trace("Unregularized Objective: {}", objectiveResult.objective);
-
         objectiveResult.objective += computePrimalVariableRegularization(termStore);
-
-        log.info("Regularization: {}", computePrimalVariableRegularization(termStore));
-
         return objectiveResult;
     }
 
@@ -519,7 +545,36 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         return atomValueRegularization;
     }
 
-    private static ObjectiveResult computeComponentDualObjective(DualLCQPTermStore termStore, int componentIndex) {
+    protected ObjectiveResult parallelComputeDualObjective(DualLCQPTermStore termStore) {
+        int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(termStore.size() / (float)blockSize);
+
+        double[] workerObjectives = new double[numTermBlocks];
+
+        Parallel.count(numTermBlocks, new DualTermObjectiveWorker(termStore, workerObjectives, blockSize));
+
+        double objectiveValue = 0.0;
+        for(int i = 0; i < numTermBlocks; i++) {
+            objectiveValue += workerObjectives[i];
+        }
+
+        // The upper and lower bound constraints on the atoms are not stored in the term store,
+        // so we need to compute their objective and gradient contribution here.
+        GroundAtom[] atoms = termStore.getAtomStore().getAtoms();
+        DualLCQPAtom[] dualLCQPAtoms = termStore.getDualLCQPAtoms();
+        for(int i = 0; i < dualLCQPAtoms.length; i++) {
+            if (atoms[i] == null || atoms[i].isFixed()) {
+                continue;
+            }
+
+            objectiveValue += dualLCQPAtoms[i].getLowerBoundObjective(regularizationParameter);
+            objectiveValue += dualLCQPAtoms[i].getUpperBoundObjective(regularizationParameter);
+        }
+
+        return new ObjectiveResult((float)(-0.5 * objectiveValue), 0);
+    }
+
+    protected static ObjectiveResult computeComponentDualObjective(DualLCQPTermStore termStore, int componentIndex) {
         Map<Integer, List<DualLCQPObjectiveTerm>> connectedComponents = ((SimpleTermStore<DualLCQPObjectiveTerm>)termStore).getConnectedComponents();
         List<DualLCQPObjectiveTerm> component = connectedComponents.get(componentIndex);
 
@@ -614,6 +669,49 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
 
                     iteration++;
                 }
+            }
+        }
+    }
+
+    private static class DualTermObjectiveWorker extends Parallel.Worker<Long> {
+        private final DualLCQPTermStore termStore;
+        private final int blockSize;
+        private final double[] objectives;
+
+        public DualTermObjectiveWorker(DualLCQPTermStore termStore, double[] objectives, int blockSize) {
+            super();
+
+            this.termStore = termStore;
+            this.objectives = objectives;
+            this.blockSize = blockSize;
+        }
+
+        @Override
+        public Object clone() {
+            return new DualTermObjectiveWorker(termStore, objectives, blockSize);
+        }
+
+        @Override
+        public void work(long blockIndex, Long ignore) {
+            long numTerms = termStore.size();
+            int blockIntIndex = (int)blockIndex;
+
+            objectives[blockIntIndex] = 0.0;
+            for (int innerBlockIndex = 0; innerBlockIndex < blockSize; innerBlockIndex++) {
+                int termIndex = blockIntIndex * blockSize + innerBlockIndex;
+
+                if (termIndex >= numTerms) {
+                    break;
+                }
+
+                DualLCQPObjectiveTerm term = termStore.get(termIndex);
+
+                if (!term.isActive()) {
+                    continue;
+                }
+
+                objectives[blockIntIndex] += evaluateDualTerm(term, termStore);
+                objectives[blockIntIndex] += evaluateDualSlackLowerBound(term);
             }
         }
     }

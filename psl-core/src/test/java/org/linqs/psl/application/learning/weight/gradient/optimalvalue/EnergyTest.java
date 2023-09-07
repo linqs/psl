@@ -65,4 +65,11 @@ public class EnergyTest extends WeightLearningTest {
 
         super.friendshipRankTest();
     }
+
+    @Test
+    public void DistributedDualBCDFriendshipRankTest() {
+        Options.WLA_INFERENCE.set(DualBCDInference.class.getName());
+
+        super.friendshipRankTest();
+    }
 }
