@@ -357,9 +357,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     clipWeightGradient();
                 }
 
-                gradientStep(epoch);
-
                 float batchObjective = computeTotalLoss();
+
+                gradientStep(epoch);
 
                 long batchEnd = System.currentTimeMillis();
 

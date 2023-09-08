@@ -696,12 +696,17 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     private float computeTotalProxValue(float[] proxRuleIncompatibility) {
+        float regularizationParameter = 0.0f;
+        if (trainInferenceApplication.getReasoner() instanceof DualBCDReasoner) {
+            regularizationParameter = (float)((DualBCDReasoner)trainInferenceApplication.getReasoner()).regularizationParameter;
+        }
+
         float totalProxValue = 0.0f;
         for (int i = 0; i < proxRules.length; i++) {
             proxRuleIncompatibility[i] = proxRuleObservedAtoms[i].getValue() - augmentedInferenceAtomValueState[proxRuleIndexToRVAtomIndex.get(i)];
             totalProxValue += Math.pow(proxRuleIncompatibility[i], 2.0f);
         }
-        totalProxValue = proxRuleWeight * totalProxValue;
+        totalProxValue = (proxRuleWeight + regularizationParameter) * totalProxValue;
 
         return totalProxValue;
     }
