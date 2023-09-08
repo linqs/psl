@@ -20,8 +20,6 @@ package org.linqs.psl.application.learning.weight.gradient;
 import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.gradient.batchgenerator.BatchGenerator;
-import org.linqs.psl.application.learning.weight.gradient.batchgenerator.ConnectedComponentBatchGenerator;
-import org.linqs.psl.application.learning.weight.gradient.batchgenerator.FullBatchGenerator;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
@@ -78,6 +76,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected List<DeepModelPredicate> trainFullDeepModelPredicates;
     protected TermState[] trainFullMAPTermState;
     protected float[] trainFullMAPAtomValueState;
+    double currentFullMAPEvaluationMetric;
+    double bestFullMAPEvaluationMetric;
+    protected boolean fullMAPEvaluationBreak;
+    protected int fullMAPEvaluationPatience;
+    protected int lastFullMAPImprovementEpoch;
 
     protected TermState[] trainMAPTermState;
     protected float[] trainMAPAtomValueState;
@@ -137,6 +140,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
         trainFullDeepModelPredicates = null;
         trainFullMAPTermState = null;
         trainFullMAPAtomValueState = null;
+        currentFullMAPEvaluationMetric = Double.NEGATIVE_INFINITY;
+        bestFullMAPEvaluationMetric = Double.NEGATIVE_INFINITY;
+        fullMAPEvaluationBreak = Options.WLA_GRADIENT_DESCENT_FULL_MAP_EVALUATION_BREAK.getBoolean();
+        fullMAPEvaluationPatience = Options.WLA_GRADIENT_DESCENT_FULL_MAP_EVALUATION_PATIENCE.getInt();
+        lastFullMAPImprovementEpoch = 0;
 
         trainMAPTermState = null;
         trainMAPAtomValueState = null;
@@ -282,12 +290,17 @@ public abstract class GradientDescent extends WeightLearningApplication {
             deepPredicate.predictDeepModel(true);
         }
 
+        currentFullMAPEvaluationMetric = Double.NEGATIVE_INFINITY;
+        bestFullMAPEvaluationMetric = Double.NEGATIVE_INFINITY;
+        lastFullMAPImprovementEpoch = 0;
+
         bestValidationWeights = new float[mutableRules.size()];
         for (int i = 0; i < mutableRules.size(); i++) {
             bestValidationWeights[i] = mutableRules.get(i).getWeight();
         }
         currentValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
         bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
+        lastValidationImprovementEpoch = 0;
 
         trainMAPTermState = trainFullMAPTermState;
         trainMAPAtomValueState = trainFullMAPAtomValueState;
@@ -309,7 +322,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
 
             if (log.isTraceEnabled() && (evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
-                runMAPEvaluation();
+                runMAPEvaluation(epoch);
                 log.trace("MAP State Training Evaluation Metric: {}", evaluation.getNormalizedRepMetric());
             }
 
@@ -385,7 +398,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             if (saveBestValidationWeights) {
                 finalMAPStateEvaluation = bestValidationEvaluationMetric;
             } else {
-                runMAPEvaluation();
+                runMAPEvaluation(epoch);
                 finalMAPStateEvaluation = evaluation.getNormalizedRepMetric();
             }
             log.info("Final MAP State Evaluation Metric: {}", finalMAPStateEvaluation);
@@ -502,7 +515,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    protected void runMAPEvaluation() {
+    protected void runMAPEvaluation(int epoch) {
         setFullTrainModel();
 
         // Compute the MAP state before evaluating so variables have assigned values.
@@ -510,6 +523,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
 
         evaluation.compute(trainingMap);
+        currentFullMAPEvaluationMetric = evaluation.getNormalizedRepMetric();
+
+        if (currentFullMAPEvaluationMetric > bestFullMAPEvaluationMetric) {
+            lastFullMAPImprovementEpoch = epoch;
+
+            bestFullMAPEvaluationMetric = currentFullMAPEvaluationMetric;
+        }
 
         // Evaluate the deep predicates. This calls predict with learning set to false.
         for (DeepPredicate deepPredicate : deepPredicates) {
@@ -554,6 +574,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         if (runFullIterations) {
             return false;
+        }
+
+        if (fullMAPEvaluationBreak && (epoch - lastFullMAPImprovementEpoch) > fullMAPEvaluationPatience) {
+            log.trace("Breaking Weight Learning. No improvement in training evaluation metric for {} epochs.", (epoch - lastFullMAPImprovementEpoch));
+            return true;
         }
 
         if (validationBreak && (epoch - lastValidationImprovementEpoch) > validationPatience) {

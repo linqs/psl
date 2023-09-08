@@ -419,6 +419,18 @@ public class Options {
         "Compute training evaluation every this many iterations of gradient descent weight learning."
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_FULL_MAP_EVALUATION_BREAK = new Option(
+        "gradientdescent.trainingevaluationbreak",
+        false,
+        "Break gradient descent weight learning when the training evaluation stops improving."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_FULL_MAP_EVALUATION_PATIENCE = new Option(
+        "gradientdescent.trainingevaluationpatience",
+        25,
+        "Break gradient descent weight learning when the training evaluation stops improving after this many epochs."
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_VALIDATION_BREAK = new Option(
         "gradientdescent.validationbreak",
         false,

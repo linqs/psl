@@ -320,6 +320,11 @@ public abstract class Minimizer extends GradientDescent {
             return false;
         }
 
+        if (fullMAPEvaluationBreak && (epoch - lastFullMAPImprovementEpoch) > fullMAPEvaluationPatience) {
+            log.trace("Breaking Weight Learning. No improvement in training evaluation metric for {} epochs.", (epoch - lastFullMAPImprovementEpoch));
+            return true;
+        }
+
         if (validationBreak && (epoch - lastValidationImprovementEpoch) > validationPatience) {
             log.trace("Breaking Weight Learning. No improvement in validation evaluation metric for {} epochs.", (epoch - lastValidationImprovementEpoch));
             return true;
