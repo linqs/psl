@@ -98,6 +98,7 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] proxRuleObservedAtomValueGradient;
     protected List<float[]> batchProxRuleObservedAtomValueGradients;
 
+    protected float constraintRelaxationConstant;
     protected float parameterMovementTolerance;
     protected float finalParameterMovementTolerance;
     protected float constraintTolerance;
