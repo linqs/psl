@@ -52,6 +52,7 @@ import java.util.Map;
 public abstract class Minimizer extends GradientDescent {
     private static final Logger log = Logger.getLogger(Minimizer.class);
 
+    protected float latentInferenceEnergy;
     protected float[] latentInferenceIncompatibility;
     protected TermState[] latentInferenceTermState;
     protected float[] latentInferenceAtomValueState;
@@ -61,9 +62,11 @@ public abstract class Minimizer extends GradientDescent {
     protected float[] deepLatentAtomGradient;
     protected float energyLossCoefficient;
 
+    protected float mapEnergy;
     protected float[] mapIncompatibility;
     protected float[] mapSquaredIncompatibility;
 
+    protected float augmentedInferenceEnergy;
     protected float[] augmentedInferenceIncompatibility;
     protected float[] augmentedInferenceSquaredIncompatibility;
 
@@ -101,6 +104,7 @@ public abstract class Minimizer extends GradientDescent {
     protected float finalConstraintTolerance;
 
     protected int outerIteration;
+    protected int augmentedLagrangianIteration;
 
     protected final float initialSquaredPenaltyCoefficient;
     protected float squaredPenaltyCoefficient;
@@ -113,8 +117,8 @@ public abstract class Minimizer extends GradientDescent {
                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
+        latentInferenceEnergy = Float.POSITIVE_INFINITY;
         latentInferenceIncompatibility = new float[mutableRules.size()];
-
         latentInferenceTermState = null;
         latentInferenceAtomValueState = null;
         batchLatentInferenceTermStates = new ArrayList<TermState[]>();
@@ -123,9 +127,11 @@ public abstract class Minimizer extends GradientDescent {
         deepLatentAtomGradient = null;
         energyLossCoefficient = Options.MINIMIZER_ENERGY_LOSS_COEFFICIENT.getFloat();
 
+        mapEnergy = Float.POSITIVE_INFINITY;
         mapIncompatibility = new float[mutableRules.size()];
         mapSquaredIncompatibility = new float[mutableRules.size()];
 
+        augmentedInferenceEnergy = Float.POSITIVE_INFINITY;
         augmentedInferenceIncompatibility = new float[mutableRules.size()];
         augmentedInferenceSquaredIncompatibility = new float[mutableRules.size()];
         augmentedInferenceTermState = null;
@@ -161,11 +167,13 @@ public abstract class Minimizer extends GradientDescent {
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
         batchLinearPenaltyCoefficients = new ArrayList<Float>();
 
+        outerIteration = 1;
+        augmentedLagrangianIteration = 1;
+        constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
         parameterMovementTolerance = 1.0f / initialSquaredPenaltyCoefficient;
         finalParameterMovementTolerance = Options.MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE.getFloat();
         constraintTolerance = (float)(1.0f / Math.pow(initialSquaredPenaltyCoefficient, 0.1f));
         finalConstraintTolerance = Options.MINIMIZER_OBJECTIVE_DIFFERENCE_TOLERANCE.getFloat();
-        outerIteration = 1;
     }
 
     @Override
@@ -369,7 +377,7 @@ public abstract class Minimizer extends GradientDescent {
         super.epochEnd(epoch);
 
         if (parameterMovement < parameterMovementTolerance) {
-            outerIteration++;
+            augmentedLagrangianIteration++;
 
             // Compute the total objective difference summed over all the batches.
             float totalObjectiveDifference = computeTotalObjectiveDifference();
@@ -386,8 +394,8 @@ public abstract class Minimizer extends GradientDescent {
                     // We need to recompute the iteration statistics for each batch because the parameters may have changed.
                     computeIterationStatistics();
 
-                    float batchObjectiveDifference = computeObjectiveDifference();
-                    batchLinearPenaltyCoefficients.set(batch, batchLinearPenaltyCoefficients.get(batch) + 2 * squaredPenaltyCoefficient * batchObjectiveDifference);
+                    batchLinearPenaltyCoefficients.set(batch,
+                            batchLinearPenaltyCoefficients.get(batch) + 2 * squaredPenaltyCoefficient * (augmentedInferenceEnergy - mapEnergy));
                 }
                 constraintTolerance = (float)(constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9));
                 parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
@@ -398,7 +406,7 @@ public abstract class Minimizer extends GradientDescent {
             }
 
             log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
-                    outerIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
+                    augmentedLagrangianIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
         }
     }
 
@@ -461,7 +469,7 @@ public abstract class Minimizer extends GradientDescent {
     protected void computeIterationStatistics() {
         computeFullInferenceStatistics();
 
-        computeLatentInferenceIncompatibility();
+        computeLatentInferenceStatistics();
 
         computeAugmentedInferenceStatistics();
 
@@ -483,9 +491,9 @@ public abstract class Minimizer extends GradientDescent {
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
 
+        mapEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
         computeCurrentIncompatibility(mapIncompatibility);
         computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
-
         trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomEnergyGradient, MAPDeepAtomEnergyGradient);
     }
 
@@ -499,6 +507,7 @@ public abstract class Minimizer extends GradientDescent {
         computeMAPStateWithWarmStart(trainInferenceApplication, augmentedInferenceTermState, augmentedInferenceAtomValueState);
         inTrainingMAPState = true;
 
+        augmentedInferenceEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
         computeCurrentIncompatibility(augmentedInferenceIncompatibility);
         computeCurrentSquaredIncompatibility(augmentedInferenceSquaredIncompatibility);
         trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), augmentedRVAtomEnergyGradient, augmentedDeepAtomEnergyGradient);
@@ -510,13 +519,14 @@ public abstract class Minimizer extends GradientDescent {
      * Compute the latent inference problem solution incompatibility.
      * RandomVariableAtoms with labels are fixed to their observed (truth) value.
      */
-    protected void computeLatentInferenceIncompatibility() {
+    protected void computeLatentInferenceStatistics() {
         fixLabeledRandomVariables();
 
         log.trace("Running Latent Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
         inTrainingMAPState = true;
 
+        latentInferenceEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
         computeCurrentIncompatibility(latentInferenceIncompatibility);
         trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
 
@@ -547,14 +557,9 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected float computeLearningLoss() {
-        float objectiveDifference = computeObjectiveDifference();
+        float objectiveDifference = augmentedInferenceEnergy - mapEnergy;
         float supervisedLoss = computeSupervisedLoss();
         float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
-
-        float latentInferenceEnergy = 0.0f;
-        for (int i = 0; i < mutableRules.size(); i++) {
-            latentInferenceEnergy += mutableRules.get(i).getWeight() * latentInferenceIncompatibility[i];
-        }
 
         log.trace("Prox Loss: {}, Objective difference: {}, Supervised Loss: {}, Energy Loss: {}.",
                 totalProxValue, objectiveDifference, supervisedLoss, latentInferenceEnergy);
@@ -576,29 +581,17 @@ public abstract class Minimizer extends GradientDescent {
             // We need to recompute the iteration statistics for each batch because the parameters may have changed.
             computeIterationStatistics();
 
-            totalObjectiveDifference += computeObjectiveDifference();
+            totalObjectiveDifference += augmentedInferenceEnergy - mapEnergy;
         }
 
         return totalObjectiveDifference;
     }
 
-    private float computeObjectiveDifference() {
-        float[] incompatibilityDifference = new float[mutableRules.size()];
-        float totalEnergyDifference = computeEnergyDifference(incompatibilityDifference);
-
-        float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
-
-        return totalEnergyDifference + totalProxValue;
-    }
-
     protected abstract float computeSupervisedLoss();
 
     protected void addAugmentedLagrangianProxRuleConstantsGradient() {
-        float[] incompatibilityDifference = new float[mutableRules.size()];
-        float totalEnergyDifference = computeEnergyDifference(incompatibilityDifference);
-
         float[] proxRuleIncompatibility = new float[proxRuleObservedAtoms.length];
-        float totalProxValue = computeTotalProxValue(proxRuleIncompatibility);
+        computeTotalProxValue(proxRuleIncompatibility);
 
         float[] proxRuleObservedAtomValueMoreauGradient = new float[proxRuleObservedAtoms.length];
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
@@ -608,7 +601,7 @@ public abstract class Minimizer extends GradientDescent {
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
             proxRuleObservedAtomValueGradient[i] += linearPenaltyCoefficient * proxRuleObservedAtomValueMoreauGradient[i];
             proxRuleObservedAtomValueGradient[i] += squaredPenaltyCoefficient
-                    * (totalEnergyDifference + totalProxValue)
+                    * (augmentedInferenceEnergy - mapEnergy)
                     * proxRuleObservedAtomValueMoreauGradient[i];
         }
     }
@@ -617,14 +610,9 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void addLearningLossWeightGradient() {
-        float[] incompatibilityDifference = new float[mutableRules.size()];
-        float totalEnergyDifference = computeEnergyDifference(incompatibilityDifference);
-
-        float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
-
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightGradient[i] += linearPenaltyCoefficient * incompatibilityDifference[i];
-            weightGradient[i] += squaredPenaltyCoefficient * (totalEnergyDifference + totalProxValue) * incompatibilityDifference[i];
+            weightGradient[i] += linearPenaltyCoefficient * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+            weightGradient[i] += squaredPenaltyCoefficient * (augmentedInferenceEnergy - mapEnergy) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
         }
 
         addEnergyLossWeightGradient();
@@ -641,7 +629,7 @@ public abstract class Minimizer extends GradientDescent {
         Arrays.fill(rvAtomGradient, 0.0f);
         Arrays.fill(deepAtomGradient, 0.0f);
 
-        float objectiveDifference = computeObjectiveDifference();
+        float objectiveDifference = augmentedInferenceEnergy - mapEnergy;
 
         for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             GroundAtom atom = trainInferenceApplication.getTermStore().getAtomStore().getAtom(i);
@@ -661,44 +649,10 @@ public abstract class Minimizer extends GradientDescent {
         }
     }
 
-    private float computeEnergyDifference(float[] incompatibilityDifference){
-        // DualBCDReasoners add a regularization to the energy function to ensure strong convexity.
-        float regularizationParameter = 0.0f;
-        if (trainInferenceApplication.getReasoner() instanceof DualBCDReasoner) {
-            regularizationParameter = (float)((DualBCDReasoner)trainInferenceApplication.getReasoner()).regularizationParameter;
-        }
-
-        float totalEnergyDifference = 0.0f;
-        for (int i = 0; i < mutableRules.size(); i++) {
-            incompatibilityDifference[i] = augmentedInferenceIncompatibility[i] - mapIncompatibility[i];
-            if (mutableRules.get(i).isSquared()) {
-                totalEnergyDifference += (mutableRules.get(i).getWeight() + regularizationParameter) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-            } else {
-                totalEnergyDifference += mutableRules.get(i).getWeight() * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-                totalEnergyDifference += regularizationParameter * (augmentedInferenceSquaredIncompatibility[i] - mapSquaredIncompatibility[i]);
-            }
-        }
-
-        GroundAtom[] atoms = trainInferenceApplication.getTermStore().getAtomStore().getAtoms();
-        float augmentedInferenceLCQPRegularization = 0.0f;
-        float fullInferenceLCQPRegularization = 0.0f;
-        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
-            if (atoms[i].isFixed()) {
-                continue;
-            }
-
-            augmentedInferenceLCQPRegularization += regularizationParameter * Math.pow(augmentedInferenceAtomValueState[i], 2.0f);
-            fullInferenceLCQPRegularization += regularizationParameter * Math.pow(trainMAPAtomValueState[i], 2.0f);
-        }
-        totalEnergyDifference += augmentedInferenceLCQPRegularization - fullInferenceLCQPRegularization;
-
-        return totalEnergyDifference;
-    }
-
     private float computeTotalProxValue(float[] proxRuleIncompatibility) {
         float regularizationParameter = 0.0f;
         if (trainInferenceApplication.getReasoner() instanceof DualBCDReasoner) {
-            regularizationParameter = (float)((DualBCDReasoner)trainInferenceApplication.getReasoner()).regularizationParameter;
+            regularizationParameter = (float) DualBCDReasoner.regularizationParameter;
         }
 
         float totalProxValue = 0.0f;

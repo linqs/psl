@@ -482,14 +482,14 @@ public class DualBCDReasoner extends Reasoner<DualLCQPObjectiveTerm> {
         return slackLowerBoundDualObjective;
     }
 
-    protected static ObjectiveResult computeObjective(TermStore<? extends ReasonerTerm> termStore) {
+    public static ObjectiveResult computeObjective(TermStore<? extends ReasonerTerm> termStore) {
         ObjectiveResult objectiveResult = Reasoner.computeObjective(termStore);
         objectiveResult.objective += computePrimalVariableRegularization((TermStore<DualLCQPObjectiveTerm>)termStore);
         return objectiveResult;
     }
 
     @Override
-    protected ObjectiveResult parallelComputeObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
+    public ObjectiveResult parallelComputeObjective(TermStore<DualLCQPObjectiveTerm> termStore) {
         ObjectiveResult objectiveResult = super.parallelComputeObjective(termStore);
         objectiveResult.objective += computePrimalVariableRegularization(termStore);
         return objectiveResult;

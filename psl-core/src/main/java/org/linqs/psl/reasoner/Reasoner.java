@@ -250,7 +250,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     /**
      * Compute the total weighted objective of the terms in their current state.
      */
-    protected static ObjectiveResult computeObjective(TermStore<? extends ReasonerTerm> termStore) {
+    public static ObjectiveResult computeObjective(TermStore<? extends ReasonerTerm> termStore) {
         float objective = 0.0f;
         long violatedConstraints = 0;
         float[] variableValues = termStore.getVariableValues();
@@ -304,7 +304,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      * Compute the total weighted objective of the terms in their current state in a distributed manner.
      * This method cannot be called with a StreamingTermStore.
      */
-    protected ObjectiveResult parallelComputeObjective(TermStore<T> termStore) {
+    public ObjectiveResult parallelComputeObjective(TermStore<T> termStore) {
         assert (termStore instanceof SimpleTermStore);
 
         SimpleTermStore<? extends ReasonerTerm> simpleTermStore = (SimpleTermStore<? extends ReasonerTerm>)termStore;
@@ -497,7 +497,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     }
 
 
-    protected static class ObjectiveResult {
+    public static class ObjectiveResult {
         public float objective;
         public long violatedConstraints;
 
