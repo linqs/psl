@@ -339,10 +339,10 @@ public abstract class Minimizer extends GradientDescent {
             return true;
         }
 
-        float totalObjectiveDifference = computeTotalObjectiveDifference();
-        if (totalObjectiveDifference < finalConstraintTolerance) {
+        float totalEnergyDifference = computeTotalEnergyDifference();
+        if (totalEnergyDifference < finalConstraintTolerance) {
             log.trace("Breaking Weight Learning. Objective difference {} is less than final constraint tolerance {}.",
-                    totalObjectiveDifference, finalConstraintTolerance);
+                    totalEnergyDifference, finalConstraintTolerance);
             return true;
         }
 
@@ -354,10 +354,18 @@ public abstract class Minimizer extends GradientDescent {
         super.epochStart(epoch);
 
         if (epoch == 0) {
+            constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
             for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
                 setBatch(i);
 
                 initializeProximityRuleConstants();
+
+                computeFullInferenceStatistics();
+                computeAugmentedInferenceStatistics();
+
+                if (constraintRelaxationConstant < augmentedInferenceEnergy - mapEnergy) {
+                    constraintRelaxationConstant = augmentedInferenceEnergy - mapEnergy;
+                }
             }
         }
 
@@ -381,11 +389,22 @@ public abstract class Minimizer extends GradientDescent {
             augmentedLagrangianIteration++;
 
             // Compute the total objective difference summed over all the batches.
-            float totalObjectiveDifference = computeTotalObjectiveDifference();
+            float totalConstraintViolation = computeTotalEnergyDifferenceConstraintViolation();
 
-            if (totalObjectiveDifference < constraintTolerance) {
-                if ((totalObjectiveDifference < finalConstraintTolerance) && (parameterMovement < finalParameterMovementTolerance)) {
-                    // Learning has converged.
+            if (totalConstraintViolation < constraintTolerance) {
+                if ((totalConstraintViolation < finalConstraintTolerance)
+                        && (parameterMovement < finalParameterMovementTolerance)) {
+                    log.trace("Augmented Lagrangian Learning has converged. Outer Iteration: {}. Constraint Relaxation Constant: {}, Total Constraint Violation: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}",
+                            outerIteration, constraintRelaxationConstant, totalConstraintViolation, parameterMovement, squaredPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
+
+                    // Augmented Lagrangian Learning has converged.
+                    constraintRelaxationConstant = 0.5f * constraintRelaxationConstant;
+                    constraintTolerance = (float) (1.0f / Math.pow(squaredPenaltyCoefficient, 0.1f));
+                    parameterMovementTolerance = 1.0f / squaredPenaltyCoefficient;
+                    augmentedLagrangianIteration = 1;
+
+                    outerIteration++;
+
                     return;
                 }
 
@@ -396,18 +415,19 @@ public abstract class Minimizer extends GradientDescent {
                     computeIterationStatistics();
 
                     batchLinearPenaltyCoefficients.set(batch,
-                            batchLinearPenaltyCoefficients.get(batch) + 2 * squaredPenaltyCoefficient * (augmentedInferenceEnergy - mapEnergy));
+                            batchLinearPenaltyCoefficients.get(batch)
+                                    + 2 * squaredPenaltyCoefficient * Math.max(0.0f, augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant));
                 }
-                constraintTolerance = (float)(constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9));
+                constraintTolerance = (float) (constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9f));
                 parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
             } else {
                 squaredPenaltyCoefficient = squaredPenaltyCoefficientIncreaseRate * squaredPenaltyCoefficient;
-                constraintTolerance = (float)(1.0f / Math.pow(squaredPenaltyCoefficient, 0.1));
-                parameterMovementTolerance = (float)(1.0f / squaredPenaltyCoefficient);
+                constraintTolerance = (float) (1.0f / Math.pow(squaredPenaltyCoefficient, 0.1f));
+                parameterMovementTolerance = 1.0f / squaredPenaltyCoefficient;
             }
 
-            log.trace("Outer iteration: {}, Objective Difference: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Linear Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
-                    augmentedLagrangianIteration, totalObjectiveDifference, parameterMovement, squaredPenaltyCoefficient, linearPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
+            log.trace("Augmented Lagrangian iteration: {}, Total Constraint Violation: {}, Parameter Movement: {}, Squared Penalty Coefficient: {}, Constraint Tolerance: {}, parameterMovementTolerance: {}.",
+                    augmentedLagrangianIteration, totalConstraintViolation, parameterMovement, squaredPenaltyCoefficient, constraintTolerance, parameterMovementTolerance);
         }
     }
 
@@ -559,14 +579,15 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected float computeLearningLoss() {
         float objectiveDifference = augmentedInferenceEnergy - mapEnergy;
+        float constraintViolation = Math.max(0.0f, objectiveDifference - constraintRelaxationConstant);
         float supervisedLoss = computeSupervisedLoss();
         float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
 
-        log.trace("Prox Loss: {}, Objective difference: {}, Supervised Loss: {}, Energy Loss: {}.",
-                totalProxValue, objectiveDifference, supervisedLoss, latentInferenceEnergy);
+        log.trace("Prox Loss: {}, Objective difference: {}, Constraint Violation: {}, Supervised Loss: {}, Energy Loss: {}.",
+                totalProxValue, objectiveDifference, constraintViolation, supervisedLoss, latentInferenceEnergy);
 
-        return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(objectiveDifference, 2.0f)
-                + linearPenaltyCoefficient * (objectiveDifference)
+        return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(constraintViolation, 2.0f)
+                + linearPenaltyCoefficient * (constraintViolation)
                 + supervisedLoss
                 + energyLossCoefficient * latentInferenceEnergy;
     }
@@ -574,7 +595,7 @@ public abstract class Minimizer extends GradientDescent {
     /**
      * Compute the total objective difference measured across each batch.
      */
-    private float computeTotalObjectiveDifference() {
+    private float computeTotalEnergyDifference() {
         float totalObjectiveDifference = 0.0f;
         for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
             setBatch(batch);
@@ -588,9 +609,31 @@ public abstract class Minimizer extends GradientDescent {
         return totalObjectiveDifference;
     }
 
+    /**
+     * Compute the total violation of the energy difference constraint measured across each batch.
+     */
+    private float computeTotalEnergyDifferenceConstraintViolation() {
+        float totalObjectiveDifference = 0.0f;
+        for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+            setBatch(batch);
+
+            // We need to recompute the iteration statistics for each batch because the parameters may have changed.
+            computeIterationStatistics();
+
+            totalObjectiveDifference += Math.max(0.0f, augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant);
+        }
+
+        return totalObjectiveDifference;
+    }
+
     protected abstract float computeSupervisedLoss();
 
     protected void addAugmentedLagrangianProxRuleConstantsGradient() {
+        if (augmentedInferenceEnergy - mapEnergy <= constraintRelaxationConstant) {
+            // Energy difference constraint is not violated.
+            return;
+        }
+
         float[] proxRuleIncompatibility = new float[proxRuleObservedAtoms.length];
         computeTotalProxValue(proxRuleIncompatibility);
 
@@ -602,7 +645,7 @@ public abstract class Minimizer extends GradientDescent {
         for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
             proxRuleObservedAtomValueGradient[i] += linearPenaltyCoefficient * proxRuleObservedAtomValueMoreauGradient[i];
             proxRuleObservedAtomValueGradient[i] += squaredPenaltyCoefficient
-                    * (augmentedInferenceEnergy - mapEnergy)
+                    * (augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant)
                     * proxRuleObservedAtomValueMoreauGradient[i];
         }
     }
@@ -611,17 +654,21 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void addLearningLossWeightGradient() {
-        for (int i = 0; i < mutableRules.size(); i++) {
-            weightGradient[i] += linearPenaltyCoefficient * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-            weightGradient[i] += squaredPenaltyCoefficient * (augmentedInferenceEnergy - mapEnergy) * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
-        }
-
-        addEnergyLossWeightGradient();
-    }
-
-    protected void addEnergyLossWeightGradient() {
+        // Energy loss gradient.
         for (int i = 0; i < mutableRules.size(); i++) {
             weightGradient[i] += energyLossCoefficient * latentInferenceIncompatibility[i];
+        }
+
+        // Energy difference constraint gradient.
+        if (augmentedInferenceEnergy - mapEnergy <= constraintRelaxationConstant) {
+            // Constraint is not violated.
+            return;
+        }
+
+        for (int i = 0; i < mutableRules.size(); i++) {
+            weightGradient[i] += linearPenaltyCoefficient * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
+            weightGradient[i] += squaredPenaltyCoefficient * (augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant)
+                    * (augmentedInferenceIncompatibility[i] - mapIncompatibility[i]);
         }
     }
 
@@ -630,7 +677,24 @@ public abstract class Minimizer extends GradientDescent {
         Arrays.fill(rvAtomGradient, 0.0f);
         Arrays.fill(deepAtomGradient, 0.0f);
 
-        float objectiveDifference = augmentedInferenceEnergy - mapEnergy;
+        // Energy Loss Gradient.
+        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
+            GroundAtom atom = trainInferenceApplication.getTermStore().getAtomStore().getAtom(i);
+
+            if (atom instanceof ObservedAtom) {
+                continue;
+            }
+
+            deepAtomGradient[i] += energyLossCoefficient * deepLatentAtomGradient[i];
+        }
+
+        // Energy difference constraint gradient.
+        if (augmentedInferenceEnergy - mapEnergy <= constraintRelaxationConstant) {
+            // Constraint is not violated.
+            return;
+        }
+
+        float constraintViolation = augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant;
 
         for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             GroundAtom atom = trainInferenceApplication.getTermStore().getAtomStore().getAtom(i);
@@ -642,11 +706,10 @@ public abstract class Minimizer extends GradientDescent {
             float rvEnergyGradientDifference = augmentedRVAtomEnergyGradient[i] - MAPRVAtomEnergyGradient[i];
             float deepAtomEnergyGradientDifference = augmentedDeepAtomEnergyGradient[i] - MAPDeepAtomEnergyGradient[i];
 
-            rvAtomGradient[i] = squaredPenaltyCoefficient * objectiveDifference * rvEnergyGradientDifference
+            rvAtomGradient[i] += squaredPenaltyCoefficient * constraintViolation * rvEnergyGradientDifference
                     + linearPenaltyCoefficient * rvEnergyGradientDifference;
-            deepAtomGradient[i] = squaredPenaltyCoefficient * objectiveDifference * deepAtomEnergyGradientDifference
-                    + linearPenaltyCoefficient * deepAtomEnergyGradientDifference
-                    + energyLossCoefficient * deepLatentAtomGradient[i];
+            deepAtomGradient[i] += squaredPenaltyCoefficient * constraintViolation * deepAtomEnergyGradientDifference
+                    + linearPenaltyCoefficient * deepAtomEnergyGradientDifference;
         }
     }
 

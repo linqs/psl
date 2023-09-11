@@ -418,7 +418,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         log.info("Final model {} ", mutableRules);
         log.info("Total weight learning time: {}", totalTime);
 
-        setFullTrainModel();
+        setFullTrainModel(false);
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
 
@@ -432,7 +432,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void epochStart(int epoch) {
-        setFullTrainModel();
+        setFullTrainModel(false);
         for (int i = 0; i < epochStartDeepAtomValues.length; i++) {
             if (trainFullTermStore.getAtomStore().getAtom(i).getPredicate() instanceof DeepPredicate) {
                 epochStartDeepAtomValues[i] = trainFullTermStore.getAtomStore().getAtomValues()[i];
@@ -452,7 +452,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void measureEpochParameterMovement() {
-        setFullTrainModel();
+        setFullTrainModel(false);
 
         // Measure the movement in weights and deep atom values.
         parameterMovement = 0.0f;
@@ -494,7 +494,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
     }
 
-    protected void setFullTrainModel() {
+    protected void setFullTrainModel(Boolean learning) {
         trainInferenceApplication.setTermStore(trainFullTermStore);
         trainMAPTermState = trainFullMAPTermState;
         trainMAPAtomValueState = trainFullMAPAtomValueState;
@@ -502,7 +502,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
             deepPredicate.setDeepModel(deepModelPredicates.get(i));
-            deepPredicate.predictDeepModel(true);
+            deepPredicate.predictDeepModel(learning);
         }
     }
 
@@ -516,7 +516,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void runMAPEvaluation(int epoch) {
-        setFullTrainModel();
+        setFullTrainModel(false);
 
         // Compute the MAP state before evaluating so variables have assigned values.
         log.trace("Running MAP Inference.");
