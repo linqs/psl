@@ -376,9 +376,9 @@ public abstract class Minimizer extends GradientDescent {
     protected void measureEpochParameterMovement() {
         super.measureEpochParameterMovement();
 
-        log.trace("Epoch Internal Parameter Movement: {}", proxRuleObservedAtomsValueEpochMovement);
-
         parameterMovement += proxRuleObservedAtomsValueEpochMovement;
+
+        log.trace("Epoch Internal Parameter Movement: {}", proxRuleObservedAtomsValueEpochMovement);
     }
 
     @Override
@@ -438,7 +438,7 @@ public abstract class Minimizer extends GradientDescent {
         for (int i = 0; i < proxRules.length; i++) {
             float newProxRuleObservedAtomsValue = Math.min(Math.max(
                     proxRuleObservedAtoms[i].getValue() - proxRuleObservedAtomValueStepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
-            proxRuleObservedAtomsValueEpochMovement += Math.abs(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue);
+            proxRuleObservedAtomsValueEpochMovement += Math.pow(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue, 2.0f);
 
             proxRuleObservedAtoms[i]._assumeValue(newProxRuleObservedAtomsValue);
             atomValues[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;

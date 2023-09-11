@@ -461,15 +461,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float deepAtomValueMovement = 0.0f;
 
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightMovement += Math.abs(epochStartWeights[i] - mutableRules.get(i).getWeight());
+            weightMovement += Math.pow(epochStartWeights[i] - mutableRules.get(i).getWeight(), 2.0f);
         }
         log.trace("Epoch Weight Movement: {}", weightMovement);
 
+        int numDeepAtoms = 0;
         for (int i = 0; i < epochStartDeepAtomValues.length; i++) {
             if (trainFullTermStore.getAtomStore().getAtom(i).getPredicate() instanceof DeepPredicate) {
-                deepAtomValueMovement += Math.abs(epochStartDeepAtomValues[i] - trainFullTermStore.getAtomStore().getAtomValues()[i]);
+                numDeepAtoms++;
+                deepAtomValueMovement += Math.pow(epochStartDeepAtomValues[i] - trainFullTermStore.getAtomStore().getAtomValues()[i], 2.0f);
             }
         }
+        deepAtomValueMovement = deepAtomValueMovement / numDeepAtoms;
         log.trace("Epoch Deep Atom Value Movement: {}", deepAtomValueMovement);
 
         // By default, there are no internal parameters.
