@@ -472,7 +472,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 deepAtomValueMovement += Math.pow(epochStartDeepAtomValues[i] - trainFullTermStore.getAtomStore().getAtomValues()[i], 2.0f);
             }
         }
-        deepAtomValueMovement = deepAtomValueMovement / numDeepAtoms;
+        if (numDeepAtoms > 0) {
+            deepAtomValueMovement = deepAtomValueMovement / numDeepAtoms;
+        }
         log.trace("Epoch Deep Atom Value Movement: {}", deepAtomValueMovement);
 
         // By default, there are no internal parameters.
