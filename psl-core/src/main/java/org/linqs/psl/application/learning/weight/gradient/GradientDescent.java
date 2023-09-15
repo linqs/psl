@@ -551,7 +551,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         evaluation.compute(validationMap);
         currentValidationEvaluationMetric = evaluation.getNormalizedRepMetric();
 
-        if (currentValidationEvaluationMetric > bestValidationEvaluationMetric) {
+        if (MathUtils.compare(currentValidationEvaluationMetric, bestValidationEvaluationMetric) >= 0) {
             lastValidationImprovementEpoch = epoch;
 
             bestValidationEvaluationMetric = currentValidationEvaluationMetric;
