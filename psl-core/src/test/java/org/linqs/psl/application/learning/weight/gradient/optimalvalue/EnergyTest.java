@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.inference.mpe.DualBCDInference;
+import org.linqs.psl.application.inference.mpe.GradientDescentInference;
 import org.linqs.psl.application.inference.mpe.SGDInference;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
@@ -55,6 +56,13 @@ public class EnergyTest extends WeightLearningTest {
     @Test
     public void SGDFriendshipRankTest() {
         Options.WLA_INFERENCE.set(SGDInference.class.getName());
+
+        super.friendshipRankTest();
+    }
+
+    @Test
+    public void GradientDescentFriendshipRankTest() {
+        Options.WLA_INFERENCE.set(GradientDescentInference.class.getName());
 
         super.friendshipRankTest();
     }

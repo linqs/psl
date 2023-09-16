@@ -227,7 +227,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         Arrays.fill(rvAtomGradient, 0.0f);
         Arrays.fill(deepAtomGradient, 0.0f);
         for(int j = 0; j < numTermBlocks; j++) {
-            for(int i = 0; i < termStore.getAtomStore().getMaxRVAIndex(); i++) {
+            for(int i = 0; i <= termStore.getAtomStore().getMaxRVAIndex(); i++) {
                 rvAtomGradient[i] += workerRVAtomGradients[j][i];
                 deepAtomGradient[i] += workerDeepGradients[j][i];
             }
@@ -243,6 +243,24 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                 gradient[i] = 0.0f;
             } else if (MathUtils.equals(variableValues[i], 1.0f) && gradient[i] < 0.0f) {
                 gradient[i] = 0.0f;
+            }
+        }
+    }
+
+    /**
+     * Clip (sub)gradient magnitude.
+     */
+    protected void clipGradientMagnitude(float[] gradient, float maxMagnitude) {
+        float maxGradient = 0.0f;
+        for (int i = 0; i < gradient.length; i++) {
+            if (Math.abs(gradient[i]) > maxGradient) {
+                maxGradient = Math.abs(gradient[i]);
+            }
+        }
+
+        if (maxGradient > maxMagnitude) {
+            for (int i = 0; i < gradient.length; i++) {
+                gradient[i] = gradient[i] * maxMagnitude / maxGradient;
             }
         }
     }

@@ -26,6 +26,7 @@ import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.gradientdescent.GradientDescentReasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.util.SystemUtils;
 
@@ -547,7 +548,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
-        true,
+        false,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
     );
 
@@ -769,16 +770,78 @@ public class Options {
         "If true, run the suite of evaluators specified for the post-inference evaluation stage at regular intervals during inference."
     );
 
-    public static final Option REASONER_OBJECTIVE_BREAK = new Option(
-        "reasoner.objectivebreak",
-        false,
-        "Stop if the objective has not changed since the last iteration (or logging period)."
+    public static final Option GRADIENT_DESCENT_EXTENSION = new Option(
+        "reasoner.gradientdescent.extension",
+        GradientDescentReasoner.GradientDescentExtension.NONE.toString(),
+        "The GD extension to use for GD reasoning."
+        + " NONE (Default): The standard GD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+        + " MOMENTUM: Modify the descent direction with a momentum term."
+        + " NESTEROV_ACCELERATION: Use the Nesterov accelerated gradient method."
+    );
+
+    public static final Option GRADIENT_DESCENT_FIRST_ORDER_BREAK = new Option(
+        "reasoner.gradientdescent.firstorderbreak",
+        true,
+        "Stop gradient descent when the norm of the gradient is less than reasoner.gradientdescent.firstorderthreshold."
+    );
+
+    public static final Option GRADIENT_DESCENT_FIRST_ORDER_NORM = new Option(
+        "reasoner.gradientdescent.firstordernorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the first order optimality condition."
+        + " Default is the infinity-norm which is the absolute value of the maximum component of the gradient vector."
+        + " Note that the infinity-norm can be explicitly set with the string literal: 'Infinity'.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_FIRST_ORDER_THRESHOLD = new Option(
+        "reasoner.gradientdescent.firstorderthreshold",
+        0.01f,
+        "Gradient descent stops when the norm of the gradient is less than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_INVERSE_TIME_EXP = new Option(
+        "reasoner.gradientdescent.inversescaleexp",
+        1.0f,
+        "If GradientDescent is using the STEPDECAY learning schedule, then this value is the negative"
+        + " exponent of the iteration count which scales the gradient step using:"
+        + " (learning_rate / ( iteration ^ - GRADIENT_DESCENT_INVERSE_TIME_EXP)).",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_LEARNING_RATE = new Option(
+        "reasoner.gradientdescent.learningrate",
+        0.1f,
+        "The learning rate for gradient descent inference.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_LEARNING_SCHEDULE = new Option(
+        "reasoner.gradientdescent.learningschedule",
+        GradientDescentReasoner.GradientDescentLearningSchedule.CONSTANT.toString(),
+        "The learning schedule of the GradientDescent inference reasoner changes the learning rate during learning."
+        + " STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by reasoner.gradientdescent.inversescaleexp."
+        + " CONSTANT: The learning rate is constant during learning."
+    );
+
+    public static final Option GRADIENT_DESCENT_MAX_ITER = new Option(
+        "reasoner.gradientdescent.maxiterations",
+        2500,
+        "The maximum number of iterations of Gradient Descent to perform in a round of inference.",
+        Option.FLAG_POSITIVE
     );
 
     public static final Option REASONER_RUN_FULL_ITERATIONS = new Option(
         "reasoner.runfulliterations",
         false,
         "Ignore all other stopping criteria and run until the maximum number of iterations."
+    );
+
+    public static final Option REASONER_OBJECTIVE_BREAK = new Option(
+        "reasoner.objectivebreak",
+        false,
+        "Stop if the objective has not changed since the last iteration (or logging period)."
     );
 
     public static final Option REASONER_OBJECTIVE_TOLERANCE = new Option(
