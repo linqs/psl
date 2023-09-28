@@ -78,7 +78,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         results = {'loss': self._loss(self._model(torch.FloatTensor(data[0])), torch.FloatTensor(data[1])).item(),
                    'metrics': calculate_metrics(predictions.detach().numpy(), data[1], self._metrics)}
 
-        return results
+        return 0, results
 
     def internal_save(self, options = {}):
         torch.save(self._model.state_dict(), options['save_path'])

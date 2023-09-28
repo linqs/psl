@@ -172,7 +172,6 @@ public class Runtime {
             runInference(config, model, result);
         }
 
-        // TODO(Connor): Closing DeepPredicates needs to occur after both learning and inference.
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
                 predicate.close();
@@ -426,7 +425,28 @@ public class Runtime {
                 RuntimeOptions.INFERENCE_METHOD.getString(), model.getRules(), targetDatabase);
         inferenceApplication.loadDeepPredicates("inference");
 
-        inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
+        boolean runInference = true;
+        while (runInference) {
+            inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
+
+            if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
+                targetDatabase.outputRandomVariableAtoms(RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString());
+
+                for (Predicate predicate : Predicate.getAll()) {
+                    if (predicate instanceof DeepPredicate) {
+                        ((DeepPredicate) predicate).evalDeepModel();
+
+                        runInference = !(((DeepPredicate) predicate).isEpochComplete());
+
+                        if (runInference) {
+                            ((DeepPredicate) predicate).predictDeepModel(false);
+                        }
+                    }
+                }
+            } else {
+                runInference = false;
+            }
+        }
 
         if (groundingCallback != null) {
             groundingCallback.close();

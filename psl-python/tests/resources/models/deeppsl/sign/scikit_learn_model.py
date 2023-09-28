@@ -48,7 +48,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         predictions, _ = self.internal_predict(data);
         results = {'metrics': calculate_metrics(predictions, data[1], self._metrics)}
 
-        return results
+        return 0, results
 
     def internal_save(self, options = {}):
         return {}

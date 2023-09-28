@@ -59,6 +59,10 @@ public class DeepPredicate extends StandardPredicate {
         this.deepModel = deepModel;
     }
 
+    public boolean isEpochComplete() {
+        return deepModel.isEpochComplete();
+    }
+
     public float predictDeepModel() {
         return deepModel.predictDeepModel(false);
     }

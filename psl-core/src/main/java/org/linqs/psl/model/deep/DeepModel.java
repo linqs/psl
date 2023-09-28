@@ -105,6 +105,11 @@ public abstract class DeepModel {
      */
     public abstract void writeEvalData();
 
+    /**
+     * Abstract class for reading the eval data from the shared buffer.
+     */
+    public abstract void readEvalData();
+
     public void initDeepModel(String application){
         log.debug("Init deep model {}.", this);
         this.application = application;
@@ -198,6 +203,9 @@ public abstract class DeepModel {
         message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
+
+        sharedBuffer.clear();
+        readEvalData();
 
         String resultString = getResultString(response);
         log.debug("Eval deep model result for {} : {}", this, resultString);

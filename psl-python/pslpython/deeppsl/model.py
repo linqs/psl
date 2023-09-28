@@ -137,7 +137,13 @@ class DeepModel(abc.ABC):
 
         data = numpy.array([self._data[index] for index in entity_indexes])
 
-        return self.internal_eval(data, options=options)
+        batch_complete, response = self.internal_eval(data, options=options)
+
+        self._shared_buffer.seek(0)
+
+        self._write_int(int(batch_complete))
+
+        return response
 
     def save(self, options = {}):
         return self.internal_save(options=options)
