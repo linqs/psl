@@ -80,16 +80,16 @@ public class DeepPredicate extends StandardPredicate {
         this.deepModel = deepModel;
     }
 
-    public float predictDeepModel() {
-        return deepModel.predictDeepModel(false);
+    public void predictDeepModel() {
+        deepModel.predictDeepModel(false);
     }
 
-    public float predictDeepModel(Boolean learning) {
-        return deepModel.predictDeepModel(learning);
+    public void predictDeepModel(Boolean learning) {
+        deepModel.predictDeepModel(learning);
     }
 
-    public void evalDeepModel() {
-        deepModel.evalDeepModel();
+    public float evalDeepModel() {
+        return deepModel.evalDeepModel();
     }
 
     public void saveDeepModel() {

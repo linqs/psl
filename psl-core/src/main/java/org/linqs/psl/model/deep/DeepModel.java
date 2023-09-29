@@ -98,17 +98,12 @@ public abstract class DeepModel {
     /**
      * Abstract class for reading the predict data from the shared buffer.
      */
-    public abstract float readPredictData();
+    public abstract void readPredictData();
 
     /**
      * Abstract class for writing the eval data to the shared buffer.
      */
     public abstract void writeEvalData();
-
-    /**
-     * Abstract class for reading the eval data from the shared buffer.
-     */
-    public abstract void readEvalData();
 
     public void initDeepModel(String application){
         log.debug("Init deep model {}.", this);
@@ -204,7 +199,7 @@ public abstract class DeepModel {
         return response.getBoolean("is_epoch_complete");
     }
 
-    public float predictDeepModel(Boolean learning) {
+    public void predictDeepModel(Boolean learning) {
         log.debug("Predict deep model {}.", this);
 
         sharedBuffer.clear();
@@ -223,15 +218,13 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         sharedBuffer.clear();
-        float movement = readPredictData();
+        readPredictData();
 
         String resultString = getResultString(response);
         log.debug("Predict deep model result for {} : {}", this, resultString);
-
-        return movement;
     }
 
-    public void evalDeepModel() {
+    public float evalDeepModel() {
         log.debug("Eval deep model {}.", this);
 
         sharedBuffer.clear();
@@ -245,11 +238,10 @@ public abstract class DeepModel {
 
         JSONObject response = sendSocketMessage(message);
 
-        sharedBuffer.clear();
-        readEvalData();
-
         String resultString = getResultString(response);
         log.debug("Eval deep model result for {} : {}", this, resultString);
+
+        return response.getFloat("loss");
     }
 
     public void saveDeepModel() {

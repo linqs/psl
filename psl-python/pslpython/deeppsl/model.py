@@ -56,6 +56,7 @@ class DeepModel(abc.ABC):
         """
         Default to assuming that the epoch is complete. This is equivalent to assuming a single batch per epoch
         Override this method if your model needs to do something special to determine if the epoch is complete.
+        If you do override this method, you must return a dictionary with a key, "is_epoch_complete", that maps to a boolean.
         :param options:
         :return: A dictionary with a key, "is_epoch_complete", that maps to a boolean.
         """
@@ -65,7 +66,15 @@ class DeepModel(abc.ABC):
         raise NotImplementedError("internal_predict")
 
     def internal_eval(self, data, options = {}):
-        raise NotImplementedError("internal_eval")
+        """
+        Default to assuming that the model does have an evaluator and return 0.0.
+        Override this method if your model has an evaluator.
+        If you do override this method, you must return a dictionary with a key, "loss", that maps to a float where lower is better.
+        :param data:
+        :param options:
+        :return: A dictionary with a key, "loss", that maps to a float.
+        """
+        return {"loss": 0.0}
 
     def internal_save(self, options = {}):
         raise NotImplementedError("internal_save")
