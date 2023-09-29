@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2021 The Regents of the University of California
+ * Copyright 2013-2023 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.gradientdescent.term.GradientDescentObjectiveTerm;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
