@@ -163,6 +163,19 @@ public abstract class DeepModel {
         log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
+    public void batchEnd() {
+        log.debug("Batch end deep model {}.", this);
+
+        JSONObject message = new JSONObject();
+        message.put("task", "batch_end");
+        message.put("options", pythonOptions);
+
+        JSONObject response = sendSocketMessage(message);
+
+        String resultString = getResultString(response);
+        log.debug("Batch end deep model results for {} : {}", this, resultString);
+    }
+
     public void epochEnd() {
         log.debug("Epoch end deep model {}.", this);
 
@@ -174,6 +187,21 @@ public abstract class DeepModel {
 
         String resultString = getResultString(response);
         log.debug("Epoch end deep model results for {} : {}", this, resultString);
+    }
+
+    public boolean isEpochComplete() {
+        log.debug("Check if epoch is complete for deep model {}.", this);
+
+        JSONObject message = new JSONObject();
+        message.put("task", "is_epoch_complete");
+        message.put("options", pythonOptions);
+
+        JSONObject response = sendSocketMessage(message);
+
+        String resultString = getResultString(response);
+        log.debug("Epoch end deep model results for {} : {}", this, resultString);
+
+        return response.getBoolean("is_epoch_complete");
     }
 
     public float predictDeepModel(Boolean learning) {

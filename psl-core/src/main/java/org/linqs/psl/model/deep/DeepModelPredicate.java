@@ -51,8 +51,6 @@ public class DeepModelPredicate extends DeepModel {
     private float[] gradients;
     private float[] symbolicGradients;
 
-    private boolean epochComplete;
-
     private ArrayList<Integer> validAtomIndexes;
     private ArrayList<Integer> validDataIndexes;
 
@@ -67,8 +65,6 @@ public class DeepModelPredicate extends DeepModel {
         this.dataIndexes = null;
         this.gradients = null;
         this.symbolicGradients = null;
-
-        this.epochComplete = false;
 
         this.validAtomIndexes = new ArrayList<Integer>();
         this.validDataIndexes = new ArrayList<Integer>();
@@ -204,7 +200,7 @@ public class DeepModelPredicate extends DeepModel {
 
     public void readEvalData() {
         log.debug("Reading eval data for deep model predicate: {}", predicate.getName());
-        epochComplete = sharedBuffer.getInt() == 1;
+        // TODO(Charles): Implement. We need to read the evaluation loss from the buffer.
     }
 
     @Override
@@ -220,10 +216,6 @@ public class DeepModelPredicate extends DeepModel {
 
         validAtomIndexes.clear();
         validDataIndexes.clear();
-    }
-
-    public boolean isEpochComplete() {
-        return epochComplete;
     }
 
     public void setAtomStore(AtomStore atomStore) {

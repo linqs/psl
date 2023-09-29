@@ -51,8 +51,25 @@ public class DeepPredicate extends StandardPredicate {
         deepModel.fitDeepModel();
     }
 
+    /**
+     * Let the neural model know that a batch has ended.
+     */
+    public void batchEnd() {
+        deepModel.batchEnd();
+    }
+
+    /**
+     * Let the neural model know that an epoch has ended.
+     */
     public void epochEnd() {
         deepModel.epochEnd();
+    }
+
+    /**
+     * Check if the neural model has iterated over an entire epoch.
+     */
+    public boolean isEpochComplete() {
+        return deepModel.isEpochComplete();
     }
 
     public DeepModelPredicate getDeepModel() {
@@ -61,10 +78,6 @@ public class DeepPredicate extends StandardPredicate {
 
     public void setDeepModel(DeepModelPredicate deepModel) {
         this.deepModel = deepModel;
-    }
-
-    public boolean isEpochComplete() {
-        return deepModel.isEpochComplete();
     }
 
     public float predictDeepModel() {

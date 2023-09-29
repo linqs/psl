@@ -44,8 +44,22 @@ class DeepModel(abc.ABC):
     def internal_fit(self, data, gradients, options = {}):
         raise NotImplementedError("internal_fit")
 
+    def internal_batch_end(self, options = {}):
+        # Default to doing nothing.
+        return
+
     def internal_epoch_end(self, options = {}):
-        raise NotImplementedError("internal_epoch")
+        # Default to doing nothing.
+        return
+
+    def internal_is_epoch_complete(self, options = {}):
+        """
+        Default to assuming that the epoch is complete. This is equivalent to assuming a single batch per epoch
+        Override this method if your model needs to do something special to determine if the epoch is complete.
+        :param options:
+        :return: A dictionary with a key, "is_epoch_complete", that maps to a boolean.
+        """
+        return {"is_epoch_complete": True}
 
     def internal_predict(self, data, options = {}):
         raise NotImplementedError("internal_predict")
@@ -106,8 +120,14 @@ class DeepModel(abc.ABC):
 
         return self.internal_fit(data, gradients, options = options)
 
+    def batch_end(self, options = {}):
+        return self.internal_batch_end(options = options)
+
     def epoch_end(self, options = {}):
         return self.internal_epoch_end(options = options)
+
+    def is_epoch_complete(self, options = {}):
+        return self.internal_is_epoch_complete(options = options)
 
     def predict_predicate(self, options = {}):
         self._predict_predicate(False, options = options)
