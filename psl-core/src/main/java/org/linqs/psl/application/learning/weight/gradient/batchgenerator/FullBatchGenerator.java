@@ -15,32 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.mpe;
+package org.linqs.psl.application.learning.weight.gradient.batchgenerator;
 
-import org.linqs.psl.database.Database;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.duallcqp.DualBCDReasoner;
-import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
-import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.model.predicate.DeepPredicate;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 
 import java.util.List;
 
+
 /**
- * Use an DualBCD reasoner to perform MPE inference.
+ * A trivial BatchGenerator that just creates a single batch containing all the data.
  */
-public class DualBCDInference extends MPEInference {
-    public DualBCDInference(List<Rule> rules, Database db) {
-        super(rules, db);
+public class FullBatchGenerator extends BatchGenerator {
+
+    public FullBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
+        super(inferenceApplication, fullTermStore, deepPredicates);
     }
 
     @Override
-    protected Reasoner createReasoner() {
-        return new DualBCDReasoner();
-    }
-
-    @Override
-    public TermStore createTermStore() {
-        return new DualLCQPTermStore(database.getAtomStore());
+    public void generateBatchTermStores() {
+        batchTermStores.add(fullTermStore.copy());
     }
 }

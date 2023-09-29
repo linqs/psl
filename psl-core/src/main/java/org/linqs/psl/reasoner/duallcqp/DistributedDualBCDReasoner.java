@@ -17,11 +17,15 @@
  */
 package org.linqs.psl.reasoner.duallcqp;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPObjectiveTerm;
 import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.Parallel;
+
+import java.util.List;
 
 /**
  * A distributed variant of the DualBCDReasoner.
@@ -29,7 +33,7 @@ import org.linqs.psl.util.Parallel;
  * objective at every iteration as the solution to the stepsize subproblem may be inexact.
  * Practically, this means that this reasoner may not converge to the optimal solution in as
  * few iterations as the DualBCDReasoner.
- * However, this reasoner typically has a lower per iteration runtime.
+ * However, this reasoner does have a lower per iteration runtime.
  */
 public class DistributedDualBCDReasoner extends DualBCDReasoner {
     private static final org.linqs.psl.util.Logger log = Logger.getLogger(DistributedDualBCDReasoner.class);
@@ -45,8 +49,43 @@ public class DistributedDualBCDReasoner extends DualBCDReasoner {
     }
 
     @Override
-    protected void internalOptimize(DualLCQPTermStore termStore) {
-        Parallel.count(numTermBlocks, new BlockUpdateWorker(termStore, blockSize, regularizationParameter));
+    protected long internalOptimize(DualLCQPTermStore termStore, List<EvaluationInstance> evaluations, TrainingMap trainingMap) {
+        ObjectiveResult primalObjectiveResult = null;
+        ObjectiveResult oldPrimalObjectiveResult = null;
+
+        long totalTime = 0;
+        boolean breakDualBCD = false;
+        int iteration = 1;
+        while(!breakDualBCD) {
+            long start = System.currentTimeMillis();
+            Parallel.count(numTermBlocks, new BlockUpdateWorker(termStore, blockSize));
+            long end = System.currentTimeMillis();
+            totalTime += end - start;
+
+            if ((iteration - 1) % computePeriod == 0) {
+                float variableMovement = primalVariableUpdate(termStore);
+
+                oldPrimalObjectiveResult = primalObjectiveResult;
+                primalObjectiveResult = parallelComputeObjective(termStore);
+                ObjectiveResult dualObjectiveResult = parallelComputeDualObjective(termStore);
+
+                breakDualBCD = breakOptimization(iteration, primalObjectiveResult, oldPrimalObjectiveResult, dualObjectiveResult,
+                        maxIterations, runFullIterations, objectiveBreak, objectiveTolerance,
+                        variableMovementBreak, variableMovementTolerance, variableMovement,
+                        primalDualBreak, primalDualTolerance);
+
+                log.trace("Iteration {} -- Primal Objective: {}, Violated Constraints: {}, Dual Objective: {}, Primal-dual gap: {}, Iteration Time: {}, Total Optimization Time: {}.",
+                        iteration, primalObjectiveResult.objective, primalObjectiveResult.violatedConstraints,
+                        dualObjectiveResult.objective, primalObjectiveResult.objective - dualObjectiveResult.objective,
+                        (end - start), totalTime);
+
+                evaluate(termStore, iteration, evaluations, trainingMap);
+            }
+
+            iteration++;
+        }
+
+        return totalTime;
     }
 
     @Override
@@ -60,19 +99,17 @@ public class DistributedDualBCDReasoner extends DualBCDReasoner {
     private static class BlockUpdateWorker extends Parallel.Worker<Long> {
         private final DualLCQPTermStore termStore;
         private final int blockSize;
-        private final double regularizationParameter;
 
-        public BlockUpdateWorker(DualLCQPTermStore termStore, int blockSize, double regularizationParameter) {
+        public BlockUpdateWorker(DualLCQPTermStore termStore, int blockSize) {
             super();
 
             this.termStore = termStore;
             this.blockSize = blockSize;
-            this.regularizationParameter = regularizationParameter;
         }
 
         @Override
         public Object clone() {
-            return new BlockUpdateWorker(termStore, blockSize, regularizationParameter);
+            return new BlockUpdateWorker(termStore, blockSize);
         }
 
         @Override
@@ -92,7 +129,7 @@ public class DistributedDualBCDReasoner extends DualBCDReasoner {
                     continue;
                 }
 
-                dualBlockUpdate(term, termStore, regularizationParameter);
+                dualBlockUpdate(term, termStore);
             }
         }
     }

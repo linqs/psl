@@ -24,4 +24,15 @@ public class SGDTermStore extends SimpleTermStore<SGDObjectiveTerm> {
     public SGDTermStore(AtomStore atomStore) {
         super(atomStore, new SGDTermGenerator());
     }
+
+    @Override
+    public SGDTermStore copy() {
+        SGDTermStore sgdTermStoreCopy = new SGDTermStore(atomStore.copy());
+
+        for (SGDObjectiveTerm term : allTerms) {
+            sgdTermStoreCopy.add(term.copy());
+        }
+
+        return sgdTermStoreCopy;
+    }
 }

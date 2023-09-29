@@ -51,6 +51,10 @@ public class DeepPredicate extends StandardPredicate {
         deepModel.fitDeepModel();
     }
 
+    public void epochEnd() {
+        deepModel.epochEnd();
+    }
+
     public DeepModelPredicate getDeepModel() {
         return deepModel;
     }

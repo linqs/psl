@@ -15,32 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.application.inference.mpe;
+package org.linqs.psl.reasoner.gradientdescent.term;
 
-import org.linqs.psl.database.Database;
-import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.admm.ADMMReasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 
-import java.util.List;
-
-/**
- * Use an ADMM reasoner to perform MPE inference.
- */
-public class ADMMInference extends MPEInference {
-    public ADMMInference(List<Rule> rules, Database db) {
-        super(rules, db);
+public class GradientDescentTermStore extends SimpleTermStore<GradientDescentObjectiveTerm> {
+    public GradientDescentTermStore(AtomStore atomStore) {
+        super(atomStore, new GradientDescentTermGenerator());
     }
 
     @Override
-    protected Reasoner createReasoner() {
-        return new ADMMReasoner();
-    }
+    public GradientDescentTermStore copy() {
+        GradientDescentTermStore gradientDescentTermStoreCopy = new GradientDescentTermStore(atomStore.copy());
 
-    @Override
-    public TermStore createTermStore() {
-        return new ADMMTermStore(database.getAtomStore());
+        for (GradientDescentObjectiveTerm term : allTerms) {
+            gradientDescentTermStoreCopy.add(term.copy());
+        }
+
+        return gradientDescentTermStoreCopy;
     }
 }

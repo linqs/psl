@@ -26,6 +26,7 @@ import org.linqs.psl.evaluation.statistics.CategoricalEvaluator;
 import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
+import org.linqs.psl.reasoner.gradientdescent.GradientDescentReasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.util.SystemUtils;
 
@@ -150,19 +151,6 @@ public class Options {
         "duallcqp.computeperiod",
         10,
         "Compute some stats about the optimization to log and use them for stopping criterion once for each period.",
-        Option.FLAG_NON_NEGATIVE
-    );
-
-    public static final Option DUAL_LCQP_FIRST_ORDER_BREAK = new Option(
-        "duallcqp.firstorderbreak",
-        false,
-        "Stop the dual LCQP reasoner when the L-Infinity norm of the dual gradient is less than duallcqp.firstorderthreshold."
-    );
-
-    public static final Option DUAL_LCQP_FIRST_ORDER_THRESHOLD = new Option(
-        "duallcqp.firstorderthreshold",
-        0.001,
-        "Dual LCQP reasoners stop when the norm of the gradient is less than this threshold.",
         Option.FLAG_NON_NEGATIVE
     );
 
@@ -293,6 +281,12 @@ public class Options {
         "The search space for a GaussianProcessKernel."
     );
 
+    public static final Option WLA_GRADIENT_DESCENT_BATCH_GENERATOR = new Option(
+        "gradientdescent.batchgenerator",
+        "FullBatchGenerator",
+        "The batch generator to use for gradient descent weight learning. The default is FullBatchGenerator."
+    );
+
     public static final Option WLA_GRADIENT_DESCENT_CLIP_GRADIENT = new Option(
         "gradientdescent.clipweightgradient",
         true,
@@ -363,22 +357,6 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GRADIENT_DESCENT_NORM_BREAK = new Option(
-        "gradientdescent.normbreak",
-        false,
-        "When the gradient norm is below the tolerance "
-        + " set by gradientdescent.normtolerance, gradient descent weight learning is stopped."
-    );
-
-    public static final Option WLA_GRADIENT_DESCENT_NORM_TOLERANCE = new Option(
-        "gradientdescent.normtolerance",
-        1.0e-3f,
-        "If gradientdescent.runfulliterations=false and gradientdescent.normbreak=true,"
-        + " then when the norm of the gradient is below this tolerance "
-        + " gradient descent weight learning is stopped.",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option WLA_GRADIENT_DESCENT_NUM_STEPS = new Option(
         "gradientdescent.numsteps",
         500,
@@ -386,19 +364,17 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GRADIENT_DESCENT_OBJECTIVE_BREAK = new Option(
-        "gradientdescent.objectivebreak",
-        false,
-        "When the objective change between iterates is below the tolerance "
-        + " set by gradientdescent.objectivetolerance, gradient descent weight learning is stopped."
+    public static final Option WLA_GRADIENT_DESCENT_TRAINING_STOP_COMPUTE_PERIOD = new Option(
+        "gradientdescent.stopcomputeperiod",
+        10,
+        "The period at which the gradient descent weight learner will measure the stopping criterion.",
+        Option.FLAG_POSITIVE
     );
 
-    public static final Option WLA_GRADIENT_DESCENT_OBJECTIVE_TOLERANCE = new Option(
-        "gradientdescent.objectivetolerance",
-        1.0e-5f,
-        "If gradientdescent.runfulliterations=false and gradientdescent.objectivebreak=true,"
-        + " then when the objective change between iterates is below this tolerance"
-        + " gradient descent weight learning is stopped.",
+    public static final Option WLA_CONNECTED_COMPONENT_BATCH_SIZE = new Option(
+        "connectedcomponents.batchsize",
+        32,
+        "The number of connected components to include in a batch.",
         Option.FLAG_POSITIVE
     );
 
@@ -415,6 +391,7 @@ public class Options {
         "Save the weights that obtained the best validation evaluation."
         + " If true, then gradientdescent.runvalidation must be true."
     );
+
 
     public static final Option WLA_GRADIENT_DESCENT_SCALE_STEP = new Option(
         "gradientdescent.scalestepsize",
@@ -435,6 +412,42 @@ public class Options {
         Float.POSITIVE_INFINITY,
         "The p-norm used to measure the magnitude of gradients for stopping criterion if gradientdescent.extension=NONE.",
         Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_TRAINING_COMPUTE_PERIOD = new Option(
+        "gradientdescent.trainingcomputeperiod",
+        1,
+        "Compute training evaluation every this many iterations of gradient descent weight learning."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_FULL_MAP_EVALUATION_BREAK = new Option(
+        "gradientdescent.trainingevaluationbreak",
+        false,
+        "Break gradient descent weight learning when the training evaluation stops improving."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_FULL_MAP_EVALUATION_PATIENCE = new Option(
+        "gradientdescent.trainingevaluationpatience",
+        25,
+        "Break gradient descent weight learning when the training evaluation stops improving after this many epochs."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_VALIDATION_BREAK = new Option(
+        "gradientdescent.validationbreak",
+        false,
+        "Break gradient descent weight learning when the validation evaluation stops improving."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_VALIDATION_COMPUTE_PERIOD = new Option(
+        "gradientdescent.validationcomputeperiod",
+        1,
+        "Compute validation evaluation every this many iterations of gradient descent weight learning."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_VALIDATION_PATIENCE = new Option(
+        "gradientdescent.validationpatience",
+        25,
+        "Break gradient descent weight learning when the validation evaluation stops improving after this many epochs."
     );
 
     public static final Option WLA_GS_POSSIBLE_WEIGHTS = new Option(
@@ -535,7 +548,7 @@ public class Options {
 
     public static final Option INFERENCE_RELAX_SQUARED = new Option(
         "inference.relax.squared",
-        true,
+        false,
         "When relaxing a hard constraint into a soft one, this determines if the resulting weighted rule is squared."
     );
 
@@ -564,6 +577,13 @@ public class Options {
         "memoryvariabletermstore.shuffle",
         true,
         "Shuffle the terms before each return of iterator()."
+    );
+
+    public static final Option MINIMIZER_ENERGY_LOSS_COEFFICIENT = new Option(
+        "minimizer.energylosscoefficient",
+        1.0f,
+        "The coefficient of the energy loss term in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
     );
 
     public static final Option MINIMIZER_FINAL_PARAMETER_MOVEMENT_CONVERGENCE_TOLERANCE = new Option(
@@ -599,6 +619,13 @@ public class Options {
         0.01f,
         "The tolerance of the violation of value of the lower level objective function difference constraint"
         + " in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option MINIMIZER_PROX_VALUE_STEP_SIZE = new Option(
+        "minimizer.proxvaluestepsize",
+        0.01f,
+        "The step size of the proximity values for the augmented inference subproblem.",
         Option.FLAG_NON_NEGATIVE
     );
 
@@ -743,16 +770,78 @@ public class Options {
         "If true, run the suite of evaluators specified for the post-inference evaluation stage at regular intervals during inference."
     );
 
-    public static final Option REASONER_OBJECTIVE_BREAK = new Option(
-        "reasoner.objectivebreak",
-        false,
-        "Stop if the objective has not changed since the last iteration (or logging period)."
+    public static final Option GRADIENT_DESCENT_EXTENSION = new Option(
+        "reasoner.gradientdescent.extension",
+        GradientDescentReasoner.GradientDescentExtension.NONE.toString(),
+        "The GD extension to use for GD reasoning."
+        + " NONE (Default): The standard GD optimizer takes steps in the direction of the negative gradient scaled by the learning rate."
+        + " MOMENTUM: Modify the descent direction with a momentum term."
+        + " NESTEROV_ACCELERATION: Use the Nesterov accelerated gradient method."
+    );
+
+    public static final Option GRADIENT_DESCENT_FIRST_ORDER_BREAK = new Option(
+        "reasoner.gradientdescent.firstorderbreak",
+        true,
+        "Stop gradient descent when the norm of the gradient is less than reasoner.gradientdescent.firstorderthreshold."
+    );
+
+    public static final Option GRADIENT_DESCENT_FIRST_ORDER_NORM = new Option(
+        "reasoner.gradientdescent.firstordernorm",
+        Float.POSITIVE_INFINITY,
+        "The p-norm used to measure the first order optimality condition."
+        + " Default is the infinity-norm which is the absolute value of the maximum component of the gradient vector."
+        + " Note that the infinity-norm can be explicitly set with the string literal: 'Infinity'.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_FIRST_ORDER_THRESHOLD = new Option(
+        "reasoner.gradientdescent.firstorderthreshold",
+        0.01f,
+        "Gradient descent stops when the norm of the gradient is less than this threshold.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_INVERSE_TIME_EXP = new Option(
+        "reasoner.gradientdescent.inversescaleexp",
+        1.0f,
+        "If GradientDescent is using the STEPDECAY learning schedule, then this value is the negative"
+        + " exponent of the iteration count which scales the gradient step using:"
+        + " (learning_rate / ( iteration ^ - GRADIENT_DESCENT_INVERSE_TIME_EXP)).",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_LEARNING_RATE = new Option(
+        "reasoner.gradientdescent.learningrate",
+        0.1f,
+        "The learning rate for gradient descent inference.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option GRADIENT_DESCENT_LEARNING_SCHEDULE = new Option(
+        "reasoner.gradientdescent.learningschedule",
+        GradientDescentReasoner.GradientDescentLearningSchedule.CONSTANT.toString(),
+        "The learning schedule of the GradientDescent inference reasoner changes the learning rate during learning."
+        + " STEPDECAY (Default): Decay the learning rate like: learningRate / (n_epoch^p) where p is set by reasoner.gradientdescent.inversescaleexp."
+        + " CONSTANT: The learning rate is constant during learning."
+    );
+
+    public static final Option GRADIENT_DESCENT_MAX_ITER = new Option(
+        "reasoner.gradientdescent.maxiterations",
+        2500,
+        "The maximum number of iterations of Gradient Descent to perform in a round of inference.",
+        Option.FLAG_POSITIVE
     );
 
     public static final Option REASONER_RUN_FULL_ITERATIONS = new Option(
         "reasoner.runfulliterations",
         false,
         "Ignore all other stopping criteria and run until the maximum number of iterations."
+    );
+
+    public static final Option REASONER_OBJECTIVE_BREAK = new Option(
+        "reasoner.objectivebreak",
+        false,
+        "Stop if the objective has not changed since the last iteration (or logging period)."
     );
 
     public static final Option REASONER_OBJECTIVE_TOLERANCE = new Option(

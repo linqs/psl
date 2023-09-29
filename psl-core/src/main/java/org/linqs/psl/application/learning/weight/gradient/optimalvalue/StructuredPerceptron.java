@@ -20,6 +20,7 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -37,7 +38,7 @@ public class StructuredPerceptron extends OptimalValue {
     }
 
     @Override
-    protected void computeIterationStatistics(int epoch) {
+    protected void computeIterationStatistics() {
         computeLatentInferenceIncompatibility();
         computeFullInferenceIncompatibility();
     }
@@ -50,7 +51,7 @@ public class StructuredPerceptron extends OptimalValue {
         inTrainingMAPState = true;
 
         computeCurrentIncompatibility(MAPIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomGradient, MAPDeepAtomGradient);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomEnergyGradient, MAPDeepAtomEnergyGradient);
     }
 
     @Override
@@ -72,9 +73,12 @@ public class StructuredPerceptron extends OptimalValue {
 
     @Override
     protected void computeTotalAtomGradient() {
+        Arrays.fill(rvAtomGradient, 0.0f);
+        Arrays.fill(deepAtomGradient, 0.0f);
+
         for (int i = 0; i < rvAtomGradient.length; i++) {
-            rvAtomGradient[i] = rvLatentAtomGradient[i] - MAPRVAtomGradient[i];
-            deepAtomGradient[i] = deepLatentAtomGradient[i] - MAPDeepAtomGradient[i];
+            rvAtomGradient[i] = rvLatentAtomGradient[i] - MAPRVAtomEnergyGradient[i];
+            deepAtomGradient[i] = deepLatentAtomGradient[i] - MAPDeepAtomEnergyGradient[i];
         }
     }
 }

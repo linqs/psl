@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.duallcqp.term;
 
 import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 
@@ -37,6 +38,17 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
         }
     }
 
+    @Override
+    public DualLCQPTermStore copy() {
+        DualLCQPTermStore dualLCQPTermStoreCopy = new DualLCQPTermStore(atomStore.copy());
+
+        for (DualLCQPObjectiveTerm term : allTerms) {
+            dualLCQPTermStoreCopy.add(term.copy());
+        }
+
+        return dualLCQPTermStoreCopy;
+    }
+
     private synchronized void init() {
         if (dualLCQPAtoms == null) {
             dualLCQPAtoms = new DualLCQPAtom[atomStore.size()];
@@ -54,15 +66,18 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     }
 
     @Override
-    public synchronized int add(DualLCQPObjectiveTerm term) {
+    public synchronized int add(ReasonerTerm term) {
         ensureDualLCQPAtomsCapacity();
 
         super.add(term);
 
+        assert(term instanceof DualLCQPObjectiveTerm);
+        DualLCQPObjectiveTerm newTerm = (DualLCQPObjectiveTerm) term;
+
         int[] atomIndexes = term.getAtomIndexes();
         float[] coefficients = term.getCoefficients();
         for (int i = 0; i < term.size(); i++) {
-            dualLCQPAtoms[atomIndexes[i]].addTerm(term, coefficients[i]);
+            dualLCQPAtoms[atomIndexes[i]].addTerm(newTerm, coefficients[i]);
         }
 
         return 1;
@@ -77,6 +92,11 @@ public class DualLCQPTermStore extends SimpleTermStore<DualLCQPObjectiveTerm> {
     }
 
     private synchronized void ensureDualLCQPAtomsCapacity() {
+        if (dualLCQPAtoms == null) {
+            init();
+            return;
+        }
+
         if (dualLCQPAtoms.length < atomStore.size()) {
             DualLCQPAtom[] newDualLCQPAtoms = new DualLCQPAtom[atomStore.size()];
             System.arraycopy(dualLCQPAtoms, 0, newDualLCQPAtoms, 0, dualLCQPAtoms.length);

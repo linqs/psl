@@ -113,7 +113,7 @@ public abstract class InferenceApplication implements ModelApplication {
         return new ADMMReasoner();
     }
 
-    protected TermStore createTermStore() {
+    public TermStore createTermStore() {
         return new ADMMTermStore(database.getAtomStore());
     }
 
@@ -212,6 +212,10 @@ public abstract class InferenceApplication implements ModelApplication {
 
     public TermStore getTermStore() {
         return termStore;
+    }
+
+    public void setTermStore(TermStore termStore) {
+        this.termStore = termStore;
     }
 
     public Database getDatabase() {

@@ -40,7 +40,7 @@ public class SGDStreamingInference extends MPEInference {
     }
 
     @Override
-    protected TermStore createTermStore() {
+    public TermStore createTermStore() {
         return new SGDStreamingTermStore(rules, database);
     }
 
