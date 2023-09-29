@@ -57,6 +57,6 @@ class TestSciKitLearnModels(tests.python.base_test.PSLTest):
 
         sign_model.internal_init_model(None, options=options)
         sign_model.internal_fit(train_data, None, options=options)
-        batch_complete, results = sign_model.internal_eval(test_data, options=options)
+        epoch_complete, results = sign_model.internal_eval(test_data, options=options)
 
         self.assertTrue(results['metrics']['categorical_accuracy'] > 0.5)
