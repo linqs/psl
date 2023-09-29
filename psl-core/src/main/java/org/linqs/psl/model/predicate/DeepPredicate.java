@@ -54,8 +54,8 @@ public class DeepPredicate extends StandardPredicate {
     /**
      * Let the neural model know that a batch has ended.
      */
-    public void batchEnd() {
-        deepModel.batchEnd();
+    public void nextBatch() {
+        deepModel.nextBatch();
     }
 
     /**

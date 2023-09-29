@@ -158,17 +158,17 @@ public abstract class DeepModel {
         log.debug("Fit deep model results for {} : {}", this, resultString);
     }
 
-    public void batchEnd() {
-        log.debug("Batch end deep model {}.", this);
+    public void nextBatch() {
+        log.debug("Next batch deep model {}.", this);
 
         JSONObject message = new JSONObject();
-        message.put("task", "batch_end");
+        message.put("task", "next_batch");
         message.put("options", pythonOptions);
 
         JSONObject response = sendSocketMessage(message);
 
         String resultString = getResultString(response);
-        log.debug("Batch end deep model results for {} : {}", this, resultString);
+        log.debug("Next batch deep model results for {} : {}", this, resultString);
     }
 
     public void epochEnd() {

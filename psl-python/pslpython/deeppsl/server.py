@@ -67,8 +67,8 @@ class ConnectionHandler(object):
             result = self._init(request)
         elif request['task'] == 'fit':
             result = self._fit(request)
-        elif request['task'] == 'batch_end':
-            result = self._batch_end(request)
+        elif request['task'] == 'next_batch':
+            result = self._next_batch(request)
         elif request['task'] == 'epoch_end':
             result = self._epoch_end(request)
         elif request['task'] == 'is_epoch_complete':
@@ -120,8 +120,8 @@ class ConnectionHandler(object):
         else:
             raise ValueError("Unknown deep model type in fit: '%s'." % (deep_model,))
 
-    def _batch_end(self, request):
-        return self._model.batch_end(options=request.get('options', {}))
+    def _next_batch(self, request):
+        return self._model.next_batch(options=request.get('options', {}))
 
     def _epoch_end(self, request):
         return self._model.epoch_end(options=request.get('options', {}))

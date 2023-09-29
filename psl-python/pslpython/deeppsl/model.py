@@ -44,7 +44,7 @@ class DeepModel(abc.ABC):
     def internal_fit(self, data, gradients, options = {}):
         raise NotImplementedError("internal_fit")
 
-    def internal_batch_end(self, options = {}):
+    def internal_next_batch(self, options = {}):
         # Default to doing nothing.
         return
 
@@ -129,8 +129,8 @@ class DeepModel(abc.ABC):
 
         return self.internal_fit(data, gradients, options = options)
 
-    def batch_end(self, options = {}):
-        return self.internal_batch_end(options = options)
+    def next_batch(self, options = {}):
+        return self.internal_next_batch(options = options)
 
     def epoch_end(self, options = {}):
         return self.internal_epoch_end(options = options)
