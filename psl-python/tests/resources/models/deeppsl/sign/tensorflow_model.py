@@ -65,7 +65,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         results = {'loss': self._model.compiled_loss(tensorflow.constant(predictions, dtype=tensorflow.float32), tensorflow.constant(data[1], dtype=tensorflow.float32)),
                    'metrics': calculate_metrics(predictions, data[1], self._metrics)}
 
-        return 0, results
+        return results
 
     def internal_save(self, options = {}):
         if 'save_path' not in options:

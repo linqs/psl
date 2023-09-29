@@ -163,13 +163,7 @@ class DeepModel(abc.ABC):
 
         data = numpy.array([self._data[index] for index in entity_indexes])
 
-        epoch_complete, response = self.internal_eval(data, options=options)
-
-        self._shared_buffer.seek(0)
-
-        self._write_int(int(epoch_complete))
-
-        return response
+        return self.internal_eval(data, options=options)
 
     def save(self, options = {}):
         return self.internal_save(options=options)

@@ -61,9 +61,9 @@ class TestPytorchModels(tests.python.base_test.PSLTest):
                    'save_path': None}
 
         sign_model.internal_init_model(None, options=options)
-        epoch_complete, pre_train_results = sign_model.internal_eval(test_data, options=options)
+        pre_train_results = sign_model.internal_eval(test_data, options=options)
         sign_model.internal_fit(train_data, None, options=options)
-        epoch_complete, post_train_results = sign_model.internal_eval(test_data, options=options)
+        post_train_results = sign_model.internal_eval(test_data, options=options)
 
         with tempfile.TemporaryDirectory(suffix = '_TestNeuPSL') as temp_dir:
             save_path = os.path.join(temp_dir, 'tensorflow_model')
@@ -73,7 +73,7 @@ class TestPytorchModels(tests.python.base_test.PSLTest):
 
             saved_sign_model = tests.resources.models.deeppsl.sign.pytorch_model.SignModel()
             saved_sign_model.load(options=options)
-            epoch_complete, post_load_results = saved_sign_model.internal_eval(test_data, options=options)
+            post_load_results = saved_sign_model.internal_eval(test_data, options=options)
 
         # First value is the objective, second value is the accuracy.
 
