@@ -60,6 +60,21 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
         dualVariable = 0.0;
         slackBoundDualVariable = 0.0;
 
+        init();
+    }
+
+    public DualLCQPObjectiveTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
+                                 Rule rule, boolean squared, boolean hinge, FunctionComparator comparator,
+                                 double dualVariable, double slackBoundDualVariable) {
+        super(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
+
+        this.dualVariable = dualVariable;
+        this.slackBoundDualVariable = slackBoundDualVariable;
+
+        init();
+    }
+
+    private void init() {
         isEqualityConstraint = (this.comparator != null) && this.comparator.equals(FunctionComparator.EQ);
 
         if ((this.comparator != null) && this.comparator.equals(FunctionComparator.GTE)) {
@@ -72,6 +87,12 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
 
             constant = -constant;
         }
+    }
+
+    @Override
+    public DualLCQPObjectiveTerm copy() {
+        return new DualLCQPObjectiveTerm(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator,
+                dualVariable, slackBoundDualVariable);
     }
 
     /**

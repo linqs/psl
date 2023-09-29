@@ -97,6 +97,25 @@ public class ADMMObjectiveTerm extends ReasonerTerm {
         }
     }
 
+    public ADMMObjectiveTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
+                             Rule rule, boolean squared, boolean hinge, FunctionComparator comparator,
+                             float[] variableValues, float[] variableLagranges) {
+        super(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
+
+        this.variableValues = Arrays.copyOf(variableValues, size);
+        this.variableLagranges = Arrays.copyOf(variableLagranges, size);
+
+        if (termType == TermType.HingeLossTerm || termType == TermType.LinearConstraintTerm) {
+            initUnitNormal();
+        }
+    }
+
+    @Override
+    public ADMMObjectiveTerm copy() {
+        return new ADMMObjectiveTerm(size, coefficients, constant, atomIndexes,
+                rule, squared, hinge, comparator, variableValues, variableLagranges);
+    }
+
     public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane hyperplane, Rule rule, FunctionComparator comparator) {
         return new ADMMObjectiveTerm(hyperplane, rule, false, false, comparator);
     }

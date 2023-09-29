@@ -34,6 +34,11 @@ public final class UnmanagedObservedAtom extends ObservedAtom {
     }
 
     @Override
+    public UnmanagedObservedAtom copy() {
+        return new UnmanagedObservedAtom(predicate, (Constant[]) arguments, value);
+    }
+
+    @Override
     public boolean isManaged() {
         return false;
     }

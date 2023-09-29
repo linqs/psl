@@ -24,6 +24,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 import org.linqs.psl.util.Logger;
@@ -32,6 +33,7 @@ import org.linqs.psl.util.Parallel;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An optimizer to minimize the total weighted incompatibility
@@ -94,6 +96,13 @@ public abstract class Reasoner<T extends ReasonerTerm> {
      */
     public void close() {}
 
+    public void clear() {
+        prevVariableValues = null;
+
+        workerRVAtomGradients = null;
+        workerDeepGradients = null;
+    }
+
     /**
      * Set a budget (given as a proportion of the max budget).
      */
@@ -118,13 +127,14 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         }
     }
 
-    protected void optimizationComplete(TermStore<T> termStore, ObjectiveResult finalObjective,
-                                        long totalTime, int iteration) {
+    protected void optimizationComplete(TermStore<T> termStore, ObjectiveResult finalObjective, long totalTime) {
         float change = (float)termStore.sync();
 
-        log.info("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}, Total Number of Iterations: {}",
-                finalObjective.objective, finalObjective.violatedConstraints, totalTime, iteration);
+        log.info("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}",
+                finalObjective.objective, finalObjective.violatedConstraints, totalTime);
         log.debug("Movement of variables from initial state: {}", change);
+
+        clear();
     }
 
     /**
@@ -217,7 +227,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         Arrays.fill(rvAtomGradient, 0.0f);
         Arrays.fill(deepAtomGradient, 0.0f);
         for(int j = 0; j < numTermBlocks; j++) {
-            for(int i = 0; i < termStore.getNumVariables(); i++) {
+            for(int i = 0; i <= termStore.getAtomStore().getMaxRVAIndex(); i++) {
                 rvAtomGradient[i] += workerRVAtomGradients[j][i];
                 deepAtomGradient[i] += workerDeepGradients[j][i];
             }
@@ -238,9 +248,27 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     }
 
     /**
+     * Clip (sub)gradient magnitude.
+     */
+    protected void clipGradientMagnitude(float[] gradient, float maxMagnitude) {
+        float maxGradient = 0.0f;
+        for (int i = 0; i < gradient.length; i++) {
+            if (Math.abs(gradient[i]) > maxGradient) {
+                maxGradient = Math.abs(gradient[i]);
+            }
+        }
+
+        if (maxGradient > maxMagnitude) {
+            for (int i = 0; i < gradient.length; i++) {
+                gradient[i] = gradient[i] * maxMagnitude / maxGradient;
+            }
+        }
+    }
+
+    /**
      * Compute the total weighted objective of the terms in their current state.
      */
-    protected ObjectiveResult computeObjective(TermStore<T> termStore) {
+    public static ObjectiveResult computeObjective(TermStore<? extends ReasonerTerm> termStore) {
         float objective = 0.0f;
         long violatedConstraints = 0;
         float[] variableValues = termStore.getVariableValues();
@@ -262,20 +290,79 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         return new ObjectiveResult(objective, violatedConstraints);
     }
 
+    protected static ObjectiveResult computeComponentObjective(TermStore<? extends ReasonerTerm> termStore, int componentIndex) {
+        assert (termStore instanceof SimpleTermStore);
+
+        SimpleTermStore<? extends ReasonerTerm> simpleTermStore = (SimpleTermStore<? extends ReasonerTerm>)termStore;
+
+        List<? extends ReasonerTerm> component = simpleTermStore.getConnectedComponents().get(componentIndex);
+
+        float objective = 0.0f;
+        long violatedConstraints = 0;
+        float[] variableValues = termStore.getVariableValues();
+
+        for (ReasonerTerm term : component) {
+            if (!term.isActive()) {
+                continue;
+            }
+
+            if (term.isConstraint()) {
+                if (term.evaluate(variableValues) > 0.0f) {
+                    violatedConstraints++;
+                }
+            } else {
+                objective += term.evaluate(variableValues);
+            }
+        }
+
+        return new ObjectiveResult(objective, violatedConstraints);
+    }
+
     /**
      * Compute the total weighted objective of the terms in their current state in a distributed manner.
      * This method cannot be called with a StreamingTermStore.
      */
-    protected ObjectiveResult parallelComputeObjective(TermStore<T> termStore) {
-        assert !(termStore instanceof StreamingTermStore);
+    public ObjectiveResult parallelComputeObjective(TermStore<T> termStore) {
+        assert (termStore instanceof SimpleTermStore);
 
-        int blockSize = (int)(termStore.size() / (Parallel.getNumThreads() * 4) + 1);
-        int numTermBlocks = (int)Math.ceil(termStore.size() / (double)blockSize);
+        SimpleTermStore<? extends ReasonerTerm> simpleTermStore = (SimpleTermStore<? extends ReasonerTerm>)termStore;
+
+        int blockSize = (int)(simpleTermStore.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(simpleTermStore.size() / (double)blockSize);
 
         float[] workerObjectives = new float[numTermBlocks];
         int[] workerViolatedConstraints = new int[numTermBlocks];
 
-        Parallel.count(numTermBlocks, new ObjectiveWorker(termStore, workerObjectives, workerViolatedConstraints, blockSize));
+        Parallel.count(numTermBlocks, new ObjectiveWorker(
+                simpleTermStore.getAllTerms(), simpleTermStore.getVariableValues(),
+                workerObjectives, workerViolatedConstraints, blockSize)
+        );
+
+        float objective = 0.0f;
+        int violatedConstraints = 0;
+        for (int i = 0; i < numTermBlocks; i++) {
+            objective += workerObjectives[i];
+            violatedConstraints += workerViolatedConstraints[i];
+        }
+
+        return new ObjectiveResult(objective, violatedConstraints);
+    }
+
+    protected ObjectiveResult parallelComputeComponentObjective(TermStore<T> termStore, int componentIndex) {
+        assert (termStore instanceof SimpleTermStore);
+
+        SimpleTermStore<T> simpleTermStore = (SimpleTermStore<T>)termStore;
+
+        Map<Integer, List<T>> connectedComponents = simpleTermStore.getConnectedComponents();
+        List<T> component = connectedComponents.get(componentIndex);
+
+        int blockSize = (int)(component.size() / (Parallel.getNumThreads() * 4) + 1);
+        int numTermBlocks = (int)Math.ceil(component.size() / (double)blockSize);
+
+        float[] workerObjectives = new float[numTermBlocks];
+        int[] workerViolatedConstraints = new int[numTermBlocks];
+
+        Parallel.count(numTermBlocks, new ObjectiveWorker(component, simpleTermStore.getVariableValues(), workerObjectives, workerViolatedConstraints, blockSize));
 
         float objective = 0.0f;
         int violatedConstraints = 0;
@@ -373,18 +460,18 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     }
 
     private static class ObjectiveWorker extends Parallel.Worker<Long> {
-        private final TermStore<? extends ReasonerTerm> termStore;
+        private final List<? extends ReasonerTerm> terms;
         private final int blockSize;
         private final float[] variableValues;
         private final float[] objectives;
         private final int[] violatedConstraints;
 
-        public ObjectiveWorker(TermStore<? extends ReasonerTerm> termStore,
+        public ObjectiveWorker(List<? extends ReasonerTerm> terms, float[] variableValues,
                                float[] objectives, int[] violatedConstraints, int blockSize) {
             super();
 
-            this.termStore = termStore;
-            this.variableValues = termStore.getVariableValues();
+            this.terms = terms;
+            this.variableValues = variableValues;
             this.objectives = objectives;
             this.violatedConstraints = violatedConstraints;
             this.blockSize = blockSize;
@@ -392,12 +479,12 @@ public abstract class Reasoner<T extends ReasonerTerm> {
 
         @Override
         public Object clone() {
-            return new ObjectiveWorker(termStore, objectives, violatedConstraints, blockSize);
+            return new ObjectiveWorker(terms, variableValues, objectives, violatedConstraints, blockSize);
         }
 
         @Override
         public void work(long blockIndex, Long ignore) {
-            int numTerms = (int)termStore.size();
+            int numTerms = (int)terms.size();
             float objective = 0.0f;
             int violatedConstraints = 0;
 
@@ -408,7 +495,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
                     break;
                 }
 
-                ReasonerTerm term = termStore.get(termIndex);
+                ReasonerTerm term = terms.get(termIndex);
 
                 if (!term.isActive()) {
                     continue;
@@ -427,7 +514,8 @@ public abstract class Reasoner<T extends ReasonerTerm> {
         }
     }
 
-    protected static class ObjectiveResult {
+
+    public static class ObjectiveResult {
         public float objective;
         public long violatedConstraints;
 

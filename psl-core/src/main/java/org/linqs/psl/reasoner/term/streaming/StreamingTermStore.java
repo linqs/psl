@@ -131,7 +131,7 @@ public abstract class StreamingTermStore<T extends StreamingTerm> extends TermSt
     }
 
     @Override
-    public int add(T term) {
+    public int add(ReasonerTerm term) {
         throw new UnsupportedOperationException();
     }
 

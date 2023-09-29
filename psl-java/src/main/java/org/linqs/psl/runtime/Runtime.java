@@ -557,7 +557,8 @@ public class Runtime {
 
         WeightLearningApplication learner = WeightLearningApplication.getWLA(
                 RuntimeOptions.LEARN_METHOD.getString(), model.getRules(),
-                trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, RuntimeOptions.VALIDATION.getBoolean());
+                trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase,
+                RuntimeOptions.VALIDATION.getBoolean());
         learner.setEvaluation(primaryEvaluation);
         learner.learn();
 

@@ -44,6 +44,9 @@ class DeepModel(abc.ABC):
     def internal_fit(self, data, gradients, options = {}):
         raise NotImplementedError("internal_fit")
 
+    def internal_epoch_end(self, options = {}):
+        raise NotImplementedError("internal_epoch")
+
     def internal_predict(self, data, options = {}):
         raise NotImplementedError("internal_predict")
 
@@ -102,6 +105,9 @@ class DeepModel(abc.ABC):
         data = numpy.array([self._data[index] for index in entity_indexes])
 
         return self.internal_fit(data, gradients, options = options)
+
+    def epoch_end(self, options = {}):
+        return self.internal_epoch_end(options = options)
 
     def predict_predicate(self, options = {}):
         self._predict_predicate(False, options = options)

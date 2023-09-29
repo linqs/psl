@@ -25,9 +25,11 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,6 +44,7 @@ public class AtomStore implements Iterable<GroundAtom> {
     protected int numRVAtoms;
     protected float[] atomValues;
     protected GroundAtom[] atoms;
+    private Map<Integer, List<Integer>> connectedComponentsAtomIndexes;
     protected int maxRVAIndex;
     protected Map<Atom, Integer> lookup;
 
@@ -57,7 +60,18 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];
+        connectedComponentsAtomIndexes = new HashMap<Integer, List<Integer>>();
         lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
+    }
+
+    public AtomStore copy() {
+        AtomStore atomStoreCopy = new AtomStore();
+
+        for (int i = 0; i < numAtoms; i++) {
+            atomStoreCopy.addAtom(atoms[i].copy());
+        }
+
+        return atomStoreCopy;
     }
 
     public int size() {
@@ -93,6 +107,15 @@ public class AtomStore implements Iterable<GroundAtom> {
         return atoms;
     }
 
+
+    public Map<Integer, List<Integer>> getConnectedComponentAtomIndexes() {
+        return connectedComponentsAtomIndexes;
+    }
+
+    public List<Integer> getConnectedComponentAtomIndexes(int index) {
+        return connectedComponentsAtomIndexes.get(index);
+    }
+
     public GroundAtom getAtom(int index) {
         return atoms[index];
     }
@@ -121,6 +144,62 @@ public class AtomStore implements Iterable<GroundAtom> {
     public boolean hasAtom(Atom query) {
         Integer index = lookup.get(query);
         return (index != null);
+    }
+
+    /**
+     * Find the root of the atom in the abstract disjoint-set data structure.
+     * Additionally, update the parent of the atoms along the path to the root to point to grandparents, i.e., perform path halving.
+     * This is to reduce the number of hops required to get to the root on the next call.
+     */
+    public synchronized int findAtomRoot(int atomIndex) {
+        return findAtomRoot(getAtom(atomIndex));
+    }
+
+    public synchronized int findAtomRoot(GroundAtom atom) {
+        int atomIndex = getAtomIndex(atom);
+        if (atomIndex == -1) {
+            // This atom is not managed by this store.
+            return -1;
+        }
+
+        int parentIndex = atom.getParent();
+        while (parentIndex != atomIndex) {
+            GroundAtom parentAtom = getAtom(parentIndex);
+            atom.setParent(parentAtom.getParent());
+
+            atomIndex = parentIndex;
+            atom = getAtom(parentIndex);
+            parentIndex = atom.getParent();
+        }
+
+        return atomIndex;
+    }
+
+    /**
+     * Merge the two atoms in the abstract disjoint-set data structure.
+     * The root of the first atom will be the root of the merged set.
+     */
+    public synchronized void union(GroundAtom atom1, GroundAtom atom2) {
+        // Replace nodes by their roots.
+        int root1 = findAtomRoot(atom1);
+        int root2 = findAtomRoot(atom2);
+
+        if (root1 == -1 || root2 == -1) {
+            // One of the atoms is not managed by this store.
+            return;
+        }
+
+        if (root1 == root2) {
+            // The atoms are already in the same set.
+            return;
+        }
+
+        // Merge the two sets.
+        GroundAtom rootAtom2 = getAtom(root2);
+        rootAtom2.setParent(root1);
+
+        connectedComponentsAtomIndexes.get(root1).addAll(connectedComponentsAtomIndexes.get(root2));
+        connectedComponentsAtomIndexes.remove(root2);
     }
 
     /**
@@ -185,10 +264,13 @@ public class AtomStore implements Iterable<GroundAtom> {
         }
 
         atom.setIndex(numAtoms);
+        atom.setParent(numAtoms);
 
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
         lookup.put(atom, numAtoms);
+        connectedComponentsAtomIndexes.put(numAtoms, new ArrayList<Integer>());
+        connectedComponentsAtomIndexes.get(numAtoms).add(numAtoms);
 
         if (atom instanceof RandomVariableAtom) {
             maxRVAIndex = numAtoms;

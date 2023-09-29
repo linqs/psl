@@ -17,13 +17,9 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.StreamingGroundingIterator;
-import org.linqs.psl.util.RuntimeStats;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 

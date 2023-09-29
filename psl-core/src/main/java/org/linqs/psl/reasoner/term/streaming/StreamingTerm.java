@@ -28,10 +28,14 @@ import java.nio.ByteBuffer;
  * A term that may be used in a streaming term store
  */
 public abstract class StreamingTerm extends ReasonerTerm {
-    public StreamingTerm(Hyperplane hyperplane, Rule rule,
-                         boolean squared, boolean hinge,
+    public StreamingTerm(Hyperplane hyperplane, Rule rule, boolean squared, boolean hinge,
                          FunctionComparator comparator) {
         super(hyperplane, rule, squared, hinge, comparator);
+    }
+
+    public StreamingTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
+                         Rule rule, boolean squared, boolean hinge, FunctionComparator comparator) {
+        super(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
     }
 
     /**

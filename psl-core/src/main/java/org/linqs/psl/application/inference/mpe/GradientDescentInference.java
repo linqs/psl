@@ -20,27 +20,27 @@ package org.linqs.psl.application.inference.mpe;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.duallcqp.DualBCDReasoner;
-import org.linqs.psl.reasoner.duallcqp.term.DualLCQPTermStore;
+import org.linqs.psl.reasoner.gradientdescent.GradientDescentReasoner;
+import org.linqs.psl.reasoner.gradientdescent.term.GradientDescentTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.List;
 
 /**
- * Use an DualBCD reasoner to perform MPE inference.
+ * Use an GradientDescent reasoner to perform MPE inference.
  */
-public class DualBCDInference extends MPEInference {
-    public DualBCDInference(List<Rule> rules, Database db) {
-        super(rules, db);
+public class GradientDescentInference extends MPEInference {
+    public GradientDescentInference(List<Rule> rules, Database db) {
+        super(rules, db, true);
     }
 
     @Override
     protected Reasoner createReasoner() {
-        return new DualBCDReasoner();
+        return new GradientDescentReasoner();
     }
 
     @Override
     public TermStore createTermStore() {
-        return new DualLCQPTermStore(database.getAtomStore());
+        return new GradientDescentTermStore(database.getAtomStore());
     }
 }

@@ -290,7 +290,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     public static WeightLearningApplication getWLA(String name, List<Rule> rules,
                                                    Database trainTargetDatabase, Database trainTruthDatabase,
-                                                   Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+                                                   Database validationTargetDatabase, Database validationTruthDatabase,
+                                                   boolean runValidation) {
         String className = Reflection.resolveClassName(name);
         if (className == null) {
             throw new IllegalArgumentException("Could not find class: " + name);

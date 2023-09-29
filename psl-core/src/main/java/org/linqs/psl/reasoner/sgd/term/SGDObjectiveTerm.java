@@ -17,9 +17,10 @@
  */
 package org.linqs.psl.reasoner.sgd.term;
 
-import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.rule.AbstractRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 
@@ -32,9 +33,18 @@ public class SGDObjectiveTerm extends StreamingTerm {
     /**
      * Construct a SGD objective term by taking ownership of the hyperplane and all members of it.
      */
-    public SGDObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge,
-                            Hyperplane hyperplane) {
+    public SGDObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge, Hyperplane hyperplane) {
         super(hyperplane, rule, squared, hinge, null);
+    }
+
+    public SGDObjectiveTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
+                            Rule rule, boolean squared, boolean hinge, FunctionComparator comparator) {
+        super(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
+    }
+
+    @Override
+    public SGDObjectiveTerm copy() {
+        return new SGDObjectiveTerm(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
     }
 
     /**
