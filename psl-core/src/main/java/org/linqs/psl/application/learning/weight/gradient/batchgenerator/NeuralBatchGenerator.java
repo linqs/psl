@@ -54,7 +54,7 @@ public class NeuralBatchGenerator extends BatchGenerator {
             deepPredicate.nextBatch();
         }
 
-        return 1;
+        return 0;
     }
 
     @Override
