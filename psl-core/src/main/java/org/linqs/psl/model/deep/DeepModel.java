@@ -196,7 +196,7 @@ public abstract class DeepModel {
         String resultString = getResultString(response);
         log.debug("Epoch end deep model results for {} : {}", this, resultString);
 
-        return response.getBoolean("is_epoch_complete");
+        return response.getJSONObject("result").getBoolean("is_epoch_complete");
     }
 
     public void predictDeepModel(Boolean learning) {
@@ -240,8 +240,8 @@ public abstract class DeepModel {
 
         String resultString = getResultString(response);
         log.debug("Eval deep model result for {} : {}", this, resultString);
-
-        return response.getFloat("loss");
+        
+        return response.getJSONObject("result").getFloat("loss");
     }
 
     public void saveDeepModel() {
