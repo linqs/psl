@@ -24,6 +24,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
+import org.linqs.psl.util.RandUtils;
 
 import java.util.List;
 

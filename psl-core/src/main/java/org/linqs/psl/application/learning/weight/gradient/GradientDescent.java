@@ -33,7 +33,6 @@ import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -255,8 +254,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initializeBatchWarmStarts() {
-        batchMAPTermStates = new ArrayList<TermState[]>(batchGenerator.getNumBatches());
-        batchMAPAtomValueStates = new ArrayList<float[]>(batchGenerator.getNumBatches());
+        batchMAPTermStates = new ArrayList<TermState[]>();
+        batchMAPAtomValueStates = new ArrayList<float[]>();
         for (SimpleTermStore<? extends ReasonerTerm> batchTermStore : batchGenerator.getBatchTermStores()) {
             batchMAPTermStates.add(batchTermStore.saveState());
 
@@ -331,19 +330,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
             }
 
-            ArrayList<Integer> batchPermutation = new ArrayList<Integer>(batchGenerator.getNumBatches());
-            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
-                batchPermutation.add(i);
-            }
-            RandUtils.shuffle(batchPermutation);
-
             if (epoch % trainingStopComputePeriod == 0) {
                 epochStart(epoch);
             }
 
             long start = System.currentTimeMillis();
-            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
-                int batchId = batchPermutation.get(i);
+            batchGenerator.permuteBatchOrdering();
+            while (!batchGenerator.isEpochComplete()) {
+                int batchId = batchGenerator.nextBatch();
 
                 long batchStart = System.currentTimeMillis();
 
@@ -366,10 +360,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.trace("Batch: {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
                         batchId, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
             }
-
-            for (DeepPredicate deepPredicate : deepPredicates) {
-                deepPredicate.epochEnd();
-            }
+            batchGenerator.epochEnd();
 
             long end = System.currentTimeMillis();
             totalTime += end - start;

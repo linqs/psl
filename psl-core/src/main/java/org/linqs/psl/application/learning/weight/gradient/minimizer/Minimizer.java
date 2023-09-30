@@ -181,7 +181,7 @@ public abstract class Minimizer extends GradientDescent {
     protected void initializeInternalParameters() {
         super.initializeInternalParameters();
 
-        for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+        for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
             batchLinearPenaltyCoefficients.add(initialLinearPenaltyCoefficient);
 
             batchRVAtomIndexToProxRuleIndexes.add(new ArrayList<Integer>());
@@ -277,7 +277,7 @@ public abstract class Minimizer extends GradientDescent {
     protected void initializeBatchWarmStarts() {
         super.initializeBatchWarmStarts();
 
-        for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+        for (int i = 0; i < batchGenerator.numBatchTermStores(); i++) {
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(i);
             batchLatentInferenceTermStates.add(batchTermStore.saveState());
             batchLatentInferenceAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));
@@ -355,7 +355,7 @@ public abstract class Minimizer extends GradientDescent {
 
         if (epoch == 0) {
             constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
-            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+            for (int i = 0; i < batchGenerator.numBatchTermStores(); i++) {
                 setBatch(i);
 
                 initializeProximityRuleConstants();
@@ -408,7 +408,7 @@ public abstract class Minimizer extends GradientDescent {
                     return;
                 }
 
-                for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+                for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
                     setBatch(batch);
 
                     // We need to recompute the iteration statistics for each batch because the parameters may have changed.
@@ -597,7 +597,7 @@ public abstract class Minimizer extends GradientDescent {
      */
     private float computeTotalEnergyDifference() {
         float totalObjectiveDifference = 0.0f;
-        for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+        for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
             setBatch(batch);
 
             // We need to recompute the iteration statistics for each batch because the parameters may have changed.
@@ -614,7 +614,7 @@ public abstract class Minimizer extends GradientDescent {
      */
     private float computeTotalEnergyDifferenceConstraintViolation() {
         float totalObjectiveDifference = 0.0f;
-        for (int batch = 0; batch < batchGenerator.getNumBatches(); batch++) {
+        for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
             setBatch(batch);
 
             // We need to recompute the iteration statistics for each batch because the parameters may have changed.

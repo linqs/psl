@@ -74,7 +74,7 @@ public abstract class OptimalValue extends GradientDescent {
     protected void initializeBatchWarmStarts() {
         super.initializeBatchWarmStarts();
 
-        for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+        for (int i = 0; i < batchGenerator.numBatchTermStores(); i++) {
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(i);
             batchLatentInferenceTermStates.add(batchTermStore.saveState());
             batchLatentInferenceAtomValueStates.add(Arrays.copyOf(batchTermStore.getAtomStore().getAtomValues(), batchTermStore.getAtomStore().getAtomValues().length));

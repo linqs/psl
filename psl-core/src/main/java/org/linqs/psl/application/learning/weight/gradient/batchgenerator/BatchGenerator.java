@@ -22,6 +22,7 @@ import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
+import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
 
 import java.lang.reflect.Constructor;
@@ -41,6 +42,9 @@ public abstract class BatchGenerator {
     protected List<SimpleTermStore<? extends ReasonerTerm>> batchTermStores;
     protected List<List<DeepModelPredicate>> batchDeepModelPredicates;
 
+    protected ArrayList<Integer> batchPermutation;
+    protected int currentBatchPermutationIndex;
+
 
     public BatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
         this.inferenceApplication = inferenceApplication;
@@ -49,9 +53,15 @@ public abstract class BatchGenerator {
 
         batchTermStores = new ArrayList<SimpleTermStore<? extends ReasonerTerm>>();
         batchDeepModelPredicates = new ArrayList<List<DeepModelPredicate>>();
+        batchPermutation = new ArrayList<Integer>();
+
+        currentBatchPermutationIndex = -1;
     }
 
-    public int getNumBatches() {
+    /**
+     * Return the number of batch term stores.
+     */
+    public int numBatchTermStores() {
         return batchTermStores.size();
     }
 
@@ -76,7 +86,7 @@ public abstract class BatchGenerator {
 
         generateBatchTermStores();
 
-        for (int i = 0; i < getNumBatches(); i++) {
+        for (int i = 0; i < numBatchTermStores(); i++) {
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchTermStores.get(i);
             batchDeepModelPredicates.add(new ArrayList<DeepModelPredicate>());
 
@@ -86,9 +96,43 @@ public abstract class BatchGenerator {
                 batchDeepModelPredicates.get(i).add(batchDeepModelPredicate);
             }
         }
+
+        for (int i = 0; i < numBatchTermStores(); i++) {
+            batchPermutation.add(i);
+        }
     }
 
     public abstract void generateBatchTermStores();
+
+    /**
+     * Permute the order of the batches.
+     */
+    public void permuteBatchOrdering() {
+        RandUtils.shuffle(batchPermutation);
+    }
+
+    /**
+     * Return true if the epoch is complete, i.e., there is a next batch, false otherwise.
+     */
+    public boolean isEpochComplete() {
+        return currentBatchPermutationIndex < batchPermutation.size() - 1;
+    }
+
+    public void epochEnd() {
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.epochEnd();
+        }
+
+        currentBatchPermutationIndex = -1;
+    }
+
+    /**
+     * Return the index of the next batch.
+     */
+    public int nextBatch() {
+        currentBatchPermutationIndex++;
+        return batchPermutation.get(currentBatchPermutationIndex);
+    }
 
     public void clear() {
         for (SimpleTermStore<? extends ReasonerTerm> termStore : batchTermStores) {
@@ -101,6 +145,8 @@ public abstract class BatchGenerator {
             deepModelPredicates.clear();
         }
         batchDeepModelPredicates.clear();
+
+        batchPermutation.clear();
     }
 
     public void close() {
@@ -114,6 +160,8 @@ public abstract class BatchGenerator {
             deepModelPredicates.clear();
         }
         batchDeepModelPredicates.clear();
+
+        batchPermutation.clear();
     }
 
     /**
