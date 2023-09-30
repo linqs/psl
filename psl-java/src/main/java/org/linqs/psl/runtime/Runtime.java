@@ -427,6 +427,16 @@ public class Runtime {
 
         boolean runInference = true;
         while (runInference) {
+            if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
+                for (Predicate predicate : Predicate.getAll()) {
+                    if (predicate instanceof DeepPredicate) {
+                        ((DeepPredicate) predicate).nextBatch();
+                        ((DeepPredicate) predicate).predictDeepModel(false);
+                        ((DeepPredicate) predicate).evalDeepModel();
+                    }
+                }
+            }
+
             inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 
             if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
@@ -434,13 +444,7 @@ public class Runtime {
 
                 for (Predicate predicate : Predicate.getAll()) {
                     if (predicate instanceof DeepPredicate) {
-                        ((DeepPredicate) predicate).evalDeepModel();
-
                         runInference = !(((DeepPredicate) predicate).isEpochComplete());
-
-                        if (runInference) {
-                            ((DeepPredicate) predicate).predictDeepModel(false);
-                        }
                     }
                 }
             } else {
