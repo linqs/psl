@@ -20,7 +20,6 @@ package org.linqs.psl.reasoner.gradientdescent.term;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
@@ -35,7 +34,7 @@ public class GradientDescentObjectiveTerm extends ReasonerTerm {
     }
 
     @Override
-    public SGDObjectiveTerm copy() {
-        return new SGDObjectiveTerm(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
+    public GradientDescentObjectiveTerm copy() {
+        return new GradientDescentObjectiveTerm(size, coefficients, constant, atomIndexes, rule, squared, hinge, comparator);
     }
 }
