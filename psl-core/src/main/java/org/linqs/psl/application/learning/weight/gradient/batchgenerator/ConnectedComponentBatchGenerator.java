@@ -29,7 +29,7 @@ import java.util.List;
 
 
 /**
- * A trivial BatchGenerator that just creates a single batch containing all the data.
+ * A BatchGenerator that creates a batch from sets of connected components of the HL-MRF factor graph.
  */
 public class ConnectedComponentBatchGenerator extends BatchGenerator {
 
