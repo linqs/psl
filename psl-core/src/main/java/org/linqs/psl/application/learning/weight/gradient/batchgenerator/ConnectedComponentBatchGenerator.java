@@ -24,7 +24,6 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
-import org.linqs.psl.util.RandUtils;
 
 import java.util.List;
 
@@ -34,7 +33,7 @@ import java.util.List;
  */
 public class ConnectedComponentBatchGenerator extends BatchGenerator {
 
-    private int batchSize;
+    private final int batchSize;
 
     public ConnectedComponentBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
         super(inferenceApplication, fullTermStore, deepPredicates);

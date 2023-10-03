@@ -65,6 +65,10 @@ public abstract class BatchGenerator {
         return batchTermStores.size();
     }
 
+    public int numBatches() {
+        return batchTermStores.size();
+    }
+
     public List<SimpleTermStore<? extends ReasonerTerm>> getBatchTermStores() {
         return batchTermStores;
     }
@@ -119,22 +123,15 @@ public abstract class BatchGenerator {
     }
 
     public int epochStart() {
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.epochStart();
-        }
-
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.predictDeepModel(true);
-        }
+        DeepPredicate.epochStartAllDeepPredicates();
+        DeepPredicate.predictAllDeepPredicates(true);
 
         currentBatchPermutationIndex++;
         return batchPermutation.get(currentBatchPermutationIndex);
     }
 
     public void epochEnd() {
-        for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.epochEnd();
-        }
+        DeepPredicate.epochEndAllDeepPredicates();
 
         currentBatchPermutationIndex = -1;
     }
@@ -143,6 +140,8 @@ public abstract class BatchGenerator {
      * Return the index of the next batch.
      */
     public int nextBatch() {
+        DeepPredicate.nextBatchAllDeepPredicates();
+
         currentBatchPermutationIndex++;
         if (currentBatchPermutationIndex >= batchPermutation.size()) {
             return -1;
