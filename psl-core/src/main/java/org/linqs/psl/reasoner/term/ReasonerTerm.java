@@ -109,6 +109,18 @@ public abstract class ReasonerTerm {
         throw new IllegalStateException("Unknown term type.");
     }
 
+    public boolean isSquared() {
+        return squared;
+    }
+
+    public boolean isHinge() {
+        return hinge;
+    }
+
+    public FunctionComparator getComparator() {
+        return comparator;
+    }
+
     /**
      * Get the number of variables in this term.
      */

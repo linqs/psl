@@ -115,7 +115,20 @@ public abstract class BatchGenerator {
      * Return true if the epoch is complete, i.e., there is a next batch, false otherwise.
      */
     public boolean isEpochComplete() {
-        return currentBatchPermutationIndex < batchPermutation.size() - 1;
+        return currentBatchPermutationIndex > batchPermutation.size() - 1;
+    }
+
+    public int epochStart() {
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.epochStart();
+        }
+
+        for (DeepPredicate deepPredicate : deepPredicates) {
+            deepPredicate.predictDeepModel(true);
+        }
+
+        currentBatchPermutationIndex++;
+        return batchPermutation.get(currentBatchPermutationIndex);
     }
 
     public void epochEnd() {
@@ -131,6 +144,9 @@ public abstract class BatchGenerator {
      */
     public int nextBatch() {
         currentBatchPermutationIndex++;
+        if (currentBatchPermutationIndex >= batchPermutation.size()) {
+            return -1;
+        }
         return batchPermutation.get(currentBatchPermutationIndex);
     }
 

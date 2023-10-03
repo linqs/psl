@@ -423,17 +423,21 @@ public class Runtime {
 
         InferenceApplication inferenceApplication = InferenceApplication.getInferenceApplication(
                 RuntimeOptions.INFERENCE_METHOD.getString(), model.getRules(), targetDatabase);
-        inferenceApplication.loadDeepPredicates("inference");
+
+        log.info("Loading deep predicates.");
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).initDeepPredicate(inferenceApplication.getDatabase().getAtomStore(), "inference");
+                ((DeepPredicate) predicate).epochStart();
+            }
+        }
 
         boolean runInference = true;
         while (runInference) {
-            if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
-                for (Predicate predicate : Predicate.getAll()) {
-                    if (predicate instanceof DeepPredicate) {
-                        ((DeepPredicate) predicate).nextBatch();
-                        ((DeepPredicate) predicate).predictDeepModel(false);
-                        ((DeepPredicate) predicate).evalDeepModel();
-                    }
+            for (Predicate predicate : Predicate.getAll()) {
+                if (predicate instanceof DeepPredicate) {
+                    ((DeepPredicate) predicate).predictDeepModel(false);
+                    ((DeepPredicate) predicate).evalDeepModel();
                 }
             }
 
@@ -444,6 +448,7 @@ public class Runtime {
 
                 for (Predicate predicate : Predicate.getAll()) {
                     if (predicate instanceof DeepPredicate) {
+                        ((DeepPredicate) predicate).nextBatch();
                         runInference = !(((DeepPredicate) predicate).isEpochComplete());
                     }
                 }

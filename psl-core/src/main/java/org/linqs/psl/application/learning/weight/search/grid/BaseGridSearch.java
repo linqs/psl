@@ -18,7 +18,6 @@
 package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
@@ -35,6 +34,7 @@ import java.util.Map;
  * rather than through ADMM's configuration so you don't globally change the number of iterations.
  */
 public abstract class BaseGridSearch extends WeightLearningApplication {
+    //TODO(Charles): Error if deep predicates exist when using search based WLAs.
     private static final Logger log = Logger.getLogger(BaseGridSearch.class);
 
     /**

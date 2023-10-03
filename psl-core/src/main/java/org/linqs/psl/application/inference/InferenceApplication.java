@@ -129,16 +129,6 @@ public abstract class InferenceApplication implements ModelApplication {
         log.debug("Generated {} terms.", termCount);
     }
 
-    public void loadDeepPredicates(String application) {
-        log.info("Loading deep predicates.");
-        for (Predicate predicate : Predicate.getAll()) {
-            if (predicate instanceof DeepPredicate) {
-                ((DeepPredicate)predicate).initDeepPredicate(database.getAtomStore(), application);
-                ((DeepPredicate)predicate).predictDeepModel(application.equals("learning"));
-            }
-        }
-    }
-
     /**
      * Alias for inference() with committing atoms.
      */

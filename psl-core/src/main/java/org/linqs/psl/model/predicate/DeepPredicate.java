@@ -43,7 +43,7 @@ public class DeepPredicate extends StandardPredicate {
 
     public void initDeepPredicate(AtomStore atomStore, String application){
         deepModel.setAtomStore(atomStore);
-        deepModel.initDeepModel(application);
+        deepModel.init(application);
     }
 
     public void fitDeepPredicate(float[] symbolicGradients) {
@@ -56,6 +56,13 @@ public class DeepPredicate extends StandardPredicate {
      */
     public void nextBatch() {
         deepModel.nextBatch();
+    }
+
+    /**
+     * Let the neural model know that an epoch is starting.
+     */
+    public void epochStart() {
+        deepModel.epochStart();
     }
 
     /**

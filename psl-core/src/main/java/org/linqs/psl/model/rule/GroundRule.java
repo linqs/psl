@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.rule;
 
-import java.util.List;
 import java.util.Set;
 
 import org.linqs.psl.model.atom.GroundAtom;

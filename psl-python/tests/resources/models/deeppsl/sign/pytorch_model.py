@@ -34,7 +34,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         self._loss = None
         self._optimizer = None
 
-    def internal_init_model(self, application, options = {}):
+    def internal_init(self, application, options = {}):
         class SignPytorchNetwork(torch.nn.Module):
             def __init__(self, input_size, output_size):
                 _import()
@@ -85,7 +85,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         return {}
 
     def load(self, options = {}):
-        self.internal_init_model(None, options=options)
+        self.internal_init(None, options=options)
         self._model.load_state_dict(torch.load(options['load_path']))
         return {}
 

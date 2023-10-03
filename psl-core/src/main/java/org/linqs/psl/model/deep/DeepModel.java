@@ -105,7 +105,7 @@ public abstract class DeepModel {
      */
     public abstract void writeEvalData();
 
-    public void initDeepModel(String application){
+    public void init(String application){
         log.debug("Init deep model {}.", this);
         this.application = application;
 
@@ -169,6 +169,19 @@ public abstract class DeepModel {
 
         String resultString = getResultString(response);
         log.debug("Next batch deep model results for {} : {}", this, resultString);
+    }
+
+    public void epochStart() {
+        log.debug("Epoch start deep model {}.", this);
+
+        JSONObject message = new JSONObject();
+        message.put("task", "epoch_start");
+        message.put("options", pythonOptions);
+
+        JSONObject response = sendSocketMessage(message);
+
+        String resultString = getResultString(response);
+        log.debug("Epoch start deep model results for {} : {}", this, resultString);
     }
 
     public void epochEnd() {
