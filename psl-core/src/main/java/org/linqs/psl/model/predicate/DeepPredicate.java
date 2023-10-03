@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.predicate;
 
+import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.term.ConstantType;
@@ -87,12 +88,8 @@ public class DeepPredicate extends StandardPredicate {
         this.deepModel = deepModel;
     }
 
-    public void predictDeepModel() {
-        deepModel.predictDeepModel(false);
-    }
-
-    public void predictDeepModel(Boolean learning) {
-        deepModel.predictDeepModel(learning);
+    public float predictDeepModel(Boolean learning) {
+        return deepModel.predictDeepModel(learning);
     }
 
     public float evalDeepModel() {
@@ -138,6 +135,79 @@ public class DeepPredicate extends StandardPredicate {
         StandardPredicate.validateTypes(predicate, types);
 
         return predicate;
+    }
+
+    public static void initAllDeepPredicates(AtomStore atomStore, String application) {
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).initDeepPredicate(atomStore, application);
+            }
+        }
+    }
+
+    public static void epochStartAllDeepPredicates() {
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).epochStart();
+            }
+        }
+    }
+
+    public static void epochEndAllDeepPredicates() {
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).epochEnd();
+            }
+        }
+    }
+
+    public static float predictAllDeepPredicates(boolean learning) {
+        float movement = 0.0f;
+
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                movement += ((DeepPredicate) predicate).predictDeepModel(learning);
+            }
+        }
+
+        return movement;
+    }
+
+    public static void evalAllDeepPredicates() {
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).evalDeepModel();
+            }
+        }
+    }
+
+    public static void nextBatchAllDeepPredicates() {
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).nextBatch();
+            }
+        }
+    }
+
+    /**
+     * Check if the epoch is complete for all DeepPredicates.
+     * If the epoch is complete for one DeepPredicate, it is complete for all.
+     */
+    public static boolean isEpochCompleteAllDeepPredicates() {
+        boolean isEpochComplete = false;
+
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).nextBatch();
+                isEpochComplete = (((DeepPredicate) predicate).isEpochComplete());
+
+                if (isEpochComplete) {
+                    break;
+                }
+            }
+        }
+
+        return isEpochComplete;
     }
 
     private void writeObject(ObjectOutputStream out) throws IOException {

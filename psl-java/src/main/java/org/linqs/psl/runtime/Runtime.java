@@ -425,37 +425,26 @@ public class Runtime {
                 RuntimeOptions.INFERENCE_METHOD.getString(), model.getRules(), targetDatabase);
 
         log.info("Loading deep predicates.");
-        for (Predicate predicate : Predicate.getAll()) {
-            if (predicate instanceof DeepPredicate) {
-                ((DeepPredicate) predicate).initDeepPredicate(inferenceApplication.getDatabase().getAtomStore(), "inference");
-                ((DeepPredicate) predicate).epochStart();
-            }
-        }
+        DeepPredicate.initAllDeepPredicates(inferenceApplication.getDatabase().getAtomStore(), "inference");
+        DeepPredicate.epochStartAllDeepPredicates();
 
         boolean runInference = true;
         while (runInference) {
-            for (Predicate predicate : Predicate.getAll()) {
-                if (predicate instanceof DeepPredicate) {
-                    ((DeepPredicate) predicate).predictDeepModel(false);
-                    ((DeepPredicate) predicate).evalDeepModel();
-                }
-            }
+            DeepPredicate.predictAllDeepPredicates(false);
+            DeepPredicate.evalAllDeepPredicates();
 
             inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 
             if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
                 targetDatabase.outputRandomVariableAtoms(RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString());
 
-                for (Predicate predicate : Predicate.getAll()) {
-                    if (predicate instanceof DeepPredicate) {
-                        ((DeepPredicate) predicate).nextBatch();
-                        runInference = !(((DeepPredicate) predicate).isEpochComplete());
-                    }
-                }
+                DeepPredicate.nextBatchAllDeepPredicates();
+                runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
             } else {
                 runInference = false;
             }
         }
+        DeepPredicate.epochEndAllDeepPredicates();
 
         if (groundingCallback != null) {
             groundingCallback.close();
