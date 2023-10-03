@@ -167,7 +167,11 @@ public class DeepModelPredicate extends DeepModel {
         writeDataIndexData();
     }
 
-    public void readPredictData() {
+    /**
+     * Read the predicted values from the shared memory and update the atoms.
+     * Return the average movement of the atoms. The movement is the sum of the squared differences.
+     */
+    public float readPredictData() {
         log.debug("Reading predict data for deep model predicate: {}", predicate.getName());
         int count = sharedBuffer.getInt();
         if (count != atomIndexes.length) {
@@ -180,13 +184,18 @@ public class DeepModelPredicate extends DeepModel {
         float deepPrediction = 0.0f;
         int atomIndex = 0;
 
-        for(int index = 0; index < atomIndexes.length; index++) {
+        float movement = 0.0f;
+        for (int index = 0; index < atomIndexes.length; index++) {
             deepPrediction = sharedBuffer.getFloat();
             atomIndex = atomIndexes[index];
+
+            movement += Math.pow(atomValues[atomIndex] - deepPrediction, 2.0f);
 
             atomValues[atomIndex] = deepPrediction;
             ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
         }
+
+        return movement / atomIndexes.length;
     }
 
     public void writeEvalData() {
