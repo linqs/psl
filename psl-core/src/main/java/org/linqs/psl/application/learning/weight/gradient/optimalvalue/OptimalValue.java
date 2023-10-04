@@ -43,7 +43,7 @@ import java.util.Map;
  * computing the incompatibility of the latent variable inference problem solution are provided in this class.
  */
 public abstract class OptimalValue extends GradientDescent {
-    private static final Logger log = Logger.getLogger(GradientDescent.class);
+    private static final Logger log = Logger.getLogger(OptimalValue.class);
 
     protected float[] latentInferenceIncompatibility;
 

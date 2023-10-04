@@ -25,6 +25,29 @@ In the top-level directory of the PSL source (which should be the same directory
 mvn install
 ```
 
+PSL with Gurobi
+--------------------------
+
+PSL can be used with the [Gurobi](http://www.gurobi.com/) solver for inference.
+Gurobi is a commercial solver, but free academic licenses are available.
+To use Gurobi with PSL, you must have Gurobi installed and licensed.
+Further, you must install the Gurobi jar file into your local Maven repository.
+See [Guide to installing 3rd party JARs](https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html) for more information.
+
+To do this, first download the Gurobi jar file from the [Gurobi website](https://www.gurobi.com/downloads/).
+You will need to create an account and agree to the license terms.
+You must also obtain a [Gurobi license](https://www.gurobi.com/documentation/current/quickstart_windows/obtaining_a_grb_license.html) that is registered and saved to your machine.
+Be sure to export the `GRB_LICENSE_FILE` environment variable to point to the location of the license file.
+Then, run the following command, replacing `<location>` with the path to the downloaded jar file and `<version>` with the version of Gurobi you downloaded:
+```sh
+mvn install:install-file -Dfile=<location> -DgroupId=com.gurobi -DartifactId=gurobi -Dversion=<version> -Dpackaging=jar
+```
+Then, you can install PSL with Gurobi support by running:
+```sh
+mvn install -P Gurobi
+```
+PSL inference can then be run with Gurobi using the `GurobiInference` class.
+
 Citing PSL
 ----------
 

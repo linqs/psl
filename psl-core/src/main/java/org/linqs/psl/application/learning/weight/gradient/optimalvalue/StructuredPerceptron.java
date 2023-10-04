@@ -19,6 +19,7 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +29,8 @@ import java.util.List;
  * The structured perceptron learning loss is the difference in the energy of the latent and full inference problems.
  */
 public class StructuredPerceptron extends OptimalValue {
+    private static final Logger log = Logger.getLogger(StructuredPerceptron.class);
+
     protected float[] MAPIncompatibility;
 
     public StructuredPerceptron(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
@@ -40,13 +43,14 @@ public class StructuredPerceptron extends OptimalValue {
     @Override
     protected void computeIterationStatistics() {
         computeLatentInferenceIncompatibility();
-        computeFullInferenceIncompatibility();
+        computeMAPInferenceIncompatibility();
     }
 
     /**
      * Compute the incompatibility of the MAP state.
      */
-    private void computeFullInferenceIncompatibility() {
+    private void computeMAPInferenceIncompatibility() {
+        log.trace("Running MAP Inference.");
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
 
