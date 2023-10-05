@@ -161,6 +161,14 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option GUROBI_WORK_LIMIT = new Option(
+        "gurobi.worklimit",
+        Integer.MAX_VALUE,
+        "The maximum units of work a Gurobi reasoner can take to perform inference. " +
+        "A single unit of work is roughly equivalent to a second of time.",
+        Option.FLAG_POSITIVE
+    );
+
     public static final Option DUAL_LCQP_PRIMAL_DUAL_BREAK = new Option(
         "duallcqp.primaldualbreak",
         true,

@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.gurobi;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.reasoner.Reasoner;
@@ -42,6 +43,8 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
     private static final Logger log = LoggerFactory.getLogger(GurobiReasoner.class);
     private static final java.util.Map<FunctionComparator, Character> comparatorMap;
 
+    private final int workLimit;
+
     static {
         comparatorMap = new HashMap<>();
         comparatorMap.put(FunctionComparator.EQ, GRB.EQUAL);
@@ -51,6 +54,8 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
 
     public GurobiReasoner() {
         super();
+
+        workLimit = Options.GUROBI_WORK_LIMIT.getInt();
     }
 
     @Override
@@ -65,6 +70,7 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
             env.set("LogToConsole", "0");
 
             GRBModel model = new GRBModel(env);
+            model.set("WorkLimit", Integer.toString(workLimit));
 
             GRBVar[] varAtoms = model.addVars(numAtoms, GRB.CONTINUOUS);
 
@@ -78,9 +84,13 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
                     varAtoms[i].set(GRB.DoubleAttr.LB, atom.getValue());
                     varAtoms[i].set(GRB.DoubleAttr.UB, atom.getValue());
                 } else {
+                    if (atom.getPredicate().isInteger()) {
+                        varAtoms[i].set(GRB.CharAttr.VType, GRB.INTEGER);
+                    } else {
+                        varAtoms[i].set(GRB.DoubleAttr.Start, atom.getValue());
+                    }
                     varAtoms[i].set(GRB.DoubleAttr.LB, 0.0);
                     varAtoms[i].set(GRB.DoubleAttr.UB, 1.0);
-                    varAtoms[i].set(GRB.DoubleAttr.Start, atom.getValue());
                     hasDecisionVariables = true;
                 }
             }

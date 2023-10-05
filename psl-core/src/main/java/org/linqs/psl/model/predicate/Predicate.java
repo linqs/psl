@@ -39,6 +39,7 @@ public abstract class Predicate implements Serializable {
     private final String name;
     private final ConstantType[] types;
     private final int hashcode;
+    private boolean integer;
     private final Map<String, Object> options;
 
     protected Predicate(String name, ConstantType[] types) {
@@ -61,6 +62,8 @@ public abstract class Predicate implements Serializable {
         this.name = name.toUpperCase();
         this.types = types;
         hashcode = this.name.hashCode();
+        integer = false;
+
         options = new HashMap<String, Object>();
 
         if (predicates.containsKey(this.name)) {
@@ -107,6 +110,17 @@ public abstract class Predicate implements Serializable {
      */
     public void setPredicateOption(String name, Object option) {
         options.put(name, option);
+
+        if (name.equals("Integer") && Boolean.parseBoolean(option.toString())) {
+            integer = true;
+        }
+    }
+
+    /**
+     * Returns whether this predicate is integer.
+     */
+    public boolean isInteger() {
+        return integer;
     }
 
     /**
