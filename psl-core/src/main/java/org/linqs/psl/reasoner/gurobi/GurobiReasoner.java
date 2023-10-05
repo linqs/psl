@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.gurobi;
 
+import org.apache.commons.lang.ObjectUtils;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
@@ -63,9 +64,27 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
         termStore.initForOptimization();
         int numAtoms = termStore.getNumVariables();
 
+        ObjectiveResult objectiveResult = null;
+
+        boolean hasDecisionVariables = false;
+        GroundAtom[] variableAtoms = termStore.getAtomStore().getAtoms();
+        for (int i = 0; i < numAtoms; i++) {
+            if (!variableAtoms[i].isFixed()) {
+                hasDecisionVariables = true;
+                break;
+            }
+        }
+
+        if (!hasDecisionVariables) {
+            log.trace("No random variable atoms to optimize.");
+            objectiveResult = parallelComputeObjective(termStore);
+            return objectiveResult.objective;
+        }
+
         long start = System.currentTimeMillis();
 
         try {
+            log.trace("Building Gurobi model.");
             GRBEnv env = new GRBEnv(false);
             env.set("LogToConsole", "0");
 
@@ -74,13 +93,10 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
 
             GRBVar[] varAtoms = model.addVars(numAtoms, GRB.CONTINUOUS);
 
-            boolean hasDecisionVariables = false;
-            GroundAtom[] variableAtoms = termStore.getAtomStore().getAtoms();
+            variableAtoms = termStore.getAtomStore().getAtoms();
             for (int i = 0; i < numAtoms; i++) {
-                // get ith atom
                 GroundAtom atom = variableAtoms[i];
                 if (atom.isFixed()) {
-                    // set value of ith atom
                     varAtoms[i].set(GRB.DoubleAttr.LB, atom.getValue());
                     varAtoms[i].set(GRB.DoubleAttr.UB, atom.getValue());
                 } else {
@@ -91,18 +107,12 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
                     }
                     varAtoms[i].set(GRB.DoubleAttr.LB, 0.0);
                     varAtoms[i].set(GRB.DoubleAttr.UB, 1.0);
-                    hasDecisionVariables = true;
                 }
-            }
-
-            if (!hasDecisionVariables) {
-                log.trace("No random variable atoms to optimize.");
-                ObjectiveResult objectiveResult = parallelComputeObjective(termStore);
-                return objectiveResult.objective;
             }
 
             processTerms(termStore, model, varAtoms);
 
+            log.trace("Finished building Gurobi model.");
             model.optimize();
 
             float[] variableValues = termStore.getVariableValues();
@@ -110,17 +120,18 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
                 variableValues[i] = (float) varAtoms[i].get(GRB.DoubleAttr.X);
             }
 
-            ObjectiveResult objectiveResult = parallelComputeObjective(termStore);
-
-            optimizationComplete(termStore, objectiveResult, System.currentTimeMillis() - start);
-
             model.dispose();
             env.dispose();
 
-            return objectiveResult.objective;
         } catch (GRBException e) {
             throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }
+
+        objectiveResult = parallelComputeObjective(termStore);
+
+        optimizationComplete(termStore, objectiveResult, System.currentTimeMillis() - start);
+
+        return objectiveResult.objective;
     }
 
     private void processTerms(TermStore<GurobiObjectiveTerm> termStore, GRBModel model, GRBVar[] varAtoms) throws GRBException {
