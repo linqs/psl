@@ -434,6 +434,8 @@ public class Runtime {
 
             inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 
+            DeepPredicate.evalAllDeepPredicates();
+
             if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
                 targetDatabase.outputRandomVariableAtoms(RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString());
 
@@ -442,8 +444,6 @@ public class Runtime {
             } else {
                 runInference = false;
             }
-
-            DeepPredicate.evalAllDeepPredicates();
         }
         DeepPredicate.epochEndAllDeepPredicates();
 
