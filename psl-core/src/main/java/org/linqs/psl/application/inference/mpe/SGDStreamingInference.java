@@ -45,18 +45,6 @@ public class SGDStreamingInference extends MPEInference {
     }
 
     @Override
-    public void close() {
-        termStore.close();
-        reasoner.close();
-
-        termStore = null;
-        reasoner = null;
-
-        rules = null;
-        database = null;
-    }
-
-    @Override
     protected void completeInitialize() {
         // Do nothing else. Specifically, do not ground.
     }

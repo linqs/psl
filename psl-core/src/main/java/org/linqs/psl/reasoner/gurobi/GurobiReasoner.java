@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.gurobi;
 
-import org.apache.commons.lang.ObjectUtils;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.evaluation.EvaluationInstance;
@@ -44,6 +43,9 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
     private static final Logger log = LoggerFactory.getLogger(GurobiReasoner.class);
     private static final java.util.Map<FunctionComparator, Character> comparatorMap;
 
+    GRBEnv env;
+    GRBModel model;
+
     private final int workLimit;
 
     static {
@@ -57,6 +59,24 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
         super();
 
         workLimit = Options.GUROBI_WORK_LIMIT.getInt();
+
+        try {
+            env = new GRBEnv(false);
+//            env.set("LogToConsole", "0");
+        } catch (GRBException e) {
+            throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
+        }
+
+        model = null;
+    }
+
+    @Override
+    public void close() {
+        try {
+            env.dispose();
+        } catch (GRBException e) {
+            throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
+        }
     }
 
     @Override
@@ -83,46 +103,22 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
 
         long start = System.currentTimeMillis();
 
+        log.trace("Building Gurobi model.");
+
         try {
             log.trace("Building Gurobi model.");
-            GRBEnv env = new GRBEnv(false);
-            env.set("LogToConsole", "0");
-
-            GRBModel model = new GRBModel(env);
-            model.set("WorkLimit", Integer.toString(workLimit));
-
-            GRBVar[] varAtoms = model.addVars(numAtoms, GRB.CONTINUOUS);
-
-            variableAtoms = termStore.getAtomStore().getAtoms();
-            for (int i = 0; i < numAtoms; i++) {
-                GroundAtom atom = variableAtoms[i];
-                if (atom.isFixed()) {
-                    varAtoms[i].set(GRB.DoubleAttr.LB, atom.getValue());
-                    varAtoms[i].set(GRB.DoubleAttr.UB, atom.getValue());
-                } else {
-                    if (atom.getPredicate().isInteger()) {
-                        varAtoms[i].set(GRB.CharAttr.VType, GRB.INTEGER);
-                    } else {
-                        varAtoms[i].set(GRB.DoubleAttr.Start, atom.getValue());
-                    }
-                    varAtoms[i].set(GRB.DoubleAttr.LB, 0.0);
-                    varAtoms[i].set(GRB.DoubleAttr.UB, 1.0);
-                }
-            }
-
-            processTerms(termStore, model, varAtoms);
-
+            model = buildModel(termStore);
             log.trace("Finished building Gurobi model.");
+
             model.optimize();
 
+            GRBVar[] modelVariables = model.getVars();
             float[] variableValues = termStore.getVariableValues();
             for (int i = 0; i < numAtoms; i++) {
-                variableValues[i] = (float) varAtoms[i].get(GRB.DoubleAttr.X);
+                variableValues[i] = (float) modelVariables[i].get(GRB.DoubleAttr.X);
             }
 
             model.dispose();
-            env.dispose();
-
         } catch (GRBException e) {
             throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }
@@ -134,25 +130,61 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
         return objectiveResult.objective;
     }
 
-    private void processTerms(TermStore<GurobiObjectiveTerm> termStore, GRBModel model, GRBVar[] varAtoms) throws GRBException {
-        GRBQuadExpr objective = new GRBQuadExpr();
+    private void updateModelVariables(TermStore<GurobiObjectiveTerm> termStore, GRBVar[] modelVariables) throws GRBException {
+        GroundAtom[] variableAtoms = termStore.getAtomStore().getAtoms();
+        for (int i = 0; i < termStore.getNumVariables(); i++) {
+            GroundAtom atom = variableAtoms[i];
+            if (atom.isFixed()) {
+                modelVariables[i].set(GRB.DoubleAttr.LB, atom.getValue());
+                modelVariables[i].set(GRB.DoubleAttr.UB, atom.getValue());
+            } else {
+                if (atom.getPredicate().isInteger()) {
+                    modelVariables[i].set(GRB.CharAttr.VType, GRB.INTEGER);
+                } else {
+                    modelVariables[i].set(GRB.CharAttr.VType, GRB.CONTINUOUS);
+                    modelVariables[i].set(GRB.DoubleAttr.Start, atom.getValue());
+                }
 
-        int termIndex = 0;
-        for (GurobiObjectiveTerm term : termStore) {
+                modelVariables[i].set(GRB.DoubleAttr.LB, 0.0);
+                modelVariables[i].set(GRB.DoubleAttr.UB, 1.0);
+            }
+        }
+    }
+
+    private GRBVar[] createModelVariables(TermStore<GurobiObjectiveTerm> termStore, GRBModel model) throws GRBException {
+        GRBVar[] modelVariables = model.addVars(termStore.getNumVariables(), GRB.CONTINUOUS);
+        updateModelVariables(termStore, modelVariables);
+
+        return modelVariables;
+    }
+
+    private GRBModel buildModel(TermStore<GurobiObjectiveTerm> termStore) throws GRBException {
+        GRBModel model = new GRBModel(env);
+        model.set("WorkLimit", Integer.toString(workLimit));
+
+        GRBVar[] modelVariables = createModelVariables(termStore, model);
+
+        GRBQuadExpr objective = new GRBQuadExpr();
+        for (int termIndex = 0; termIndex < termStore.size(); termIndex++) {
+            GurobiObjectiveTerm term = termStore.get(termIndex);
             float[] coefficients = term.getCoefficients();
             int[] termAtomIndexes = term.getAtomIndexes();
 
+            // Create the linear expression defining the term.
             GRBLinExpr linearExpression = new GRBLinExpr();
             for (int i = 0; i < term.size(); i++) {
-                linearExpression.addTerm(coefficients[i], varAtoms[termAtomIndexes[i]]);
+                linearExpression.addTerm(coefficients[i], modelVariables[termAtomIndexes[i]]);
             }
             linearExpression.addConstant(-term.getConstant());
 
+            // Add the term to the model. If the term is a constraint, add it as a constraint, else add it to the objective.
+            // Non-constraint terms are added as a inequality constraint with a slack variable.
             if (term.isConstraint()) {
                 model.addConstr(linearExpression, comparatorMap.get(term.getComparator()), 0.0, "c" + termIndex);
             } else {
-                GRBVar var;
+                GRBVar var = null;
                 double weight = term.getWeight();
+
                 if (term.isHinge()) {
                     var = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "slack" + termIndex);
                     model.addConstr(linearExpression, GRB.LESS_EQUAL, var, "c_slack" + termIndex);
@@ -160,14 +192,16 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
                     var = model.addVar(-GRB.INFINITY, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "eq" + termIndex);
                     model.addConstr(linearExpression, GRB.EQUAL, var, "c_eq" + termIndex);
                 }
+
                 if (term.isSquared()) {
                     objective.addTerm(weight, var, var);
                 } else {
                     objective.addTerm(weight, var);
                 }
             }
-            termIndex++;
         }
         model.setObjective(objective);
+
+        return model;
     }
 }
