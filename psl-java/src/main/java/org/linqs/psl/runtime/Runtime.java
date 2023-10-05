@@ -431,7 +431,6 @@ public class Runtime {
         boolean runInference = true;
         while (runInference) {
             DeepPredicate.predictAllDeepPredicates(false);
-            DeepPredicate.evalAllDeepPredicates();
 
             inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 
@@ -443,6 +442,8 @@ public class Runtime {
             } else {
                 runInference = false;
             }
+
+            DeepPredicate.evalAllDeepPredicates();
         }
         DeepPredicate.epochEndAllDeepPredicates();
 
