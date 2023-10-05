@@ -39,9 +39,9 @@ You will need to create an account and agree to the license terms.
 You must also obtain a [Gurobi license](https://www.gurobi.com/documentation/current/quickstart_windows/obtaining_a_grb_license.html) that is registered and saved to your machine.
 Be sure to export the `GUROBI_HOME` environment variable to point to your install directory, `<installdir>`, and `GRB_LICENSE_FILE` environment variable to point to the location of the license file.
 Moreover, you must have the Gurobi install bin directory, `<installdir>/bin`, added to your `PATH` environment variable and `<installdir>/lib` added to your `LD_LIBRARY_PATH` environment variable.
-Then, run the following command, replacing `<location>` with the path to the downloaded jar file and `<version>` with the version of Gurobi you downloaded:
+Then, run the following command, replacing `<installdir>/lib/gurobi.jar` with the path to the downloaded jar file and `<version>` with the version of Gurobi you downloaded:
 ```sh
-mvn install:install-file -Dfile=<location> -DgroupId=com.gurobi -DartifactId=gurobi -Dversion=<version> -Dpackaging=jar
+mvn install:install-file -Dfile=<installdir>/lib/gurobi.jar -DgroupId=com.gurobi -DartifactId=gurobi -Dversion=<version> -Dpackaging=jar
 ```
 Then, you can install PSL with Gurobi support by running:
 ```sh
