@@ -434,11 +434,20 @@ public class Runtime {
 
             inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 
+            if (RuntimeOptions.INFERENCE_OUTPUT_RESULTS.getBoolean()) {
+                String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();
+                if (outputDir == null) {
+                    log.info("Writing inferred predicates to stdout.");
+                    targetDatabase.outputRandomVariableAtoms();
+                } else {
+                    log.info("Writing inferred predicates to directory: " + outputDir);
+                    targetDatabase.outputRandomVariableAtoms(outputDir);
+                }
+            }
+
             DeepPredicate.evalAllDeepPredicates();
 
             if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
-                targetDatabase.outputRandomVariableAtoms(RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString());
-
                 DeepPredicate.nextBatchAllDeepPredicates();
                 runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
             } else {
@@ -450,17 +459,6 @@ public class Runtime {
         if (groundingCallback != null) {
             groundingCallback.close();
             Grounding.setGroundRuleCallback(null);
-        }
-
-        if (RuntimeOptions.INFERENCE_OUTPUT_RESULTS.getBoolean()) {
-            String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();
-            if (outputDir == null) {
-                log.info("Writing inferred predicates to stdout.");
-                targetDatabase.outputRandomVariableAtoms();
-            } else {
-                log.info("Writing inferred predicates to directory: " + outputDir);
-                targetDatabase.outputRandomVariableAtoms(outputDir);
-            }
         }
 
         if (result != null) {
