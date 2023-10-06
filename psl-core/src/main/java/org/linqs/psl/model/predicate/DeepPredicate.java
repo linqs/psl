@@ -198,7 +198,6 @@ public class DeepPredicate extends StandardPredicate {
 
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
-                ((DeepPredicate) predicate).nextBatch();
                 isEpochComplete = (((DeepPredicate) predicate).isEpochComplete());
 
                 if (isEpochComplete) {
