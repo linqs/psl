@@ -169,6 +169,12 @@ public class Options {
         Option.FLAG_POSITIVE
     );
 
+    public static final Option GUROBI_LOG_TO_CONSOLE = new Option(
+        "gurobi.logtoconsole",
+        false,
+        "Whether to log Gurobi output to the console."
+    );
+
     public static final Option DUAL_LCQP_PRIMAL_DUAL_BREAK = new Option(
         "duallcqp.primaldualbreak",
         true,

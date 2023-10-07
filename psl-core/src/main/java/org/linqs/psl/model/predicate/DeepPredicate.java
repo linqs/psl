@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.model.predicate;
 
-import org.linqs.psl.application.inference.InferenceApplication;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.term.ConstantType;

@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.gurobi.term;
 
+import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -57,7 +58,11 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
 
         try {
             env = new GRBEnv(false);
-            env.set("LogToConsole", "0");
+            if (Options.GUROBI_LOG_TO_CONSOLE.getBoolean()) {
+                env.set("LogToConsole", "1");
+            } else {
+                env.set("LogToConsole", "0");
+            }
 
             model = new GRBModel(env);
         } catch (GRBException e) {
