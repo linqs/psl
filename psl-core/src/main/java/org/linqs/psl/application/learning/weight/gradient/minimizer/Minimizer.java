@@ -178,6 +178,25 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     @Override
+    protected void initForLearning() {
+        super.initForLearning();
+
+        constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
+        for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
+            setBatch(i);
+
+            initializeProximityRuleConstants();
+
+            computeFullInferenceStatistics();
+            computeAugmentedInferenceStatistics();
+
+            if (constraintRelaxationConstant < augmentedInferenceEnergy - mapEnergy) {
+                constraintRelaxationConstant = augmentedInferenceEnergy - mapEnergy;
+            }
+        }
+    }
+
+    @Override
     protected void initializeInternalParameters() {
         super.initializeInternalParameters();
 
@@ -352,22 +371,6 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected void epochStart(int epoch) {
         super.epochStart(epoch);
-
-        if (epoch == 0) {
-            constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
-            for (int i = 0; i < batchGenerator.getNumBatches(); i++) {
-                setBatch(i);
-
-                initializeProximityRuleConstants();
-
-                computeFullInferenceStatistics();
-                computeAugmentedInferenceStatistics();
-
-                if (constraintRelaxationConstant < augmentedInferenceEnergy - mapEnergy) {
-                    constraintRelaxationConstant = augmentedInferenceEnergy - mapEnergy;
-                }
-            }
-        }
 
         proxRuleObservedAtomsValueEpochMovement = 0.0f;
     }
