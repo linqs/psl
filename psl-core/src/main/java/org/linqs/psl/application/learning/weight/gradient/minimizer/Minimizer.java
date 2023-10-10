@@ -179,6 +179,25 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     @Override
+    protected void initForLearning() {
+        constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
+        // TODO(Charles): This currently does not support neural batching. Need to iterate over batches.
+        for (int i = 0; i < batchGenerator.numBatchTermStores(); i++) {
+            setBatch(i);
+            DeepPredicate.predictAllDeepPredicates(false);
+
+            initializeProximityRuleConstants();
+
+            computeMAPInferenceStatistics();
+            computeAugmentedInferenceStatistics();
+
+            if (constraintRelaxationConstant < augmentedInferenceEnergy - mapEnergy) {
+                constraintRelaxationConstant = augmentedInferenceEnergy - mapEnergy;
+            }
+        }
+    }
+
+    @Override
     protected void initializeInternalParameters() {
         super.initializeInternalParameters();
 
@@ -353,24 +372,6 @@ public abstract class Minimizer extends GradientDescent {
     @Override
     protected void epochStart(int epoch) {
         super.epochStart(epoch);
-
-        if (epoch == 0) {
-            constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
-            // TODO(Charles): This currently does not support neural batching. Need to iterate over batches.
-            for (int i = 0; i < batchGenerator.numBatchTermStores(); i++) {
-                setBatch(i);
-                DeepPredicate.predictAllDeepPredicates(false);
-
-                initializeProximityRuleConstants();
-
-                computeMAPInferenceStatistics();
-                computeAugmentedInferenceStatistics();
-
-                if (constraintRelaxationConstant < augmentedInferenceEnergy - mapEnergy) {
-                    constraintRelaxationConstant = augmentedInferenceEnergy - mapEnergy;
-                }
-            }
-        }
 
         proxRuleObservedAtomsValueEpochMovement = 0.0f;
     }
