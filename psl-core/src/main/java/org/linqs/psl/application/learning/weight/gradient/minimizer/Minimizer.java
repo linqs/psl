@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.gradient.minimizer;
 
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
+import org.linqs.psl.application.learning.weight.gradient.batchgenerator.NeuralBatchGenerator;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
@@ -180,11 +181,16 @@ public abstract class Minimizer extends GradientDescent {
 
     @Override
     protected void initForLearning() {
+        super.initForLearning();
+
         constraintRelaxationConstant = Float.NEGATIVE_INFINITY;
-        // TODO(Charles): This currently does not support neural batching. Need to iterate over batches.
-        for (int i = 0; i < batchGenerator.numBatchTermStores(); i++) {
-            setBatch(i);
-            DeepPredicate.predictAllDeepPredicates(false);
+
+        DeepPredicate.evalModeAllDeepPredicates();
+
+        int batchId = batchGenerator.epochStart();
+        while (!batchGenerator.isEpochComplete()) {
+            setBatch(batchId);
+            DeepPredicate.predictAllDeepPredicates();
 
             initializeProximityRuleConstants();
 
@@ -194,7 +200,19 @@ public abstract class Minimizer extends GradientDescent {
             if (constraintRelaxationConstant < augmentedInferenceEnergy - mapEnergy) {
                 constraintRelaxationConstant = augmentedInferenceEnergy - mapEnergy;
             }
+
+            batchId = batchGenerator.nextBatch();
         }
+        batchGenerator.epochEnd();
+    }
+
+    @Override
+    protected void initializeBatches() {
+        super.initializeBatches();
+
+        // Minimizers do not support neural batching.
+        // This is because the minimizer needs to be able to identify batches.
+        assert !(batchGenerator instanceof NeuralBatchGenerator);
     }
 
     @Override
@@ -412,18 +430,24 @@ public abstract class Minimizer extends GradientDescent {
                     return;
                 }
 
-                // TODO(Charles): This does not support neural batching. Need to iterate over batches.
-                for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
-                    setBatch(batch);
-                    DeepPredicate.predictAllDeepPredicates(false);
+                DeepPredicate.evalModeAllDeepPredicates();
+
+                int batchId = batchGenerator.epochStart();
+                while (!batchGenerator.isEpochComplete()) {
+                    setBatch(batchId);
+                    DeepPredicate.predictAllDeepPredicates();
 
                     // We need to recompute the iteration statistics for each batch because the parameters may have changed.
                     computeIterationStatistics();
 
-                    batchLinearPenaltyCoefficients.set(batch,
-                            batchLinearPenaltyCoefficients.get(batch)
+                    batchLinearPenaltyCoefficients.set(batchId,
+                            batchLinearPenaltyCoefficients.get(batchId)
                                     + 2 * squaredPenaltyCoefficient * Math.max(0.0f, augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant));
+
+                    batchId = batchGenerator.nextBatch();
                 }
+                batchGenerator.epochEnd();
+
                 constraintTolerance = (float) (constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9f));
                 parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
             } else {
@@ -603,16 +627,22 @@ public abstract class Minimizer extends GradientDescent {
      */
     private float computeTotalEnergyDifference() {
         float totalObjectiveDifference = 0.0f;
-        // TODO(Chares): This currently does not support neural batching. Need to iterate over batches.
-        for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
-            setBatch(batch);
-            DeepPredicate.predictAllDeepPredicates(false);
+
+        DeepPredicate.evalModeAllDeepPredicates();
+
+        int batchId = batchGenerator.epochStart();
+        while (!batchGenerator.isEpochComplete()) {
+            setBatch(batchId);
+            DeepPredicate.predictAllDeepPredicates();
 
             // We need to recompute the iteration statistics for each batch because the parameters may have changed.
             computeIterationStatistics();
 
             totalObjectiveDifference += augmentedInferenceEnergy - mapEnergy;
+
+            batchId = batchGenerator.nextBatch();
         }
+        batchGenerator.epochEnd();
 
         return totalObjectiveDifference;
     }
@@ -622,15 +652,22 @@ public abstract class Minimizer extends GradientDescent {
      */
     private float computeTotalEnergyDifferenceConstraintViolation() {
         float totalObjectiveDifference = 0.0f;
-        for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
-            setBatch(batch);
-            DeepPredicate.predictAllDeepPredicates(false);
+
+        DeepPredicate.evalModeAllDeepPredicates();
+
+        int batchId = batchGenerator.epochStart();
+        while (!batchGenerator.isEpochComplete()) {
+            setBatch(batchId);
+            DeepPredicate.predictAllDeepPredicates();
 
             // We need to recompute the iteration statistics for each batch because the parameters may have changed.
             computeIterationStatistics();
 
             totalObjectiveDifference += Math.max(0.0f, augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant);
+
+            batchId = batchGenerator.nextBatch();
         }
+        batchGenerator.epochEnd();
 
         return totalObjectiveDifference;
     }

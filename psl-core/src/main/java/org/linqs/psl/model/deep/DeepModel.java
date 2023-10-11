@@ -140,6 +140,34 @@ public abstract class DeepModel {
         log.debug("Init deep model results for {} : {}", this, resultString);
     }
 
+    public void trainMode() {
+        log.debug("Set to train mode deep model {}.", this);
+
+        JSONObject message = new JSONObject();
+        message.put("task", "train_mode");
+        message.put("options", pythonOptions);
+
+        JSONObject response = sendSocketMessage(message);
+
+        String resultString = getResultString(response);
+        log.debug("Set to train mode deep model results for {} : {}", this, resultString);
+    }
+
+
+    public void evalMode() {
+        log.debug("Set to eval mode deep model {}.", this);
+
+        JSONObject message = new JSONObject();
+        message.put("task", "eval_mode");
+        message.put("options", pythonOptions);
+
+        JSONObject response = sendSocketMessage(message);
+
+        String resultString = getResultString(response);
+        log.debug("Set to eval mode deep model results for {} : {}", this, resultString);
+    }
+
+
     public void fitDeepModel() {
         log.debug("Fit deep model {}.", this);
 
@@ -209,14 +237,14 @@ public abstract class DeepModel {
         String resultString = getResultString(response);
         log.debug("Epoch end deep model results for {} : {}", this, resultString);
 
-        return response.getJSONObject("result").getBoolean("is_epoch_complete");
+        return response.getBoolean("result");
     }
 
     /**
      * Predict using the deep model.
      * Return the average movement of the atoms. The movement is the sum of the squared differences.
      */
-    public float predictDeepModel(Boolean learning) {
+    public float predictDeepModel() {
         log.debug("Predict deep model {}.", this);
 
         sharedBuffer.clear();
@@ -224,11 +252,7 @@ public abstract class DeepModel {
         sharedBuffer.force();
 
         JSONObject message = new JSONObject();
-        if (learning) {
-            message.put("task", "predict_learn");
-        } else {
-            message.put("task", "predict");
-        }
+        message.put("task", "predict");
         message.put("deep_model", deepModel);
         message.put("options", pythonOptions);
 
@@ -260,7 +284,7 @@ public abstract class DeepModel {
         String resultString = getResultString(response);
         log.debug("Eval deep model result for {} : {}", this, resultString);
         
-        return response.getJSONObject("result").getFloat("loss");
+        return response.getFloat("result");
     }
 
     public void saveDeepModel() {

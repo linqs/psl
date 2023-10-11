@@ -124,7 +124,6 @@ public abstract class BatchGenerator {
 
     public int epochStart() {
         DeepPredicate.epochStartAllDeepPredicates();
-        DeepPredicate.predictAllDeepPredicates(true);
 
         currentBatchPermutationIndex++;
         return batchPermutation.get(currentBatchPermutationIndex);

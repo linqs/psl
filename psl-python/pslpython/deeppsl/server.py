@@ -65,6 +65,10 @@ class ConnectionHandler(object):
 
         if request['task'] == 'init':
             result = self._init(request)
+        elif request['task'] == 'train_mode':
+            result = self._train_mode(request)
+        elif request['task'] == 'eval_mode':
+            result = self._eval_mode(request)
         elif request['task'] == 'fit':
             result = self._fit(request)
         elif request['task'] == 'next_batch':
@@ -77,8 +81,6 @@ class ConnectionHandler(object):
             result = self._is_epoch_complete(request)
         elif request['task'] == 'predict':
             result = self._predict(request)
-        elif request['task'] == 'predict_learn':
-            result = self._predict_learn(request)
         elif request['task'] == 'eval':
             result = self._eval(request)
         elif request['task'] == 'save':
@@ -122,6 +124,12 @@ class ConnectionHandler(object):
         else:
             raise ValueError("Unknown deep model type in fit: '%s'." % (deep_model,))
 
+    def _train_mode(self, request):
+        return self._model.train_mode(options=request.get('options', {}))
+
+    def _eval_mode(self, request):
+        return self._model.eval_mode(options=request.get('options', {}))
+
     def _next_batch(self, request):
         return self._model.next_batch(options=request.get('options', {}))
 
@@ -142,17 +150,6 @@ class ConnectionHandler(object):
             return self._model.predict_predicate(options=options)
         elif deep_model == 'DeepModelWeight':
             return self._model.predict_weight(options=options)
-        else:
-            raise ValueError("Unknown deep model type in predict: '%s'." % (deep_model,))
-
-    def _predict_learn(self, request):
-        deep_model = request['deep_model']
-        options = request.get('options', {})
-
-        if deep_model == 'DeepModelPredicate':
-            return self._model.predict_predicate_learn(options=options)
-        elif deep_model == 'DeepModelWeight':
-            return self._model.predict_weight_learn(options=options)
         else:
             raise ValueError("Unknown deep model type in predict: '%s'." % (deep_model,))
 

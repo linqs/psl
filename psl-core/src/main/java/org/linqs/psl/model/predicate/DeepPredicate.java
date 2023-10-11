@@ -41,9 +41,27 @@ public class DeepPredicate extends StandardPredicate {
         deepModel = new DeepModelPredicate(this);
     }
 
+    /**
+     * Initialize the deep model.
+     * The application is a string that is used to identify the initialization settings.
+     */
     public void initDeepPredicate(AtomStore atomStore, String application){
         deepModel.setAtomStore(atomStore);
         deepModel.init(application);
+    }
+
+    /**
+     * Put the neural model in training mode.
+     */
+    public void trainMode() {
+        deepModel.trainMode();
+    }
+
+    /**
+     * Put the neural model in evaluation mode.
+     */
+    public void evalMode() {
+        deepModel.evalMode();
     }
 
     public void fitDeepPredicate(float[] symbolicGradients) {
@@ -87,8 +105,8 @@ public class DeepPredicate extends StandardPredicate {
         this.deepModel = deepModel;
     }
 
-    public float predictDeepModel(Boolean learning) {
-        return deepModel.predictDeepModel(learning);
+    public float predictDeepModel() {
+        return deepModel.predictDeepModel();
     }
 
     public float evalDeepModel() {
@@ -136,10 +154,36 @@ public class DeepPredicate extends StandardPredicate {
         return predicate;
     }
 
+    /**
+     * Initialize all DeepPredicates.
+     */
     public static void initAllDeepPredicates(AtomStore atomStore, String application) {
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
                 ((DeepPredicate) predicate).initDeepPredicate(atomStore, application);
+            }
+        }
+    }
+
+
+    /**
+     * Put all DeepPredicates in training mode.
+     */
+    public static void trainModeAllDeepPredicates() {
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).trainMode();
+            }
+        }
+    }
+
+    /**
+     * Put all DeepPredicates in eval mode.
+     */
+    public static void evalModeAllDeepPredicates() {
+        for (Predicate predicate : Predicate.getAll()) {
+            if (predicate instanceof DeepPredicate) {
+                ((DeepPredicate) predicate).evalMode();
             }
         }
     }
@@ -160,12 +204,12 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
-    public static float predictAllDeepPredicates(boolean learning) {
+    public static float predictAllDeepPredicates() {
         float movement = 0.0f;
 
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
-                movement += ((DeepPredicate) predicate).predictDeepModel(learning);
+                movement += ((DeepPredicate) predicate).predictDeepModel();
             }
         }
 

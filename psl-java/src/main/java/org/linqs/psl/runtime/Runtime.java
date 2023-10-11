@@ -426,11 +426,12 @@ public class Runtime {
 
         log.info("Loading deep predicates.");
         DeepPredicate.initAllDeepPredicates(inferenceApplication.getDatabase().getAtomStore(), "inference");
+        DeepPredicate.evalModeAllDeepPredicates();
         DeepPredicate.epochStartAllDeepPredicates();
 
         boolean runInference = true;
         while (runInference) {
-            DeepPredicate.predictAllDeepPredicates(false);
+            DeepPredicate.predictAllDeepPredicates();
 
             inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
 

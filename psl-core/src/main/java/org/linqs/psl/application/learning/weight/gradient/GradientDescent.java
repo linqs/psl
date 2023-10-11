@@ -339,13 +339,16 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
 
             long start = System.currentTimeMillis();
+
+            DeepPredicate.trainModeAllDeepPredicates();
+
             batchGenerator.permuteBatchOrdering();
             int batchId = batchGenerator.epochStart();
             while (!batchGenerator.isEpochComplete()) {
                 long batchStart = System.currentTimeMillis();
 
                 setBatch(batchId);
-                DeepPredicate.predictAllDeepPredicates(true);
+                DeepPredicate.predictAllDeepPredicates();
 
                 computeIterationStatistics();
 
@@ -360,7 +363,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 gradientStep(epoch);
 
                 if (epoch % trainingStopComputePeriod == 0) {
-                    epochDeepAtomValueMovement += DeepPredicate.predictAllDeepPredicates(true);
+                    epochDeepAtomValueMovement += DeepPredicate.predictAllDeepPredicates();
                 }
 
                 long batchEnd = System.currentTimeMillis();
@@ -486,18 +489,21 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
             deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
-            deepPredicate.predictDeepModel(false);
         }
+
+        DeepPredicate.predictAllDeepPredicates();
     }
 
     protected void runTrainingEvaluation(int epoch) {
         int numBatches = 0;
         float totalTrainingEvaluation = 0.0f;
 
+        DeepPredicate.evalModeAllDeepPredicates();
+
         int batchId = batchGenerator.epochStart();
         while (!batchGenerator.isEpochComplete()) {
             setBatch(batchId);
-            DeepPredicate.predictAllDeepPredicates(false);
+            DeepPredicate.predictAllDeepPredicates();
             DeepPredicate.evalAllDeepPredicates();
 
             // Compute the MAP state before evaluating so variables have assigned values.

@@ -26,6 +26,7 @@ import numpy
 FLOAT_SIZE_BYTES = 4
 INT_SIZE_BYTES = 4
 
+
 class DeepModel(abc.ABC):
     def __init__(self):
         self._shared_file = None
@@ -34,11 +35,19 @@ class DeepModel(abc.ABC):
         self._value_count = None
         self._data = None
 
+        self._application = None
+        self._train = False
+
     """
     Higher-level methods that are passed nicely-formatted data for implementing classes to extend.
     """
 
     def internal_init(self, application, options = {}):
+        """
+        Initialize the model.
+        :param application: The application that is using the model from ["inference", "learning"].
+        :param options: Additional options for the model provided by the user in the configuration file.
+        """
         raise NotImplementedError("internal_init")
 
     def internal_fit(self, data, gradients, options = {}):
@@ -46,6 +55,22 @@ class DeepModel(abc.ABC):
 
     def internal_next_batch(self, options = {}):
         # Default to doing nothing.
+        return
+
+    def internal_train_mode(self, options = {}):
+        """
+        Set the model to training mode. Training mode is identified by the _train flag being true.
+        :param options:
+        """
+        self._train = True
+        return
+
+    def internal_eval_mode(self, options = {}):
+        """
+        Set the model to evaluation mode. Evaluation mode is identified by the _train flag being fals.
+        :param options:
+        """
+        self._train = False
         return
 
     def internal_epoch_start(self, options = {}):
@@ -62,9 +87,9 @@ class DeepModel(abc.ABC):
         Override this method if your model needs to do something special to determine if the epoch is complete.
         If you do override this method, you must return a dictionary with a key, "is_epoch_complete", that maps to a boolean.
         :param options:
-        :return: A dictionary with a key, "is_epoch_complete", that maps to a boolean.
+        :return: A boolean indicating if the epoch is complete.
         """
-        return {"is_epoch_complete": True}
+        return True
 
     def internal_predict(self, data, options = {}):
         raise NotImplementedError("internal_predict")
@@ -76,9 +101,9 @@ class DeepModel(abc.ABC):
         If you do override this method, you must return a dictionary with a key, "loss", that maps to a float where lower is better.
         :param data:
         :param options:
-        :return: A dictionary with a key, "loss", that maps to a float.
+        :return: A float indicating the loss. Higher is worse.
         """
-        return {"loss": 0.0}
+        return 0.0
 
     def internal_save(self, options = {}):
         raise NotImplementedError("internal_save")
@@ -103,6 +128,13 @@ class DeepModel(abc.ABC):
         raise NotImplementedError("eval_weight")
 
     def init_predicate(self, shared_memory_path, application, options = {}):
+        """
+        Initialize the model.
+        :param shared_memory_path: The path to the shared memory file.
+        :param application: The application that is using the model.
+        :param options: Additional options for the model.
+        :return:
+        """
         self._shared_file = open(shared_memory_path, 'rb+')
         self._shared_buffer = mmap.mmap(self._shared_file.fileno(), 0)
 
@@ -133,6 +165,12 @@ class DeepModel(abc.ABC):
 
         return self.internal_fit(data, gradients, options = options)
 
+    def train_mode(self, options = {}):
+            return self.internal_train_mode(options = options)
+
+    def eval_mode(self, options = {}):
+        return self.internal_eval_mode(options = options)
+
     def next_batch(self, options = {}):
         return self.internal_next_batch(options = options)
 
@@ -146,14 +184,9 @@ class DeepModel(abc.ABC):
         return self.internal_is_epoch_complete(options = options)
 
     def predict_predicate(self, options = {}):
-        self._predict_predicate(False, options = options)
+        self._predict_predicate(options = options)
 
-    def predict_predicate_learn(self, options = {}):
-        self._predict_predicate(True, options = options)
-
-    def _predict_predicate(self, learn, options = {}):
-        options['learn'] = learn
-
+    def _predict_predicate(self, options = {}):
         self._shared_buffer.seek(0)
 
         count = self._read_int()
