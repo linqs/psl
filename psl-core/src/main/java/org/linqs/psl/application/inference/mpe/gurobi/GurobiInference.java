@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class GurobiInference extends MPEInference {
     public GurobiInference(List<Rule> rules, Database db) {
-        super(rules, db, true);
+        super(rules, db, false);
     }
 
     @Override
