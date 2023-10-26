@@ -96,7 +96,6 @@ public abstract class OnlineMinimizer extends GradientDescent {
     protected List<int[]> batchProxRuleObservedAtomIndexes;
 
     protected final float proxRuleObservedAtomValueStepSize;
-    protected float proxRuleObservedAtomsValueEpochMovement;
     protected float[] proxRuleObservedAtomValueGradient;
     protected List<float[]> batchProxRuleObservedAtomValueGradients;
 
@@ -114,7 +113,6 @@ public abstract class OnlineMinimizer extends GradientDescent {
     protected float squaredPenaltyCoefficientIncreaseRate;
     protected final float initialLinearPenaltyCoefficient;
     protected float linearPenaltyCoefficient;
-    protected List<Float> batchLinearPenaltyCoefficients;
 
     public OnlineMinimizer(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
@@ -159,7 +157,6 @@ public abstract class OnlineMinimizer extends GradientDescent {
         batchProxRuleObservedAtomIndexes = new ArrayList<int[]>();
 
         proxRuleObservedAtomValueStepSize = Options.MINIMIZER_PROX_VALUE_STEP_SIZE.getFloat();
-        proxRuleObservedAtomsValueEpochMovement = Float.POSITIVE_INFINITY;
         proxRuleObservedAtomValueGradient = null;
         batchProxRuleObservedAtomValueGradients = new ArrayList<float[]>();
 
@@ -168,7 +165,6 @@ public abstract class OnlineMinimizer extends GradientDescent {
         squaredPenaltyCoefficientIncreaseRate = Options.MINIMIZER_SQUARED_PENALTY_INCREASE_RATE.getFloat();
         initialLinearPenaltyCoefficient = Options.MINIMIZER_INITIAL_LINEAR_PENALTY.getFloat();
         linearPenaltyCoefficient = initialLinearPenaltyCoefficient;
-        batchLinearPenaltyCoefficients = new ArrayList<Float>();
 
         outerIteration = 1;
         augmentedLagrangianIteration = 1;
@@ -192,8 +188,6 @@ public abstract class OnlineMinimizer extends GradientDescent {
             setBatch(batchId);
             DeepPredicate.predictAllDeepPredicates();
 
-            initializeProximityRuleConstants();
-
             computeMAPInferenceStatistics();
             computeAugmentedInferenceStatistics();
 
@@ -207,21 +201,10 @@ public abstract class OnlineMinimizer extends GradientDescent {
     }
 
     @Override
-    protected void initializeBatches() {
-        super.initializeBatches();
-
-        // Minimizers do not support neural batching.
-        // This is because the minimizer needs to be able to identify batches.
-        assert !(batchGenerator instanceof NeuralBatchGenerator);
-    }
-
-    @Override
     protected void initializeInternalParameters() {
         super.initializeInternalParameters();
 
         for (int batch = 0; batch < batchGenerator.numBatchTermStores(); batch++) {
-            batchLinearPenaltyCoefficients.add(initialLinearPenaltyCoefficient);
-
             batchRVAtomIndexToProxRuleIndexes.add(new ArrayList<Integer>());
             batchProxRuleIndexToRVAtomIndexes.add(new ArrayList<Integer>());
 
@@ -352,8 +335,6 @@ public abstract class OnlineMinimizer extends GradientDescent {
         proxRuleObservedAtoms = batchProxRuleObservedAtoms.get(batch);
         proxRuleObservedAtomIndexes = batchProxRuleObservedAtomIndexes.get(batch);
         proxRuleObservedAtomValueGradient = batchProxRuleObservedAtomValueGradients.get(batch);
-
-        linearPenaltyCoefficient = batchLinearPenaltyCoefficients.get(batch);
     }
 
     @Override
@@ -388,22 +369,6 @@ public abstract class OnlineMinimizer extends GradientDescent {
     }
 
     @Override
-    protected void epochStart(int epoch) {
-        super.epochStart(epoch);
-
-        proxRuleObservedAtomsValueEpochMovement = 0.0f;
-    }
-
-    @Override
-    protected void measureEpochParameterMovement() {
-        super.measureEpochParameterMovement();
-
-        parameterMovement += proxRuleObservedAtomsValueEpochMovement;
-
-        log.trace("Epoch Internal Parameter Movement: {}", proxRuleObservedAtomsValueEpochMovement);
-    }
-
-    @Override
     protected void epochEnd(int epoch) {
         super.epochEnd(epoch);
 
@@ -411,7 +376,9 @@ public abstract class OnlineMinimizer extends GradientDescent {
             augmentedLagrangianIteration++;
 
             // Compute the total objective difference summed over all the batches.
-            float totalConstraintViolation = computeTotalEnergyDifferenceConstraintViolation();
+            float[] totalAndMaxEnergyDifferenceConstraintViolation = computeTotalAndMaxEnergyDifferenceConstraintViolation();
+            float totalConstraintViolation = totalAndMaxEnergyDifferenceConstraintViolation[0];
+            float maxConstraintViolation = totalAndMaxEnergyDifferenceConstraintViolation[0];
 
             if (totalConstraintViolation < constraintTolerance) {
                 if ((totalConstraintViolation < finalConstraintTolerance)
@@ -432,21 +399,7 @@ public abstract class OnlineMinimizer extends GradientDescent {
 
                 DeepPredicate.evalModeAllDeepPredicates();
 
-                int batchId = batchGenerator.epochStart();
-                while (!batchGenerator.isEpochComplete()) {
-                    setBatch(batchId);
-                    DeepPredicate.predictAllDeepPredicates();
-
-                    // We need to recompute the iteration statistics for each batch because the parameters may have changed.
-                    computeIterationStatistics();
-
-                    batchLinearPenaltyCoefficients.set(batchId,
-                            batchLinearPenaltyCoefficients.get(batchId)
-                                    + 2 * squaredPenaltyCoefficient * Math.max(0.0f, augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant));
-
-                    batchId = batchGenerator.nextBatch();
-                }
-                batchGenerator.epochEnd();
+                linearPenaltyCoefficient = linearPenaltyCoefficient + squaredPenaltyCoefficient * maxConstraintViolation;
 
                 constraintTolerance = (float) (constraintTolerance / Math.pow(squaredPenaltyCoefficient, 0.9f));
                 parameterMovementTolerance = parameterMovementTolerance / squaredPenaltyCoefficient;
@@ -462,76 +415,52 @@ public abstract class OnlineMinimizer extends GradientDescent {
     }
 
     @Override
-    protected void internalParameterGradientStep(int epoch) {
-        // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
-        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
-        for (int i = 0; i < proxRules.length; i++) {
-            float newProxRuleObservedAtomsValue = Math.min(Math.max(
-                    proxRuleObservedAtoms[i].getValue() - proxRuleObservedAtomValueStepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
-            proxRuleObservedAtomsValueEpochMovement += Math.pow(proxRuleObservedAtoms[i].getValue() - newProxRuleObservedAtomsValue, 2.0f);
-
-            proxRuleObservedAtoms[i]._assumeValue(newProxRuleObservedAtomsValue);
-            atomValues[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
-            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
-        }
+    protected void computeIterationStatistics() {
+        computeMAPInferenceStatistics();
+        computeLatentInferenceStatistics();
+        computeAugmentedInferenceStatistics();
     }
 
     protected void initializeProximityRuleConstants() {
-        // Initialize the proximity rule constants to the truth if it exists or the latent MAP state.
-        fixLabeledRandomVariables();
+        setProximityRuleConstantsToMAPState();
+        computeProxRuleObservedAtomValueGradient();
+        proxRuleObservedAtomGradientStep();
+    }
 
-        log.trace("Running Latent inference.");
-        computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
+    protected void setProximityRuleConstantsToMAPState() {
+        log.trace("Running MAP inference.");
+        computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
-
-        unfixLabeledRandomVariables();
 
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
 
-        System.arraycopy(latentInferenceAtomValueState, 0, augmentedInferenceAtomValueState, 0, latentInferenceAtomValueState.length);
+        System.arraycopy(trainMAPAtomValueState, 0, augmentedInferenceAtomValueState, 0, trainMAPAtomValueState.length);
 
         for (int i = 0; i < proxRules.length; i++) {
-            proxRuleObservedAtoms[i]._assumeValue(latentInferenceAtomValueState[proxRuleIndexToRVAtomIndex.get(i)]);
-            atomValues[proxRuleObservedAtomIndexes[i]] = latentInferenceAtomValueState[proxRuleIndexToRVAtomIndex.get(i)];
-            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = latentInferenceAtomValueState[proxRuleIndexToRVAtomIndex.get(i)];
+            proxRuleObservedAtoms[i]._assumeValue(trainMAPAtomValueState[proxRuleIndexToRVAtomIndex.get(i)]);
+            atomValues[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxRuleIndexToRVAtomIndex.get(i)];
+            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = trainMAPAtomValueState[proxRuleIndexToRVAtomIndex.get(i)];
         }
-
-        // Overwrite the latent MAP state value with the truth if it exists.
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
-            RandomVariableAtom randomVariableAtom = entry.getKey();
-            ObservedAtom observedAtom = entry.getValue();
-
-            int rvAtomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            if (rvAtomIndex == -1) {
-                // This atom is not in the current batch.
-                continue;
-            }
-
-            int proxRuleIndex = rvAtomIndexToProxRuleIndex.get(rvAtomIndex);
-
-            proxRuleObservedAtoms[proxRuleIndex]._assumeValue(observedAtom.getValue());
-            atomValues[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
-            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[proxRuleIndex]] = observedAtom.getValue();
-        }
-    }
-
-    @Override
-    protected void computeIterationStatistics() {
-        computeMAPInferenceStatistics();
-
-        computeLatentInferenceStatistics();
-
-        computeAugmentedInferenceStatistics();
-
-        computeProxRuleObservedAtomValueGradient();
     }
 
     protected void computeProxRuleObservedAtomValueGradient() {
         Arrays.fill(proxRuleObservedAtomValueGradient, 0.0f);
 
         addSupervisedProxRuleObservedAtomValueGradient();
-        addAugmentedLagrangianProxRuleConstantsGradient();
+    }
+
+    protected void proxRuleObservedAtomGradientStep() {
+        // Take a step in the direction of the negative gradient of the proximity rule constants and project back onto box constraints.
+        float[] atomValues = trainInferenceApplication.getTermStore().getAtomStore().getAtomValues();
+        for (int i = 0; i < proxRules.length; i++) {
+            float newProxRuleObservedAtomsValue = Math.min(Math.max(
+                    proxRuleObservedAtoms[i].getValue() - proxRuleObservedAtomValueStepSize * proxRuleObservedAtomValueGradient[i], 0.0f), 1.0f);
+
+            proxRuleObservedAtoms[i]._assumeValue(newProxRuleObservedAtomsValue);
+            atomValues[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
+            augmentedInferenceAtomValueState[proxRuleObservedAtomIndexes[i]] = newProxRuleObservedAtomsValue;
+        }
     }
 
     /**
@@ -552,6 +481,8 @@ public abstract class OnlineMinimizer extends GradientDescent {
      * Compute the augmented inference problem solution incompatibility and the gradient of the energy function at the augmented inference mpe state.
      */
     protected void computeAugmentedInferenceStatistics() {
+        initializeProximityRuleConstants();
+
         activateAugmentedInferenceProxTerms();
 
         log.trace("Running Augmented Inference.");
@@ -650,8 +581,9 @@ public abstract class OnlineMinimizer extends GradientDescent {
     /**
      * Compute the total violation of the energy difference constraint measured across each batch.
      */
-    private float computeTotalEnergyDifferenceConstraintViolation() {
+    private float[] computeTotalAndMaxEnergyDifferenceConstraintViolation() {
         float totalObjectiveDifference = 0.0f;
+        float maxObjectiveDifference = 0.0f;
 
         DeepPredicate.evalModeAllDeepPredicates();
 
@@ -663,38 +595,25 @@ public abstract class OnlineMinimizer extends GradientDescent {
             // We need to recompute the iteration statistics for each batch because the parameters may have changed.
             computeIterationStatistics();
 
-            totalObjectiveDifference += Math.max(0.0f, augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant);
+            float constraintViolation = Math.max(0.0f, augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant);
+
+            totalObjectiveDifference += constraintViolation;
+
+            if (constraintViolation > maxObjectiveDifference) {
+                maxObjectiveDifference = constraintViolation;
+            }
 
             batchId = batchGenerator.nextBatch();
         }
         batchGenerator.epochEnd();
 
-        return totalObjectiveDifference;
+        float[] totalAndMaxObjectiveDifference = new float[2];
+        totalAndMaxObjectiveDifference[0] = totalObjectiveDifference;
+        totalAndMaxObjectiveDifference[1] = maxObjectiveDifference;
+        return totalAndMaxObjectiveDifference;
     }
 
     protected abstract float computeSupervisedLoss();
-
-    protected void addAugmentedLagrangianProxRuleConstantsGradient() {
-        if (augmentedInferenceEnergy - mapEnergy <= constraintRelaxationConstant) {
-            // Energy difference constraint is not violated.
-            return;
-        }
-
-        float[] proxRuleIncompatibility = new float[proxRuleObservedAtoms.length];
-        computeTotalProxValue(proxRuleIncompatibility);
-
-        float[] proxRuleObservedAtomValueMoreauGradient = new float[proxRuleObservedAtoms.length];
-        for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
-            proxRuleObservedAtomValueMoreauGradient[i] = 2.0f * proxRuleWeight * proxRuleIncompatibility[i];
-        }
-
-        for (int i = 0; i < proxRuleObservedAtoms.length; i++) {
-            proxRuleObservedAtomValueGradient[i] += linearPenaltyCoefficient * proxRuleObservedAtomValueMoreauGradient[i];
-            proxRuleObservedAtomValueGradient[i] += squaredPenaltyCoefficient
-                    * (augmentedInferenceEnergy - mapEnergy - constraintRelaxationConstant)
-                    * proxRuleObservedAtomValueMoreauGradient[i];
-        }
-    }
 
     protected abstract void addSupervisedProxRuleObservedAtomValueGradient();
 

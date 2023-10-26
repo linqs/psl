@@ -99,7 +99,7 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
         for (int termIndex = 0; termIndex < size(); termIndex++) {
             GurobiObjectiveTerm term = get(termIndex);
 
-            if (term.isConstraint()) {
+            if (term.isConstraint() || !term.isActive()) {
                 continue;
             }
 
