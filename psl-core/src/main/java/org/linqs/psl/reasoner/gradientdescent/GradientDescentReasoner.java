@@ -60,7 +60,7 @@ public class GradientDescentReasoner extends Reasoner<GradientDescentObjectiveTe
 
     private final float initialLearningRate;
     private final float learningRateInverseScaleExp;
-    private final GradientDescentReasoner.GradientDescentLearningSchedule learningSchedule;
+    private final GradientDescentLearningSchedule learningSchedule;
     private final GradientDescentExtension gdExtension;
 
     public GradientDescentReasoner() {
