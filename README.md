@@ -43,6 +43,7 @@ Then, run the following command, replacing `<installdir>/lib/gurobi.jar` with th
 ```sh
 mvn install:install-file -Dfile=<installdir>/lib/gurobi.jar -DgroupId=com.gurobi -DartifactId=gurobi -Dversion=<version> -Dpackaging=jar
 ```
+If you are using a version of Gurobi other than 10.0.3, you will also need to update the Gurobi dependency version in the PSL `pom.xml` file.
 Then, you can install PSL with Gurobi support by running:
 ```sh
 mvn install -P Gurobi
