@@ -448,6 +448,7 @@ public class Runtime {
 
             DeepPredicate.evalAllDeepPredicates();
 
+            DeepPredicate.nextBatchAllDeepPredicates();
             runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
         }
         DeepPredicate.epochEndAllDeepPredicates();
