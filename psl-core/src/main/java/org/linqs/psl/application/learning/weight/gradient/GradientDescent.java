@@ -368,12 +368,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 long batchEnd = System.currentTimeMillis();
 
-                batchId = batchGenerator.nextBatch();
-
                 log.trace("Batch: {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
                         batchId, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
+
+                batchId = batchGenerator.nextBatch();
             }
             batchGenerator.epochEnd();
+
+            setFullModel();
 
             long end = System.currentTimeMillis();
             totalTime += end - start;
@@ -466,6 +468,20 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // Child classes should override this method to add internal parameter movement.
 
         parameterMovement = avgWeightMovement + avgDeepAtomValueMovement;
+    }
+
+    protected void setFullModel() {
+        trainInferenceApplication.setTermStore(trainFullTermStore);
+
+        trainMAPTermState = trainFullMAPTermState;
+        trainMAPAtomValueState = trainFullMAPAtomValueState;
+
+        // Set the deep predicate atom store.
+        // Note predict is not called here.
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+            deepPredicate.setDeepModel(trainFullDeepModelPredicates.get(i));
+        }
     }
 
     protected void setBatch(int batch) {
