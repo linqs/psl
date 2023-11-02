@@ -209,7 +209,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             throw new IllegalArgumentException("If validation is being run, then an evaluator must be specified for predicates.");
         }
 
-        if (!((!runValidation) || (validationInferenceApplication.getTermStore().getAtomStore().size() > 0))) {
+        if (runValidation && (validationInferenceApplication.getTermStore().getAtomStore().size() <= 0)) {
             throw new IllegalStateException("If validation is being run, then validation data must be provided in the runtime.json file.");
         }
 
@@ -239,7 +239,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initializeEpochStats() {
-        // Initialize epoch start weights and deep atom values.
         epochStartWeights = new float[mutableRules.size()];
         epochDeepAtomValueMovement = 0.0f;
     }
@@ -547,7 +546,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void runValidationEvaluation(int epoch) {
         setValidationModel();
 
-        log.trace("Running Validation inference.");
+        log.trace("Running Validation Inference.");
         computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
 
         evaluation.compute(validationMap);
