@@ -448,12 +448,7 @@ public class Runtime {
 
             DeepPredicate.evalAllDeepPredicates();
 
-            if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
-                DeepPredicate.nextBatchAllDeepPredicates();
-                runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
-            } else {
-                runInference = false;
-            }
+            runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
         }
         DeepPredicate.epochEndAllDeepPredicates();
 

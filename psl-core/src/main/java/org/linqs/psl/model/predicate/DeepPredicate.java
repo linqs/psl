@@ -237,9 +237,12 @@ public class DeepPredicate extends StandardPredicate {
      */
     public static boolean isEpochCompleteAllDeepPredicates() {
         boolean isEpochComplete = false;
+        boolean deepPredicates = false;
 
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
+                deepPredicates = true;
+
                 isEpochComplete = (((DeepPredicate) predicate).isEpochComplete());
 
                 if (isEpochComplete) {
@@ -248,7 +251,7 @@ public class DeepPredicate extends StandardPredicate {
             }
         }
 
-        return isEpochComplete;
+        return (!deepPredicates) || isEpochComplete;
     }
 
     private void writeObject(ObjectOutputStream out) throws IOException {
