@@ -182,17 +182,27 @@ public class DeepModelPredicate extends DeepModel {
 
         float[] atomValues = atomStore.getAtomValues();
         float deepPrediction = 0.0f;
-        int atomIndex = 0;
 
         float movement = 0.0f;
-        for (int index = 0; index < atomIndexes.length; index++) {
+        for (int atomIndex : atomIndexes) {
             deepPrediction = sharedBuffer.getFloat();
-            atomIndex = atomIndexes[index];
+
+            if (Float.isNaN(deepPrediction)) {
+                throw new RuntimeException(String.format(
+                        "External model returned NaN for atom: %s.",
+                        atomStore.getAtom(atomIndex)));
+            }
+
+            if (Float.isInfinite(deepPrediction)) {
+                throw new RuntimeException(String.format(
+                        "External model returned Infinity for atom: %s.",
+                        atomStore.getAtom(atomIndex)));
+            }
 
             movement += Math.pow(atomValues[atomIndex] - deepPrediction, 2.0f);
 
             atomValues[atomIndex] = deepPrediction;
-            ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
+            ((RandomVariableAtom) atomStore.getAtom(atomIndex)).setValue(deepPrediction);
         }
 
         return movement / atomIndexes.length;
