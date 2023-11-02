@@ -31,6 +31,7 @@ import java.util.List;
  * but may have different neural inputs.
  */
 public class NeuralBatchGenerator extends BatchGenerator {
+    int batchCount;
     int numBatches;
 
     public NeuralBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
@@ -38,23 +39,23 @@ public class NeuralBatchGenerator extends BatchGenerator {
 
         assert deepPredicates.size() >= 1;
 
+        batchCount = 0;
         numBatches = -1;
     }
 
     @Override
     public int numBatches() {
-        if (numBatches == -1) {
-            numBatches = 0;
-            DeepPredicate.epochStartAllDeepPredicates();
-            while (!isEpochComplete()) {
-                DeepPredicate.nextBatchAllDeepPredicates();
-
-                numBatches++;
-            }
-            DeepPredicate.epochEndAllDeepPredicates();
-        }
-
+        // Warning: This method must be called after at least one epoch has been completed to get the correct value.
         return numBatches;
+    }
+
+    @Override
+    public int epochStart() {
+        DeepPredicate.epochStartAllDeepPredicates();
+
+        batchCount = 0;
+
+        return 0;
     }
 
     @Override
@@ -71,7 +72,16 @@ public class NeuralBatchGenerator extends BatchGenerator {
     public int nextBatch() {
         DeepPredicate.nextBatchAllDeepPredicates();
 
+        batchCount++;
+
         return 0;
+    }
+
+    @Override
+    public void epochEnd() {
+        DeepPredicate.epochEndAllDeepPredicates();
+
+        numBatches = batchCount;
     }
 
     @Override
