@@ -37,7 +37,9 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
     private static final Logger log = LoggerFactory.getLogger(GurobiReasoner.class);
 
     /**
-     * The Gradient Descent learning schedule to use.
+     * The Gurobi method to use.
+     * See <a href="https://www.gurobi.com/documentation/current/refman/method.html">the Gurobi documentation</a>
+     * for more details.
      */
     public static enum GurobiMethod {
         AUTO,
@@ -108,6 +110,9 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
         return objectiveResult.objective;
     }
 
+    /**
+     * Map the Gurobi method to its ID.
+     */
     private String getMethodId() {
         switch (method) {
             case AUTO:

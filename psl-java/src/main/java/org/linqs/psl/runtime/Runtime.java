@@ -429,6 +429,7 @@ public class Runtime {
         DeepPredicate.evalModeAllDeepPredicates();
         DeepPredicate.epochStartAllDeepPredicates();
 
+        // Run inference.
         boolean runInference = true;
         while (runInference) {
             DeepPredicate.predictAllDeepPredicates();

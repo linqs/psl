@@ -187,6 +187,9 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
+    /**
+     * Let all DeepPredicates know that an epoch is starting.
+     */
     public static void epochStartAllDeepPredicates() {
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
@@ -195,6 +198,9 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
+    /**
+     * Let all DeepPredicates know that an epoch has ended.
+     */
     public static void epochEndAllDeepPredicates() {
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
@@ -203,6 +209,9 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
+    /**
+     * Predict with all DeepPredicates.
+     */
     public static float predictAllDeepPredicates() {
         float movement = 0.0f;
 
@@ -215,6 +224,9 @@ public class DeepPredicate extends StandardPredicate {
         return movement;
     }
 
+    /**
+     * Evaluate all DeepPredicates.
+     */
     public static void evalAllDeepPredicates() {
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {
@@ -223,6 +235,9 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
+    /**
+     * Ready the next batch for all DeepPredicates.
+     */
     public static void nextBatchAllDeepPredicates() {
         for (Predicate predicate : Predicate.getAll()) {
             if (predicate instanceof DeepPredicate) {

@@ -73,6 +73,9 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
         termSlackVariables = new ArrayList<GRBVar>();
     }
 
+    /**
+     * Update and build a Gurobi model using the current state of the term store.
+     */
     public GRBModel getModel() {
         updateModelVariables();
         setModelObjective();
@@ -86,6 +89,9 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
         return model;
     }
 
+    /**
+     * Read the result of Gurobi optimization into the atoms.
+     */
     public void syncModelVariables() {
         float[] atomValues = getVariableValues();
 
@@ -99,6 +105,9 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
         }
     }
 
+    /**
+     * Build and set the Gurobi model objective using the current state of the term store.
+     */
     private void setModelObjective() {
         GRBQuadExpr objective = new GRBQuadExpr();
 
@@ -125,6 +134,9 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
         }
     }
 
+    /**
+     * Update the Gurobi model variables to match the current state of the term store.
+     */
     private void updateModelVariables() {
         GroundAtom[] variableAtoms = atomStore.getAtoms();
         for (int i = 0; i < atomStore.size(); i++) {
@@ -205,7 +217,7 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
         }
         linearExpression.addConstant(-term.getConstant());
 
-        // Add the term to the model constraints. If the term is a constraint, add it as a constraint, else add it to the objective.
+        // If the term is a constraint, add it as a constraint, else add it to the objective.
         // Non-constraint terms are added as an inequality constraint with a slack variable.
         GRBVar slackVariable = null;
         try {
