@@ -238,7 +238,7 @@ public class CategoricalEvaluator extends Evaluator {
             return putPredictedCategories(currentNode, atom, argIndex + 1, categoryIndexes);
         }
 
-        // If we have coverd all the arguments, then we are either looking at a null
+        // If we have covered all the arguments, then we are either looking at a null
         // if there was no previous best or the previous best.
         if (argIndex == atom.getArity()) {
             if (currentNode == null) {

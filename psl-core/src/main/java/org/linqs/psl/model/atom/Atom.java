@@ -309,6 +309,24 @@ public abstract class Atom implements Formula, SummationAtomOrAtom {
         return s.toString();
     }
 
+    public String toStringNoCategories() {
+        StringBuilder s = new StringBuilder();
+        if (predicate instanceof GroundingOnlyPredicate)  {
+            throw new UnsupportedOperationException(
+                    "Atoms from GroundingOnlyPredicates have no toStringNoCategories() method: " + predicate);
+        } else {
+            s.append(predicate.getName()).append("(");
+            String connector = "";
+            for (int identifierIndex : predicate.getIdentifierIndexes()) {
+                s.append(connector).append(arguments[identifierIndex]);
+                connector = ", ";
+            }
+            s.append(")");
+        }
+
+        return s.toString();
+    }
+
     @Override
     public int hashCode() {
         return hashcode;

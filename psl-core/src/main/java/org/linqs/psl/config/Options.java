@@ -19,6 +19,7 @@ package org.linqs.psl.config;
 
 import org.linqs.psl.application.inference.mpe.ADMMInference;
 import org.linqs.psl.application.learning.weight.gradient.GradientDescent;
+import org.linqs.psl.application.learning.weight.gradient.policygradient.PolicyGradient;
 import org.linqs.psl.application.learning.weight.search.bayesian.GaussianProcessKernel;
 import org.linqs.psl.grounding.collective.CandidateGeneration;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
@@ -693,6 +694,19 @@ public class Options {
         + " This should only be set to false when the user understands why these"
         + " exceptions are thrown and the grounding implications of"
         + " not having the atom initially in the database."
+    );
+
+    public static final Option POLICY_GRADIENT_GUMBEL_SOFTMAX_TEMPERATURE = new Option(
+        "policygradient.gumbelsoftmax.temperature",
+        1.0f,
+        "The temperature parameter for the Gumbel-Softmax distribution.",
+        Option.FLAG_POSITIVE
+    );
+
+    public static final Option POLICY_GRADIENT_POLICY_DISTRIBUTION = new Option(
+        "policygradient.policydistribution",
+        PolicyGradient.PolicyDistribution.CATEGORICAL.toString(),
+        "The policy distribution to use for policy gradient learning."
     );
 
     public static final Option POSTGRES_HOST = new Option(

@@ -81,6 +81,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected int fullMAPEvaluationPatience;
     protected int lastTrainingImprovementEpoch;
 
+    protected List<DeepModelPredicate> trainDeepModelPredicates;
     protected TermState[] trainMAPTermState;
     protected float[] trainMAPAtomValueState;
 
@@ -305,6 +306,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         bestValidationEvaluationMetric = Double.NEGATIVE_INFINITY;
         lastValidationImprovementEpoch = 0;
 
+        trainDeepModelPredicates = trainFullDeepModelPredicates;
         trainMAPTermState = trainFullMAPTermState;
         trainMAPAtomValueState = trainFullMAPAtomValueState;
     }
@@ -368,10 +370,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 long batchEnd = System.currentTimeMillis();
 
-                batchId = batchGenerator.nextBatch();
-
                 log.trace("Batch: {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
                         batchId, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
+
+                batchId = batchGenerator.nextBatch();
             }
             batchGenerator.epochEnd();
 
@@ -384,6 +386,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 breakGD = breakOptimization(epoch);
             }
+
+            setFullModel();
 
             epoch++;
             log.trace("Epoch: {} -- Iteration Time: {}", epoch, (end - start));
@@ -443,8 +447,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void epochEnd(int epoch) {
-        // This method is called after the epoch parameter movement is measured and the model is reset to the full training model.
-        // Child classes should override this method to add additional functionality.
+        // This method is called after the epoch parameter movement is measured.
+        // Child classes can override this method to add additional functionality.
     }
 
     protected void measureEpochParameterMovement() {
@@ -468,9 +472,24 @@ public abstract class GradientDescent extends WeightLearningApplication {
         parameterMovement = avgWeightMovement + avgDeepAtomValueMovement;
     }
 
+    protected void setFullModel() {
+        trainInferenceApplication.setTermStore(trainFullTermStore);
+
+        trainDeepModelPredicates = trainFullDeepModelPredicates;
+        trainMAPTermState = trainFullMAPTermState;
+        trainMAPAtomValueState = trainFullMAPAtomValueState;
+
+        // Set the deep predicate atom store.
+        // Note predict is not called here.
+        for (int i = 0; i < deepPredicates.size(); i++) {
+            DeepPredicate deepPredicate = deepPredicates.get(i);
+            deepPredicate.setDeepModel(trainDeepModelPredicates.get(i));
+        }
+    }
+
     protected void setBatch(int batch) {
         SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchGenerator.getBatchTermStore(batch);
-        List<DeepModelPredicate> batchDeepModelPredicates = batchGenerator.getBatchDeepModelPredicates(batch);
+        trainDeepModelPredicates = batchGenerator.getBatchDeepModelPredicates(batch);
 
         trainInferenceApplication.setTermStore(batchTermStore);
         trainMAPTermState = batchMAPTermStates.get(batch);
@@ -480,7 +499,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         // Note predict is not called here and should be called after the batch is set.
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
-            deepPredicate.setDeepModel(batchDeepModelPredicates.get(i));
+            deepPredicate.setDeepModel(trainDeepModelPredicates.get(i));
         }
     }
 
@@ -692,6 +711,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 norm = computeGradientDescentNorm();
                 break;
         }
+
+        log.trace("Weight Gradient Norm: {}", norm);
+        log.trace("Deep atom Gradient Norm: {}", MathUtils.pNorm(deepAtomGradient, 2));
 
         norm += MathUtils.pNorm(deepAtomGradient, 2);
 

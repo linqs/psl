@@ -77,6 +77,12 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
         updateModelVariables();
         setModelObjective();
 
+        try {
+            model.update();
+        } catch (GRBException e) {
+            throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
+        }
+
         return model;
     }
 
@@ -144,7 +150,7 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
                     atomToModelVariableMap.get(atom).set(GRB.DoubleAttr.UB, 1.0);
                 }
             } catch (GRBException e) {
-                throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
+                throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage() + ". During set with atom: " + atom.toStringWithValue());
             }
         }
     }

@@ -18,6 +18,7 @@
 package org.linqs.psl.model.deep;
 
 import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
@@ -31,6 +32,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 public class DeepModelPredicate extends DeepModel {
@@ -42,7 +44,7 @@ public class DeepModelPredicate extends DeepModel {
     public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
     public static final String CONFIG_CLASS_SIZE = "class-size";
 
-    private AtomStore atomStore;
+    public AtomStore atomStore;
     private Predicate predicate;
 
     private int classSize;
@@ -53,6 +55,8 @@ public class DeepModelPredicate extends DeepModel {
 
     private ArrayList<Integer> validAtomIndexes;
     private ArrayList<Integer> validDataIndexes;
+
+    private HashMap<String, ArrayList<RandomVariableAtom>> atomIdentiferToCategories;
 
     public DeepModelPredicate(Predicate predicate) {
         super("DeepModelPredicate");
@@ -68,6 +72,8 @@ public class DeepModelPredicate extends DeepModel {
 
         this.validAtomIndexes = new ArrayList<Integer>();
         this.validDataIndexes = new ArrayList<Integer>();
+
+        this.atomIdentiferToCategories = new HashMap<String, ArrayList<RandomVariableAtom>>();
     }
 
     public DeepModelPredicate copy() {
@@ -109,6 +115,11 @@ public class DeepModelPredicate extends DeepModel {
         copy.validDataIndexes = new ArrayList<Integer>(validDataIndexes.size());
         copy.validDataIndexes.addAll(validDataIndexes);
 
+        copy.atomIdentiferToCategories = new HashMap<String, ArrayList<RandomVariableAtom>>();
+        for (Map.Entry<String, ArrayList<RandomVariableAtom>> entry : atomIdentiferToCategories.entrySet()) {
+            copy.atomIdentiferToCategories.put(entry.getKey(), new ArrayList<RandomVariableAtom>(entry.getValue()));
+        }
+
         copy.gradients = null;
         if (gradients != null) {
             copy.gradients = Arrays.copyOf(gradients, gradients.length);
@@ -123,8 +134,6 @@ public class DeepModelPredicate extends DeepModel {
     }
 
     public int init() {
-        log.debug("Initializing deep model predicate: {}", predicate.getName());
-
         validateOptions();
 
         classSize = Integer.parseInt(pythonOptions.get(CONFIG_CLASS_SIZE));
@@ -148,6 +157,19 @@ public class DeepModelPredicate extends DeepModel {
 
         validAtomIndexes.clear();
         validDataIndexes.clear();
+
+        // Initialize atom categories
+        atomIdentiferToCategories.clear();
+        for (int atomIndex : atomIndexes) {
+            RandomVariableAtom atom = (RandomVariableAtom) atomStore.getAtom(atomIndex);
+
+            String identifier = atom.toStringNoCategories();
+
+            if (!atomIdentiferToCategories.containsKey(identifier)) {
+                atomIdentiferToCategories.put(identifier, new ArrayList<RandomVariableAtom>());
+            }
+            atomIdentiferToCategories.get(identifier).add(atom);
+        }
 
         return Integer.SIZE + maxDataIndex * Integer.SIZE + maxDataIndex * classSize * Float.SIZE;
     }
@@ -182,17 +204,27 @@ public class DeepModelPredicate extends DeepModel {
 
         float[] atomValues = atomStore.getAtomValues();
         float deepPrediction = 0.0f;
-        int atomIndex = 0;
 
         float movement = 0.0f;
-        for (int index = 0; index < atomIndexes.length; index++) {
+        for (int atomIndex : atomIndexes) {
             deepPrediction = sharedBuffer.getFloat();
-            atomIndex = atomIndexes[index];
+
+            if (Float.isNaN(deepPrediction)) {
+                throw new RuntimeException(String.format(
+                        "External model returned NaN for atom: %s.",
+                        atomStore.getAtom(atomIndex)));
+            }
+
+            if (Float.isInfinite(deepPrediction)) {
+                throw new RuntimeException(String.format(
+                        "External model returned Infinity for atom: %s.",
+                        atomStore.getAtom(atomIndex)));
+            }
 
             movement += Math.pow(atomValues[atomIndex] - deepPrediction, 2.0f);
 
             atomValues[atomIndex] = deepPrediction;
-            ((RandomVariableAtom)atomStore.getAtom(atomIndex)).setValue(deepPrediction);
+            ((RandomVariableAtom) atomStore.getAtom(atomIndex)).setValue(deepPrediction);
         }
 
         return movement / atomIndexes.length;
@@ -216,6 +248,8 @@ public class DeepModelPredicate extends DeepModel {
 
         validAtomIndexes.clear();
         validDataIndexes.clear();
+
+        atomIdentiferToCategories.clear();
     }
 
     public void setAtomStore(AtomStore atomStore) {
@@ -228,6 +262,13 @@ public class DeepModelPredicate extends DeepModel {
         if (init) {
             init();
         }
+    }
+
+    /**
+     * Get the map of atom identifiers to lists of atoms.
+     */
+    public Map<String, ArrayList<RandomVariableAtom>> getAtomIdentiferToCategories() {
+        return atomIdentiferToCategories;
     }
 
     public void setSymbolicGradients(float[] symbolicGradients) {

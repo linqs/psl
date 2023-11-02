@@ -76,7 +76,9 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
 
         try {
             model.set("WorkLimit", Integer.toString(workLimit));
+            model.set("Method", "1");
             model.optimize();
+            model.update();
         } catch (GRBException e) {
             throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }

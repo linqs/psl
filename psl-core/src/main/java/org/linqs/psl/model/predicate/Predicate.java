@@ -20,6 +20,7 @@ package org.linqs.psl.model.predicate;
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;
+import org.linqs.psl.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -31,15 +32,19 @@ import java.util.Map;
  * A relation that can be applied to {@link Term Terms} to form {@link Atom Atoms}.
  * A Predicate is uniquely identified by its name (and all predicate names are converted to upper case).
  * Predicates cannot be constructed directly.
- * Instead, they are constructed via the appropriate gegetthod in each subclass.
+ * Instead, they are constructed via the appropriate get method in each subclass.
  */
 public abstract class Predicate implements Serializable {
     private static final Map<String, Predicate> predicates = new HashMap<String, Predicate>();
+    public static final String DELIM = ":";
 
     private final String name;
     private final ConstantType[] types;
     private final int hashcode;
     private boolean integer;
+    private boolean categorical;
+    private int[] identifierIndexes;
+    private int[] categoryIndexes;
     private final Map<String, Object> options;
 
     protected Predicate(String name, ConstantType[] types) {
@@ -62,7 +67,15 @@ public abstract class Predicate implements Serializable {
         this.name = name.toUpperCase();
         this.types = types;
         hashcode = this.name.hashCode();
+
         integer = false;
+
+        categorical = false;
+        identifierIndexes = new int[types.length];
+        for (int i = 0; i < types.length; i++) {
+            identifierIndexes[i] = i;
+        }
+        categoryIndexes = new int[0];
 
         options = new HashMap<String, Object>();
 
@@ -111,8 +124,28 @@ public abstract class Predicate implements Serializable {
     public void setPredicateOption(String name, Object option) {
         options.put(name, option);
 
-        if (name.equals("Integer") && Boolean.parseBoolean(option.toString())) {
+        if (name.equals("integer") && Boolean.parseBoolean(option.toString())) {
             integer = true;
+        }
+
+        if (name.equals("categorical") && Boolean.parseBoolean(option.toString())) {
+            categorical = true;
+        }
+
+        if (name.equals("categoricalindexes")) {
+            categoryIndexes = StringUtils.splitInt(option.toString(), DELIM);
+            for (int categoryIndex : categoryIndexes) {
+                identifierIndexes[categoryIndex] = -1;
+            }
+
+            int[] newIdentifierIndexes = new int[types.length - categoryIndexes.length];
+            for (int i = 0, j = 0; i < identifierIndexes.length; i++) {
+                if (identifierIndexes[i] != -1) {
+                    newIdentifierIndexes[j++] = identifierIndexes[i];
+                }
+            }
+
+            identifierIndexes = newIdentifierIndexes;
         }
     }
 
@@ -121,6 +154,27 @@ public abstract class Predicate implements Serializable {
      */
     public boolean isInteger() {
         return integer;
+    }
+
+    /**
+     * Returns whether this predicate is categorical.
+     */
+    public boolean isCategorical() {
+        return categorical;
+    }
+
+    /**
+     * Returns the category indexes for this predicate.
+     */
+    public int[] getCategoryIndexes() {
+        return categoryIndexes;
+    }
+
+    /**
+     * Returns the identifier indexes for this predicate.
+     */
+    public int[] getIdentifierIndexes() {
+        return identifierIndexes;
     }
 
     /**

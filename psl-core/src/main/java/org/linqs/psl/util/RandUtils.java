@@ -195,6 +195,29 @@ public final class RandUtils {
     }
 
     /**
+     * Sample from a categorical distribution with the provided parameters.
+     */
+    public static synchronized int sampleCategorical(float[] probabilities) {
+        double uniformRV = nextDouble();
+        double cumulativeProbability = 0.0;
+        int sampledCategory = 0;
+
+        for (int i = 0; i < probabilities.length; i++) {
+            cumulativeProbability = cumulativeProbability + probabilities[i];
+            if (uniformRV < cumulativeProbability) {
+                sampledCategory = i;
+                break;
+            }
+        }
+
+        return sampledCategory;
+    }
+
+    public static synchronized float nextGumbel() {
+        return (float) (-Math.log(-Math.log(nextDouble())));
+    }
+
+    /**
      * Sample from a gamma distribution with the provided shape and scale parameters.
      * See Marsaglia and Tsang (2000a): https://dl.acm.org/doi/10.1145/358407.358414
      */

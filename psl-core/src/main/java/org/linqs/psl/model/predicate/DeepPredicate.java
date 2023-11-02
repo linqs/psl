@@ -165,7 +165,6 @@ public class DeepPredicate extends StandardPredicate {
         }
     }
 
-
     /**
      * Put all DeepPredicates in training mode.
      */
