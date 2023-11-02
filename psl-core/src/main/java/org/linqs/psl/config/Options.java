@@ -27,7 +27,6 @@ import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.gradientdescent.GradientDescentReasoner;
-import org.linqs.psl.reasoner.gurobi.GurobiReasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.util.SystemUtils;
 
