@@ -27,6 +27,7 @@ import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.AUCEvaluator;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.gradientdescent.GradientDescentReasoner;
+import org.linqs.psl.reasoner.gurobi.GurobiReasoner;
 import org.linqs.psl.reasoner.sgd.SGDReasoner;
 import org.linqs.psl.util.SystemUtils;
 
@@ -167,6 +168,19 @@ public class Options {
         "The maximum units of work a Gurobi reasoner can take to perform inference. " +
         "A single unit of work is roughly equivalent to a second of time.",
         Option.FLAG_POSITIVE
+    );
+
+    public static final Option GUROBI_METHOD = new Option(
+        "gurobi.method",
+        "AUTO",
+        "The method to use for Gurobi inference. See https://www.gurobi.com/documentation/current/refman/method.html." +
+        "AUTO: Let Gurobi decide. " +
+        "PRIMAL_SIMPLEX: Use the primal simplex method. " +
+        "DUAL_SIMPLEX: Use the dual simplex method. " +
+        "BARRIER: Use the barrier method. " +
+        "CONCURRENT: Use the concurrent method. Concurrent methods aren't available for QP and QCP. Only the simplex and barrier algorithms are available for continuous QP models. " +
+        "DETERMINISTIC_CONCURRENT: Use the deterministic concurrent method. " +
+        "DETERMINISTIC_CONCURRENT_SIMPLEX: Use the deterministic concurrent simplex method."
     );
 
     public static final Option GUROBI_LOG_TO_CONSOLE = new Option(
