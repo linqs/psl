@@ -111,7 +111,7 @@ def main():
         },
 
         install_requires = [
-            'JPype1==1.4.0',
+            'JPype1>=1.4.0',
             'pandas>=0.24.1',
         ],
 
