@@ -80,28 +80,27 @@ public abstract class DeepModel {
     }
 
     /**
-     * Abstract class for initializing specific deep model parameters.
-     * Return the length of the shared buffer for the specific deep model.
+     * Initialize specific deep model parameters and return the length of the shared buffer for the specific deep model.
      */
     public abstract int init();
 
     /**
-     * Abstract class for writing the fit data to the shared buffer.
+     * Write the fit data to the shared buffer.
      */
     public abstract void writeFitData();
 
     /**
-     * Abstract class for writing the predict data to the shared buffer.
+     * Write the predict data to the shared buffer.
      */
     public abstract void writePredictData();
 
     /**
-     * Abstract class for reading the predict data from the shared buffer.
+     * Read the predict data from the shared buffer.
      */
     public abstract float readPredictData();
 
     /**
-     * Abstract class for writing the eval data to the shared buffer.
+     * Write the eval data to the shared buffer.
      */
     public abstract void writeEvalData();
 
@@ -235,7 +234,7 @@ public abstract class DeepModel {
         JSONObject response = sendSocketMessage(message);
 
         String resultString = getResultString(response);
-        log.debug("Epoch end deep model results for {} : {}", this, resultString);
+        log.debug("Is epoch complete deep model results for {} : {}", this, resultString);
 
         return response.getBoolean("result");
     }
