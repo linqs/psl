@@ -25,10 +25,10 @@ In the top-level directory of the PSL source (which should be the same directory
 mvn install
 ```
 
-PSL with Gurobi
+Installing PSL with Gurobi
 --------------------------
 
-PSL can be used with the [Gurobi](http://www.gurobi.com/) solver for inference.
+PSL can additionally be used with the [Gurobi](http://www.gurobi.com/) solver for inference.
 Gurobi is a commercial solver, but free academic licenses are available.
 To use Gurobi with PSL, you must have Gurobi installed and licensed, see [Gurobi Quickstart Guide](https://www.gurobi.com/documentation/quickstart.html).
 Further, you must install the Gurobi jar file into your local Maven repository.
