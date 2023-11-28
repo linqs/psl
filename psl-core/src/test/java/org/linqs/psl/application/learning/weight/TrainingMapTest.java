@@ -109,7 +109,7 @@ public class TrainingMapTest extends PSLBaseTest {
         targetsDatabase = dataStore.getDatabase(targetOpenPartition, targetClosedPartition);
         truthDatabase = dataStore.getDatabase(truthOpenPartition, truthClosedPartition);
 
-        trainingMap = new TrainingMap(targetsDatabase, truthDatabase);
+        trainingMap = new TrainingMap(targetsDatabase.getAtomStore(), truthDatabase.getAtomStore());
     }
 
     @After

@@ -35,17 +35,19 @@ public class ConnectedComponentBatchGenerator extends BatchGenerator {
 
     private final int batchSize;
 
-    public ConnectedComponentBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
-        super(inferenceApplication, fullTermStore, deepPredicates);
+    public ConnectedComponentBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore,
+                                            List<DeepPredicate> deepPredicates, AtomStore fullTruthAtomStore) {
+        super(inferenceApplication, fullTermStore, deepPredicates, fullTruthAtomStore);
 
         batchSize = Options.WLA_CONNECTED_COMPONENT_BATCH_SIZE.getInt();
     }
 
     @Override
-    public void generateBatchTermStores() {
+    public void generateBatchesInternal() {
         AtomStore fullAtomStore = fullTermStore.getAtomStore();
 
         AtomStore batchAtomStore = new AtomStore();
+        batchTruthAtomStores.add(new AtomStore());
         SimpleTermStore<? extends ReasonerTerm> batchTermStore = (SimpleTermStore<? extends ReasonerTerm>) inferenceApplication.createTermStore();
         batchTermStore.setAtomStore(batchAtomStore);
 
@@ -58,6 +60,7 @@ public class ConnectedComponentBatchGenerator extends BatchGenerator {
                 batchNumComponents = 0;
 
                 batchAtomStore = new AtomStore();
+                batchTruthAtomStores.add(new AtomStore());
                 batchTermStore = (SimpleTermStore<? extends ReasonerTerm>) inferenceApplication.createTermStore();
                 batchTermStore.setAtomStore(batchAtomStore);
             }
@@ -71,6 +74,11 @@ public class ConnectedComponentBatchGenerator extends BatchGenerator {
                     GroundAtom atom = fullAtomStore.getAtom(originalAtomIndexes[i]);
                     if (!batchAtomStore.hasAtom(atom)) {
                         batchAtomStore.addAtom(atom.copy());
+
+                        // Add the atom to the truth atom store if it has a truth atom.
+                        if (fullTruthAtomStore.hasAtom(atom)) {
+                            batchTruthAtomStores.get(batchTruthAtomStores.size() - 1).addAtom(fullTruthAtomStore.getAtom(fullTruthAtomStore.getAtomIndex(atom)));
+                        }
                     }
 
                     newAtomIndexes[i] = batchAtomStore.getAtomIndex(atom);

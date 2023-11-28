@@ -84,7 +84,7 @@ public abstract class EvaluatorTest<T extends Evaluator> extends PSLBaseTest {
         Database resultsDB = dataStore.getDatabase(targetPartition);
         Database truthDB = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        trainingMap = new TrainingMap(resultsDB, truthDB);
+        trainingMap = new TrainingMap(resultsDB.getAtomStore(), truthDB.getAtomStore());
 
         // Since we only need the map, we can close all the databases.
         resultsDB.close();

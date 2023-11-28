@@ -17,12 +17,12 @@
  */
 package org.linqs.psl.application.learning.weight;
 
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.IteratorUtils;
 import org.linqs.psl.util.Logger;
 
@@ -84,11 +84,11 @@ public class TrainingMap {
     /**
      * Initializes the training map of RandomVariableAtoms ObservedAtoms.
      *
-     * @param targetDatabase the database containing the RandomVariableAtoms (any other atom types are ignored)
-     * @param truthDatabase the database containing matching ObservedAtoms
+     * @param targetAtomStore the atomstore containing the RandomVariableAtoms (any other atom types are ignored)
+     * @param truthAtomStore the atomstore containing matching ObservedAtoms
      */
-    public TrainingMap(Database targetDatabase, Database truthDatabase) {
-        labelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targetDatabase.getAtomStore().size());
+    public TrainingMap(AtomStore targetAtomStore, AtomStore truthAtomStore) {
+        labelMap = new HashMap<RandomVariableAtom, ObservedAtom>(targetAtomStore.size());
         observedMap = new HashMap<ObservedAtom, ObservedAtom>();
         latentVariables = new ArrayList<RandomVariableAtom>();
         missingLabels = new ArrayList<ObservedAtom>();
@@ -96,15 +96,15 @@ public class TrainingMap {
 
         Set<GroundAtom> seenTruthAtoms = new HashSet<GroundAtom>();
 
-        for (GroundAtom targetAtom : targetDatabase.getAtomStore()) {
+        for (GroundAtom targetAtom : targetAtomStore) {
             if (targetAtom.getPredicate() instanceof FunctionalPredicate) {
                 continue;
             }
 
             // Note that hasAtom() will not return true for an unmanaged atom (except pre-cached functional predicates).
             GroundAtom truthAtom = null;
-            if (truthDatabase.getAtomStore().hasAtom(targetAtom.getPredicate(), targetAtom.getArguments())) {
-                truthAtom = truthDatabase.getAtomStore().getAtom(targetAtom.getPredicate(), targetAtom.getArguments());
+            if (truthAtomStore.hasAtom(targetAtom)) {
+                truthAtom = truthAtomStore.getAtom(truthAtomStore.getAtomIndex(targetAtom));
             }
 
             // Skip any truth atom that is not observed.
@@ -129,12 +129,12 @@ public class TrainingMap {
             }
         }
 
-        for (GroundAtom truthAtom : truthDatabase.getAtomStore()) {
+        for (GroundAtom truthAtom : truthAtomStore) {
             if (!(truthAtom instanceof ObservedAtom) || seenTruthAtoms.contains(truthAtom)) {
                 continue;
             }
 
-            boolean hasAtom = targetDatabase.getAtomStore().hasAtom(truthAtom.getPredicate(), truthAtom.getArguments());
+            boolean hasAtom = targetAtomStore.hasAtom(truthAtom);
             if (hasAtom) {
                 // This shouldn't be possible (since we already iterated through the target atoms).
                 // This means that the target is not cached.

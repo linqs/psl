@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.gradient;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.gradient.batchgenerator.BatchGenerator;
 import org.linqs.psl.config.Options;
@@ -72,11 +73,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected int trainingEvaluationComputePeriod;
     protected SimpleTermStore<? extends ReasonerTerm> trainFullTermStore;
+    protected TrainingMap fullTrainingMap;
     protected List<DeepModelPredicate> trainFullDeepModelPredicates;
     protected TermState[] trainFullMAPTermState;
     protected float[] trainFullMAPAtomValueState;
-    double currentTrainingEvaluationMetric;
-    double bestTrainingEvaluationMetric;
+    protected double currentTrainingEvaluationMetric;
+    protected double bestTrainingEvaluationMetric;
     protected boolean fullMAPEvaluationBreak;
     protected int fullMAPEvaluationPatience;
     protected int lastTrainingImprovementEpoch;
@@ -136,6 +138,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         trainingEvaluationComputePeriod = Options.WLA_GRADIENT_DESCENT_TRAINING_COMPUTE_PERIOD.getInt();
         trainFullTermStore = null;
+        fullTrainingMap = null;
         trainFullDeepModelPredicates = null;
         trainFullMAPTermState = null;
         trainFullMAPAtomValueState = null;
@@ -217,7 +220,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initializeFullModels() {
-        this.trainFullTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.getTermStore();
+        trainFullTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.getTermStore();
+
+        fullTrainingMap = trainingMap;
 
         trainFullDeepModelPredicates = deepModelPredicates;
 
@@ -234,7 +239,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         batchGenerator = BatchGenerator.getBatchGenerator(Options.WLA_GRADIENT_DESCENT_BATCH_GENERATOR.getString(),
-                trainInferenceApplication, trainFullTermStore, deepPredicates);
+                trainInferenceApplication, trainFullTermStore, deepPredicates, trainTruthDatabase.getAtomStore());
         batchGenerator.generateBatches();
     }
 
@@ -471,7 +476,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void setFullModel() {
         trainInferenceApplication.setTermStore(trainFullTermStore);
-
+        trainingMap = fullTrainingMap;
         trainMAPTermState = trainFullMAPTermState;
         trainMAPAtomValueState = trainFullMAPAtomValueState;
 
@@ -488,6 +493,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         List<DeepModelPredicate> batchDeepModelPredicates = batchGenerator.getBatchDeepModelPredicates(batch);
 
         trainInferenceApplication.setTermStore(batchTermStore);
+        trainingMap = batchGenerator.getBatchTrainingMap(batch);
         trainMAPTermState = batchMAPTermStates.get(batch);
         trainMAPAtomValueState = batchMAPAtomValueStates.get(batch);
 
