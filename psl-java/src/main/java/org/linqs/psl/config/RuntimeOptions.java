@@ -125,12 +125,6 @@ public class RuntimeOptions {
         "Clear learning rules before inference. Useful when switching models between train and test."
     );
 
-    public static final Option INFERENCE_DEEP_BATCHING = new Option(
-        "runtime.inference.deep.batching",
-        false,
-        "Whether deep models are batched. Inference should rerun until deep models terminates."
-    );
-
     public static final Option LEARN = new Option(
         "runtime.learn",
         false,

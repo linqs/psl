@@ -170,7 +170,7 @@ public abstract class InferenceApplication implements ModelApplication {
 
         TrainingMap trainingMap = null;
         if (truthDatabase != null && evaluations != null && evaluations.size() > 0) {
-            trainingMap = new TrainingMap(database, truthDatabase);
+            trainingMap = new TrainingMap(database.getAtomStore(), truthDatabase.getAtomStore());
         }
 
         log.info("Beginning inference.");

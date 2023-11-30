@@ -429,6 +429,7 @@ public class Runtime {
         DeepPredicate.evalModeAllDeepPredicates();
         DeepPredicate.epochStartAllDeepPredicates();
 
+        // Run inference.
         boolean runInference = true;
         while (runInference) {
             DeepPredicate.predictAllDeepPredicates();
@@ -448,12 +449,8 @@ public class Runtime {
 
             DeepPredicate.evalAllDeepPredicates();
 
-            if (RuntimeOptions.INFERENCE_DEEP_BATCHING.getBoolean()) {
-                DeepPredicate.nextBatchAllDeepPredicates();
-                runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
-            } else {
-                runInference = false;
-            }
+            DeepPredicate.nextBatchAllDeepPredicates();
+            runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
         }
         DeepPredicate.epochEndAllDeepPredicates();
 

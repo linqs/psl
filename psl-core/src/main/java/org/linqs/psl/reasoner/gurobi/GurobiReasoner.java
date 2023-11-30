@@ -35,13 +35,31 @@ import java.util.List;
 
 public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
     private static final Logger log = LoggerFactory.getLogger(GurobiReasoner.class);
+
+    /**
+     * The Gurobi method to use.
+     * See <a href="https://www.gurobi.com/documentation/current/refman/method.html">the Gurobi documentation</a>
+     * for more details.
+     */
+    public static enum GurobiMethod {
+        AUTO,
+        PRIMAL_SIMPLEX,
+        DUAL_SIMPLEX,
+        BARRIER,
+        CONCURRENT,
+        DETERMINISTIC_CONCURRENT,
+        DETERMINISTIC_CONCURRENT_SIMPLEX
+    }
+
     private final int workLimit;
+    private final GurobiMethod method;
 
 
     public GurobiReasoner() {
         super();
 
         workLimit = Options.GUROBI_WORK_LIMIT.getInt();
+        method = GurobiMethod.valueOf(Options.GUROBI_METHOD.getString().toUpperCase());
     }
 
     @Override
@@ -76,7 +94,7 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
 
         try {
             model.set("WorkLimit", Integer.toString(workLimit));
-            model.set("Method", "1");
+            model.set("Method", getMethodId());
             model.optimize();
             model.update();
         } catch (GRBException e) {
@@ -90,5 +108,29 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
         optimizationComplete(termStore, objectiveResult, System.currentTimeMillis() - start);
 
         return objectiveResult.objective;
+    }
+
+    /**
+     * Map the Gurobi method to its ID.
+     */
+    private String getMethodId() {
+        switch (method) {
+            case AUTO:
+                return "-1";
+            case PRIMAL_SIMPLEX:
+                return "0";
+            case DUAL_SIMPLEX:
+                return "1";
+            case BARRIER:
+                return "2";
+            case CONCURRENT:
+                return "3";
+            case DETERMINISTIC_CONCURRENT:
+                return "4";
+            case DETERMINISTIC_CONCURRENT_SIMPLEX:
+                return "5";
+            default:
+                throw new IllegalArgumentException("Unrecognized Gurobi method: " + method);
+        }
     }
 }

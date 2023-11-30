@@ -76,7 +76,7 @@ public class CategoricalEvaluatorTest extends EvaluatorTest<CategoricalEvaluator
         Database results = dataStore.getDatabase(targetPartition);
         Database truth = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
 
-        trainingMap = new TrainingMap(results, truth);
+        trainingMap = new TrainingMap(results.getAtomStore(), truth.getAtomStore());
 
         // Since we only need the map, we can close all the databases.
         results.close();

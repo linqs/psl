@@ -69,7 +69,7 @@ jobs:
           pip3 install -r psl-python/optional_requirements.txt
 
       - name: Build with Maven
-        run: mvn integration-test -B -P all-modules
+        run: mvn integration-test -B
 
       - name: Archive Build
         run: tar cvf psl.tar */target
@@ -244,4 +244,4 @@ jobs:
           pip3 install -r psl-python/optional_requirements.txt
 
       - name: Build with Maven
-        run: mvn integration-test -B -P all-modules
+        run: mvn integration-test -B

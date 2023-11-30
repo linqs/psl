@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.gradient.batchgenerator;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -31,35 +32,38 @@ import java.util.List;
  * but may have different neural inputs.
  */
 public class NeuralBatchGenerator extends BatchGenerator {
+    int batchCount;
     int numBatches;
 
-    public NeuralBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
-        super(inferenceApplication, fullTermStore, deepPredicates);
+    public NeuralBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore,
+                                List<DeepPredicate> deepPredicates, AtomStore fullTruthAtomStore) {
+        super(inferenceApplication, fullTermStore, deepPredicates, fullTruthAtomStore);
 
         assert deepPredicates.size() >= 1;
 
+        batchCount = 0;
         numBatches = -1;
     }
 
     @Override
     public int numBatches() {
-        if (numBatches == -1) {
-            numBatches = 0;
-            DeepPredicate.epochStartAllDeepPredicates();
-            while (!isEpochComplete()) {
-                DeepPredicate.nextBatchAllDeepPredicates();
-
-                numBatches++;
-            }
-            DeepPredicate.epochEndAllDeepPredicates();
-        }
-
+        // Warning: This method must be called after at least one epoch has been completed to get the correct value.
         return numBatches;
     }
 
     @Override
-    public void generateBatchTermStores() {
+    public int epochStart() {
+        DeepPredicate.epochStartAllDeepPredicates();
+
+        batchCount = 0;
+
+        return 0;
+    }
+
+    @Override
+    public void generateBatchesInternal() {
         batchTermStores.add(fullTermStore.copy());
+        batchTruthAtomStores.add(fullTruthAtomStore.copy());
     }
 
     @Override
@@ -71,7 +75,16 @@ public class NeuralBatchGenerator extends BatchGenerator {
     public int nextBatch() {
         DeepPredicate.nextBatchAllDeepPredicates();
 
+        batchCount++;
+
         return 0;
+    }
+
+    @Override
+    public void epochEnd() {
+        DeepPredicate.epochEndAllDeepPredicates();
+
+        numBatches = batchCount;
     }
 
     @Override

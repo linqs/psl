@@ -178,8 +178,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
             return;
         }
 
-        TrainingMap trainingMap = new TrainingMap(trainInferenceApplication.getDatabase(), trainTruthDatabase);
-        TrainingMap validationMap = new TrainingMap(validationInferenceApplication.getDatabase(), validationTruthDatabase);
+        TrainingMap trainingMap = new TrainingMap(trainInferenceApplication.getDatabase().getAtomStore(), trainTruthDatabase.getAtomStore());
+        TrainingMap validationMap = new TrainingMap(validationInferenceApplication.getDatabase().getAtomStore(), validationTruthDatabase.getAtomStore());
 
         initGroundModel(trainInferenceApplication, trainingMap, validationInferenceApplication, validationMap);
     }

@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.gradient.batchgenerator;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -30,12 +31,14 @@ import java.util.List;
  */
 public class FullBatchGenerator extends BatchGenerator {
 
-    public FullBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
-        super(inferenceApplication, fullTermStore, deepPredicates);
+    public FullBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore,
+                              List<DeepPredicate> deepPredicates, AtomStore fullTruthAtomStore) {
+        super(inferenceApplication, fullTermStore, deepPredicates, fullTruthAtomStore);
     }
 
     @Override
-    public void generateBatchTermStores() {
+    public void generateBatchesInternal() {
         batchTermStores.add(fullTermStore.copy());
+        batchTruthAtomStores.add(fullTruthAtomStore.copy());
     }
 }
