@@ -24,7 +24,6 @@ import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
-import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.RandUtils;
 import org.linqs.psl.util.Reflection;
 
@@ -38,8 +37,6 @@ import java.util.List;
  * A batch in this case is a set of terms and corresponding atoms defining a subgraph of the complete factor graph.
  */
 public abstract class BatchGenerator {
-    private static final Logger log = Logger.getLogger(BatchGenerator.class);
-
     protected InferenceApplication inferenceApplication;
     protected SimpleTermStore<? extends ReasonerTerm> fullTermStore;
     protected AtomStore fullTruthAtomStore;
@@ -139,8 +136,6 @@ public abstract class BatchGenerator {
         for (int i = 0; i < numBatchTermStores(); i++) {
             batchPermutation.add(i);
         }
-
-        log.info("Generated " + numBatchTermStores() + " batches.");
     }
 
     protected abstract void generateBatchesInternal();
