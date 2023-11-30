@@ -516,13 +516,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void runTrainingEvaluation(int epoch) {
-        int numBatches = 0;
+        int numEvaluatedBatches = 0;
         float totalTrainingEvaluation = 0.0f;
 
         DeepPredicate.evalModeAllDeepPredicates();
 
         int batchId = batchGenerator.epochStart();
         while (!batchGenerator.isEpochComplete()) {
+            if (batchGenerator.getBatchTrainingMap(batchId).getLabelMap().size() <= 0) {
+                batchId = batchGenerator.nextBatch();
+                continue;
+            }
+
             setBatch(batchId);
             DeepPredicate.predictAllDeepPredicates();
             DeepPredicate.evalAllDeepPredicates();
@@ -536,11 +541,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             batchId = batchGenerator.nextBatch();
 
-            numBatches++;
+            numEvaluatedBatches++;
         }
         batchGenerator.epochEnd();
 
-        currentTrainingEvaluationMetric = totalTrainingEvaluation / numBatches;
+        currentTrainingEvaluationMetric = totalTrainingEvaluation / numEvaluatedBatches;
 
         if (currentTrainingEvaluationMetric > bestTrainingEvaluationMetric) {
             lastTrainingImprovementEpoch = epoch;
