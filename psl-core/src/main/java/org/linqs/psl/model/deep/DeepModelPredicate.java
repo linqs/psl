@@ -18,7 +18,6 @@
 package org.linqs.psl.model.deep;
 
 import org.linqs.psl.database.AtomStore;
-import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.QueryAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.Predicate;
@@ -44,7 +43,7 @@ public class DeepModelPredicate extends DeepModel {
     public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
     public static final String CONFIG_CLASS_SIZE = "class-size";
 
-    public AtomStore atomStore;
+    private AtomStore atomStore;
     private Predicate predicate;
 
     private int classSize;

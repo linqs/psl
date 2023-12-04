@@ -709,17 +709,16 @@ public class Options {
         + " not having the atom initially in the database."
     );
 
-    public static final Option POLICY_GRADIENT_GUMBEL_SOFTMAX_TEMPERATURE = new Option(
-        "policygradient.gumbelsoftmax.temperature",
-        1.0f,
-        "The temperature parameter for the Gumbel-Softmax distribution.",
-        Option.FLAG_POSITIVE
-    );
-
     public static final Option POLICY_GRADIENT_POLICY_DISTRIBUTION = new Option(
         "policygradient.policydistribution",
-        PolicyGradient.PolicyDistribution.CATEGORICAL.toString(),
+        PolicyGradient.DeepAtomPolicyDistribution.CATEGORICAL.toString(),
         "The policy distribution to use for policy gradient learning."
+    );
+
+    public static final Option POLICY_GRADIENT_POLICY_UPDATE = new Option(
+        "policygradient.policyupdate",
+        PolicyGradient.PolicyUpdate.REINFORCE.toString(),
+        "The policy update to use for policy gradient learning."
     );
 
     public static final Option POSTGRES_HOST = new Option(

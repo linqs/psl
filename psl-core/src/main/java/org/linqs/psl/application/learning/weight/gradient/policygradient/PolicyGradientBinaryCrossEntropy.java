@@ -22,6 +22,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.MathUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -30,9 +31,9 @@ import java.util.Map;
  * Learns parameters for a model by minimizing the squared error loss function
  * using the policy gradient learning framework.
  */
-public class PolicyGradientSquaredError extends PolicyGradient {
-    public PolicyGradientSquaredError(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
-                                      Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
+public class PolicyGradientBinaryCrossEntropy extends PolicyGradient {
+    public PolicyGradientBinaryCrossEntropy(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+                                            Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
     }
 
@@ -51,7 +52,8 @@ public class PolicyGradientSquaredError extends PolicyGradient {
                 continue;
             }
 
-            supervisedLoss += Math.pow(atomStore.getAtom(atomIndex).getValue() - observedAtom.getValue(), 2.0f);
+            supervisedLoss += -1.0f * (observedAtom.getValue() * Math.log(Math.max(atomStore.getAtom(atomIndex).getValue(), MathUtils.EPSILON_FLOAT))
+                    + (1.0f - observedAtom.getValue()) * Math.log(Math.max(1.0f - atomStore.getAtom(atomIndex).getValue(), MathUtils.EPSILON_FLOAT)));
         }
     }
 }

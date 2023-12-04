@@ -213,10 +213,6 @@ public final class RandUtils {
         return sampledCategory;
     }
 
-    public static synchronized float nextGumbel() {
-        return (float) (-Math.log(-Math.log(nextDouble())));
-    }
-
     /**
      * Sample from a gamma distribution with the provided shape and scale parameters.
      * See Marsaglia and Tsang (2000a): https://dl.acm.org/doi/10.1145/358407.358414

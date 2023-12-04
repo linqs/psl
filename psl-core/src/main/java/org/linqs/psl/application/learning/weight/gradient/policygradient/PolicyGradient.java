@@ -14,7 +14,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
@@ -28,17 +27,20 @@ import java.util.Map;
 public abstract class PolicyGradient extends GradientDescent {
     private static final Logger log = Logger.getLogger(PolicyGradient.class);
 
-    public enum PolicyDistribution {
-        CATEGORICAL,
-        GUMBEL_SOFTMAX
+    public enum DeepAtomPolicyDistribution {
+        CATEGORICAL
     }
 
-    private final PolicyDistribution policyDistribution;
+    public enum PolicyUpdate {
+        REINFORCE,
+        REINFORCE_BASELINE,
+    }
 
-    private float lossMovingAverage;
+    private final DeepAtomPolicyDistribution deepAtomPolicyDistribution;
+    private final PolicyUpdate policyUpdate;
+
+    private float scoreMovingAverage;
     private float[] sampleProbabilities;
-
-    private final float gumbelSoftmaxTemperature;
 
     protected float[] initialDeepAtomValues;
     protected float[] policySampledDeepAtomValues;
@@ -61,12 +63,11 @@ public abstract class PolicyGradient extends GradientDescent {
                         Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        policyDistribution = PolicyDistribution.valueOf(Options.POLICY_GRADIENT_POLICY_DISTRIBUTION.getString().toUpperCase());
-        lossMovingAverage = 0.0f;
+        deepAtomPolicyDistribution = DeepAtomPolicyDistribution.valueOf(Options.POLICY_GRADIENT_POLICY_DISTRIBUTION.getString().toUpperCase());
+        policyUpdate = PolicyUpdate.valueOf(Options.POLICY_GRADIENT_POLICY_UPDATE.getString().toUpperCase());
+        scoreMovingAverage = 0.0f;
 
         sampleProbabilities = null;
-
-        gumbelSoftmaxTemperature = Options.POLICY_GRADIENT_GUMBEL_SOFTMAX_TEMPERATURE.getFloat();
 
         initialDeepAtomValues = null;
         policySampledDeepAtomValues = null;
@@ -90,7 +91,7 @@ public abstract class PolicyGradient extends GradientDescent {
     protected void initForLearning() {
         super.initForLearning();
 
-        lossMovingAverage = 0.0f;
+        scoreMovingAverage = 0.0f;
     }
 
     protected abstract void computeSupervisedLoss();
@@ -161,15 +162,12 @@ public abstract class PolicyGradient extends GradientDescent {
             }
         }
 
-        switch (policyDistribution) {
+        switch (deepAtomPolicyDistribution) {
             case CATEGORICAL:
                 sampleCategorical();
                 break;
-            case GUMBEL_SOFTMAX:
-                sampleGumbelSoftmax();
-                break;
             default:
-                throw new IllegalArgumentException("Unknown policy distribution: " + policyDistribution);
+                throw new IllegalArgumentException("Unknown policy distribution: " + deepAtomPolicyDistribution);
         }
     }
 
@@ -200,48 +198,10 @@ public abstract class PolicyGradient extends GradientDescent {
                     } else {
                         sampleProbabilities[atomIndex] = categoryProbabilities[i];
                         categories.get(i).setValue(1.0f);
-//                        log.trace("Sampled category: {}.", categories.get(i).toStringWithValue());
                     }
 
                     policySampledDeepAtomValues[atomIndex] = categories.get(i).getValue();
                     atomValues[atomIndex] = categories.get(i).getValue();
-                }
-            }
-        }
-    }
-
-    private void sampleGumbelSoftmax() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
-        float[] atomValues = atomStore.getAtomValues();
-
-        // Sample the deep model predictions according to the stochastic gumbel softmax policy.
-        for (DeepModelPredicate deepModelPredicate : trainDeepModelPredicates) {
-
-            Map <String, ArrayList<RandomVariableAtom>> atomIdentiferToCategories = deepModelPredicate.getAtomIdentiferToCategories();
-            for (Map.Entry<String, ArrayList<RandomVariableAtom>> entry : atomIdentiferToCategories.entrySet()) {
-                String atomIdentifier = entry.getKey();
-                ArrayList<RandomVariableAtom> categories = entry.getValue();
-
-                float[] gumbelSoftmaxSample = new float[categories.size()];
-                float categoryProbabilitySum = 0.0f;
-                for (int i = 0; i < categories.size(); i++) {
-                    float gumbelSample = RandUtils.nextGumbel();
-
-                    gumbelSoftmaxSample[i] = (float) Math.exp((Math.log(Math.max(categories.get(i).getValue(), MathUtils.STRICT_EPSILON)) + gumbelSample)
-                            / gumbelSoftmaxTemperature);
-                    categoryProbabilitySum += gumbelSoftmaxSample[i];
-                }
-
-                // Renormalize the probabilities and set the deep atom values.
-                for (int i = 0; i < categories.size(); i++) {
-                    gumbelSoftmaxSample[i] = gumbelSoftmaxSample[i] / categoryProbabilitySum;
-
-                    RandomVariableAtom category = categories.get(i);
-                    int atomIndex = atomStore.getAtomIndex(category);
-
-                    category.setValue(gumbelSoftmaxSample[i]);
-                    policySampledDeepAtomValues[atomIndex] = gumbelSoftmaxSample[i];
-                    atomValues[atomIndex] = gumbelSoftmaxSample[i];
                 }
             }
         }
@@ -315,36 +275,37 @@ public abstract class PolicyGradient extends GradientDescent {
                 continue;
             }
 
-            switch (policyDistribution) {
+            switch (deepAtomPolicyDistribution) {
                 case CATEGORICAL:
-                    computeCategoricalAtomGradient(atom, i);
-                    break;
-                case GUMBEL_SOFTMAX:
-                    computeGumbelSoftmaxAtomGradient(atom, i);
+                    computeCategoricalAtomGradient(i);
                     break;
                 default:
-                    throw new IllegalArgumentException("Unknown policy distribution: " + policyDistribution);
+                    throw new IllegalArgumentException("Unknown policy distribution: " + deepAtomPolicyDistribution);
             }
         }
     }
 
-    private void computeCategoricalAtomGradient(GroundAtom atom, int atomIndex) {
+    private void computeCategoricalAtomGradient(int atomIndex) {
         if (policySampledDeepAtomValues[atomIndex] == 0.0f) {
             deepAtomGradient[atomIndex] = 0.0f;
             return;
         }
 
         float score = energyLossCoefficient * latentInferenceEnergy + supervisedLoss;
-        lossMovingAverage = 0.9f * lossMovingAverage + 0.1f * score;
+        scoreMovingAverage = 0.9f * scoreMovingAverage + 0.1f * score;
 
-        deepAtomGradient[atomIndex] += (score - lossMovingAverage) / sampleProbabilities[atomIndex];
-
-//        log.trace("Atom: {}, Score: {}, Gradient: {}.", atom.toStringWithValue(), score, deepAtomGradient[atomIndex]);
+        switch (policyUpdate) {
+            case REINFORCE:
+                deepAtomGradient[atomIndex] += score / sampleProbabilities[atomIndex];
+                break;
+            case REINFORCE_BASELINE:
+                deepAtomGradient[atomIndex] += (score - scoreMovingAverage) / sampleProbabilities[atomIndex];
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
+        }
     }
 
-    private void computeGumbelSoftmaxAtomGradient(GroundAtom atom, int atomIndex) {
-        // TODO(Charles): Compute the energy and supervised policy gradient for the gumbel softmax policy.
-    }
 
     /**
      * Set RandomVariableAtoms with labels to their observed (truth) value.

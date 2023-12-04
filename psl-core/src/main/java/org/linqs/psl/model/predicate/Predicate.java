@@ -124,7 +124,7 @@ public abstract class Predicate implements Serializable {
     public void setPredicateOption(String name, Object option) {
         options.put(name, option);
 
-        if (name.equals("integer") && Boolean.parseBoolean(option.toString())) {
+        if (name.equals("Integer") && Boolean.parseBoolean(option.toString())) {
             integer = true;
         }
 
@@ -132,7 +132,7 @@ public abstract class Predicate implements Serializable {
             categorical = true;
         }
 
-        if (name.equals("categoricalindexes")) {
+        if (name.equals("categoricalIndexes")) {
             categoryIndexes = StringUtils.splitInt(option.toString(), DELIM);
             for (int categoryIndex : categoryIndexes) {
                 identifierIndexes[categoryIndex] = -1;
