@@ -611,10 +611,6 @@ public abstract class Minimizer extends GradientDescent {
         float objectiveDifference = augmentedInferenceEnergy - mapEnergy;
         float constraintViolation = Math.max(0.0f, objectiveDifference - constraintRelaxationConstant);
         float supervisedLoss = computeSupervisedLoss();
-        float totalProxValue = computeTotalProxValue(new float[proxRuleObservedAtoms.length]);
-
-        log.trace("Prox Loss: {}, Objective difference: {}, Constraint Violation: {}, Supervised Loss: {}, Energy Loss: {}.",
-                totalProxValue, objectiveDifference, constraintViolation, supervisedLoss, latentInferenceEnergy);
 
         return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(constraintViolation, 2.0f)
                 + linearPenaltyCoefficient * (constraintViolation)

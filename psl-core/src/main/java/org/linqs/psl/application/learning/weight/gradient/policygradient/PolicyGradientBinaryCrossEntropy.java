@@ -22,6 +22,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.List;
@@ -32,6 +33,8 @@ import java.util.Map;
  * using the policy gradient learning framework.
  */
 public class PolicyGradientBinaryCrossEntropy extends PolicyGradient {
+    private static final Logger log = Logger.getLogger(PolicyGradientBinaryCrossEntropy.class);
+
     public PolicyGradientBinaryCrossEntropy(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                                             Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
@@ -42,7 +45,8 @@ public class PolicyGradientBinaryCrossEntropy extends PolicyGradient {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         supervisedLoss = 0.0f;
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
+        int numEvaluatedAtoms = 0;
+        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
             ObservedAtom observedAtom = entry.getValue();
 
@@ -54,6 +58,12 @@ public class PolicyGradientBinaryCrossEntropy extends PolicyGradient {
 
             supervisedLoss += -1.0f * (observedAtom.getValue() * Math.log(Math.max(atomStore.getAtom(atomIndex).getValue(), MathUtils.EPSILON_FLOAT))
                     + (1.0f - observedAtom.getValue()) * Math.log(Math.max(1.0f - atomStore.getAtom(atomIndex).getValue(), MathUtils.EPSILON_FLOAT)));
+
+            numEvaluatedAtoms++;
+        }
+
+        if (numEvaluatedAtoms > 0) {
+            supervisedLoss /= numEvaluatedAtoms;
         }
     }
 }

@@ -41,6 +41,7 @@ public class PolicyGradientSquaredError extends PolicyGradient {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         supervisedLoss = 0.0f;
+        int numEvaluatedAtoms = 0;
         for (Map.Entry<RandomVariableAtom, ObservedAtom> entry: trainingMap.getLabelMap().entrySet()) {
             RandomVariableAtom randomVariableAtom = entry.getKey();
             ObservedAtom observedAtom = entry.getValue();
@@ -52,6 +53,11 @@ public class PolicyGradientSquaredError extends PolicyGradient {
             }
 
             supervisedLoss += Math.pow(atomStore.getAtom(atomIndex).getValue() - observedAtom.getValue(), 2.0f);
+            numEvaluatedAtoms++;
+        }
+
+        if (numEvaluatedAtoms > 0) {
+            supervisedLoss /= numEvaluatedAtoms;
         }
     }
 }

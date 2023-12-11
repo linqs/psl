@@ -322,13 +322,19 @@ public class Options {
     );
 
     public static final Option WLA_GRADIENT_DESCENT_EXTENSION = new Option(
-    "gradientdescent.extension",
-        GradientDescent.GDExtension.MIRROR_DESCENT.toString(),
+    "gradientdescent.symbolicweightupdate",
+        GradientDescent.SymbolicWeightUpdate.MIRROR_DESCENT.toString(),
         "The gradient descent extension to use for gradient descent weight learning."
         + " MIRROR_DESCENT (Default): Mirror descent / normalized exponentiated gradient descent over the unit simplex."
         + " If this option is chosen then gradientdescent.negativelogregularization must be positive."
         + " PROJECTED_GRADIENT: Projected gradient descent over the unit simplex."
-        + " NONE: Gradient descent over non-negative orthant."
+        + " GRADIENT_DESCENT: Gradient descent over non-negative orthant."
+    );
+
+    public static final Option WLA_GRADIENT_DESCENT_SYMBOLIC_LEARNING = new Option(
+        "gradientdescent.symbolicweightlearning",
+        true,
+        "Whether to perform symbolic weight learning during gradient descent."
     );
 
     public static final Option WLA_GRADIENT_DESCENT_L2_REGULARIZATION = new Option(

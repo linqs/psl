@@ -130,7 +130,7 @@ public abstract class Reasoner<T extends ReasonerTerm> {
     protected void optimizationComplete(TermStore<T> termStore, ObjectiveResult finalObjective, long totalTime) {
         float change = (float)termStore.sync();
 
-        log.info("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}",
+        log.debug("Final Objective: {}, Violated Constraints: {}, Total Optimization Time: {}",
                 finalObjective.objective, finalObjective.violatedConstraints, totalTime);
         log.debug("Movement of variables from initial state: {}", change);
 

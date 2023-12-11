@@ -54,13 +54,15 @@ public abstract class GradientDescent extends WeightLearningApplication {
      *     on the chosen loss with unit simplex constrained weights.
      * NONE: Perform standard gradient descent with only lower bound (>=0) constraints on the weights.
      */
-    public static enum GDExtension {
+    public static enum SymbolicWeightUpdate {
         MIRROR_DESCENT,
         PROJECTED_GRADIENT,
-        NONE
+        GRADIENT_DESCENT
     }
 
-    protected GDExtension gdExtension;
+    protected boolean symbolicWeightLearning;
+    protected SymbolicWeightUpdate symbolicWeightUpdate;
+
     protected Map<WeightedRule, Integer> ruleIndexMap;
 
     protected float[] weightGradient;
@@ -124,7 +126,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
                            Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        gdExtension = GDExtension.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
+        symbolicWeightLearning = Options.WLA_GRADIENT_DESCENT_SYMBOLIC_LEARNING.getBoolean();
+        symbolicWeightUpdate = SymbolicWeightUpdate.valueOf(Options.WLA_GRADIENT_DESCENT_EXTENSION.getString().toUpperCase());
 
         ruleIndexMap = new HashMap<WeightedRule, Integer>(mutableRules.size());
         for (int i = 0; i < mutableRules.size(); i++) {
@@ -286,7 +289,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initForLearning() {
-        switch (gdExtension) {
+        switch (symbolicWeightUpdate) {
             case MIRROR_DESCENT:
             case PROJECTED_GRADIENT:
                 // Initialize weights to be centered on the unit simplex.
@@ -348,10 +351,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             DeepPredicate.trainModeAllDeepPredicates();
 
+            int numBatches = 0;
+            float averageBatchObjective = 0.0f;
             batchGenerator.permuteBatchOrdering();
             int batchId = batchGenerator.epochStart();
             while (!batchGenerator.isEpochComplete()) {
-                long batchStart = System.currentTimeMillis();
+                numBatches++;
 
                 setBatch(batchId);
                 DeepPredicate.predictAllDeepPredicates();
@@ -364,7 +369,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     clipWeightGradient();
                 }
 
-                float batchObjective = computeTotalLoss();
+                averageBatchObjective += computeTotalLoss();
 
                 gradientStep(epoch);
 
@@ -372,14 +377,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
                     epochDeepAtomValueMovement += DeepPredicate.predictAllDeepPredicates();
                 }
 
-                long batchEnd = System.currentTimeMillis();
-
-                log.trace("Batch: {} -- Weight Learning Objective: {}, Gradient Magnitude: {}, Iteration Time: {}",
-                        batchId, batchObjective, computeGradientNorm(), (batchEnd - batchStart));
-
                 batchId = batchGenerator.nextBatch();
             }
             batchGenerator.epochEnd();
+
+            if (numBatches > 0) {
+                // Average the objective across batches.
+                averageBatchObjective /= numBatches;
+            }
 
             setFullModel();
 
@@ -396,7 +401,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             setFullModel();
 
             epoch++;
-            log.trace("Epoch: {} -- Iteration Time: {}", epoch, (end - start));
+            log.trace("Epoch: {}, Weight Learning Objective: {}, Iteration Time: {}", epoch, averageBatchObjective, (end - start));
         }
         log.info("Gradient Descent Weight Learning Finished.");
 
@@ -655,9 +660,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Return the total change in the weights.
      */
     protected void weightGradientStep(int epoch) {
+        if (!symbolicWeightLearning) {
+            return;
+        }
+
         float stepSize = computeStepSize(epoch);
 
-        switch (gdExtension) {
+        switch (symbolicWeightUpdate) {
             case MIRROR_DESCENT:
                 float exponentiatedGradientSum = 0.0f;
                 for (int j = 0; j < mutableRules.size(); j++) {
@@ -713,7 +722,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float computeGradientNorm() {
         float norm = 0.0f;
 
-        switch (gdExtension) {
+        switch (symbolicWeightUpdate) {
             case MIRROR_DESCENT:
                 norm = computeMirrorDescentNorm();
                 break;
@@ -931,8 +940,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float learningLoss = computeLearningLoss();
         float regularization = computeRegularization();
 
-        log.trace("Learning Loss: {}, Regularization: {}", learningLoss, regularization);
-
         return learningLoss + regularization;
     }
 
@@ -962,6 +969,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     protected void computeTotalWeightGradient() {
         Arrays.fill(weightGradient, 0.0f);
+
+        if (!symbolicWeightLearning) {
+            return;
+        }
 
         addLearningLossWeightGradient();
         addRegularizationWeightGradient();
