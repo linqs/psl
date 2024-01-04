@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.gradient.batchgenerator;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -34,8 +35,9 @@ public class NeuralBatchGenerator extends BatchGenerator {
     int batchCount;
     int numBatches;
 
-    public NeuralBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
-        super(inferenceApplication, fullTermStore, deepPredicates);
+    public NeuralBatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore,
+                                List<DeepPredicate> deepPredicates, AtomStore fullTruthAtomStore) {
+        super(inferenceApplication, fullTermStore, deepPredicates, fullTruthAtomStore);
 
         assert deepPredicates.size() >= 1;
 
@@ -59,8 +61,9 @@ public class NeuralBatchGenerator extends BatchGenerator {
     }
 
     @Override
-    public void generateBatchTermStores() {
+    public void generateBatchesInternal() {
         batchTermStores.add(fullTermStore.copy());
+        batchTruthAtomStores.add(fullTruthAtomStore.copy());
     }
 
     @Override

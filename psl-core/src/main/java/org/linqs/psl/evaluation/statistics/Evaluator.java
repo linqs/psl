@@ -131,7 +131,7 @@ public abstract class Evaluator {
      * A convenience call for those who don't want to create a training map directly.
      */
     public void compute(Database rvDB, Database truthDB, StandardPredicate predicate) {
-        TrainingMap map = new TrainingMap(rvDB, truthDB);
+        TrainingMap map = new TrainingMap(rvDB.getAtomStore(), truthDB.getAtomStore());
         compute(map, predicate);
     }
 

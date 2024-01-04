@@ -18,6 +18,8 @@
 package org.linqs.psl.application.learning.weight.gradient.batchgenerator;
 
 import org.linqs.psl.application.inference.InferenceApplication;
+import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -37,21 +39,28 @@ import java.util.List;
 public abstract class BatchGenerator {
     protected InferenceApplication inferenceApplication;
     protected SimpleTermStore<? extends ReasonerTerm> fullTermStore;
+    protected AtomStore fullTruthAtomStore;
     protected List<DeepPredicate> deepPredicates;
 
     protected List<SimpleTermStore<? extends ReasonerTerm>> batchTermStores;
+    protected List<AtomStore> batchTruthAtomStores;
+    protected List<TrainingMap> batchTrainingMaps;
     protected List<List<DeepModelPredicate>> batchDeepModelPredicates;
 
     protected ArrayList<Integer> batchPermutation;
     protected int currentBatchPermutationIndex;
 
 
-    public BatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore, List<DeepPredicate> deepPredicates) {
+    public BatchGenerator(InferenceApplication inferenceApplication, SimpleTermStore<? extends ReasonerTerm> fullTermStore,
+                          List<DeepPredicate> deepPredicates, AtomStore fullTruthAtomStore) {
         this.inferenceApplication = inferenceApplication;
         this.fullTermStore = fullTermStore;
+        this.fullTruthAtomStore = fullTruthAtomStore;
         this.deepPredicates = deepPredicates;
 
         batchTermStores = new ArrayList<SimpleTermStore<? extends ReasonerTerm>>();
+        batchTruthAtomStores = new ArrayList<AtomStore>();
+        batchTrainingMaps = new ArrayList<TrainingMap>();
         batchDeepModelPredicates = new ArrayList<List<DeepModelPredicate>>();
         batchPermutation = new ArrayList<Integer>();
 
@@ -85,11 +94,33 @@ public abstract class BatchGenerator {
         return batchDeepModelPredicates.get(index);
     }
 
+    public List<AtomStore> getBatchTruthAtomStores() {
+        return batchTruthAtomStores;
+    }
+
+    public AtomStore getBatchTruthAtomStore(int index) {
+        return batchTruthAtomStores.get(index);
+    }
+
+    public List<TrainingMap> getBatchTrainingMaps() {
+        return batchTrainingMaps;
+    }
+
+    public TrainingMap getBatchTrainingMap(int index) {
+        return batchTrainingMaps.get(index);
+    }
+
     public void generateBatches() {
         clear();
 
-        generateBatchTermStores();
+        generateBatchesInternal();
 
+        // Generate batch training maps.
+        for (int i = 0; i < numBatchTermStores(); i++) {
+            batchTrainingMaps.add(new TrainingMap(batchTermStores.get(i).getAtomStore(), batchTruthAtomStores.get(i)));
+        }
+
+        // Generate batch deep model predicates.
         for (int i = 0; i < numBatchTermStores(); i++) {
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchTermStores.get(i);
             batchDeepModelPredicates.add(new ArrayList<DeepModelPredicate>());
@@ -101,12 +132,13 @@ public abstract class BatchGenerator {
             }
         }
 
+        // Generate initial batch permutation.
         for (int i = 0; i < numBatchTermStores(); i++) {
             batchPermutation.add(i);
         }
     }
 
-    public abstract void generateBatchTermStores();
+    protected abstract void generateBatchesInternal();
 
     /**
      * Permute the order of the batches.
@@ -184,7 +216,7 @@ public abstract class BatchGenerator {
      */
     public static BatchGenerator getBatchGenerator(String name, InferenceApplication inferenceApplication,
                                                    SimpleTermStore<? extends ReasonerTerm> fullTermStore,
-                                                   List<DeepPredicate> deepPredicates) {
+                                                   List<DeepPredicate> deepPredicates, AtomStore fullTruthAtomStore) {
         String className = Reflection.resolveClassName(name);
         if (className == null) {
             throw new IllegalArgumentException("Could not find class: " + name);
@@ -201,14 +233,14 @@ public abstract class BatchGenerator {
 
         Constructor<? extends BatchGenerator> constructor = null;
         try {
-            constructor = classObject.getConstructor(InferenceApplication.class, SimpleTermStore.class, List.class);
+            constructor = classObject.getConstructor(InferenceApplication.class, SimpleTermStore.class, List.class, AtomStore.class);
         } catch (NoSuchMethodException ex) {
             throw new IllegalArgumentException("No suitable constructor found for batch generator: " + className + ".", ex);
         }
 
         BatchGenerator batchGenerator = null;
         try {
-            batchGenerator = constructor.newInstance(inferenceApplication, fullTermStore, deepPredicates);
+            batchGenerator = constructor.newInstance(inferenceApplication, fullTermStore, deepPredicates, fullTruthAtomStore);
         } catch (InstantiationException ex) {
             throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
         } catch (IllegalAccessException ex) {
