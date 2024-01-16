@@ -31,6 +31,7 @@ public abstract class PolicyGradient extends GradientDescent {
     }
 
     public enum PolicyUpdate {
+        SCORE,
         REINFORCE,
         REINFORCE_BASELINE,
     }
@@ -38,6 +39,7 @@ public abstract class PolicyGradient extends GradientDescent {
     private final DeepAtomPolicyDistribution deepAtomPolicyDistribution;
     private final PolicyUpdate policyUpdate;
 
+    private float score;
     private float[] scores;
     private float scoreMovingAverage;
     private float[] sampleProbabilities;
@@ -66,6 +68,7 @@ public abstract class PolicyGradient extends GradientDescent {
         deepAtomPolicyDistribution = DeepAtomPolicyDistribution.valueOf(Options.POLICY_GRADIENT_POLICY_DISTRIBUTION.getString().toUpperCase());
         policyUpdate = PolicyUpdate.valueOf(Options.POLICY_GRADIENT_POLICY_UPDATE.getString().toUpperCase());
 
+        score = 0.0f;
         scores = null;
         scoreMovingAverage = 0.0f;
 
@@ -146,7 +149,11 @@ public abstract class PolicyGradient extends GradientDescent {
         computeSupervisedLoss();
         computeLatentInferenceStatistics();
 
-        float preSampleScore = computeScore();
+        score = computeScore();
+
+        if (policyUpdate == PolicyUpdate.SCORE) {
+            return;
+        }
 
         for (DeepModelPredicate deepModelPredicate : trainDeepModelPredicates) {
             Map<String, ArrayList<RandomVariableAtom>> atomIdentiferToCategories = deepModelPredicate.getAtomIdentiferToCategories();
@@ -163,7 +170,7 @@ public abstract class PolicyGradient extends GradientDescent {
                 for (RandomVariableAtom category : categories) {
                     int atomIndex = trainInferenceApplication.getTermStore().getAtomStore().getAtomIndex(category);
                     if (policySampledDeepAtomValues[atomIndex] == 1.0f) {
-                        scores[atomIndex] = preSampleScore - sampleScore;
+                        scores[atomIndex] = score - sampleScore;
 //                        log.trace("Deep Atom: {} Score: {}",
 //                                trainInferenceApplication.getTermStore().getAtomStore().getAtom(atomIndex), scores[atomIndex]);
                     } else {
@@ -311,6 +318,9 @@ public abstract class PolicyGradient extends GradientDescent {
         }
 
         switch (policyUpdate) {
+            case SCORE:
+                deepAtomGradient[atomIndex] = score;
+                break;
             case REINFORCE:
                 deepAtomGradient[atomIndex] -= scores[atomIndex] / sampleProbabilities[atomIndex];
                 break;
