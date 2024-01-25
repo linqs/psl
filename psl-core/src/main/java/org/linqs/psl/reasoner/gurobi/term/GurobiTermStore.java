@@ -31,6 +31,7 @@ import gurobi.GRBLinExpr;
 import gurobi.GRBModel;
 import gurobi.GRBQuadExpr;
 import gurobi.GRBVar;
+import org.linqs.psl.util.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 
 public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
-    GRBEnv env;
-    GRBModel model;
+    private static final Logger log = Logger.getLogger(GurobiTermStore.class);
+
+    private static GRBEnv env;
+    private GRBModel model;
 
     protected Map<GroundAtom, GRBVar> atomToModelVariableMap;
     protected List<GRBVar> termSlackVariables;
@@ -56,14 +59,11 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
     public GurobiTermStore(AtomStore atomStore) {
         super(atomStore, new GurobiTermGenerator());
 
-        try {
-            env = new GRBEnv(false);
-            if (Options.GUROBI_LOG_TO_CONSOLE.getBoolean()) {
-                env.set("LogToConsole", "1");
-            } else {
-                env.set("LogToConsole", "0");
-            }
+        if (env == null) {
+            initEnv();
+        }
 
+        try {
             model = new GRBModel(env);
         } catch (GRBException e) {
             throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -71,6 +71,17 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
 
         atomToModelVariableMap = new HashMap<GroundAtom, GRBVar>();
         termSlackVariables = new ArrayList<GRBVar>();
+    }
+
+    @Override
+    public GurobiTermStore copy() {
+        GurobiTermStore gurobiTermStoreCopy = new GurobiTermStore(atomStore.copy());
+
+        for (GurobiObjectiveTerm term : allTerms) {
+            gurobiTermStoreCopy.add(term.copy());
+        }
+
+        return gurobiTermStoreCopy;
     }
 
     /**
@@ -168,17 +179,6 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
     }
 
     @Override
-    public GurobiTermStore copy() {
-        GurobiTermStore gurobiTermStoreCopy = new GurobiTermStore(atomStore.copy());
-
-        for (GurobiObjectiveTerm term : allTerms) {
-            gurobiTermStoreCopy.add(term.copy());
-        }
-
-        return gurobiTermStoreCopy;
-    }
-
-    @Override
     public synchronized int add(ReasonerTerm term) {
         super.add(term);
 
@@ -245,11 +245,37 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
     public void close() {
         super.close();
 
+        model.dispose();
+
+        closeEnv();
+    }
+
+    private static void initEnv() {
+        closeEnv();
+
         try {
-            env.dispose();
-            model.dispose();
+            env = new GRBEnv(false);
+            if (Options.GUROBI_LOG_TO_CONSOLE.getBoolean()) {
+                env.set("LogToConsole", "1");
+            } else {
+                env.set("LogToConsole", "0");
+            }
         } catch (GRBException e) {
             throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }
+    }
+
+    private static void closeEnv() {
+        if (env == null) {
+            return;
+        }
+
+        try {
+            env.dispose();
+        } catch (GRBException e) {
+            throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
+        }
+
+        env = null;
     }
 }

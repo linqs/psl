@@ -88,9 +88,7 @@ public class GurobiReasoner extends Reasoner<GurobiObjectiveTerm> {
 
         long start = System.currentTimeMillis();
 
-        log.trace("Building Gurobi model.");
         GRBModel model = ((GurobiTermStore) termStore).getModel();
-        log.trace("Gurobi model built.");
 
         try {
             model.set("WorkLimit", Integer.toString(workLimit));
