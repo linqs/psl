@@ -124,15 +124,17 @@ public abstract class Predicate implements Serializable {
     public void setPredicateOption(String name, Object option) {
         options.put(name, option);
 
-        if (name.equals("Integer") && Boolean.parseBoolean(option.toString())) {
+        String lowerCaseName = name.toLowerCase();
+
+        if (lowerCaseName.equals("integer") && Boolean.parseBoolean(option.toString())) {
             integer = true;
         }
 
-        if (name.equals("Categorical") && Boolean.parseBoolean(option.toString())) {
+        if (lowerCaseName.equals("categorical") && Boolean.parseBoolean(option.toString())) {
             categorical = true;
         }
 
-        if (name.equals("CategoricalIndexes")) {
+        if (lowerCaseName.equals("categoricalindexes")) {
             categoryIndexes = StringUtils.splitInt(option.toString(), DELIM);
             for (int categoryIndex : categoryIndexes) {
                 identifierIndexes[categoryIndex] = -1;

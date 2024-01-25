@@ -55,7 +55,7 @@ public class StructuredPerceptron extends OptimalValue {
         inTrainingMAPState = true;
 
         computeCurrentIncompatibility(MAPIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomEnergyGradient, MAPDeepAtomEnergyGradient);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVEnergyGradient, MAPDeepEnergyGradient);
     }
 
     @Override
@@ -76,13 +76,10 @@ public class StructuredPerceptron extends OptimalValue {
     }
 
     @Override
-    protected void computeTotalAtomGradient() {
-        Arrays.fill(rvAtomGradient, 0.0f);
-        Arrays.fill(deepAtomGradient, 0.0f);
-
-        for (int i = 0; i < rvAtomGradient.length; i++) {
-            rvAtomGradient[i] = rvLatentAtomGradient[i] - MAPRVAtomEnergyGradient[i];
-            deepAtomGradient[i] = deepLatentAtomGradient[i] - MAPDeepAtomEnergyGradient[i];
+    protected void addTotalAtomGradient() {
+        for (int i = 0; i < rvGradient.length; i++) {
+            rvGradient[i] = rvLatentAtomGradient[i] - MAPRVEnergyGradient[i];
+            deepGradient[i] = deepLatentAtomGradient[i] - MAPDeepEnergyGradient[i];
         }
     }
 }

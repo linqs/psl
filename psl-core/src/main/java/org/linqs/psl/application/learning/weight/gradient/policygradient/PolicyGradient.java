@@ -8,6 +8,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.deep.DeepModelPredicate;
+import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
@@ -31,21 +32,16 @@ public abstract class PolicyGradient extends GradientDescent {
     }
 
     public enum PolicyUpdate {
-        SCORE,
-        REINFORCE,
-        REINFORCE_BASELINE,
+        REINFORCE
     }
 
     private final DeepAtomPolicyDistribution deepAtomPolicyDistribution;
     private final PolicyUpdate policyUpdate;
 
-    private float score;
-    private float[] scores;
-    private float scoreMovingAverage;
-    private float[] sampleProbabilities;
+    private int numSamples;
+    protected int[] actionSampleCounts;
 
     protected float[] initialDeepAtomValues;
-    protected float[] policySampledDeepAtomValues;
 
     protected float latentInferenceEnergy;
     protected float[] latentInferenceIncompatibility;
@@ -53,12 +49,15 @@ public abstract class PolicyGradient extends GradientDescent {
     protected float[] latentInferenceAtomValueState;
     protected List<TermState[]> batchLatentInferenceTermStates;
     protected List<float[]> batchLatentInferenceAtomValueStates;
-    protected float[] rvLatentAtomGradient;
-    protected float[] deepLatentAtomGradient;
+    protected float[] rvLatentEnergyGradient;
+    protected float[] deepLatentEnergyGradient;
+    protected float[] deepSupervisedLossGradient;
+
     protected float energyLossCoefficient;
 
+    protected float MAPStateSupervisedLoss;
+
     protected float mapEnergy;
-    protected float supervisedLoss;
     protected float[] mapIncompatibility;
 
     public PolicyGradient(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
@@ -68,14 +67,9 @@ public abstract class PolicyGradient extends GradientDescent {
         deepAtomPolicyDistribution = DeepAtomPolicyDistribution.valueOf(Options.POLICY_GRADIENT_POLICY_DISTRIBUTION.getString().toUpperCase());
         policyUpdate = PolicyUpdate.valueOf(Options.POLICY_GRADIENT_POLICY_UPDATE.getString().toUpperCase());
 
-        score = 0.0f;
-        scores = null;
-        scoreMovingAverage = 0.0f;
-
-        sampleProbabilities = null;
-
+        numSamples = Options.POLICY_GRADIENT_NUM_SAMPLES.getInt();
+        actionSampleCounts = null;
         initialDeepAtomValues = null;
-        policySampledDeepAtomValues = null;
 
         latentInferenceEnergy = Float.POSITIVE_INFINITY;
         latentInferenceIncompatibility = new float[mutableRules.size()];
@@ -83,12 +77,15 @@ public abstract class PolicyGradient extends GradientDescent {
         latentInferenceAtomValueState = null;
         batchLatentInferenceTermStates = new ArrayList<TermState[]>();
         batchLatentInferenceAtomValueStates = new ArrayList<float[]>();
-        rvLatentAtomGradient = null;
-        deepLatentAtomGradient = null;
+        rvLatentEnergyGradient = null;
+        deepLatentEnergyGradient = null;
+        deepSupervisedLossGradient = null;
+
         energyLossCoefficient = Options.MINIMIZER_ENERGY_LOSS_COEFFICIENT.getFloat();
 
+        MAPStateSupervisedLoss = Float.POSITIVE_INFINITY;
+
         mapEnergy = Float.POSITIVE_INFINITY;
-        supervisedLoss = Float.POSITIVE_INFINITY;
         mapIncompatibility = new float[mutableRules.size()];
     }
 
@@ -97,17 +94,15 @@ public abstract class PolicyGradient extends GradientDescent {
         super.initForLearning();
 
         if (symbolicWeightLearning){
-            throw new IllegalArgumentException("Policy Gradient does not support symbolic weight learning.");
+            throw new IllegalArgumentException("Policy Gradient does not currently support symbolic weight learning.");
         }
-
-        scoreMovingAverage = Float.POSITIVE_INFINITY;
     }
 
-    protected abstract void computeSupervisedLoss();
+    protected abstract float computeSupervisedLoss();
 
     @Override
     protected float computeLearningLoss() {
-        return  supervisedLoss + energyLossCoefficient * latentInferenceEnergy;
+        return  MAPStateSupervisedLoss + energyLossCoefficient * latentInferenceEnergy;
     }
 
     @Override
@@ -125,8 +120,22 @@ public abstract class PolicyGradient extends GradientDescent {
     protected void initializeGradients() {
         super.initializeGradients();
 
-        rvLatentAtomGradient = new float[trainFullMAPAtomValueState.length];
-        deepLatentAtomGradient = new float[trainFullMAPAtomValueState.length];
+        rvLatentEnergyGradient = new float[trainFullMAPAtomValueState.length];
+        deepLatentEnergyGradient = new float[trainFullMAPAtomValueState.length];
+        deepSupervisedLossGradient = new float[trainFullMAPAtomValueState.length];
+
+        actionSampleCounts = new int[trainFullMAPAtomValueState.length];
+    }
+
+    @Override
+    protected void resetGradients() {
+        super.resetGradients();
+
+        Arrays.fill(rvLatentEnergyGradient, 0.0f);
+        Arrays.fill(deepLatentEnergyGradient, 0.0f);
+        Arrays.fill(deepSupervisedLossGradient, 0.0f);
+
+        Arrays.fill(actionSampleCounts, 0);
     }
 
     @Override
@@ -136,73 +145,72 @@ public abstract class PolicyGradient extends GradientDescent {
         latentInferenceTermState = batchLatentInferenceTermStates.get(batch);
         latentInferenceAtomValueState = batchLatentInferenceAtomValueStates.get(batch);
         initialDeepAtomValues = new float[trainInferenceApplication.getTermStore().getAtomStore().size()];
-        policySampledDeepAtomValues = new float[trainInferenceApplication.getTermStore().getAtomStore().size()];
-        scores = new float[trainInferenceApplication.getTermStore().getAtomStore().size()];
     }
 
 
     @Override
     protected void computeIterationStatistics() {
-        Arrays.fill(scores, 0.0f);
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         computeMAPInferenceStatistics();
-        computeSupervisedLoss();
+
+        MAPStateSupervisedLoss = computeSupervisedLoss();
+
         computeLatentInferenceStatistics();
 
-        score = computeScore();
+        // Save the initial deep model predictions to reset the deep atom values after computing iteration statistics
+        // and to compute action probabilities.
+        System.arraycopy(atomStore.getAtomValues(), 0, initialDeepAtomValues, 0, atomStore.size());
 
-        if (policyUpdate == PolicyUpdate.SCORE) {
-            return;
+        switch (policyUpdate) {
+            case REINFORCE:
+                addREINFORCESupervisedLossGradient();
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
+        }
+    }
+
+    private void addREINFORCESupervisedLossGradient() {
+        for (int i = 0; i < numSamples; i++) {
+            sampleAllDeepAtomValues();
+
+            computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+
+            addSupervisedLossDeepGradient(computeSupervisedLoss());
+
+            resetAllDeepAtomValues();
         }
 
+        for (int i = 0; i < deepSupervisedLossGradient.length; i++) {
+            if (actionSampleCounts[i] == 0) {
+                deepSupervisedLossGradient[i] = 0.0f;
+                continue;
+            }
+
+            log.trace("Atom: {} Deep Supervised Loss Gradient: {}",
+                    trainInferenceApplication.getTermStore().getAtomStore().getAtom(i).toStringWithValue(), deepSupervisedLossGradient[i]);
+            deepSupervisedLossGradient[i] /= actionSampleCounts[i];
+        }
+    }
+
+    /**
+     * Sample all deep atom values according to a policy parameterized by the deep model predictions.
+     */
+    protected void sampleAllDeepAtomValues() {
         for (DeepModelPredicate deepModelPredicate : trainDeepModelPredicates) {
             Map<String, ArrayList<RandomVariableAtom>> atomIdentiferToCategories = deepModelPredicate.getAtomIdentiferToCategories();
             for (Map.Entry<String, ArrayList<RandomVariableAtom>> entry : atomIdentiferToCategories.entrySet()) {
-                ArrayList<RandomVariableAtom> categories = entry.getValue();
-
-                sampleDeepAtomValues(categories);
-
-                computeMAPInferenceStatistics();
-                computeSupervisedLoss();
-                computeLatentInferenceStatistics();
-
-                float sampleScore = computeScore();
-                for (RandomVariableAtom category : categories) {
-                    int atomIndex = trainInferenceApplication.getTermStore().getAtomStore().getAtomIndex(category);
-                    if (policySampledDeepAtomValues[atomIndex] == 1.0f) {
-                        scores[atomIndex] = score - sampleScore;
-//                        log.trace("Deep Atom: {} Score: {}",
-//                                trainInferenceApplication.getTermStore().getAtomStore().getAtom(atomIndex), scores[atomIndex]);
-                    } else {
-                        scores[atomIndex] = 0.0f;
-                    }
-                }
-
-                resetDeepAtomValues(categories);
+                sampleDeepAtomValues(entry.getValue());
             }
         }
-        updateScoreMovingAverage();
-
-        computeMAPInferenceStatistics();
-        computeSupervisedLoss();
-        computeLatentInferenceStatistics();
+        inTrainingMAPState = false;
     }
 
     /**
      * Sample the deep atom values according to a policy parameterized by the deep model predictions.
      */
     protected void sampleDeepAtomValues(ArrayList<RandomVariableAtom> categories) {
-        // Save the initial deep model predictions to reset the deep atom values after computing iteration statistics.
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
-
-        Arrays.fill(initialDeepAtomValues, 0.0f);
-        Arrays.fill(policySampledDeepAtomValues, 0.0f);
-
-        for (RandomVariableAtom category : categories) {
-            int atomIndex = atomStore.getAtomIndex(category);
-            initialDeepAtomValues[atomIndex] = atomStore.getAtomValues()[atomIndex];
-        }
-
         switch (deepAtomPolicyDistribution) {
             case CATEGORICAL:
                 sampleCategorical(categories);
@@ -215,8 +223,6 @@ public abstract class PolicyGradient extends GradientDescent {
     private void sampleCategorical(ArrayList<RandomVariableAtom> categories) {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
-
-        sampleProbabilities = new float[atomStore.size()];
 
         // Sample the deep model predictions according to the stochastic categorical policy.
         float[] categoryProbabilities = new float[categories.size()];
@@ -232,23 +238,31 @@ public abstract class PolicyGradient extends GradientDescent {
             if (i != sampledCategoryIndex) {
                 categories.get(i).setValue(0.0f);
             } else {
-                sampleProbabilities[atomIndex] = categoryProbabilities[i];
                 categories.get(i).setValue(1.0f);
+                actionSampleCounts[atomIndex]++;
             }
 
-            policySampledDeepAtomValues[atomIndex] = categories.get(i).getValue();
             atomValues[atomIndex] = categories.get(i).getValue();
         }
     }
 
-    private void resetDeepAtomValues(ArrayList<RandomVariableAtom> categories) {
+    /**
+     * Reset all deep atom values to their initial values.
+     */
+    private void resetAllDeepAtomValues() {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
 
-        for (RandomVariableAtom category : categories) {
-            int atomIndex = atomStore.getAtomIndex(category);
-            category.setValue(initialDeepAtomValues[atomIndex]);
-            atomValues[atomIndex] = initialDeepAtomValues[atomIndex];
+        for (int i = 0; i < atomStore.size(); i++) {
+            GroundAtom atom = atomStore.getAtom(i);
+
+            // Skip atoms that are not DeepAtoms.
+            if (!((atom instanceof RandomVariableAtom) && (atom.getPredicate() instanceof DeepPredicate))) {
+                continue;
+            }
+
+            ((RandomVariableAtom) atom).setValue(initialDeepAtomValues[i]);
+            atomValues[i] = initialDeepAtomValues[i];
         }
     }
 
@@ -262,7 +276,7 @@ public abstract class PolicyGradient extends GradientDescent {
 
         mapEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
         computeCurrentIncompatibility(mapIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomEnergyGradient, MAPDeepAtomEnergyGradient);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVEnergyGradient, MAPDeepEnergyGradient);
     }
 
     /**
@@ -278,7 +292,7 @@ public abstract class PolicyGradient extends GradientDescent {
 
         latentInferenceEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
         computeCurrentIncompatibility(latentInferenceIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentEnergyGradient, deepLatentEnergyGradient);
 
         unfixLabeledRandomVariables();
     }
@@ -289,21 +303,26 @@ public abstract class PolicyGradient extends GradientDescent {
     }
 
     @Override
-    protected void computeTotalAtomGradient() {
-        Arrays.fill(rvAtomGradient, 0.0f);
-        Arrays.fill(deepAtomGradient, 0.0f);
+    protected void addTotalAtomGradient() {
+        for (int i = 0; i < rvGradient.length; i++) {
+            rvGradient[i] = energyLossCoefficient * rvLatentEnergyGradient[i];
+            deepGradient[i] = energyLossCoefficient * deepLatentEnergyGradient[i] + deepSupervisedLossGradient[i];
+        }
+    }
 
+    private void addSupervisedLossDeepGradient(float supervisedLoss) {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
-        for (int i = 0; i < atomStore.size(); i++) {
-            GroundAtom atom = atomStore.getAtom(i);
+        for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
+            GroundAtom atom = atomStore.getAtom(atomIndex);
 
-            if (atom instanceof ObservedAtom) {
+            // Skip atoms that are not DeepAtoms.
+            if (!((atom instanceof RandomVariableAtom) && (atom.getPredicate() instanceof DeepPredicate))) {
                 continue;
             }
 
             switch (deepAtomPolicyDistribution) {
                 case CATEGORICAL:
-                    computeCategoricalAtomGradient(i);
+                    addCategoricalPolicySupervisedLossGradient(atomIndex, (RandomVariableAtom) atom, supervisedLoss);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown policy distribution: " + deepAtomPolicyDistribution);
@@ -311,59 +330,21 @@ public abstract class PolicyGradient extends GradientDescent {
         }
     }
 
-    private void computeCategoricalAtomGradient(int atomIndex) {
-        if (policySampledDeepAtomValues[atomIndex] == 0.0f) {
-            deepAtomGradient[atomIndex] = 0.0f;
+    private void addCategoricalPolicySupervisedLossGradient(int atomIndex, RandomVariableAtom atom, float score) {
+        // Skip atoms not selected by the policy.
+        if (atom.getValue() == 0.0f) {
             return;
         }
 
         switch (policyUpdate) {
-            case SCORE:
-                deepAtomGradient[atomIndex] = score;
-                break;
             case REINFORCE:
-                deepAtomGradient[atomIndex] -= scores[atomIndex] / sampleProbabilities[atomIndex];
-                break;
-            case REINFORCE_BASELINE:
-                deepAtomGradient[atomIndex] -= (scores[atomIndex] - scoreMovingAverage) / sampleProbabilities[atomIndex];
+                // The initialDeepAtomValues are the action probabilities.
+                deepSupervisedLossGradient[atomIndex] += score / initialDeepAtomValues[atomIndex];
                 break;
             default:
                 throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
         }
-
-//        log.trace("Deep Atom: {} Score: {}, Deep Atom Gradient: {}",
-//                trainInferenceApplication.getTermStore().getAtomStore().getAtom(atomIndex), scores[atomIndex], deepAtomGradient[atomIndex]);
     }
-
-    private float computeScore() {
-//        log.trace("Latent Inference Energy: " + latentInferenceEnergy + " Supervised Loss: " + supervisedLoss);
-        return energyLossCoefficient * latentInferenceEnergy + supervisedLoss;
-    }
-
-    private void updateScoreMovingAverage() {
-        float scoreAverage = 0.0f;
-        int numScores = 0;
-        for (DeepModelPredicate deepModelPredicate : trainDeepModelPredicates) {
-            Map<String, ArrayList<RandomVariableAtom>> atomIdentiferToCategories = deepModelPredicate.getAtomIdentiferToCategories();
-            for (Map.Entry<String, ArrayList<RandomVariableAtom>> entry : atomIdentiferToCategories.entrySet()) {
-                ArrayList<RandomVariableAtom> categories = entry.getValue();
-
-                for (RandomVariableAtom category : categories) {
-                    int atomIndex = trainInferenceApplication.getTermStore().getAtomStore().getAtomIndex(category);
-                    scoreAverage += scores[atomIndex];
-                    numScores += 1;
-                }
-            }
-        }
-        scoreAverage /= numScores;
-
-        if (!Float.isInfinite(scoreMovingAverage)) {
-            scoreMovingAverage = 0.9f * scoreMovingAverage + 0.1f * scoreAverage;
-        } else {
-            scoreMovingAverage = scoreAverage;
-        }
-    }
-
 
     /**
      * Set RandomVariableAtoms with labels to their observed (truth) value.

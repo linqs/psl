@@ -715,6 +715,12 @@ public class Options {
         + " not having the atom initially in the database."
     );
 
+    public static final Option POLICY_GRADIENT_NUM_SAMPLES = new Option(
+        "policygradient.numsamples",
+        10,
+        "The number of samples to use to estimate each gradient."
+    );
+
     public static final Option POLICY_GRADIENT_POLICY_DISTRIBUTION = new Option(
         "policygradient.policydistribution",
         PolicyGradient.DeepAtomPolicyDistribution.CATEGORICAL.toString(),

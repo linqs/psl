@@ -20,7 +20,6 @@ package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -57,10 +56,7 @@ public class Energy extends OptimalValue {
     }
 
     @Override
-    protected void computeTotalAtomGradient() {
-        Arrays.fill(rvAtomGradient, 0.0f);
-        Arrays.fill(deepAtomGradient, 0.0f);
-
-        System.arraycopy(deepLatentAtomGradient, 0, deepAtomGradient, 0, deepLatentAtomGradient.length);
+    protected void addTotalAtomGradient() {
+        System.arraycopy(deepLatentAtomGradient, 0, deepGradient, 0, deepLatentAtomGradient.length);
     }
 }

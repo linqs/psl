@@ -54,8 +54,8 @@ public class OnlineBinaryCrossEntropy extends OnlineMinimizer {
 
             int proxRuleIndex = rvAtomIndexToProxRuleIndex.get(atomIndex);
 
-            supervisedLoss += -1.0f * (observedAtom.getValue() * Math.log(Math.max(proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.EPSILON_FLOAT))
-                    + (1.0f - observedAtom.getValue()) * Math.log(Math.max(1.0f - proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.EPSILON_FLOAT)));
+            supervisedLoss += (float) (-1.0f * (observedAtom.getValue() * Math.log(Math.max(proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.EPSILON_FLOAT))
+                                + (1.0f - observedAtom.getValue()) * Math.log(Math.max(1.0f - proxRuleObservedAtoms[proxRuleIndex].getValue(), MathUtils.EPSILON_FLOAT))));
         }
 
         return supervisedLoss;

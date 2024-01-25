@@ -66,10 +66,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected Map<WeightedRule, Integer> ruleIndexMap;
 
     protected float[] weightGradient;
-    protected float[] rvAtomGradient;
-    protected float[] deepAtomGradient;
-    protected float[] MAPRVAtomEnergyGradient;
-    protected float[] MAPDeepAtomEnergyGradient;
+    protected float[] rvGradient;
+    protected float[] deepGradient;
+    protected float[] MAPRVEnergyGradient;
+    protected float[] MAPDeepEnergyGradient;
     protected float[] epochStartWeights;
     protected float epochDeepAtomValueMovement;
 
@@ -135,10 +135,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         weightGradient = new float[mutableRules.size()];
-        rvAtomGradient = null;
-        deepAtomGradient = null;
-        MAPRVAtomEnergyGradient = null;
-        MAPDeepAtomEnergyGradient = null;
+        rvGradient = null;
+        deepGradient = null;
+        MAPRVEnergyGradient = null;
+        MAPDeepEnergyGradient = null;
 
         trainingEvaluationComputePeriod = Options.WLA_GRADIENT_DESCENT_TRAINING_COMPUTE_PERIOD.getInt();
         trainFullTermStore = null;
@@ -224,7 +224,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initializeFullModels() {
-        trainFullTermStore = (SimpleTermStore<? extends ReasonerTerm>)trainInferenceApplication.getTermStore();
+        trainFullTermStore = (SimpleTermStore<? extends ReasonerTerm>) trainInferenceApplication.getTermStore();
 
         fullTrainingMap = trainingMap;
 
@@ -281,11 +281,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initializeGradients() {
-        rvAtomGradient = new float[trainFullMAPAtomValueState.length];
-        deepAtomGradient = new float[trainFullMAPAtomValueState.length];
+        rvGradient = new float[trainFullMAPAtomValueState.length];
+        deepGradient = new float[trainFullMAPAtomValueState.length];
 
-        MAPRVAtomEnergyGradient = new float[trainFullMAPAtomValueState.length];
-        MAPDeepAtomEnergyGradient = new float[trainFullMAPAtomValueState.length];
+        MAPRVEnergyGradient = new float[trainFullMAPAtomValueState.length];
+        MAPDeepEnergyGradient = new float[trainFullMAPAtomValueState.length];
     }
 
     protected void initForLearning() {
@@ -361,10 +361,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 setBatch(batchId);
                 DeepPredicate.predictAllDeepPredicates();
 
+                resetGradients();
+
                 computeIterationStatistics();
 
                 computeTotalWeightGradient();
-                computeTotalAtomGradient();
+                addTotalAtomGradient();
                 if (clipWeightGradient) {
                     clipWeightGradient();
                 }
@@ -497,6 +499,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
             deepPredicate.setDeepModel(trainDeepModelPredicates.get(i));
             deepPredicate.setDeepModel(trainFullDeepModelPredicates.get(i));
         }
+    }
+
+    protected void resetGradients() {
+        Arrays.fill(weightGradient, 0.0f);
+        Arrays.fill(rvGradient, 0.0f);
+        Arrays.fill(deepGradient, 0.0f);
+        Arrays.fill(MAPRVEnergyGradient, 0.0f);
+        Arrays.fill(MAPDeepEnergyGradient, 0.0f);
     }
 
     protected void setBatch(int batch) {
@@ -705,7 +715,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void atomGradientStep() {
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.fitDeepPredicate(deepAtomGradient);
+            deepPredicate.fitDeepPredicate(deepGradient);
         }
     }
 
@@ -735,9 +745,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         log.trace("Weight Gradient Norm: {}", norm);
-        log.trace("Deep atom Gradient Norm: {}", MathUtils.pNorm(deepAtomGradient, 2));
+        log.trace("Deep atom Gradient Norm: {}", MathUtils.pNorm(deepGradient, 2));
 
-        norm += MathUtils.pNorm(deepAtomGradient, 2);
+        norm += MathUtils.pNorm(deepGradient, 2);
 
         return norm;
     }
@@ -968,8 +978,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
      * Compute the gradient of the regularized learning loss with respect to the weights.
      */
     protected void computeTotalWeightGradient() {
-        Arrays.fill(weightGradient, 0.0f);
-
         if (!symbolicWeightLearning) {
             return;
         }
@@ -989,11 +997,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void addRegularizationWeightGradient() {
         for (int i = 0; i < mutableRules.size(); i++) {
             float logWeight = (float)Math.log(Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON));
-            weightGradient[i] += 2.0f * l2Regularization * mutableRules.get(i).getWeight()
+            weightGradient[i] += (float) (2.0f * l2Regularization * mutableRules.get(i).getWeight()
                     - logRegularization / Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON)
-                    + entropyRegularization * (logWeight + 1);
+                    + entropyRegularization * (logWeight + 1));
         }
     }
 
-    protected abstract void computeTotalAtomGradient();
+    protected abstract void addTotalAtomGradient();
 }

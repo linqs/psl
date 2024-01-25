@@ -30,6 +30,7 @@ public class PolicyGradientBinaryCrossEntropyTest extends WeightLearningTest {
         super.setup();
 
         Options.WLA_INFERENCE.set(DualBCDInference.class.getName());
+        Options.WLA_GRADIENT_DESCENT_SYMBOLIC_LEARNING.set(false);
     }
 
     @Override

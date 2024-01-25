@@ -545,7 +545,7 @@ public abstract class Minimizer extends GradientDescent {
         mapEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
         computeCurrentIncompatibility(mapIncompatibility);
         computeCurrentSquaredIncompatibility(mapSquaredIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVAtomEnergyGradient, MAPDeepAtomEnergyGradient);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVEnergyGradient, MAPDeepEnergyGradient);
     }
 
     /**
@@ -715,10 +715,7 @@ public abstract class Minimizer extends GradientDescent {
     }
 
     @Override
-    protected void computeTotalAtomGradient() {
-        Arrays.fill(rvAtomGradient, 0.0f);
-        Arrays.fill(deepAtomGradient, 0.0f);
-
+    protected void addTotalAtomGradient() {
         // Energy Loss Gradient.
         for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             GroundAtom atom = trainInferenceApplication.getTermStore().getAtomStore().getAtom(i);
@@ -727,7 +724,7 @@ public abstract class Minimizer extends GradientDescent {
                 continue;
             }
 
-            deepAtomGradient[i] += energyLossCoefficient * deepLatentAtomGradient[i];
+            deepGradient[i] += energyLossCoefficient * deepLatentAtomGradient[i];
         }
 
         // Energy difference constraint gradient.
@@ -745,12 +742,12 @@ public abstract class Minimizer extends GradientDescent {
                 continue;
             }
 
-            float rvEnergyGradientDifference = augmentedRVAtomEnergyGradient[i] - MAPRVAtomEnergyGradient[i];
-            float deepAtomEnergyGradientDifference = augmentedDeepAtomEnergyGradient[i] - MAPDeepAtomEnergyGradient[i];
+            float rvEnergyGradientDifference = augmentedRVAtomEnergyGradient[i] - MAPRVEnergyGradient[i];
+            float deepAtomEnergyGradientDifference = augmentedDeepAtomEnergyGradient[i] - MAPDeepEnergyGradient[i];
 
-            rvAtomGradient[i] += squaredPenaltyCoefficient * constraintViolation * rvEnergyGradientDifference
+            rvGradient[i] += squaredPenaltyCoefficient * constraintViolation * rvEnergyGradientDifference
                     + linearPenaltyCoefficient * rvEnergyGradientDifference;
-            deepAtomGradient[i] += squaredPenaltyCoefficient * constraintViolation * deepAtomEnergyGradientDifference
+            deepGradient[i] += squaredPenaltyCoefficient * constraintViolation * deepAtomEnergyGradientDifference
                     + linearPenaltyCoefficient * deepAtomEnergyGradientDifference;
         }
     }
