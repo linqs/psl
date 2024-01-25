@@ -51,8 +51,8 @@ public abstract class DeepModel {
     protected String application;
 
     protected int port;
-    protected String pythonModule;
-    protected String sharedMemoryPath;
+    protected static String pythonModule = Options.PREDICATE_DEEP_PYTHON_WRAPPER_MODULE.getString();
+    protected static String sharedMemoryPath = Options.PREDICATE_DEEP_SHARED_MEMORY_PATH.getString();
     protected Process pythonServerProcess;
     protected RandomAccessFile sharedFile;
     protected MappedByteBuffer sharedBuffer;
@@ -68,8 +68,6 @@ public abstract class DeepModel {
         application = null;
 
         port = getOpenPort(this);
-        pythonModule = Options.PREDICATE_DEEP_PYTHON_WRAPPER_MODULE.getString();
-        sharedMemoryPath = Options.PREDICATE_DEEP_SHARED_MEMORY_PATH.getString();
         pythonServerProcess = null;
         sharedFile = null;
         sharedBuffer = null;

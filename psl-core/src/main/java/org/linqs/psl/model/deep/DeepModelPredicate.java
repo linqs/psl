@@ -85,8 +85,6 @@ public class DeepModelPredicate extends DeepModel {
         freePort(copy.port);
         copy.port = (this.port);
 
-        copy.pythonModule = pythonModule;
-        copy.sharedMemoryPath = sharedMemoryPath;
         copy.pythonServerProcess = pythonServerProcess;
         copy.sharedFile = sharedFile;
         copy.sharedBuffer = sharedBuffer;
