@@ -24,6 +24,7 @@ import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.FileUtils;
+import org.linqs.psl.util.Logger;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -45,6 +46,8 @@ import java.util.Set;
  * and instead use the AtomStore associated with the Database (getAtomStore()).
  */
 public abstract class Database {
+    private static final Logger log = Logger.getLogger(Database.class);
+
     /**
      * The backing data store that created this database.
      * Connection are obtained from here.
@@ -257,6 +260,7 @@ public abstract class Database {
             return;
         }
 
+        log.debug("Initializing AtomStore.");
         atomStore = new PersistedAtomStore(this);
     }
 }

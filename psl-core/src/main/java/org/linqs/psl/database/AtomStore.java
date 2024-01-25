@@ -40,6 +40,8 @@ public class AtomStore implements Iterable<GroundAtom> {
 
     public static final int MIN_ALLOCATION = 100;
 
+    public static final double overallocationFactor = Options.ATOM_STORE_OVERALLOCATION_FACTOR.getDouble();
+
     protected int numAtoms;
     protected int numRVAtoms;
     protected float[] atomValues;
@@ -49,13 +51,10 @@ public class AtomStore implements Iterable<GroundAtom> {
     protected Map<Atom, Integer> lookup;
 
     public AtomStore() {
-        log.debug("Initializing AtomStore.");
-
         numAtoms = 0;
         numRVAtoms = 0;
         maxRVAIndex = -1;
 
-        double overallocationFactor = Options.ATOM_STORE_OVERALLOCATION_FACTOR.getDouble();
         int allocationSize = (int)(MIN_ALLOCATION * (1.0 + overallocationFactor));
 
         atomValues = new float[allocationSize];
