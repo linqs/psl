@@ -715,6 +715,13 @@ public class Options {
         + " not having the atom initially in the database."
     );
 
+    public static final Option POLICY_GRADIENT_ENERGY_LOSS_COEFFICIENT = new Option(
+        "policygradient.energylosscoefficient",
+        1.0f,
+        "The coefficient of the energy loss term in the augmented Lagrangian minimizer-based learning framework.",
+        Option.FLAG_NON_NEGATIVE
+    );
+
     public static final Option POLICY_GRADIENT_NUM_SAMPLES = new Option(
         "policygradient.numsamples",
         10,
@@ -731,6 +738,12 @@ public class Options {
         "policygradient.policyupdate",
         PolicyGradient.PolicyUpdate.REINFORCE.toString(),
         "The policy update to use for policy gradient learning."
+    );
+
+    public static final Option POLICY_GRADIENT_REWARD_FUNCTION = new Option(
+        "policygradient.rewardfunction",
+        PolicyGradient.RewardFunction.NEGATIVE_LOSS.toString(),
+        "The reward function to use for policy gradient learning."
     );
 
     public static final Option POSTGRES_HOST = new Option(

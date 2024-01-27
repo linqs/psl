@@ -14,6 +14,7 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.SimpleTermStore;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.Logger;
+import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
@@ -32,11 +33,19 @@ public abstract class PolicyGradient extends GradientDescent {
     }
 
     public enum PolicyUpdate {
-        REINFORCE
+        REINFORCE,
+        REINFORCE_BASELINE
+    }
+
+    public enum RewardFunction {
+        NEGATIVE_LOSS,
+        NEGATIVE_LOSS_SQUARED,
+        INVERSE_LOSS
     }
 
     private final DeepAtomPolicyDistribution deepAtomPolicyDistribution;
     private final PolicyUpdate policyUpdate;
+    private final RewardFunction rewardFunction;
 
     private int numSamples;
     protected int[] actionSampleCounts;
@@ -66,6 +75,7 @@ public abstract class PolicyGradient extends GradientDescent {
 
         deepAtomPolicyDistribution = DeepAtomPolicyDistribution.valueOf(Options.POLICY_GRADIENT_POLICY_DISTRIBUTION.getString().toUpperCase());
         policyUpdate = PolicyUpdate.valueOf(Options.POLICY_GRADIENT_POLICY_UPDATE.getString().toUpperCase());
+        rewardFunction = RewardFunction.valueOf(Options.POLICY_GRADIENT_REWARD_FUNCTION.getString().toUpperCase());
 
         numSamples = Options.POLICY_GRADIENT_NUM_SAMPLES.getInt();
         actionSampleCounts = null;
@@ -81,7 +91,7 @@ public abstract class PolicyGradient extends GradientDescent {
         deepLatentEnergyGradient = null;
         deepSupervisedLossGradient = null;
 
-        energyLossCoefficient = Options.MINIMIZER_ENERGY_LOSS_COEFFICIENT.getFloat();
+        energyLossCoefficient = Options.POLICY_GRADIENT_ENERGY_LOSS_COEFFICIENT.getFloat();
 
         MAPStateSupervisedLoss = Float.POSITIVE_INFINITY;
 
@@ -164,20 +174,42 @@ public abstract class PolicyGradient extends GradientDescent {
 
         switch (policyUpdate) {
             case REINFORCE:
-                addREINFORCESupervisedLossGradient();
+                addREINFORCESupervisedLossGradient(0.0f);
+                break;
+            case REINFORCE_BASELINE:
+                addREINFORCESupervisedLossGradient(MAPStateSupervisedLoss);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
         }
     }
 
-    private void addREINFORCESupervisedLossGradient() {
+    private void addREINFORCESupervisedLossGradient(float baseline) {
         for (int i = 0; i < numSamples; i++) {
             sampleAllDeepAtomValues();
 
             computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
 
-            addSupervisedLossDeepGradient(computeSupervisedLoss());
+            float supervisedLoss = computeSupervisedLoss();
+            float reward = 0.0f;
+
+            switch (rewardFunction) {
+                case NEGATIVE_LOSS:
+                    reward = 1.0f - supervisedLoss;
+                    break;
+                case NEGATIVE_LOSS_SQUARED:
+                    reward = (float) Math.pow(1.0f - supervisedLoss, 2.0f);
+                    break;
+                case INVERSE_LOSS:
+                    // The inverse loss may result in a reward of infinity.
+                    // Therefore, we add a small constant to the loss to avoid division by zero.
+                    reward = 1.0f / (supervisedLoss + MathUtils.EPSILON_FLOAT);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown reward function: " + rewardFunction);
+            }
+
+            addPolicyScoreGradient(reward - baseline);
 
             resetAllDeepAtomValues();
         }
@@ -188,8 +220,8 @@ public abstract class PolicyGradient extends GradientDescent {
                 continue;
             }
 
-            log.trace("Atom: {} Deep Supervised Loss Gradient: {}",
-                    trainInferenceApplication.getTermStore().getAtomStore().getAtom(i).toStringWithValue(), deepSupervisedLossGradient[i]);
+//            log.trace("Atom: {} Deep Supervised Loss Gradient: {}",
+//                    trainInferenceApplication.getTermStore().getAtomStore().getAtom(i).toStringWithValue(), deepSupervisedLossGradient[i] / actionSampleCounts[i]);
             deepSupervisedLossGradient[i] /= actionSampleCounts[i];
         }
     }
@@ -304,13 +336,19 @@ public abstract class PolicyGradient extends GradientDescent {
 
     @Override
     protected void addTotalAtomGradient() {
-        for (int i = 0; i < rvGradient.length; i++) {
+        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
             rvGradient[i] = energyLossCoefficient * rvLatentEnergyGradient[i];
             deepGradient[i] = energyLossCoefficient * deepLatentEnergyGradient[i] + deepSupervisedLossGradient[i];
+
+            if (trainInferenceApplication.getTermStore().getAtomStore().getAtom(i).getPredicate() instanceof DeepPredicate) {
+                log.trace("Atom: {} deepLatentEnergyGradient: {}, deepSupervisedLossGradient: {}",
+                        trainInferenceApplication.getTermStore().getAtomStore().getAtom(i).toStringWithValue(),
+                        deepLatentEnergyGradient[i], deepSupervisedLossGradient[i]);
+            }
         }
     }
 
-    private void addSupervisedLossDeepGradient(float supervisedLoss) {
+    private void addPolicyScoreGradient(float reward) {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
         for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
             GroundAtom atom = atomStore.getAtom(atomIndex);
@@ -322,7 +360,7 @@ public abstract class PolicyGradient extends GradientDescent {
 
             switch (deepAtomPolicyDistribution) {
                 case CATEGORICAL:
-                    addCategoricalPolicySupervisedLossGradient(atomIndex, (RandomVariableAtom) atom, supervisedLoss);
+                    addCategoricalPolicyScoreGradient(atomIndex, (RandomVariableAtom) atom, reward);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown policy distribution: " + deepAtomPolicyDistribution);
@@ -330,7 +368,7 @@ public abstract class PolicyGradient extends GradientDescent {
         }
     }
 
-    private void addCategoricalPolicySupervisedLossGradient(int atomIndex, RandomVariableAtom atom, float score) {
+    private void addCategoricalPolicyScoreGradient(int atomIndex, RandomVariableAtom atom, float reward) {
         // Skip atoms not selected by the policy.
         if (atom.getValue() == 0.0f) {
             return;
@@ -338,8 +376,9 @@ public abstract class PolicyGradient extends GradientDescent {
 
         switch (policyUpdate) {
             case REINFORCE:
+            case REINFORCE_BASELINE:
                 // The initialDeepAtomValues are the action probabilities.
-                deepSupervisedLossGradient[atomIndex] += score / initialDeepAtomValues[atomIndex];
+                deepSupervisedLossGradient[atomIndex] -= reward / initialDeepAtomValues[atomIndex];
                 break;
             default:
                 throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);

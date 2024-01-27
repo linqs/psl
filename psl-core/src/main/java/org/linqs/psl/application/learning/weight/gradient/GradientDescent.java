@@ -963,10 +963,14 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     protected float computeRegularization() {
         float regularization = 0.0f;
-        for (int i = 0; i < mutableRules.size(); i++) {
-            WeightedRule mutableRule = mutableRules.get(i);
-            float logWeight = (float)Math.max(Math.log(mutableRule.getWeight()), Math.log(MathUtils.STRICT_EPSILON));
-            regularization += l2Regularization * (float)Math.pow(mutableRule.getWeight(), 2.0f)
+
+        if (!symbolicWeightLearning) {
+            return regularization;
+        }
+
+        for (WeightedRule mutableRule : mutableRules) {
+            float logWeight = (float) Math.max(Math.log(mutableRule.getWeight()), Math.log(MathUtils.STRICT_EPSILON));
+            regularization += l2Regularization * (float) Math.pow(mutableRule.getWeight(), 2.0f)
                     - logRegularization * logWeight
                     + entropyRegularization * mutableRule.getWeight() * logWeight;
         }
