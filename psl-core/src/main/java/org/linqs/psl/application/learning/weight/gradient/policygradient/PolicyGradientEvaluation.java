@@ -17,50 +17,39 @@
  */
 package org.linqs.psl.application.learning.weight.gradient.policygradient;
 
-import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.ObservedAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * Learns parameters for a model by minimizing the squared error loss function
+ * Learns parameters for a model by minimizing the specified evaluation metric
  * using the policy gradient learning framework.
  */
-public class PolicyGradientBinaryStep extends PolicyGradient {
-    private static final Logger log = Logger.getLogger(PolicyGradientBinaryStep.class);
+public class PolicyGradientEvaluation extends PolicyGradient {
+    private static final Logger log = Logger.getLogger(PolicyGradientEvaluation.class);
 
-    public PolicyGradientBinaryStep(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
+    public PolicyGradientEvaluation(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                                     Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
     }
 
     @Override
-    protected float computeSupervisedLoss() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
+    protected float computeReward() {
+        evaluation.compute(trainingMap);
 
-        float supervisedLoss = 0.0f;
-        for (Map.Entry<RandomVariableAtom, ObservedAtom> entry : trainingMap.getLabelMap().entrySet()) {
-            RandomVariableAtom randomVariableAtom = entry.getKey();
-            ObservedAtom observedAtom = entry.getValue();
+        float reward = (float) evaluation.getNormalizedRepMetric();
 
-            int atomIndex = atomStore.getAtomIndex(randomVariableAtom);
-            if (atomIndex == -1) {
-                // This atom is not in the current batch.
-                continue;
-            }
-
-            if (!MathUtils.equals(observedAtom.getValue(), atomStore.getAtom(atomIndex).getValue())) {
-                supervisedLoss = 1.0f;
+        switch (rewardFunction) {
+            case EVALUATION:
+                reward = reward;
                 break;
-            }
+            default:
+                throw new IllegalArgumentException("Unknown reward function: " + rewardFunction);
         }
 
-        return supervisedLoss;
+        return reward;
     }
 }

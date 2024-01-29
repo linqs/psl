@@ -173,9 +173,7 @@ public abstract class InferenceApplication implements ModelApplication {
             trainingMap = new TrainingMap(database.getAtomStore(), truthDatabase.getAtomStore());
         }
 
-        log.info("Beginning inference.");
         double objective = internalInference(evaluations, trainingMap);
-        log.info("Inference complete.");
         atomsCommitted = false;
 
         // Commits the RandomVariableAtoms back to the Database.

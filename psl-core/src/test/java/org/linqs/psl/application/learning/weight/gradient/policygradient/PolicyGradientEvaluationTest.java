@@ -24,7 +24,7 @@ import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningTest;
 import org.linqs.psl.config.Options;
 
-public class PolicyGradientSquaredErrorTest extends WeightLearningTest {
+public class PolicyGradientEvaluationTest extends WeightLearningTest {
     @Before
     public void setup() {
         super.setup();
@@ -35,7 +35,7 @@ public class PolicyGradientSquaredErrorTest extends WeightLearningTest {
 
     @Override
     protected WeightLearningApplication getBaseWLA() {
-        return new PolicyGradientSquaredError(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
+        return new PolicyGradientEvaluation(info.model.getRules(), trainTargetDatabase, trainTruthDatabase,
                 validationTargetDatabase, validationTruthDatabase, false);
     }
 

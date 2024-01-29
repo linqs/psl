@@ -528,12 +528,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void setValidationModel() {
         // Set to validation deep model predicates.
+        // Note predict is not called here and should be called after the batch is set.
         for (int i = 0; i < deepPredicates.size(); i++) {
             DeepPredicate deepPredicate = deepPredicates.get(i);
             deepPredicate.setDeepModel(validationDeepModelPredicates.get(i));
         }
-
-        DeepPredicate.predictAllDeepPredicates();
     }
 
     protected void runTrainingEvaluation(int epoch) {
@@ -577,6 +576,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void runValidationEvaluation(int epoch) {
         setValidationModel();
+        DeepPredicate.predictAllDeepPredicates();
 
         log.trace("Running Validation Inference.");
         computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);

@@ -742,7 +742,7 @@ public class Options {
 
     public static final Option POLICY_GRADIENT_REWARD_FUNCTION = new Option(
         "policygradient.rewardfunction",
-        PolicyGradient.RewardFunction.NEGATIVE_LOSS.toString(),
+        PolicyGradient.RewardFunction.EVALUATION.toString(),
         "The reward function to use for policy gradient learning."
     );
 

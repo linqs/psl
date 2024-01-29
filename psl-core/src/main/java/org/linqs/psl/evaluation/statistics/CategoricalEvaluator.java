@@ -194,13 +194,11 @@ public class CategoricalEvaluator extends Evaluator {
             categoryIndexes.add(Integer.valueOf(index));
         }
 
-        log.trace("True category indexes for {}: [{}].", predicate.getName(), StringUtils.join(", ", categoryIndexes.toArray()));
-
         return categoryIndexes;
     }
 
     /**
-     * Build up a set that has all the atoms that represet the best categorical assignments.
+     * Build up a set that has all the atoms that represent the best categorical assignments.
      */
     protected Set<GroundAtom> getPredictedCategories(TrainingMap trainingMap, StandardPredicate predicate) {
         // This map will be as deep as the number of category arguments.

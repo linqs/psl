@@ -434,7 +434,9 @@ public class Runtime {
         while (runInference) {
             DeepPredicate.predictAllDeepPredicates();
 
+            log.info("Beginning inference.");
             inferenceApplication.inference(RuntimeOptions.INFERENCE_COMMIT.getBoolean(), false, evaluations, truthDatabase);
+            log.info("Inference complete.");
 
             if (RuntimeOptions.INFERENCE_OUTPUT_RESULTS.getBoolean()) {
                 String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();

@@ -43,6 +43,8 @@ public class DeepModelPredicate extends DeepModel {
     public static final String CONFIG_ENTITY_ARGUMENT_INDEXES = "entity-argument-indexes";
     public static final String CONFIG_CLASS_SIZE = "class-size";
 
+    private static HashMap<Predicate, ArrayList<QueryAtom>> dataMapEntities;
+
     private AtomStore atomStore;
     private Predicate predicate;
 
@@ -59,6 +61,10 @@ public class DeepModelPredicate extends DeepModel {
 
     public DeepModelPredicate(Predicate predicate) {
         super("DeepModelPredicate");
+
+        if (dataMapEntities == null) {
+            dataMapEntities = new HashMap<Predicate, ArrayList<QueryAtom>>();
+        }
 
         this.atomStore = null;
         this.predicate = predicate;
@@ -247,6 +253,9 @@ public class DeepModelPredicate extends DeepModel {
         gradients = null;
         symbolicGradients = null;
 
+        dataMapEntities.get(predicate).clear();
+        dataMapEntities.remove(predicate);
+
         validAtomIndexes.clear();
         validDataIndexes.clear();
 
@@ -310,17 +319,15 @@ public class DeepModelPredicate extends DeepModel {
         }
     }
 
-    /**
-     * Read the entities from a file and map to atom indexes.
-     */
-    private int mapEntitiesFromFileToAtoms(String filePath, AtomStore atomStore, int numEntityArgs) {
-        Constant[] arguments = new Constant[numEntityArgs + 1];
+    private void readEntityDataMap(String filePath, int numEntityArgs) {
+        dataMapEntities.put(predicate, new ArrayList<QueryAtom>());
+
         ConstantType type;
 
         String line = null;
         int lineNumber = 0;
-        int atomIndex = 0;
-        int dataIndex = 0;
+
+        log.trace("Reading Entity Data Map: {}", filePath);
 
         try (BufferedReader reader = FileUtils.getBufferedReader(filePath)) {
             while ((line = reader.readLine()) != null) {
@@ -340,6 +347,7 @@ public class DeepModelPredicate extends DeepModel {
                             lineNumber, numEntityArgs, predicate.getName()));
                 }
 
+                Constant[] arguments = new Constant[numEntityArgs + 1];
                 // Get constant types for this entity.
                 for (int index = 0; index < arguments.length - 1; index++) {
                     type = predicate.getArgumentType(index);
@@ -349,37 +357,54 @@ public class DeepModelPredicate extends DeepModel {
                 // Add atom index and data index for each class.
                 type = predicate.getArgumentType(arguments.length - 1);
 
-                QueryAtom queryAtom = null;
-                for (int index = 0; index < classSize; index++) {
-                    arguments[arguments.length - 1] =  ConstantType.getConstant(String.valueOf(index), type);
+                arguments[arguments.length - 1] = ConstantType.getConstant(String.valueOf(0), type);
 
-                    if (index == 0) {
-                        queryAtom = new QueryAtom(predicate, arguments);
-                    } else {
-                        queryAtom.assume(predicate, arguments);
-                    }
-
-                    atomIndex = atomStore.getAtomIndex(queryAtom);
-                    if (atomIndex == -1) {
-                        break;
-                    }
-                    validAtomIndexes.add(atomIndex);
-                }
-
-                // Verify that the entities have atoms for all classes.
-                if (validAtomIndexes.size() % classSize != 0) {
-                    throw new RuntimeException(String.format(
-                            "Entity found on line (%d) has unspecified class values for predicate %s.",
-                            lineNumber, predicate.getName()));
-                }
-
-                if (atomIndex != -1) {
-                    validDataIndexes.add(dataIndex);
-                }
-                dataIndex++;
+                dataMapEntities.get(predicate).add(new QueryAtom(predicate, arguments));
             }
         } catch (IOException ex) {
             throw new RuntimeException("Unable to parse entity data map file: " + filePath, ex);
+        }
+    }
+
+    /**
+     * Read the entities from a file and map to atom indexes.
+     */
+    private int mapEntitiesFromFileToAtoms(String filePath, AtomStore atomStore, int numEntityArgs) {
+        int lineNumber = 0;
+        int atomIndex = 0;
+        int dataIndex = 0;
+
+        if (!dataMapEntities.containsKey(predicate)) {
+            readEntityDataMap(filePath, numEntityArgs);
+        }
+
+        for (QueryAtom entity : dataMapEntities.get(predicate)) {
+            Constant[] arguments = (Constant[]) entity.getArguments();
+
+            // Add atom index and data index for each class.
+            for (int classIndex = 0; classIndex < classSize; classIndex++) {
+                arguments[arguments.length - 1] = ConstantType.getConstant(String.valueOf(classIndex),
+                        predicate.getArgumentType(arguments.length - 1));
+                entity.assume(predicate, arguments);
+
+                atomIndex = atomStore.getAtomIndex(entity);
+                if (atomIndex == -1) {
+                    break;
+                }
+                validAtomIndexes.add(atomIndex);
+            }
+
+            // Verify that the entities have atoms for all classes.
+            if (validAtomIndexes.size() % classSize != 0) {
+                throw new RuntimeException(String.format(
+                        "Entity found on line (%d) has unspecified class values for predicate %s.",
+                        lineNumber, predicate.getName()));
+            }
+
+            if (atomIndex != -1) {
+                validDataIndexes.add(dataIndex);
+            }
+            dataIndex++;
         }
 
         return dataIndex;
