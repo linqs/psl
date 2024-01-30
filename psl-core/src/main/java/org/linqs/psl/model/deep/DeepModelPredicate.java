@@ -253,8 +253,10 @@ public class DeepModelPredicate extends DeepModel {
         gradients = null;
         symbolicGradients = null;
 
-        dataMapEntities.get(predicate).clear();
-        dataMapEntities.remove(predicate);
+        if (dataMapEntities.containsKey(predicate)) {
+            dataMapEntities.get(predicate).clear();
+            dataMapEntities.remove(predicate);
+        }
 
         validAtomIndexes.clear();
         validDataIndexes.clear();
