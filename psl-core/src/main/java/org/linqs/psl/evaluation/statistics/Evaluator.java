@@ -27,6 +27,7 @@ import org.linqs.psl.util.IteratorUtils;
 
 import java.util.AbstractMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Compute some metric (or set of metrics) for some predicted and labeled data.
@@ -79,6 +80,13 @@ public abstract class Evaluator {
      * Only values in the TrainingMap matching the given predicate are computed over.
      */
     public abstract void compute(TrainingMap data, StandardPredicate predicate);
+
+    /**
+     * This must be called before any of the metric retrieval methods.
+     * Only values in the TrainingMap matching the given predicate are computed over.
+     * The truthSubset is a list of atoms that should be considered from the truth.
+     */
+    public abstract void compute(TrainingMap trainingMap, StandardPredicate predicate, Set<GroundAtom> truthSubset);
 
     /**
      * The representative (rep) metric is the metric that was chosen to be the representative for this evaluator.
@@ -141,7 +149,7 @@ public abstract class Evaluator {
      *
      * Note that certain configurations may result in truth results being returned that include an UnmanagedObservedAtom
      * (atoms that are not managed by an atom manager).
-     * This is not an inherently bad or erroneous situation, the caller should just be concious of this.
+     * This is not an inherently bad or erroneous situation, the caller should just be aware of this.
      */
     public Iterable<Map.Entry<GroundAtom, GroundAtom>> getMap(TrainingMap trainingMap) {
         @SuppressWarnings("unchecked")

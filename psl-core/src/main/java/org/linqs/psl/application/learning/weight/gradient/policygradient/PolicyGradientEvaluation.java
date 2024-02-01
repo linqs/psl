@@ -18,11 +18,12 @@
 package org.linqs.psl.application.learning.weight.gradient.policygradient;
 
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Learns parameters for a model by minimizing the specified evaluation metric
@@ -40,11 +41,24 @@ public class PolicyGradientEvaluation extends PolicyGradient {
     protected float computeReward() {
         evaluation.compute(trainingMap);
 
-        float reward = (float) evaluation.getNormalizedRepMetric();
+        return internalComputeReward();
+    }
+
+    @Override
+    protected float computeReward(Set<GroundAtom> truthSubset) {
+        evaluation.compute(trainingMap, truthSubset);
+
+        return internalComputeReward();
+    }
+
+    private float internalComputeReward() {
+        float reward = 0.0f;
+
+        float normalizedRepMetric = (float) evaluation.getNormalizedRepMetric();
 
         switch (rewardFunction) {
             case EVALUATION:
-                reward = reward;
+                reward = normalizedRepMetric;
                 break;
             default:
                 throw new IllegalArgumentException("Unknown reward function: " + rewardFunction);

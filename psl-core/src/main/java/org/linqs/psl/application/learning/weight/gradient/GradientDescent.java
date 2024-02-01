@@ -576,7 +576,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void runValidationEvaluation(int epoch) {
         setValidationModel();
+        DeepPredicate.evalModeAllDeepPredicates();
         DeepPredicate.predictAllDeepPredicates();
+        DeepPredicate.evalAllDeepPredicates();
 
         log.trace("Running Validation Inference.");
         computeMAPStateWithWarmStart(validationInferenceApplication, validationMAPTermState, validationMAPAtomValueState);
@@ -598,8 +600,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
             for (DeepPredicate deepPredicate : deepPredicates) {
                 deepPredicate.saveDeepModel();
             }
-
-            log.debug("New Best Validation Model: {}", mutableRules);
         }
         log.debug("MAP State Best Validation Evaluation Metric: {}", bestValidationEvaluationMetric);
     }

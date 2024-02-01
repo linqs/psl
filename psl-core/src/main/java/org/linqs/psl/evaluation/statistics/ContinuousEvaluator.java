@@ -18,12 +18,12 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.Options;;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Compute various continuous statistics using a threshold.
@@ -69,6 +69,24 @@ public class ContinuousEvaluator extends Evaluator {
 
         for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
+                continue;
+            }
+
+            count++;
+            absoluteError += Math.abs(entry.getValue().getValue() - entry.getKey().getValue());
+            squaredError += Math.pow(entry.getValue().getValue() - entry.getKey().getValue(), 2);
+        }
+    }
+
+    @Override
+    public void compute(TrainingMap trainingMap, StandardPredicate predicate, Set<GroundAtom> truthSubset) {
+        count = 0;
+        absoluteError = 0.0;
+        squaredError = 0.0;
+
+        for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
+            if (((predicate != null) && (entry.getKey().getPredicate() != predicate))
+                    || (!truthSubset.contains(entry.getValue()))) {
                 continue;
             }
 

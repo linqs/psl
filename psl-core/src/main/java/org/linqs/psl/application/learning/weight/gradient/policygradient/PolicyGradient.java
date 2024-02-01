@@ -19,8 +19,10 @@ import org.linqs.psl.util.RandUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A gradient descent-based learner that uses a policy gradient to update atoms and weights.
@@ -33,15 +35,13 @@ public abstract class PolicyGradient extends GradientDescent {
     }
 
     public enum PolicyUpdate {
-        REINFORCE,
-        REINFORCE_BASELINE
+        INDEPENDENT_CATEGORICAL_REINFORCE,
     }
 
     public enum RewardFunction {
         EVALUATION
     }
 
-    private final DeepAtomPolicyDistribution deepAtomPolicyDistribution;
     private final PolicyUpdate policyUpdate;
     protected final RewardFunction rewardFunction;
     private float valueFunction;
@@ -73,7 +73,6 @@ public abstract class PolicyGradient extends GradientDescent {
                         Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        deepAtomPolicyDistribution = DeepAtomPolicyDistribution.valueOf(Options.POLICY_GRADIENT_POLICY_DISTRIBUTION.getString().toUpperCase());
         policyUpdate = PolicyUpdate.valueOf(Options.POLICY_GRADIENT_POLICY_UPDATE.getString().toUpperCase());
         rewardFunction = RewardFunction.valueOf(Options.POLICY_GRADIENT_REWARD_FUNCTION.getString().toUpperCase());
         valueFunction = 0.0f;
@@ -111,6 +110,8 @@ public abstract class PolicyGradient extends GradientDescent {
     }
 
     protected abstract float computeReward();
+
+    protected abstract float computeReward(Set<GroundAtom> truthSubset);
 
     @Override
     protected float computeLearningLoss() {
@@ -188,17 +189,9 @@ public abstract class PolicyGradient extends GradientDescent {
                 continue;
             }
 
-            if (actionSampleCounts[atomIndex] == 0) {
-                deepPolicyGradient[atomIndex] = 0.0f;
-                continue;
-            }
-
             switch (policyUpdate) {
-                case REINFORCE:
-                    deepPolicyGradient[atomIndex] = -1.0f * (actionValueFunction[atomIndex]) / atom.getValue();
-                    break;
-                case REINFORCE_BASELINE:
-                    deepPolicyGradient[atomIndex] = -1.0f * (actionValueFunction[atomIndex] - valueFunction) / atom.getValue();
+                case INDEPENDENT_CATEGORICAL_REINFORCE:
+                    deepPolicyGradient[atomIndex] = -1.0f * actionValueFunction[atomIndex];
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
@@ -217,8 +210,6 @@ public abstract class PolicyGradient extends GradientDescent {
         float gradientMagnitude = MathUtils.pNorm(deepPolicyGradient, maxGradientNorm);
 
         if (gradientMagnitude > maxGradientMagnitude) {
-//            log.trace("Clipping policy gradient. Original gradient magnitude: {} exceeds limit: {} in L_{} space.",
-//                    gradientMagnitude, maxGradientMagnitude, maxGradientNorm);
             for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
                 deepPolicyGradient[atomIndex] = maxGradientMagnitude * deepPolicyGradient[atomIndex] / gradientMagnitude;
             }
@@ -226,30 +217,109 @@ public abstract class PolicyGradient extends GradientDescent {
     }
 
     private void computeValueFunctionEstimates() {
-        valueFunction = 0.0f;
+        switch (policyUpdate) {
+            case INDEPENDENT_CATEGORICAL_REINFORCE:
+                computeINDEPENDENTCATEGORICALREINFORCEActionValueEstimates();
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
+        }
+    }
 
-        for (int i = 0; i < numSamples; i++) {
-            sampleAllDeepAtomValues();
+    /**
+     * Compute the action value estimates using the independent categorical REINFORCE algorithm.
+     * This algorithm computes the action value estimates for each categorical action independently.
+     */
+    private void computeINDEPENDENTCATEGORICALREINFORCEActionValueEstimates() {
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
+        float[] atomValues = atomStore.getAtomValues();
 
-            computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+        for (DeepModelPredicate deepModelPredicate : trainDeepModelPredicates) {
+            Map<String, ArrayList<RandomVariableAtom>> atomIdentiferToCategories = deepModelPredicate.getAtomIdentiferToCategories();
+            for (Map.Entry<String, ArrayList<RandomVariableAtom>> entry : atomIdentiferToCategories.entrySet()) {
+                for (RandomVariableAtom fixedCategory : entry.getValue()) {
+                    int fixedCategoryIndex = atomStore.getAtomIndex(fixedCategory);
 
-            float reward = computeReward();
-            addActionValue(reward);
-            valueFunction += reward;
+                    fixConnectedComponent(fixedCategory);
 
-            resetAllDeepAtomValues();
+                    for (int i = 0; i < numSamples; i++) {
+                        sampleAllDeepAtomValues();
+
+                        // Override sample with fixed category assignment.
+                        for (RandomVariableAtom category : entry.getValue()) {
+                            int atomIndex = atomStore.getAtomIndex(category);
+
+                            if (atomIndex != fixedCategoryIndex) {
+                                category.setValue(0.0f);
+                            } else {
+                                category.setValue(1.0f);
+                            }
+
+                            atomValues[atomIndex] = category.getValue();
+                        }
+
+                        computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
+
+                        float reward = computeReward(buildComponentTruthSubset(fixedCategory));
+                        addCategoryActionValue(fixedCategoryIndex, fixedCategory, reward);
+
+                        resetAllDeepAtomValues();
+                    }
+
+                    reactivateConnectedComponents();
+                }
+            }
         }
 
-        // Average the value functions.
-        valueFunction /= numSamples;
+        for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
+            actionValueFunction[atomIndex] /= numSamples;
+        }
+    }
 
-        for (int i = 0; i < actionValueFunction.length; i++) {
-            if (actionSampleCounts[i] == 0) {
-                actionValueFunction[i] = 0.0f;
+    private Set<GroundAtom> buildComponentTruthSubset(RandomVariableAtom atom) {
+        Set<GroundAtom> componentTruthSubset = new HashSet<GroundAtom>();
+
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
+
+        List<Integer> componentAtomIndexes = atomStore.getConnectedComponentAtomIndexes(atomStore.findAtomRoot(atom));
+        for (int atomIndex : componentAtomIndexes) {
+            componentTruthSubset.add(atomStore.getAtom(atomIndex));
+        }
+
+        return componentTruthSubset;
+    }
+
+    /**
+     * Fix the connected component of the given atom, i.e., deactivate all terms outside the connected component.
+     */
+    private void fixConnectedComponent(RandomVariableAtom atom) {
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
+        int componentID = atomStore.findAtomRoot(atom);
+
+        // Deactivate all terms outside the fixed categories component.
+        List<Integer> allComponentIDs = ((SimpleTermStore<? extends ReasonerTerm>) trainInferenceApplication.getTermStore()).getConnectedComponentKeys();
+        for (Integer componentID2 : allComponentIDs) {
+            if (componentID2 == componentID) {
                 continue;
             }
 
-            actionValueFunction[i] /= actionSampleCounts[i];
+            List<? extends ReasonerTerm> component = ((SimpleTermStore<? extends ReasonerTerm>) trainInferenceApplication.getTermStore()).getConnectedComponent(componentID2);
+            for (ReasonerTerm term : component) {
+                term.setActive(false);
+            }
+        }
+    }
+
+    /**
+     * Reactivate all connected components.
+     */
+    private void reactivateConnectedComponents() {
+        List<Integer> allComponentIDs = ((SimpleTermStore<? extends ReasonerTerm>) trainInferenceApplication.getTermStore()).getConnectedComponentKeys();
+        for (Integer componentID : allComponentIDs) {
+            List<? extends ReasonerTerm> component = ((SimpleTermStore<? extends ReasonerTerm>) trainInferenceApplication.getTermStore()).getConnectedComponent(componentID);
+            for (ReasonerTerm term : component) {
+                term.setActive(true);
+            }
         }
     }
 
@@ -270,16 +340,6 @@ public abstract class PolicyGradient extends GradientDescent {
      * Sample the deep atom values according to a policy parameterized by the deep model predictions.
      */
     protected void sampleDeepAtomValues(ArrayList<RandomVariableAtom> categories) {
-        switch (deepAtomPolicyDistribution) {
-            case CATEGORICAL:
-                sampleCategorical(categories);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown policy distribution: " + deepAtomPolicyDistribution);
-        }
-    }
-
-    private void sampleCategorical(ArrayList<RandomVariableAtom> categories) {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
         float[] atomValues = atomStore.getAtomValues();
 
@@ -363,9 +423,11 @@ public abstract class PolicyGradient extends GradientDescent {
 
     @Override
     protected void addTotalAtomGradient() {
-        for (int i = 0; i < trainInferenceApplication.getTermStore().getAtomStore().size(); i++) {
-            rvGradient[i] = energyLossCoefficient * rvLatentEnergyGradient[i];
-            deepGradient[i] = energyLossCoefficient * deepLatentEnergyGradient[i] + deepPolicyGradient[i];
+        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
+
+        for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
+            rvGradient[atomIndex] = energyLossCoefficient * rvLatentEnergyGradient[atomIndex];
+            deepGradient[atomIndex] = energyLossCoefficient * deepLatentEnergyGradient[atomIndex] + deepPolicyGradient[atomIndex];
         }
     }
 
@@ -379,30 +441,17 @@ public abstract class PolicyGradient extends GradientDescent {
                 continue;
             }
 
-            switch (deepAtomPolicyDistribution) {
-                case CATEGORICAL:
-                    addCategoricalActionValue(atomIndex, (RandomVariableAtom) atom, reward);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown policy distribution: " + deepAtomPolicyDistribution);
-            }
+            addCategoryActionValue(atomIndex, (RandomVariableAtom) atom, reward);
         }
     }
 
-    private void addCategoricalActionValue(int atomIndex, RandomVariableAtom atom, float reward) {
+    private void addCategoryActionValue(int atomIndex, RandomVariableAtom atom, float reward) {
         // Skip atoms not selected by the policy.
         if (MathUtils.isZero(atom.getValue())) {
             return;
         }
 
-        switch (policyUpdate) {
-            case REINFORCE:
-            case REINFORCE_BASELINE:
-                actionValueFunction[atomIndex] += reward;
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
-        }
+        actionValueFunction[atomIndex] += reward;
     }
 
     /**

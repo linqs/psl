@@ -78,7 +78,7 @@ public class PersistedAtomStore extends AtomStore {
 
         atomValues = new float[allocationSize];
         atoms = new GroundAtom[atomValues.length];
-        lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
+        atomIndexMap = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
 
         // Load open predicates first (to get RVAs at a lower index).
         for (StandardPredicate predicate : database.getDataStore().getRegisteredPredicates()) {
@@ -108,7 +108,7 @@ public class PersistedAtomStore extends AtomStore {
      * A GroundAtom will always be returned, but it may be unmanaged (not persisted in this store).
      */
     public GroundAtom getAtom(Atom query) {
-        Integer index = lookup.get(query);
+        Integer index = atomIndexMap.get(query);
         if (index != null) {
             return atoms[index.intValue()];
         }

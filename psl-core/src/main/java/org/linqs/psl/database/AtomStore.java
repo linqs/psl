@@ -46,9 +46,16 @@ public class AtomStore implements Iterable<GroundAtom> {
     protected int numRVAtoms;
     protected float[] atomValues;
     protected GroundAtom[] atoms;
-    private Map<Integer, List<Integer>> connectedComponentsAtomIndexes;
     protected int maxRVAIndex;
-    protected Map<Atom, Integer> lookup;
+    protected Map<Atom, Integer> atomIndexMap;
+
+    /**
+     * The mapping from component indices to an array of atom indices in the component.
+     * The component an atom belongs to is found via findAtomRoot.
+     * This is implemented using path compression so lookups from either direction
+     * (component -> atom or atom -> component) are highly efficient.
+     */
+    private Map<Integer, List<Integer>> connectedComponentsAtomIndexes;
 
     public AtomStore() {
         numAtoms = 0;
@@ -57,10 +64,11 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         int allocationSize = (int)(MIN_ALLOCATION * (1.0 + overallocationFactor));
 
+        atoms = new GroundAtom[allocationSize];
         atomValues = new float[allocationSize];
-        atoms = new GroundAtom[atomValues.length];
+
         connectedComponentsAtomIndexes = new HashMap<Integer, List<Integer>>();
-        lookup = new HashMap<Atom, Integer>((int)(atomValues.length / 0.75));
+        atomIndexMap = new HashMap<Atom, Integer>((int) (allocationSize / 0.75));
     }
 
     public AtomStore copy() {
@@ -111,8 +119,8 @@ public class AtomStore implements Iterable<GroundAtom> {
         return connectedComponentsAtomIndexes;
     }
 
-    public List<Integer> getConnectedComponentAtomIndexes(int index) {
-        return connectedComponentsAtomIndexes.get(index);
+    public List<Integer> getConnectedComponentAtomIndexes(int componentIndex) {
+        return connectedComponentsAtomIndexes.get(componentIndex);
     }
 
     public GroundAtom getAtom(int index) {
@@ -129,7 +137,7 @@ public class AtomStore implements Iterable<GroundAtom> {
      * Will ignore closed-world atoms.
      */
     public int getAtomIndex(Atom query) {
-        Integer index = lookup.get(query);
+        Integer index = atomIndexMap.get(query);
         if (index == null) {
             return -1;
         }
@@ -141,7 +149,7 @@ public class AtomStore implements Iterable<GroundAtom> {
      * Check if there is an actual (not closed-world) atom managed by this store.
      */
     public boolean hasAtom(Atom query) {
-        Integer index = lookup.get(query);
+        Integer index = atomIndexMap.get(query);
         return (index != null);
     }
 
@@ -149,6 +157,9 @@ public class AtomStore implements Iterable<GroundAtom> {
      * Find the root of the atom in the abstract disjoint-set data structure.
      * Additionally, update the parent of the atoms along the path to the root to point to grandparents, i.e., perform path halving.
      * This is to reduce the number of hops required to get to the root on the next call.
+     *
+     * The atom root is both the atom index of the root atom of the component
+     * and the identifier of the component the atom belongs to.
      */
     public synchronized int findAtomRoot(int atomIndex) {
         return findAtomRoot(getAtom(atomIndex));
@@ -267,7 +278,9 @@ public class AtomStore implements Iterable<GroundAtom> {
 
         atoms[numAtoms] = atom;
         atomValues[numAtoms] = atom.getValue();
-        lookup.put(atom, numAtoms);
+
+        atomIndexMap.put(atom, numAtoms);
+
         connectedComponentsAtomIndexes.put(numAtoms, new ArrayList<Integer>());
         connectedComponentsAtomIndexes.get(numAtoms).add(numAtoms);
 
@@ -286,9 +299,18 @@ public class AtomStore implements Iterable<GroundAtom> {
         atoms = null;
         maxRVAIndex = -1;
 
-        if (lookup != null) {
-            lookup.clear();
-            lookup = null;
+        if (atomIndexMap != null) {
+            atomIndexMap.clear();
+            atomIndexMap = null;
+        }
+
+        if (connectedComponentsAtomIndexes != null) {
+            for (Integer componentIndex : connectedComponentsAtomIndexes.keySet()) {
+                connectedComponentsAtomIndexes.get(componentIndex).clear();
+            }
+
+            connectedComponentsAtomIndexes.clear();
+            connectedComponentsAtomIndexes = null;
         }
     }
 

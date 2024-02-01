@@ -24,6 +24,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Compute various discrete statistics using a threshold.
@@ -86,6 +87,34 @@ public class DiscreteEvaluator extends Evaluator {
 
         for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
+                continue;
+            }
+
+            boolean expected = (entry.getValue().getValue() >= threshold);
+            boolean predicted = (entry.getKey().getValue() >= threshold);
+
+            if (predicted && expected) {
+                tp++;
+            } else if (!predicted && expected) {
+                fn++;
+            } else if (predicted && !expected) {
+                fp++;
+            } else {
+                tn++;
+            }
+        }
+    }
+
+    @Override
+    public void compute(TrainingMap trainingMap, StandardPredicate predicate, Set<GroundAtom> truthSubset) {
+        tp = 0;
+        fn = 0;
+        tn = 0;
+        fp = 0;
+
+        for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
+            if (((predicate != null) && (entry.getKey().getPredicate() != predicate))
+                    || (!truthSubset.contains(entry.getValue()))) {
                 continue;
             }
 

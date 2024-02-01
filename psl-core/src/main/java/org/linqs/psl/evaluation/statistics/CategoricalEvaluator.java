@@ -18,7 +18,7 @@
 package org.linqs.psl.evaluation.statistics;
 
 import org.linqs.psl.application.learning.weight.TrainingMap;
-import org.linqs.psl.config.Options;;
+import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
@@ -122,6 +122,36 @@ public class CategoricalEvaluator extends Evaluator {
 
         for (GroundAtom truthAtom : trainingMap.getAllTruths()) {
             if (truthAtom.getPredicate() != predicate) {
+                continue;
+            }
+
+            if (truthAtom.getValue() < 1.0) {
+                continue;
+            }
+
+            if (predictedCategories.contains(truthAtom)) {
+                hits++;
+            } else {
+                misses++;
+            }
+        }
+    }
+
+    @Override
+    public void compute(TrainingMap trainingMap, StandardPredicate predicate, Set<GroundAtom> truthSubset) {
+        assert(predicate != null);
+
+        hits = 0;
+        misses = 0;
+
+        Set<GroundAtom> predictedCategories = getPredictedCategories(trainingMap, predicate);
+
+        for (GroundAtom truthAtom : trainingMap.getAllTruths()) {
+            if (truthAtom.getPredicate() != predicate) {
+                continue;
+            }
+
+            if (!truthSubset.contains(truthAtom)) {
                 continue;
             }
 

@@ -127,6 +127,10 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
     	return allTerms;
     }
 
+    public List<T> getConnectedComponent(int componentID) {
+        return connectedComponents.get(componentID);
+    }
+
     public Map<Integer, List<T>> getConnectedComponents() {
         return connectedComponents;
     }

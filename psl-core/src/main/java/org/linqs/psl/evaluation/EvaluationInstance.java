@@ -20,7 +20,10 @@ package org.linqs.psl.evaluation;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.Evaluator;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
+
+import java.util.Set;
 
 /**
  * A container that represents a desired evaluation instance.
@@ -58,6 +61,10 @@ public class EvaluationInstance {
 
     public void compute(Database targets, Database truth) {
         evaluator.compute(targets, truth, predicate);
+    }
+
+    public void compute(TrainingMap trainingMap, Set<GroundAtom> truthSubset) {
+        evaluator.compute(trainingMap, predicate, truthSubset);
     }
 
     public double getNormalizedRepMetric() {

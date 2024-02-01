@@ -21,12 +21,12 @@ import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.StandardPredicate;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Compute various area-under-curve statistics.
@@ -81,6 +81,25 @@ public class AUCEvaluator extends Evaluator {
 
         for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
             if (predicate != null && entry.getKey().getPredicate() != predicate) {
+                continue;
+            }
+
+            truth.add(entry.getValue());
+            predicted.add(entry.getKey());
+        }
+
+        Collections.sort(truth);
+        Collections.sort(predicted);
+    }
+
+    @Override
+    public void compute(TrainingMap trainingMap, StandardPredicate predicate, Set<GroundAtom> truthSubset) {
+        truth = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
+        predicted = new ArrayList<GroundAtom>(trainingMap.getLabelMap().size());
+
+        for (Map.Entry<GroundAtom, GroundAtom> entry : getMap(trainingMap)) {
+            if (((predicate != null) && (entry.getKey().getPredicate() != predicate))
+                    || (!truthSubset.contains(entry.getValue()))) {
                 continue;
             }
 

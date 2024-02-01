@@ -22,11 +22,14 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
 import java.util.Arrays;
 
 public abstract class ReasonerTerm {
+    private static final Logger log = Logger.getLogger(ReasonerTerm.class);
+
     /**
      * The specific type of term represented by this instance.
      */
@@ -45,6 +48,15 @@ public abstract class ReasonerTerm {
      */
     protected FunctionComparator comparator;
 
+    /**
+     * The active state of the term.
+     * This is a separate field from the rule's active state to allow for fine-grained control.
+     * For a term to be active, both the rule and the term must be active, i.e.,
+     * if the rule is inactive, then the term is inactive,
+     * and if the rule is active, then the term's active state is used.
+     */
+    protected boolean active;
+
     protected Rule rule;
     protected int[] atomIndexes;
 
@@ -57,17 +69,19 @@ public abstract class ReasonerTerm {
     public ReasonerTerm(Hyperplane hyperplane, Rule rule,
                         boolean squared, boolean hinge,
                         FunctionComparator comparator) {
+        this.active = true;
+
         this.rule = rule;
         this.comparator = comparator;
         this.squared = squared;
         this.hinge = hinge;
-        termType = getTermType();
+        this.termType = getTermType();
 
         this.size = (short)hyperplane.size();
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
 
-        atomIndexes = new int[size];
+        this.atomIndexes = new int[size];
         GroundAtom[] atoms = hyperplane.getVariables();
         for (int i = 0; i < size; i++) {
             atomIndexes[i] = atoms[i].getIndex();
@@ -76,6 +90,8 @@ public abstract class ReasonerTerm {
 
     public ReasonerTerm(short size, float[] coefficients, float constant, int[] atomIndexes,
                         Rule rule, boolean squared, boolean hinge, FunctionComparator comparator) {
+        this.active = true;
+
         this.rule = rule;
         this.comparator = comparator;
         this.squared = squared;
@@ -146,12 +162,22 @@ public abstract class ReasonerTerm {
         return Float.POSITIVE_INFINITY;
     }
 
+    /**
+     * Get the active state of the term.
+     */
     public boolean isActive() {
-        if (rule != null) {
-            return rule.isActive();
+        if ((rule != null) && (!rule.isActive())) {
+            return false;
         }
 
-        return true;
+        return this.active;
+    }
+
+    /**
+     * Set the active state of the term.
+     */
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     /**
@@ -394,7 +420,7 @@ public abstract class ReasonerTerm {
                 builder.append(">)");
             } else {
                 builder.append(" * ");
-                builder.append(atomStore.getAtomValue(atomIndexes[i]));
+                builder.append(atomStore.getAtom(atomIndexes[i]).toStringWithValue());
                 builder.append(")");
             }
 

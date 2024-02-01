@@ -728,15 +728,9 @@ public class Options {
         "The number of samples to use to estimate each gradient."
     );
 
-    public static final Option POLICY_GRADIENT_POLICY_DISTRIBUTION = new Option(
-        "policygradient.policydistribution",
-        PolicyGradient.DeepAtomPolicyDistribution.CATEGORICAL.toString(),
-        "The policy distribution to use for policy gradient learning."
-    );
-
     public static final Option POLICY_GRADIENT_POLICY_UPDATE = new Option(
         "policygradient.policyupdate",
-        PolicyGradient.PolicyUpdate.REINFORCE.toString(),
+        PolicyGradient.PolicyUpdate.INDEPENDENT_CATEGORICAL_REINFORCE.toString(),
         "The policy update to use for policy gradient learning."
     );
 
