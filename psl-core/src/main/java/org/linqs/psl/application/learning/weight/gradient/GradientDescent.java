@@ -335,12 +335,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             if (log.isTraceEnabled() && (evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
                 runTrainingEvaluation(epoch);
-                log.trace("MAP State Training Evaluation Metric: {}", currentTrainingEvaluationMetric);
+                log.info("Epoch: {}, MAP State Training Evaluation Metric: {}", epoch, currentTrainingEvaluationMetric);
             }
 
             if (runValidation && (epoch % validationEvaluationComputePeriod == 0)) {
                 runValidationEvaluation(epoch);
-                log.debug("Current MAP State Validation Evaluation Metric: {}", currentValidationEvaluationMetric);
+                log.info("Epoch: {}, Current MAP State Validation Evaluation Metric: {}", epoch, currentValidationEvaluationMetric);
             }
 
             if (epoch % trainingStopComputePeriod == 0) {
@@ -403,7 +403,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             setFullModel();
 
             epoch++;
-            log.trace("Epoch: {}, Weight Learning Objective: {}, Iteration Time: {}", epoch, averageBatchObjective, (end - start));
+            log.info("Epoch: {}, Weight Learning Objective: {}, Iteration Time: {}", epoch, averageBatchObjective, (end - start));
         }
         log.info("Gradient Descent Weight Learning Finished.");
 
