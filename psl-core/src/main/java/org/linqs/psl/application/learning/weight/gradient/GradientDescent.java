@@ -333,7 +333,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 log.trace("{}", weightedRule);
             }
 
-            if (log.isTraceEnabled() && (evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
+            if ((evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
                 runTrainingEvaluation(epoch);
                 log.info("Epoch: {}, MAP State Training Evaluation Metric: {}", epoch, currentTrainingEvaluationMetric);
             }
