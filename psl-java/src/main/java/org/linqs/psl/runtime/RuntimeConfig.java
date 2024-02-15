@@ -1056,7 +1056,7 @@ public class RuntimeConfig {
 
         private EvalInfo parseEvalDef(ObjectNode root) {
             if (!root.hasNonNull(KEY_EVALUATOR)) {
-                throw new IllegalArgumentException("Evalautor object missing the '" + KEY_EVALUATOR + "' key.");
+                throw new IllegalArgumentException("Evaluator object missing the '" + KEY_EVALUATOR + "' key.");
             }
 
             String evaluator = root.get(KEY_EVALUATOR).textValue();
