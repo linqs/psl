@@ -1072,6 +1072,12 @@ public class Options {
         "Warn on rules the streaming term store can't handle."
     );
 
+    public static final Option WLA_INFERENCE = new Option(
+        "weightlearning.inference",
+        ADMMInference.class.getName(),
+        "The inference application used during weight learning."
+    );
+
     public static final Option WLA_RANDOM_WEIGHTS = new Option(
         "weightlearning.randomweights",
         false,
@@ -1079,10 +1085,10 @@ public class Options {
         + " The randomization will happen during ground model initialization."
     );
 
-    public static final Option WLA_INFERENCE = new Option(
-        "weightlearning.inference",
-        ADMMInference.class.getName(),
-        "The inference application used during weight learning."
+    public static final Option WLA_TIMEOUT = new Option(
+        "weightlearning.timeout",
+        -1,
+        "The maximum time (in seconds) to run weight learning."
     );
 
     private static List<Option> options = new ArrayList<Option>();

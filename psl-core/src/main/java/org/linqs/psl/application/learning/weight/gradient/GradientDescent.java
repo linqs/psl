@@ -327,11 +327,13 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         long totalTime = 0;
         int epoch = 0;
-        while (!breakGD) {
+        while ((!breakGD) && (totalTime < timeout)) {
             log.trace("Model:");
             for (WeightedRule weightedRule: mutableRules) {
                 log.trace("{}", weightedRule);
             }
+
+            long start_eval = System.currentTimeMillis();
 
             if ((evaluation != null) && (epoch % trainingEvaluationComputePeriod == 0)) {
                 runTrainingEvaluation(epoch);
@@ -347,7 +349,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 epochStart(epoch);
             }
 
-            long start = System.currentTimeMillis();
+            long end_eval = System.currentTimeMillis();
+
+            long start_step = System.currentTimeMillis();
 
             DeepPredicate.trainModeAllDeepPredicates();
 
@@ -390,8 +394,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             setFullModel();
 
-            long end = System.currentTimeMillis();
-            totalTime += end - start;
+            long end_step = System.currentTimeMillis();
+
+            long start_break_check = System.currentTimeMillis();
 
             if (epoch % trainingStopComputePeriod == 0) {
                 measureEpochParameterMovement();
@@ -402,8 +407,12 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
             setFullModel();
 
+            long end_break_check = System.currentTimeMillis();
+
             epoch++;
-            log.info("Epoch: {}, Weight Learning Objective: {}, Iteration Time: {}", epoch, averageBatchObjective, (end - start));
+            log.info("Epoch: {}, Weight Learning Objective: {}, Iteration Time: {}", epoch, averageBatchObjective, (end_step - start_step));
+
+            totalTime += (end_eval - start_eval) + (end_step - start_step) + (end_break_check - start_break_check);
         }
         log.info("Gradient Descent Weight Learning Finished.");
 
@@ -414,14 +423,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
             }
         }
 
-        if (evaluation != null) {
-            double finalMAPStateEvaluation = 0.0f;
-            if (saveBestValidationWeights) {
-                finalMAPStateEvaluation = bestValidationEvaluationMetric;
-            } else {
-                runTrainingEvaluation(epoch);
-                finalMAPStateEvaluation = currentTrainingEvaluationMetric;
-            }
+        if ((evaluation != null) && (!saveBestValidationWeights)) {
+            runTrainingEvaluation(epoch);
+            double finalMAPStateEvaluation = currentTrainingEvaluationMetric;
             log.info("Final MAP State Evaluation Metric: {}", finalMAPStateEvaluation);
         }
 

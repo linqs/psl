@@ -86,9 +86,16 @@ public class Hyperband extends WeightLearningApplication {
         // The total cost used vs one full round of inference.
         double totalCost = 0.0;
         int numEvaluatedConfigs = 0;
-
+        long totalTime = 0;
         for (int bracket = 0; bracket < numBrackets; bracket++) {
             // TODO(eriq): Swap bracket direction? Start with more?
+
+            if (totalTime > timeout) {
+                log.debug("Stopping search due to timeout.");
+                break;
+            }
+
+            long start = System.currentTimeMillis();
 
             double bracketProportion = Math.pow(survival, bracket) / (bracket + 1);
             int bracketSize = (int)(Math.max(MIN_BRACKET_SIZE, Math.ceil(bracketProportion * baseBracketSize)));
@@ -145,6 +152,9 @@ public class Hyperband extends WeightLearningApplication {
                     configs.add(results.poll().weights);
                 }
             }
+
+            long end = System.currentTimeMillis();
+            totalTime += end - start;
         }
 
         // Set the final weights.

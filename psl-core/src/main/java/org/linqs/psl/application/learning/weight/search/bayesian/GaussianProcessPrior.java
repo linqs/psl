@@ -143,7 +143,11 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         boolean allStdSmall = false;
 
         int iteration = 0;
-        while (iteration < maxIterations && configs.size() > 0 && !(earlyStopping && allStdSmall)) {
+        long totalTime = 0;
+        while ((iteration < maxIterations) && (configs.size() > 0)
+                && !(earlyStopping && allStdSmall) && (totalTime < timeout)) {
+            long start = System.currentTimeMillis();
+
             int nextPoint = (iteration == 0) ? 0 : getNextPoint(configs);
             WeightConfig config = configs.get(nextPoint);
 
@@ -207,6 +211,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             }
 
             iteration++;
+
+            long end = System.currentTimeMillis();
+            totalTime += (end - start);
         }
 
         setWeights(bestConfig);

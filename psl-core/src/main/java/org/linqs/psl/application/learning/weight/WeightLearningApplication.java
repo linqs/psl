@@ -42,14 +42,14 @@ import java.util.List;
  * (List<Rule>, Database (rv), Database (observed)).
  */
 public abstract class WeightLearningApplication implements ModelApplication {
+    private static final Logger log = Logger.getLogger(WeightLearningApplication.class);
+
     /**
      * The delimiter to separate rule weights (and location ids).
      * Note that we cannot use ',' because our configuration infrastructure
      * will try to interpret it as a list of strings.
      */
     public static final String DELIM = ":";
-
-    private static final Logger log = Logger.getLogger(WeightLearningApplication.class);
 
     protected Database trainTargetDatabase;
     protected Database trainTruthDatabase;
@@ -83,6 +83,11 @@ public abstract class WeightLearningApplication implements ModelApplication {
      */
     protected boolean inTrainingMAPState;
     protected boolean inValidationMAPState;
+
+    /**
+     * The timeout for the learning procedure in milliseconds.
+     */
+    protected long timeout;
 
     public WeightLearningApplication(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                                      Database validationTargetDatabase, Database validationTruthDatabase, Boolean runValidation) {
@@ -121,6 +126,11 @@ public abstract class WeightLearningApplication implements ModelApplication {
         inValidationMAPState = false;
 
         evaluation = null;
+
+        timeout = Options.WLA_TIMEOUT.getLong() * 1000;
+        if (timeout < 0) {
+            timeout = Long.MAX_VALUE;
+        }
     }
 
     public void setEvaluation(EvaluationInstance evaluation) {

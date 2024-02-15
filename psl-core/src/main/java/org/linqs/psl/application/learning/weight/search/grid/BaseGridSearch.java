@@ -90,7 +90,15 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         float[] unitWeightVector = new float[mutableRules.size()];
 
         boolean nonZero = false;
+        long totalTime = 0;
         for (int iteration = 0; iteration < numLocations; iteration++) {
+            if (totalTime > timeout) {
+                log.debug("Stopping search due to timeout.");
+                break;
+            }
+
+            long startTime = System.currentTimeMillis();
+
             if (!chooseNextLocation()) {
                 log.debug("Stopping search.");
                 break;
@@ -137,6 +145,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             }
 
             log.debug("Weights: {} -- objective: {}", currentLocation, objective);
+
+            long endTime = System.currentTimeMillis();
+            totalTime += endTime - startTime;
         }
 
         // Set the final weights.
