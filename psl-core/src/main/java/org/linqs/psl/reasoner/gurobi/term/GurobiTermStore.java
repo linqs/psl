@@ -106,13 +106,14 @@ public class GurobiTermStore extends SimpleTermStore<GurobiObjectiveTerm> {
     public void syncModelVariables() {
         float[] atomValues = getVariableValues();
 
-        try {
-            for (GroundAtom atom : atomToModelVariableMap.keySet()) {
-                int atomIndex = atomStore.getAtomIndex(atom);
+        for (GroundAtom atom : atomToModelVariableMap.keySet()) {
+            int atomIndex = atomStore.getAtomIndex(atom);
+            try {
                 atomValues[atomIndex] = (float) atomToModelVariableMap.get(atom).get(GRB.DoubleAttr.X);
+            } catch (GRBException e) {
+                throw new RuntimeException("Error thrown during sync with atom: " + atom.toString()
+                        + " Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
             }
-        } catch (GRBException e) {
-            throw new RuntimeException("Gurobi Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }
     }
 
