@@ -44,7 +44,6 @@ public abstract class PolicyGradient extends GradientDescent {
 
     private final PolicyUpdate policyUpdate;
     protected final RewardFunction rewardFunction;
-    private float valueFunction;
     private float[] actionValueFunction;
 
     private int numSamples;
@@ -75,7 +74,6 @@ public abstract class PolicyGradient extends GradientDescent {
 
         policyUpdate = PolicyUpdate.valueOf(Options.POLICY_GRADIENT_POLICY_UPDATE.getString().toUpperCase());
         rewardFunction = RewardFunction.valueOf(Options.POLICY_GRADIENT_REWARD_FUNCTION.getString().toUpperCase());
-        valueFunction = 0.0f;
         actionValueFunction = null;
 
         numSamples = Options.POLICY_GRADIENT_NUM_SAMPLES.getInt();
