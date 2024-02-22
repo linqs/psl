@@ -51,7 +51,7 @@ public class SquaredError extends Minimizer {
                 continue;
             }
 
-            supervisedLoss += Math.pow(proxRuleObservedAtoms[rvAtomIndexToProxRuleIndex.get(atomIndex)].getValue() - observedAtom.getValue(), 2.0f);
+            supervisedLoss += (float) Math.pow(proxRuleObservedAtoms[rvAtomIndexToProxRuleIndex.get(atomIndex)].getValue() - observedAtom.getValue(), 2.0f);
         }
 
         return supervisedLoss;
