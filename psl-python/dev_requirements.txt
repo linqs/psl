@@ -1,4 +1,4 @@
-JPype1==1.4.0
+JPype1>=1.4.0
 pandas>=0.24.1
 twine>=1.13.0
 wheel>=0.33.1
