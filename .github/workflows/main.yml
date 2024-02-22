@@ -164,7 +164,7 @@ jobs:
           pip3 install -r psl-python/optional_requirements.txt
 
       - name: Download Archived Build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: psl
           path: ${{ github.workspace }}
