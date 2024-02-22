@@ -369,7 +369,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
                 computeIterationStatistics();
 
-                computeTotalWeightGradient();
+                addTotalWeightGradient();
                 addTotalAtomGradient();
                 if (clipWeightGradient) {
                     clipWeightGradient();
@@ -985,7 +985,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     /**
      * Compute the gradient of the regularized learning loss with respect to the weights.
      */
-    protected void computeTotalWeightGradient() {
+    protected void addTotalWeightGradient() {
         if (!symbolicWeightLearning) {
             return;
         }
