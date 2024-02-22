@@ -429,20 +429,6 @@ public abstract class PolicyGradient extends GradientDescent {
         }
     }
 
-    private void addActionValue(float reward) {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
-        for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
-            GroundAtom atom = atomStore.getAtom(atomIndex);
-
-            // Skip atoms that are not DeepAtoms.
-            if (!((atom instanceof RandomVariableAtom) && (atom.getPredicate() instanceof DeepPredicate))) {
-                continue;
-            }
-
-            addCategoryActionValue(atomIndex, (RandomVariableAtom) atom, reward);
-        }
-    }
-
     private void addCategoryActionValue(int atomIndex, RandomVariableAtom atom, float reward) {
         // Skip atoms not selected by the policy.
         if (MathUtils.isZero(atom.getValue())) {

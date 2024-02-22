@@ -43,16 +43,16 @@ public abstract class DeepModel {
     protected static final String CONFIG_RELATIVE_DIR = "relative-dir";
 
     private static final long SERVER_SLEEP_TIME_MS = (long)(0.5 * 1000);
-    private static int startingPort = Options.PREDICATE_DEEP_PYTHON_PORT.getInt();
-    private static Map<Integer, DeepModel> usedPorts = new HashMap<Integer, DeepModel>();
+    private static final int startingPort = Options.PREDICATE_DEEP_PYTHON_PORT.getInt();
+    private static final Map<Integer, DeepModel> usedPorts = new HashMap<Integer, DeepModel>();
 
     protected String deepModel;
     protected Map<String, String> pythonOptions;
     protected String application;
 
     protected int port;
-    protected static String pythonModule = Options.PREDICATE_DEEP_PYTHON_WRAPPER_MODULE.getString();
-    protected static String sharedMemoryPath = Options.PREDICATE_DEEP_SHARED_MEMORY_PATH.getString();
+    protected static final String pythonModule = Options.PREDICATE_DEEP_PYTHON_WRAPPER_MODULE.getString();
+    protected static final String sharedMemoryPath = Options.PREDICATE_DEEP_SHARED_MEMORY_PATH.getString();
     protected Process pythonServerProcess;
     protected RandomAccessFile sharedFile;
     protected MappedByteBuffer sharedBuffer;

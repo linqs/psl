@@ -17,11 +17,7 @@
  */
 package org.linqs.psl.application.learning.weight.gradient.optimalvalue;
 
-import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
 
@@ -64,17 +60,6 @@ public class Energy extends OptimalValue {
 
     @Override
     protected void addTotalAtomGradient() {
-        AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
-
         System.arraycopy(deepLatentAtomGradient, 0, deepGradient, 0, deepLatentAtomGradient.length);
-
-//        for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
-//            GroundAtom atom = atomStore.getAtom(atomIndex);
-//
-//            if ((atom instanceof RandomVariableAtom) && (atom.getPredicate() instanceof DeepPredicate)) {
-//                log.trace("Atom: {} deepLatentEnergyGradient:{}",
-//                        atom, deepGradient[atomIndex]);
-//            }
-//        }
     }
 }

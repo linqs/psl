@@ -305,8 +305,8 @@ public class AtomStore implements Iterable<GroundAtom> {
         }
 
         if (connectedComponentsAtomIndexes != null) {
-            for (Integer componentIndex : connectedComponentsAtomIndexes.keySet()) {
-                connectedComponentsAtomIndexes.get(componentIndex).clear();
+            for (List<Integer> component : connectedComponentsAtomIndexes.values()) {
+                component.clear();
             }
 
             connectedComponentsAtomIndexes.clear();
