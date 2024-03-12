@@ -953,7 +953,7 @@ public class Options {
 
     public static final Option WLA_SEARCH_DIRICHLET_ALPHA = new Option(
         "search.dirichletalpha",
-        0.05,
+        1.0,
         "The alpha parameter for the dirichlet distribution of the weight sampler."
     );
 
