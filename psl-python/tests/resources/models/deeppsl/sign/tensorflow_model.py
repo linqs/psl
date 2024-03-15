@@ -34,7 +34,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
     def internal_init(self, application, options = {}):
         layers = [
-            tensorflow.keras.layers.Input(int(options['input_shape'])),
+            tensorflow.keras.layers.Input((int(options['input_shape']), )),
             tensorflow.keras.layers.Dense(int(options['output_shape']), activation = 'softmax'),
         ]
 
