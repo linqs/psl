@@ -56,7 +56,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
     def internal_predict(self, data, options = {}):
         data = self._prepare_data(data)
-        predictions = self._model.predict(data[0], verbose=0)
+        predictions = self._model.predict(numpy.array(data[0]), verbose=0)
         return predictions, {}
 
     def internal_eval(self, data, options = {}):
@@ -82,7 +82,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         if len(data) == 2:
             return data
 
-        return [numpy.asarray(data[:,:-1]), numpy.asarray([[1, 0] if label == 0 else [0, 1] for label in data[:,-1]])]
+        return [numpy.asarray(data[:, :-1]), numpy.asarray([[1, 0] if label == 0 else [0, 1] for label in data[:,-1]])]
 
 
 def calculate_metrics(y_pred, y_truth, metrics):
