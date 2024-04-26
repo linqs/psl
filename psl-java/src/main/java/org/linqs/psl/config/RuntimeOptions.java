@@ -94,6 +94,13 @@ public class RuntimeOptions {
         "Use the specified InferenceApplication when running inference."
     );
 
+    public static final Option INFERENCE_OUTPUT_BATCHED_RESULTS = new Option(
+        "runtime.inference.output.batched.results",
+        false,
+        "Whether to output the inferred atoms after inference and organize output by batches."
+        + " This is useful if the neural component is batching."
+    );
+
     public static final Option INFERENCE_OUTPUT_RESULTS = new Option(
         "runtime.inference.output.results",
         true,

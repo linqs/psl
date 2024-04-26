@@ -431,6 +431,8 @@ public class Runtime {
 
         // Run inference.
         boolean runInference = true;
+        int batch = 0;
+        String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();
         while (runInference) {
             DeepPredicate.predictAllDeepPredicates();
 
@@ -439,13 +441,19 @@ public class Runtime {
             log.info("Inference complete.");
 
             if (RuntimeOptions.INFERENCE_OUTPUT_RESULTS.getBoolean()) {
-                String outputDir = RuntimeOptions.INFERENCE_OUTPUT_RESULTS_DIR.getString();
                 if (outputDir == null) {
                     log.info("Writing inferred predicates to stdout.");
                     targetDatabase.outputRandomVariableAtoms();
                 } else {
-                    log.info("Writing inferred predicates to directory: " + outputDir);
-                    targetDatabase.outputRandomVariableAtoms(outputDir);
+                    if (RuntimeOptions.INFERENCE_OUTPUT_BATCHED_RESULTS.getBoolean()) {
+                        String batchOutputDir = FileUtils.makePath(outputDir, String.format("batch_%d", batch));
+
+                        log.info("Writing inferred predicates to directory: " + batchOutputDir);
+                        targetDatabase.outputRandomVariableAtoms(batchOutputDir);
+                    } else {
+                        log.info("Writing inferred predicates to directory: " + outputDir);
+                        targetDatabase.outputRandomVariableAtoms(outputDir);
+                    }
                 }
             }
 
@@ -453,6 +461,8 @@ public class Runtime {
 
             DeepPredicate.nextBatchAllDeepPredicates();
             runInference = !DeepPredicate.isEpochCompleteAllDeepPredicates();
+
+            batch++;
         }
         DeepPredicate.epochEndAllDeepPredicates();
 
