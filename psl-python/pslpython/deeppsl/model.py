@@ -42,46 +42,59 @@ class DeepModel(abc.ABC):
     Higher-level methods that are passed nicely-formatted data for implementing classes to extend.
     """
 
-    def internal_init(self, application, options = {}):
+    def internal_init(self, application, options):
         """
         Initialize the model.
         :param application: The application that is using the model from ["inference", "learning"].
         :param options: Additional options for the model provided by the user in the configuration file.
+        :return:
         """
         raise NotImplementedError("internal_init")
 
-    def internal_fit(self, data, gradients, options = {}):
+    def internal_fit(self, data, gradients, options):
+        """
+        Use the data and gradients to update the model.
+        :param data: The data used to compute the gradients.
+        :param gradients: The gradients computed from the data.
+        :param options: Additional options for the model provided by the user in the configuration file.
+        :return:
+        """
         raise NotImplementedError("internal_fit")
 
-    def internal_next_batch(self, options = {}):
-        # Default to doing nothing.
+    def internal_next_batch(self, options):
+        """
+        Prepare the next batch of data for training.
+        Default to doing nothing.
+        :param options:
+        :return:
+        """
         return
 
-    def internal_train_mode(self, options = {}):
+    def internal_train_mode(self, options):
         """
         Set the model to training mode. Training mode is identified by the _train flag being true.
-        :param options:
+        :param options: Additional options for the model provided by the user in the configuration file.
         """
         self._train = True
         return
 
-    def internal_eval_mode(self, options = {}):
+    def internal_eval_mode(self, options):
         """
-        Set the model to evaluation mode. Evaluation mode is identified by the _train flag being fals.
-        :param options:
+        Set the model to evaluation mode. Evaluation mode is identified by the _train flag being false.
+        :param options: Additional options for the model provided by the user in the configuration file.
         """
         self._train = False
         return
 
-    def internal_epoch_start(self, options = {}):
+    def internal_epoch_start(self, options):
         # Default to doing nothing.
         return
 
-    def internal_epoch_end(self, options = {}):
+    def internal_epoch_end(self, options):
         # Default to doing nothing.
         return
 
-    def internal_is_epoch_complete(self, options = {}):
+    def internal_is_epoch_complete(self, options):
         """
         Default to assuming that the epoch is complete. This is equivalent to assuming a single batch per epoch
         Override this method if your model needs to do something special to determine if the epoch is complete.
@@ -91,43 +104,49 @@ class DeepModel(abc.ABC):
         """
         return True
 
-    def internal_predict(self, data, options = {}):
+    def internal_predict(self, data, options):
+        """
+        Use the data to make predictions.
+        :param data: The data to make predictions with.
+        :param options: Additional options for the model provided by the user in the configuration file.
+        :return:
+        """
         raise NotImplementedError("internal_predict")
 
-    def internal_eval(self, data, options = {}):
+    def internal_eval(self, data, options):
         """
         Default to assuming that the model does have an evaluator and return 0.0.
         Override this method if your model has an evaluator.
         If you do override this method, you must return a dictionary with a key, "loss", that maps to a float where lower is better.
-        :param data:
-        :param options:
+        :param data: The data to evaluate the model with.
+        :param options: Additional options for the model provided by the user in the configuration file.
         :return: A float indicating the loss. Higher is worse.
         """
         return 0.0
 
-    def internal_save(self, options = {}):
+    def internal_save(self, options):
         raise NotImplementedError("internal_save")
 
     """
     Low-level methods that take care of moving around data.
     """
 
-    def init_weight(self, shared_memory_path, application, options = {}):
+    def init_weight(self, shared_memory_path, application, options):
         raise NotImplementedError("init_weight")
 
-    def fit_weight(self, options = {}):
+    def fit_weight(self, options):
         raise NotImplementedError("fit_weight")
 
-    def predict_weight(self, options = {}):
+    def predict_weight(self, options):
         raise NotImplementedError("predict_weight")
 
-    def predict_weight_learn(self, options = {}):
+    def predict_weight_learn(self, options):
         raise NotImplementedError("predict_weight")
 
-    def eval_weight(self, options = {}):
+    def eval_weight(self, options):
         raise NotImplementedError("eval_weight")
 
-    def init_predicate(self, shared_memory_path, application, options = {}):
+    def init_predicate(self, shared_memory_path, application, options):
         """
         Initialize the model.
         :param shared_memory_path: The path to the shared memory file.
@@ -152,9 +171,9 @@ class DeepModel(abc.ABC):
 
         self._data = numpy.array(self._data)
 
-        return self.internal_init(application, options = options)
+        return self.internal_init(application, options)
 
-    def fit_predicate(self, options = {}):
+    def fit_predicate(self, options):
         self._shared_buffer.seek(0)
 
         count = self._read_int()
@@ -163,30 +182,30 @@ class DeepModel(abc.ABC):
 
         data = numpy.array([self._data[index] for index in entity_indexes])
 
-        return self.internal_fit(data, gradients, options = options)
+        return self.internal_fit(data, gradients, options)
 
-    def train_mode(self, options = {}):
-            return self.internal_train_mode(options = options)
+    def train_mode(self, options):
+            return self.internal_train_mode(options)
 
-    def eval_mode(self, options = {}):
-        return self.internal_eval_mode(options = options)
+    def eval_mode(self, options):
+        return self.internal_eval_mode(options)
 
-    def next_batch(self, options = {}):
-        return self.internal_next_batch(options = options)
+    def next_batch(self, options):
+        return self.internal_next_batch(options)
 
-    def epoch_start(self, options = {}):
-        return self.internal_epoch_start(options = options)
+    def epoch_start(self, options):
+        return self.internal_epoch_start(options)
 
-    def epoch_end(self, options = {}):
-        return self.internal_epoch_end(options = options)
+    def epoch_end(self, options):
+        return self.internal_epoch_end(options)
 
-    def is_epoch_complete(self, options = {}):
-        return self.internal_is_epoch_complete(options = options)
+    def is_epoch_complete(self, options):
+        return self.internal_is_epoch_complete(options)
 
-    def predict_predicate(self, options = {}):
-        self._predict_predicate(options = options)
+    def predict_predicate(self, options):
+        self._predict_predicate(options)
 
-    def _predict_predicate(self, options = {}):
+    def _predict_predicate(self, options):
         self._shared_buffer.seek(0)
 
         count = self._read_int()
@@ -194,17 +213,17 @@ class DeepModel(abc.ABC):
 
         data = numpy.array([self._data[index] for index in entity_indexes])
 
-        predictions, response = self.internal_predict(data, options=options)
+        predictions, response = self.internal_predict(data, options)
 
         self._shared_buffer.seek(0)
 
         self._write_int(int(options['class-size']) * len(predictions))
-        predictions = numpy.array(predictions, dtype = '>f4', copy = False)
-        self._shared_buffer.write(predictions.tobytes(order = 'C'))
+        predictions = numpy.array(predictions, dtype='>f4', copy=False)
+        self._shared_buffer.write(predictions.tobytes(order='C'))
 
         return response
 
-    def eval_predicate(self, options = {}):
+    def eval_predicate(self, options):
         self._shared_buffer.seek(0)
 
         count = self._read_int()
@@ -212,10 +231,10 @@ class DeepModel(abc.ABC):
 
         data = numpy.array([self._data[index] for index in entity_indexes])
 
-        return self.internal_eval(data, options=options)
+        return self.internal_eval(data, options)
 
-    def save(self, options = {}):
-        return self.internal_save(options=options)
+    def save(self, options):
+        return self.internal_save(options)
 
     """
     Helper methods.

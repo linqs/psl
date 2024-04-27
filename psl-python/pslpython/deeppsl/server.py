@@ -107,9 +107,9 @@ class ConnectionHandler(object):
 
         self._model = self._load_model(os.path.join(options['relative-dir'], options['model-path']))
         if deep_model == 'DeepModelPredicate':
-            return self._model.init_predicate(shared_memory_path, application, options=options)
+            return self._model.init_predicate(shared_memory_path, application, options)
         elif deep_model == 'DeepModelWeight':
-            return self._model.init_weight(shared_memory_path, application, options=options)
+            return self._model.init_weight(shared_memory_path, application, options)
         else:
             raise ValueError("Unknown deep model type in init: '%s'." % (deep_model,))
 
@@ -118,38 +118,38 @@ class ConnectionHandler(object):
         options = request.get('options', {})
 
         if deep_model == 'DeepModelPredicate':
-            return self._model.fit_predicate(options=options)
+            return self._model.fit_predicate(options)
         elif deep_model == 'DeepModelWeight':
-            return self._model.fit_weight(options=options)
+            return self._model.fit_weight(options)
         else:
             raise ValueError("Unknown deep model type in fit: '%s'." % (deep_model,))
 
     def _train_mode(self, request):
-        return self._model.train_mode(options=request.get('options', {}))
+        return self._model.train_mode(request.get('options', {}))
 
     def _eval_mode(self, request):
-        return self._model.eval_mode(options=request.get('options', {}))
+        return self._model.eval_mode(request.get('options', {}))
 
     def _next_batch(self, request):
-        return self._model.next_batch(options=request.get('options', {}))
+        return self._model.next_batch(request.get('options', {}))
 
     def _epoch_start(self, request):
-        return self._model.epoch_start(options=request.get('options', {}))
+        return self._model.epoch_start(request.get('options', {}))
 
     def _epoch_end(self, request):
-        return self._model.epoch_end(options=request.get('options', {}))
+        return self._model.epoch_end(request.get('options', {}))
 
     def _is_epoch_complete(self, request):
-        return self._model.is_epoch_complete(options=request.get('options', {}))
+        return self._model.is_epoch_complete(request.get('options', {}))
 
     def _predict(self, request):
         deep_model = request['deep_model']
         options = request.get('options', {})
 
         if deep_model == 'DeepModelPredicate':
-            return self._model.predict_predicate(options=options)
+            return self._model.predict_predicate(options)
         elif deep_model == 'DeepModelWeight':
-            return self._model.predict_weight(options=options)
+            return self._model.predict_weight(options)
         else:
             raise ValueError("Unknown deep model type in predict: '%s'." % (deep_model,))
 
@@ -158,15 +158,15 @@ class ConnectionHandler(object):
         options = request.get('options', {})
 
         if deep_model == 'DeepModelPredicate':
-            return self._model.eval_predicate(options=options)
+            return self._model.eval_predicate(options)
         elif deep_model == 'DeepModelWeight':
-            return self._model.eval_weight(options=options)
+            return self._model.eval_weight(options)
         else:
             raise ValueError("Unknown deep model type in eval: '%s'." % (deep_model,))
 
     def _save(self, request):
         options = request.get('options', {})
-        return self._model.save(options=options)
+        return self._model.save(options)
 
     def _close(self):
         if self._model is not None:

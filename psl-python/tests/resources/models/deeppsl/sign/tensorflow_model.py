@@ -32,7 +32,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         self._model = None
         self._metrics = ['categorical_accuracy']
 
-    def internal_init(self, application, options = {}):
+    def internal_init(self, application, options):
         layers = [
             tensorflow.keras.layers.Input((int(options['input_shape']), )),
             tensorflow.keras.layers.Dense(int(options['output_shape']), activation = 'softmax'),
@@ -41,25 +41,25 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         model = tensorflow.keras.Sequential(layers)
 
         model.compile(
-            optimizer = tensorflow.keras.optimizers.Adam(learning_rate = float(options['learning_rate'])),
-            loss = tensorflow.keras.losses.CategoricalCrossentropy(from_logits = False),
-            metrics = self._metrics
+            optimizer=tensorflow.keras.optimizers.Adam(learning_rate=float(options['learning_rate'])),
+            loss=tensorflow.keras.losses.CategoricalCrossentropy(from_logits=False),
+            metrics=self._metrics
         )
 
         self._model = model
         return {}
 
-    def internal_fit(self, data, gradients, options = {}):
+    def internal_fit(self, data, gradients, options):
         data = self._prepare_data(data)
-        self._model.fit(data[0], data[1], epochs = int(options['epochs']), verbose=0)
+        self._model.fit(data[0], data[1], epochs=int(options['epochs']), verbose=0)
         return {}
 
-    def internal_predict(self, data, options = {}):
+    def internal_predict(self, data, options):
         data = self._prepare_data(data)
         predictions = self._model.predict(numpy.array(data[0]), verbose=0)
         return predictions, {}
 
-    def internal_eval(self, data, options = {}):
+    def internal_eval(self, data, options):
         data = self._prepare_data(data)
         predictions, _ = self.internal_predict(data, options=options)
         results = {'loss': self._model.compiled_loss(tensorflow.constant(predictions, dtype=tensorflow.float32), tensorflow.constant(data[1], dtype=tensorflow.float32)),
@@ -67,14 +67,14 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
         return results
 
-    def internal_save(self, options = {}):
+    def internal_save(self, options):
         if 'save_path' not in options:
             return {}
 
-        self._model.save(options['save_path'], save_format = 'tf')
+        self._model.save(options['save_path'], save_format='tf')
         return {}
 
-    def load(self, options = {}):
+    def load(self, options):
         self._model = tensorflow.keras.models.load_model(options['load_path'])
         return {}
 
@@ -82,7 +82,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         if len(data) == 2:
             return data
 
-        return [numpy.asarray(data[:, :-1]), numpy.asarray([[1, 0] if label == 0 else [0, 1] for label in data[:,-1]])]
+        return numpy.array([numpy.asarray(data[:, :-1]), numpy.asarray([[1, 0] if label == 0 else [0, 1] for label in data[:, -1]])])
 
 
 def calculate_metrics(y_pred, y_truth, metrics):

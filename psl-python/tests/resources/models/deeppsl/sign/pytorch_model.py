@@ -34,7 +34,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         self._loss = None
         self._optimizer = None
 
-    def internal_init(self, application, options = {}):
+    def internal_init(self, application, options):
         class SignPytorchNetwork(torch.nn.Module):
             def __init__(self, input_size, output_size):
                 _import()
@@ -54,7 +54,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
 
         return {}
 
-    def internal_fit(self, data, gradients, options = {}, verbose=0):
+    def internal_fit(self, data, gradients, options, verbose=0):
         features = torch.FloatTensor(data[0])
         labels = torch.FloatTensor(data[1])
 
@@ -68,24 +68,24 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
             self._optimizer.step()
         return {}
 
-    def internal_predict(self, data, options = {}, verbose=0):
+    def internal_predict(self, data, options, verbose=0):
         features = torch.FloatTensor(data[0])
         predictions = self._model(features)
         return predictions, {}
 
-    def internal_eval(self, data, options = {}):
-        predictions, _ = self.internal_predict(data, options=options)
+    def internal_eval(self, data, options):
+        predictions, _ = self.internal_predict(data, options)
         results = {'loss': self._loss(self._model(torch.FloatTensor(data[0])), torch.FloatTensor(data[1])).item(),
                    'metrics': calculate_metrics(predictions.detach().numpy(), data[1], self._metrics)}
 
         return results
 
-    def internal_save(self, options = {}):
+    def internal_save(self, options):
         torch.save(self._model.state_dict(), options['save_path'])
         return {}
 
-    def load(self, options = {}):
-        self.internal_init(None, options=options)
+    def load(self, options):
+        self.internal_init(None, options)
         self._model.load_state_dict(torch.load(options['load_path']))
         return {}
 
