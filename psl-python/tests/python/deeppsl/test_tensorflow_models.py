@@ -69,7 +69,7 @@ class TestTensorflowModels(tests.python.base_test.PSLTest):
         post_train_results = sign_model.internal_eval(test_data, options=options)
 
         with tempfile.TemporaryDirectory(suffix = '_TestNeuPSL') as temp_dir:
-            save_path = os.path.join(temp_dir, 'tensorflow_model')
+            save_path = os.path.join(temp_dir, 'tensorflow_model.h5')
             options['save_path'] = save_path
             options['load_path'] = save_path
             sign_model.internal_save(options=options)

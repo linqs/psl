@@ -71,7 +71,7 @@ class SignModel(pslpython.deeppsl.model.DeepModel):
         if 'save_path' not in options:
             return {}
 
-        self._model.save(options['save_path'], save_format='tf')
+        self._model.save(options['save_path'])
         return {}
 
     def load(self, options):
