@@ -374,7 +374,11 @@ public class Runtime {
         }
 
         if (RuntimeOptions.INFERENCE_CLEAR_RULES.getBoolean()) {
-            model.clear();
+            if (model == null) {
+                log.warn("Option {} set, but there is no model from learning.", RuntimeOptions.INFERENCE_CLEAR_RULES.name());
+            } else {
+                model.clear();
+            }
         }
 
         // If a model was passed in, then it was learned from the common rules (so don't include them).
