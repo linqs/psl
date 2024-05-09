@@ -21,7 +21,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 
 /**
  * A general function that can handle various cases.
- * The function is some linear combination of terms.
+ * The function is a linear combination of terms.
  * All constant values are merged together into a single constant.
  * Note that the design of this function is to reduce the number of
  * allocations at grounding time.
@@ -40,18 +40,17 @@ public class GeneralFunction implements FunctionTerm {
     private boolean constantTerms;
     private boolean linearTerms;
 
-    // Functions that are "non-negative" are wrapped with a max(0.0, X).
-    // This is the hinge for logical rules.
-    private boolean nonNegative;
+    // Functions that are "hinge" are wrapped with a max(0.0, X).
+    private boolean hinge;
     private boolean squared;
 
-    public GeneralFunction(boolean nonNegative, boolean squared, int maxSize, boolean mergeConstants) {
+    public GeneralFunction(boolean hinge, boolean squared, int maxSize, boolean mergeConstants) {
         coefficients = new float[maxSize];
         terms = new FunctionTerm[maxSize];
         size = 0;
         constant = 0.0f;
 
-        this.nonNegative = nonNegative;
+        this.hinge = hinge;
         this.squared = squared;
         this.mergeConstants = mergeConstants;
         constantTerms = true;
@@ -66,8 +65,8 @@ public class GeneralFunction implements FunctionTerm {
         return squared;
     }
 
-    public boolean isNonNegative() {
-        return nonNegative;
+    public boolean isHinge() {
+        return hinge;
     }
 
     @Override
@@ -84,8 +83,8 @@ public class GeneralFunction implements FunctionTerm {
         this.squared = squared;
     }
 
-    public void setNonNegative(boolean nonNegative) {
-        this.nonNegative = nonNegative;
+    public void setHinge(boolean hinge) {
+        this.hinge = hinge;
     }
 
     /**
@@ -138,7 +137,7 @@ public class GeneralFunction implements FunctionTerm {
             val += terms[i].getValue() * coefficients[i];
         }
 
-        if (nonNegative && val < 0.0) {
+        if (hinge && val < 0.0) {
             return 0.0f;
         }
 
@@ -160,7 +159,7 @@ public class GeneralFunction implements FunctionTerm {
             val += coefficients[i] * values[i];
         }
 
-        if (nonNegative && val < 0.0) {
+        if (hinge && val < 0.0) {
             return 0.0f;
         }
 
@@ -191,7 +190,7 @@ public class GeneralFunction implements FunctionTerm {
             }
         }
 
-        if (nonNegative && val < 0.0) {
+        if (hinge && val < 0.0) {
             return 0.0f;
         }
 
@@ -202,7 +201,7 @@ public class GeneralFunction implements FunctionTerm {
     public String toString() {
         StringBuilder string = new StringBuilder();
 
-        if (nonNegative) {
+        if (hinge) {
             string.append("max(0.0, ");
         } else {
             string.append("(");

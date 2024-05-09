@@ -20,7 +20,7 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 import org.linqs.psl.util.FloatMatrix;
@@ -74,19 +74,19 @@ public class ADMMObjectiveTerm extends ReasonerTerm {
     private static final Map<Integer, FloatMatrix> lowerTriangleCache = new HashMap<Integer, FloatMatrix>();
 
     /**
-     * Construct an ADMM objective term by taking ownership of the hyperplane and all members of it.
+     * Construct an ADMM objective term by taking ownership of the linearExpression and all members of it.
      * Use the static creation methods.
      */
-    public ADMMObjectiveTerm(Hyperplane hyperplane, Rule rule,
+    public ADMMObjectiveTerm(LinearExpression linearExpression, Rule rule,
                              boolean squared, boolean hinge,
                              FunctionComparator comparator) {
-        super(hyperplane, rule, squared, hinge, comparator);
+        super(linearExpression, rule, squared, hinge, comparator);
 
         variableValues = new float[size];
         variableLagranges = new float[size];
 
         // We assume all observations have been merged.
-        GroundAtom[] consensusVariables = hyperplane.getVariables();
+        GroundAtom[] consensusVariables = linearExpression.getVariables();
         for (int i = 0; i < size; i++) {
             variableValues[i] = consensusVariables[i].getValue();
             variableLagranges[i] = 0.0f;
@@ -116,24 +116,24 @@ public class ADMMObjectiveTerm extends ReasonerTerm {
                 rule, squared, hinge, comparator, variableValues, variableLagranges);
     }
 
-    public static ADMMObjectiveTerm createLinearConstraintTerm(Hyperplane hyperplane, Rule rule, FunctionComparator comparator) {
-        return new ADMMObjectiveTerm(hyperplane, rule, false, false, comparator);
+    public static ADMMObjectiveTerm createLinearConstraintTerm(LinearExpression linearExpression, Rule rule, FunctionComparator comparator) {
+        return new ADMMObjectiveTerm(linearExpression, rule, false, false, comparator);
     }
 
-    public static ADMMObjectiveTerm createLinearLossTerm(Hyperplane hyperplane, Rule rule) {
-        return new ADMMObjectiveTerm(hyperplane, rule, false, false, null);
+    public static ADMMObjectiveTerm createLinearLossTerm(LinearExpression linearExpression, Rule rule) {
+        return new ADMMObjectiveTerm(linearExpression, rule, false, false, null);
     }
 
-    public static ADMMObjectiveTerm createHingeLossTerm(Hyperplane hyperplane, Rule rule) {
-        return new ADMMObjectiveTerm(hyperplane,rule, false, true, null);
+    public static ADMMObjectiveTerm createHingeLossTerm(LinearExpression linearExpression, Rule rule) {
+        return new ADMMObjectiveTerm(linearExpression,rule, false, true, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredLinearLossTerm(Hyperplane hyperplane, Rule rule) {
-        return new ADMMObjectiveTerm(hyperplane, rule, true, false, null);
+    public static ADMMObjectiveTerm createSquaredLinearLossTerm(LinearExpression linearExpression, Rule rule) {
+        return new ADMMObjectiveTerm(linearExpression, rule, true, false, null);
     }
 
-    public static ADMMObjectiveTerm createSquaredHingeLossTerm(Hyperplane hyperplane, Rule rule) {
-        return new ADMMObjectiveTerm(hyperplane, rule, true, true, null);
+    public static ADMMObjectiveTerm createSquaredHingeLossTerm(LinearExpression linearExpression, Rule rule) {
+        return new ADMMObjectiveTerm(linearExpression, rule, true, true, null);
     }
 
     public void updateLagrange(float stepSize, float[] consensusValues) {

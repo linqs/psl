@@ -28,14 +28,13 @@ import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.Collection;
 
 /**
  * A base term generator.
- * Children of this will always be provided with hyperplanes for creating terms.
- * The exact interpretation of the hyperplanes is up to the child classes.
+ * Children of this will always be provided with linearExpressions for creating terms.
+ * The exact interpretation of the linearExpressions is up to the child classes.
  */
 public abstract class TermGenerator<T extends ReasonerTerm> {
     private static final Logger log = Logger.getLogger(TermGenerator.class);
@@ -61,107 +60,104 @@ public abstract class TermGenerator<T extends ReasonerTerm> {
      * In most cases only one term will be added,
      * but it is possible for zero or more terms to be added.
      *
-     * For each term added, a hyperplane will also be added
-     * (usually the same hyperplane, and only if newHyperplanes is not null).
-     * The terms own their respective (by index) hyperplane.
-     *
      * @return the number of terms added to the supplied collection.
      */
-    public int createTerm(GroundRule groundRule, Collection<T> newTerms, Collection<Hyperplane> newHyperplanes) {
+    public int createTerm(GroundRule groundRule, Collection<T> newTerms) {
         int count = 0;
-        Hyperplane hyperplane = null;
+        LinearExpression linearExpression = null;
 
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition(mergeConstants);
-            hyperplane = processHyperplane(function);
-            if (hyperplane == null) {
+            linearExpression = processLinearExpression(function);
+            if (linearExpression == null) {
                 return 0;
             }
 
             // Non-negative functions have a hinge.
-            count = createLossTerm(newTerms, function.isNonNegative(), function.isSquared(), groundRule, hyperplane);
+            count = createLossTerm(newTerms, function.isHinge(), function.isSquared(), groundRule, linearExpression);
         } else if (groundRule instanceof UnweightedGroundRule) {
             ConstraintTerm constraint = ((UnweightedGroundRule)groundRule).getConstraintDefinition(mergeConstants);
             GeneralFunction function = constraint.getFunction();
-            hyperplane = processHyperplane(function);
-            if (hyperplane == null) {
+            linearExpression = processLinearExpression(function);
+            if (linearExpression == null) {
                 return 0;
             }
 
-            hyperplane.setConstant((float)(constraint.getValue() + hyperplane.getConstant()));
-            count = createLinearConstraintTerm(newTerms, groundRule, hyperplane, constraint.getComparator());
+            linearExpression.setConstant((float)(constraint.getValue() + linearExpression.getConstant()));
+            count = createLinearConstraintTerm(newTerms, groundRule, linearExpression, constraint.getComparator());
         } else {
             throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
-        }
-
-        if (newHyperplanes != null) {
-            for (int i = 0; i < count; i++) {
-                newHyperplanes.add(hyperplane);
-            }
         }
 
         return count;
     }
 
     /**
-     * Construct a hyperplane from a general function.
+     * Construct a linear expression from a general function.
      * Will return null if the term is trivial and should be abandoned.
      */
-    private Hyperplane processHyperplane(GeneralFunction sum) {
-        Hyperplane hyperplane = new Hyperplane(sum.size(), -1.0f * (float)sum.getConstant());
+    private LinearExpression processLinearExpression(GeneralFunction generalFunction) {
+        LinearExpression linearExpression = new LinearExpression(generalFunction.size(), -1.0f * (float)generalFunction.getConstant());
 
-        for (int i = 0; i < sum.size(); i++) {
-            float coefficient = (float)sum.getCoefficient(i);
-            FunctionTerm term = sum.getTerm(i);
+        for (int i = 0; i < generalFunction.size(); i++) {
+            float coefficient = (float)generalFunction.getCoefficient(i);
+            FunctionTerm term = generalFunction.getTerm(i);
 
             if ((term instanceof RandomVariableAtom) || (!mergeConstants && term instanceof ObservedAtom)) {
                 GroundAtom variable = (GroundAtom)term;
 
-                // Check to see if we have seen this variable before in this hyperplane.
+                // Check to see if we have seen this variable before in this linear expression.
                 // Note that we are checking for existence in a List (O(n)), but there are usually a small number of
-                // variables per hyperplane.
-                int localIndex = hyperplane.indexOfVariable(variable);
+                // variables per linear expression.
+                int localIndex = linearExpression.indexOfVariable(variable);
                 if (localIndex != -1) {
-                    // If this function came from a logical rule
-                    // and the sign of the current coefficient and the coefficient of this variable do not match,
-                    // then this term is trivial.
-                    // Recall that all logical rules are disjunctions with only +1 and -1 as coefficients.
-                    // A mismatch in signs for the same variable means that a ground atom appeared twice,
-                    // once as a positive atom and once as a negative atom: Foo('a') || !Foo('a').
-                    if (sum.isNonNegative() && !MathUtils.signsMatch(hyperplane.getCoefficient(localIndex), coefficient)) {
-                        return null;
-                    }
-
                     // If the local variable already exists, just add to its coefficient.
-                    hyperplane.appendCoefficient(localIndex, coefficient);
+                    linearExpression.appendCoefficient(localIndex, coefficient);
                 } else {
-                    hyperplane.addTerm(variable, coefficient);
+                    linearExpression.addTerm(variable, coefficient);
                 }
             } else if (term.isConstant()) {
-                // Subtract because hyperplane is stored as coeffs^T * x = constant.
-                hyperplane.setConstant(hyperplane.getConstant() - (float)(coefficient * term.getValue()));
+                // Subtract because linear expression is stored as coeffs^T * x - constant.
+                linearExpression.setConstant(linearExpression.getConstant() - (float)(coefficient * term.getValue()));
             } else {
-                throw new IllegalArgumentException("Unexpected summand: " + sum + "[" + i + "] (" + term + ").");
+                throw new IllegalArgumentException("Unexpected summand: " + generalFunction + "[" + i + "] (" + term + ").");
             }
         }
 
         // This should be caught further up the chain, but we will check for full observed terms.
-        if (hyperplane.size() == 0) {
+        if (linearExpression.size() == 0) {
             return null;
         }
 
-        return hyperplane;
+        // If the linear expression is wrapped in a hinge,
+        // and the constant is greater than the upper bound of the inner product,
+        // then the term is trivial.
+        if (generalFunction.isHinge()) {
+            // Compute the upper bound of the inner product.
+            float upperBound = 0.0f;
+            for (int i = 0; i < linearExpression.size(); i++) {
+                if (linearExpression.getCoefficient(i) > 0.0f) {
+                    upperBound += linearExpression.getCoefficient(i);
+                }
+            }
+
+            if (upperBound <= linearExpression.getConstant()) {
+                return null;
+            }
+        }
+
+        return linearExpression;
     }
 
     /**
-     * Create a term from a ground rule and hyperplane, and add it to the collection of new terms.
+     * Create a term from a ground rule and linearExpression, and add it to the collection of new terms.
      * Non-hinge terms are linear combinations (ala arithmetic rules).
      * Non-squared terms are linear.
      *
      * @return the number of terms added to the supplied collection.
      */
     public abstract int createLossTerm(Collection<T> newTerms,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane);
+            boolean isHinge, boolean isSquared, GroundRule groundRule, LinearExpression linearExpression);
 
     /**
      * Create a hard constraint term, and add it to the collection of new terms.
@@ -169,5 +165,5 @@ public abstract class TermGenerator<T extends ReasonerTerm> {
      * @return the number of terms added to the supplied collection.
      */
     public abstract int createLinearConstraintTerm(Collection<T> newTerms,
-            GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator);
+                                                   GroundRule groundRule, LinearExpression linearExpression, FunctionComparator comparator);
 }

@@ -17,10 +17,6 @@
  */
 package org.linqs.psl.database;
 
-import org.linqs.psl.database.DataStore;
-import org.linqs.psl.database.Database;
-import org.linqs.psl.database.DatabaseQuery;
-import org.linqs.psl.database.ResultList;
 import org.linqs.psl.database.loading.Inserter;
 import org.linqs.psl.database.rdbms.PredicateInfo;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -32,7 +28,6 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.function.ExternalFunction;
 import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;

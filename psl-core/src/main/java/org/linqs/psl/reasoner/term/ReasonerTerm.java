@@ -66,7 +66,7 @@ public abstract class ReasonerTerm {
     protected boolean squared;
     protected boolean hinge;
 
-    public ReasonerTerm(Hyperplane hyperplane, Rule rule,
+    public ReasonerTerm(LinearExpression linearExpression, Rule rule,
                         boolean squared, boolean hinge,
                         FunctionComparator comparator) {
         this.active = true;
@@ -77,12 +77,12 @@ public abstract class ReasonerTerm {
         this.hinge = hinge;
         this.termType = getTermType();
 
-        this.size = (short)hyperplane.size();
-        this.coefficients = hyperplane.getCoefficients();
-        this.constant = hyperplane.getConstant();
+        this.size = (short) linearExpression.size();
+        this.coefficients = linearExpression.getCoefficients();
+        this.constant = linearExpression.getConstant();
 
         this.atomIndexes = new int[size];
-        GroundAtom[] atoms = hyperplane.getVariables();
+        GroundAtom[] atoms = linearExpression.getVariables();
         for (int i = 0; i < size; i++) {
             atomIndexes[i] = atoms[i].getIndex();
         }

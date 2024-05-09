@@ -20,12 +20,12 @@ package org.linqs.psl.reasoner.gradientdescent.term;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 public class GradientDescentObjectiveTerm extends ReasonerTerm {
-    public GradientDescentObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge, Hyperplane hyperplane) {
-        super(hyperplane, rule, squared, hinge, null);
+    public GradientDescentObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge, LinearExpression linearExpression) {
+        super(linearExpression, rule, squared, hinge, null);
     }
 
     public GradientDescentObjectiveTerm(short size, float[] coefficients, float constant, int[] atomIndexes,

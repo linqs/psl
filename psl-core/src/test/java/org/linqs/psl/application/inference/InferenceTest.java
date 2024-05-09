@@ -458,7 +458,7 @@ public abstract class InferenceTest extends PSLBaseTest {
 
     @Test
     public void testAtomWithConstant() {
-        // Nice(A) & Nice(B) -> Friends(A, B)
+        // Nice(A) & Nice(B) & Friends('Alice', B) && (A != B) -> Friends(A, B)
         info.model.addRule(new WeightedLogicalRule(
             new Implication(
                 new Conjunction(

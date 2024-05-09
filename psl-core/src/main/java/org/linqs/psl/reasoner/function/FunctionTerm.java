@@ -17,8 +17,6 @@
  */
 package org.linqs.psl.reasoner.function;
 
-import java.util.Map;
-
 /**
  * A numeric function.
  */

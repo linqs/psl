@@ -197,7 +197,7 @@ public abstract class StreamingGroundingIterator<T extends StreamingTerm> implem
                 return;
             }
 
-            parentStore.getTermGenerator().createTerm(groundRule, newTerms, null);
+            parentStore.getTermGenerator().createTerm(groundRule, newTerms);
         }
     }
 

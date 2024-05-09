@@ -21,23 +21,23 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.util.ArrayUtils;
 
 /**
- * Information representing a raw hyperplane.
- * The hyperplane generally looks like C x V = c,
+ * Information representing a linear expression.
+ * The linear expression generally looks like C x V - c,
  * where C is the coefficients, V is the variables (ground atoms), and c is a constant.
  * How these values are interpreted (e.g. how the equal operator is treated) is up to downstream terms.
  * This type is more for carrying information than evaluating it.
  */
-public class Hyperplane {
+public class LinearExpression {
     private GroundAtom[] variables;
     private float[] coefficients;
     private int size;
     private float constant;
 
-    public Hyperplane(int maxSize, float constant) {
+    public LinearExpression(int maxSize, float constant) {
         this(new GroundAtom[maxSize], new float[maxSize], constant, 0);
     }
 
-    public Hyperplane(GroundAtom[] variables, float[] coefficients, float constant, int size) {
+    public LinearExpression(GroundAtom[] variables, float[] coefficients, float constant, int size) {
         this.variables = variables;
         this.coefficients = coefficients;
         this.constant = constant;

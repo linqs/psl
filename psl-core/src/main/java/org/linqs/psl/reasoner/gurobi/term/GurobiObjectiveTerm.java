@@ -19,14 +19,14 @@ package org.linqs.psl.reasoner.gurobi.term;
 
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 public class GurobiObjectiveTerm extends ReasonerTerm {
-    public GurobiObjectiveTerm(Hyperplane hyperplane, Rule rule,
-                                 boolean squared, boolean hinge,
-                                 FunctionComparator comparator) {
-        super(hyperplane, rule, squared, hinge, comparator);
+    public GurobiObjectiveTerm(LinearExpression linearExpression, Rule rule,
+                               boolean squared, boolean hinge,
+                               FunctionComparator comparator) {
+        super(linearExpression, rule, squared, hinge, comparator);
     }
 
     public GurobiObjectiveTerm(short size, float[] coefficients, float constant, int[] atomIndexes,

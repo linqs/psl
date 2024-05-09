@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.runtime;
 
-import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.Rule;

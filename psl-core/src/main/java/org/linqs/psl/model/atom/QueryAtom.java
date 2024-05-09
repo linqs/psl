@@ -17,12 +17,10 @@
  */
 package org.linqs.psl.model.atom;
 
-import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.ResultList;
 import org.linqs.psl.model.predicate.FunctionalPredicate;
 import org.linqs.psl.model.predicate.Predicate;
-import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Term;

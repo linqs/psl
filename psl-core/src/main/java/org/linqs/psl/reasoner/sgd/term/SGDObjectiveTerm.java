@@ -21,7 +21,7 @@ import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.streaming.StreamingTerm;
 
 import java.nio.ByteBuffer;
@@ -31,10 +31,10 @@ import java.nio.ByteBuffer;
  */
 public class SGDObjectiveTerm extends StreamingTerm {
     /**
-     * Construct a SGD objective term by taking ownership of the hyperplane and all members of it.
+     * Construct a SGD objective term by taking ownership of the linearExpression and all members of it.
      */
-    public SGDObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge, Hyperplane hyperplane) {
-        super(hyperplane, rule, squared, hinge, null);
+    public SGDObjectiveTerm(WeightedRule rule, boolean squared, boolean hinge, LinearExpression linearExpression) {
+        super(linearExpression, rule, squared, hinge, null);
     }
 
     public SGDObjectiveTerm(short size, float[] coefficients, float constant, int[] atomIndexes,

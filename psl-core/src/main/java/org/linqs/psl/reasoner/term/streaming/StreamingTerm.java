@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.term.streaming;
 
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
@@ -28,9 +28,9 @@ import java.nio.ByteBuffer;
  * A term that may be used in a streaming term store
  */
 public abstract class StreamingTerm extends ReasonerTerm {
-    public StreamingTerm(Hyperplane hyperplane, Rule rule, boolean squared, boolean hinge,
+    public StreamingTerm(LinearExpression linearExpression, Rule rule, boolean squared, boolean hinge,
                          FunctionComparator comparator) {
-        super(hyperplane, rule, squared, hinge, comparator);
+        super(linearExpression, rule, squared, hinge, comparator);
     }
 
     public StreamingTerm(short size, float[] coefficients, float constant, int[] atomIndexes,

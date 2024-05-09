@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.gurobi.term;
 
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.util.Logger;
 
@@ -41,17 +41,17 @@ public class GurobiTermGenerator extends TermGenerator<GurobiObjectiveTerm> {
 
     @Override
     public int createLossTerm(Collection<GurobiObjectiveTerm> newTerms,
-                              boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
+                              boolean isHinge, boolean isSquared, GroundRule groundRule, LinearExpression linearExpression) {
         // Interpret all loss terms as hinges.
         // This is safe for Lukasiewicz interpretation of logical rules and the current semantics for arithmetic rules.
-        newTerms.add(new GurobiObjectiveTerm(hyperplane, groundRule.getRule(), isSquared, true, null));
+        newTerms.add(new GurobiObjectiveTerm(linearExpression, groundRule.getRule(), isSquared, true, null));
         return 1;
     }
 
     @Override
     public int createLinearConstraintTerm(Collection<GurobiObjectiveTerm> newTerms,
-                                          GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
-        newTerms.add(new GurobiObjectiveTerm(hyperplane, groundRule.getRule(), false, true, comparator));
+                                          GroundRule groundRule, LinearExpression linearExpression, FunctionComparator comparator) {
+        newTerms.add(new GurobiObjectiveTerm(linearExpression, groundRule.getRule(), false, true, comparator));
         return 1;
     }
 }

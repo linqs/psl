@@ -106,9 +106,8 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
         ThreadResources resources = (ThreadResources)Parallel.getThreadObject(threadResourceKey);
 
         resources.newTerms.clear();
-        resources.newHyperplane.clear();
 
-        termGenerator.createTerm(groundRule, resources.newTerms, resources.newHyperplane);
+        termGenerator.createTerm(groundRule, resources.newTerms);
 
         int count = 0;
         for (int i = 0; i < resources.newTerms.size(); i++) {
@@ -116,7 +115,6 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
         }
 
         resources.newTerms.clear();
-        resources.newHyperplane.clear();
 
         return count;
     }
@@ -251,11 +249,9 @@ public abstract class TermStore<T extends ReasonerTerm> implements Iterable<T> {
 
     private class ThreadResources {
         public List<T> newTerms;
-        public List<Hyperplane> newHyperplane;
 
         public ThreadResources() {
             newTerms = new ArrayList<T>();
-            newHyperplane = new ArrayList<Hyperplane>();
         }
     }
 

@@ -20,7 +20,7 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.util.Logger;
 
@@ -49,14 +49,14 @@ public class SGDTermGenerator extends TermGenerator<SGDObjectiveTerm> {
 
     @Override
     public int createLossTerm(Collection<SGDObjectiveTerm> newTerms,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
-        newTerms.add(new SGDObjectiveTerm(((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, hyperplane));
+            boolean isHinge, boolean isSquared, GroundRule groundRule, LinearExpression linearExpression) {
+        newTerms.add(new SGDObjectiveTerm(((WeightedGroundRule)groundRule).getRule(), isSquared, isHinge, linearExpression));
         return 1;
     }
 
     @Override
     public int createLinearConstraintTerm(Collection<SGDObjectiveTerm> newTerms,
-            GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
+                                          GroundRule groundRule, LinearExpression linearExpression, FunctionComparator comparator) {
         if (warnOnConstraint) {
             log.warn("SGD does not support hard constraints, i.e. " + groundRule);
             warnOnConstraint = false;

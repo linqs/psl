@@ -20,7 +20,7 @@ package org.linqs.psl.reasoner.duallcqp.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermState;
 
@@ -52,10 +52,10 @@ public class DualLCQPObjectiveTerm extends ReasonerTerm {
 
     protected boolean isEqualityConstraint;
 
-    public DualLCQPObjectiveTerm(Hyperplane hyperplane, Rule rule,
+    public DualLCQPObjectiveTerm(LinearExpression linearExpression, Rule rule,
                                  boolean squared, boolean hinge,
                                  FunctionComparator comparator) {
-        super(hyperplane, rule, squared, hinge, comparator);
+        super(linearExpression, rule, squared, hinge, comparator);
 
         dualVariable = 0.0;
         slackBoundDualVariable = 0.0;

@@ -25,7 +25,7 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.FakeRule;
 import org.linqs.psl.model.term.UniqueIntID;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.Test;
@@ -235,24 +235,24 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         ADMMObjectiveTerm term = null;
         if (comparator != null) {
             term = ADMMObjectiveTerm.createLinearConstraintTerm(
-                    new Hyperplane(variables, coeffs, constant, consensus.length),
+                    new LinearExpression(variables, coeffs, constant, consensus.length),
                     null,
                     comparator);
         } else if (!squared && !hinge) {
             term = ADMMObjectiveTerm.createLinearLossTerm(
-                    new Hyperplane(variables, coeffs, 0.0f, consensus.length),
+                    new LinearExpression(variables, coeffs, 0.0f, consensus.length),
                     new FakeRule(weight, squared));
         } else if (!squared && hinge) {
             term = ADMMObjectiveTerm.createHingeLossTerm(
-                    new Hyperplane(variables, coeffs, constant, consensus.length),
+                    new LinearExpression(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         } else if (squared && !hinge) {
             term = ADMMObjectiveTerm.createSquaredLinearLossTerm(
-                    new Hyperplane(variables, coeffs, constant, consensus.length),
+                    new LinearExpression(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         } else if (squared && hinge) {
             term = ADMMObjectiveTerm.createSquaredHingeLossTerm(
-                    new Hyperplane(variables, coeffs, constant, consensus.length),
+                    new LinearExpression(variables, coeffs, constant, consensus.length),
                     new FakeRule(weight, squared));
         }
 

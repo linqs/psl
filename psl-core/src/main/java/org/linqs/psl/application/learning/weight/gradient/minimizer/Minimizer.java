@@ -612,6 +612,8 @@ public abstract class Minimizer extends GradientDescent {
         float constraintViolation = Math.max(0.0f, objectiveDifference - constraintRelaxationConstant);
         float supervisedLoss = computeSupervisedLoss();
 
+        log.trace("Objective Difference: {}, Constraint Violation: {}, Supervised Loss: {}", objectiveDifference, constraintViolation, supervisedLoss);
+
         return (squaredPenaltyCoefficient / 2.0f) * (float)Math.pow(constraintViolation, 2.0f)
                 + linearPenaltyCoefficient * (constraintViolation)
                 + supervisedLoss

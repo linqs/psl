@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.duallcqp.term;
 
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.TermGenerator;
 
 import java.util.Collection;
@@ -38,17 +38,17 @@ public class DualLCQPTermGenerator extends TermGenerator<DualLCQPObjectiveTerm> 
 
     @Override
     public int createLossTerm(Collection<DualLCQPObjectiveTerm> newTerms,
-                              boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
+                              boolean isHinge, boolean isSquared, GroundRule groundRule, LinearExpression linearExpression) {
         // Interpret all loss terms as hinges.
         // This is safe for Lukasiewicz interpretation of logical rules and the current semantics for arithmetic rules.
-        newTerms.add(new DualLCQPObjectiveTerm(hyperplane, groundRule.getRule(), isSquared, true, null));
+        newTerms.add(new DualLCQPObjectiveTerm(linearExpression, groundRule.getRule(), isSquared, true, null));
         return 1;
     }
 
     @Override
     public int createLinearConstraintTerm(Collection<DualLCQPObjectiveTerm> newTerms,
-                                          GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
-        newTerms.add(new DualLCQPObjectiveTerm(hyperplane, groundRule.getRule(), false, true, comparator));
+                                          GroundRule groundRule, LinearExpression linearExpression, FunctionComparator comparator) {
+        newTerms.add(new DualLCQPObjectiveTerm(linearExpression, groundRule.getRule(), false, true, comparator));
         return 1;
     }
 }

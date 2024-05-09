@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
-import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.LinearExpression;
 import org.linqs.psl.reasoner.term.TermGenerator;
 
 import java.util.Collection;
@@ -38,15 +38,15 @@ public class ADMMTermGenerator extends TermGenerator<ADMMObjectiveTerm> {
 
     @Override
     public int createLossTerm(Collection<ADMMObjectiveTerm> newTerms,
-            boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane hyperplane) {
+            boolean isHinge, boolean isSquared, GroundRule groundRule, LinearExpression linearExpression) {
         if (isHinge && isSquared) {
-            newTerms.add(ADMMObjectiveTerm.createSquaredHingeLossTerm(hyperplane, groundRule.getRule()));
+            newTerms.add(ADMMObjectiveTerm.createSquaredHingeLossTerm(linearExpression, groundRule.getRule()));
         } else if (isHinge && !isSquared) {
-            newTerms.add(ADMMObjectiveTerm.createHingeLossTerm(hyperplane, groundRule.getRule()));
+            newTerms.add(ADMMObjectiveTerm.createHingeLossTerm(linearExpression, groundRule.getRule()));
         } else if (!isHinge && isSquared) {
-            newTerms.add(ADMMObjectiveTerm.createSquaredLinearLossTerm(hyperplane, groundRule.getRule()));
+            newTerms.add(ADMMObjectiveTerm.createSquaredLinearLossTerm(linearExpression, groundRule.getRule()));
         } else {
-            newTerms.add(ADMMObjectiveTerm.createLinearLossTerm(hyperplane, groundRule.getRule()));
+            newTerms.add(ADMMObjectiveTerm.createLinearLossTerm(linearExpression, groundRule.getRule()));
         }
 
         return 1;
@@ -54,8 +54,8 @@ public class ADMMTermGenerator extends TermGenerator<ADMMObjectiveTerm> {
 
     @Override
     public int createLinearConstraintTerm(Collection<ADMMObjectiveTerm> newTerms,
-            GroundRule groundRule, Hyperplane hyperplane, FunctionComparator comparator) {
-        newTerms.add(ADMMObjectiveTerm.createLinearConstraintTerm(hyperplane, groundRule.getRule(), comparator));
+                                          GroundRule groundRule, LinearExpression linearExpression, FunctionComparator comparator) {
+        newTerms.add(ADMMObjectiveTerm.createLinearConstraintTerm(linearExpression, groundRule.getRule(), comparator));
         return 1;
     }
 }

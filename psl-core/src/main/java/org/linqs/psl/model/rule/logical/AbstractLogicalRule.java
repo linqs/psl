@@ -36,7 +36,6 @@ import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.HashCode;
@@ -255,7 +254,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         // Removing it here would require checking the positive atoms against the negative ones.
         // Even if we already had a mapping of possiblities (perhaps created in FormulaAnalysis),
         // it would still be non-trivial (and complex rules can cause the mapping to blow up).
-        // Instead they will be removed as they are turned into hyperplane terms,
+        // Instead they will be removed as they are turned into linearExpressions,
         // since we will have to keep track of variables there anyway.
 
         // Note that the "positive" and "negative" qualifiers here are with respect to the negated DNF (a conjunction).
