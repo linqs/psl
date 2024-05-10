@@ -253,6 +253,7 @@ booleanExpression
 
 weightExpression
     :   number COLON
+    |   atom COLON
     ;
 
 EXPONENT_EXPRESSION

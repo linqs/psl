@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.model.rule;
 
+import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 
 /**
@@ -26,14 +27,14 @@ import org.linqs.psl.model.atom.GroundAtom;
  */
 public class Weight {
     private float constantValue;
-    private GroundAtom atom;
+    private Atom atom;
 
     public Weight(float constantValue) {
         this.constantValue = constantValue;
         this.atom = null;
     }
 
-    public Weight(float constantValue, GroundAtom atom) {
+    public Weight(float constantValue, Atom atom) {
         this.constantValue = constantValue;
         this.atom = atom;
     }
@@ -43,7 +44,11 @@ public class Weight {
      */
     public float getValue() {
         if (atom != null) {
-            return constantValue * atom.getValue();
+            if (!(atom instanceof GroundAtom)) {
+                throw new IllegalStateException("Called getValue() on " + atom + " before grounding. Atom must be a GroundAtom before it can be used in a Weight.");
+            }
+
+            return constantValue * ((GroundAtom)atom).getValue();
         } else {
             return constantValue;
         }
@@ -57,11 +62,11 @@ public class Weight {
         return constantValue;
     }
 
-    public void setAtom(GroundAtom atom) {
+    public void setAtom(Atom atom) {
         this.atom = atom;
     }
 
-    public GroundAtom getAtom() {
+    public Atom getAtom() {
         return atom;
     }
 

@@ -303,14 +303,14 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public WeightedLogicalRule visitWeightedLogicalRule(WeightedLogicalRuleContext ctx) {
-        Float w = visitWeightExpression(ctx.weightExpression());
+        Weight w = visitWeightExpression(ctx.weightExpression());
         Formula f = visitLogicalRuleExpression(ctx.logicalRuleExpression());
         Boolean sq = false;
         if (ctx.EXPONENT_EXPRESSION() != null) {
             sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
         }
 
-        return new WeightedLogicalRule(f, new Weight(w), sq);
+        return new WeightedLogicalRule(f, w, sq);
     }
 
     @Override
@@ -406,7 +406,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
 
     @Override
     public WeightedArithmeticRule visitWeightedArithmeticRule(WeightedArithmeticRuleContext ctx) {
-        Float w = visitWeightExpression(ctx.weightExpression());
+        Weight w = visitWeightExpression(ctx.weightExpression());
         ArithmeticRuleExpression expression = (ArithmeticRuleExpression) visitArithmeticRuleExpression(ctx.arithmeticRuleExpression());
         Map<SummationVariable, Formula> filterClauses = new HashMap<SummationVariable, Formula>();
         for (int i = 0; i < ctx.filterClause().size(); i++) {
@@ -417,7 +417,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         if (ctx.EXPONENT_EXPRESSION() != null) {
             sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
         }
-        return new WeightedArithmeticRule(expression, filterClauses, new Weight(w), sq);
+        return new WeightedArithmeticRule(expression, filterClauses, w, sq);
     }
 
     @Override
@@ -807,8 +807,13 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
     }
 
     @Override
-    public Float visitWeightExpression(WeightExpressionContext ctx) {
-        return Float.parseFloat(ctx.number().getText());
+    public Weight visitWeightExpression(WeightExpressionContext ctx) {
+        // A weight can either be a float or an atom.
+        if (ctx.number() != null) {
+            return new Weight(visitNumber(ctx.number()));
+        } else {
+            return new Weight(1.0f, visitAtom(ctx.atom()));
+        }
     }
 
     @Override
