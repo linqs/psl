@@ -17,35 +17,66 @@
  */
 package org.linqs.psl.model.rule;
 
+import org.linqs.psl.model.atom.GroundAtom;
+
 /**
  * A weight for a rule.
+ * A weight is a constant value and can be associated with a GroundAtom.
+ * The value of the weight is the constant value multiplied by the value of the GroundAtom.
  */
 public class Weight {
-    private float value;
+    private float constantValue;
+    private GroundAtom atom;
 
-    public Weight(float value) {
-        this.value = value;
+    public Weight(float constantValue) {
+        this.constantValue = constantValue;
+        this.atom = null;
+    }
+
+    public Weight(float constantValue, GroundAtom atom) {
+        this.constantValue = constantValue;
+        this.atom = atom;
     }
 
     /**
      * Returns the weight's value
      */
     public float getValue() {
-        return value;
+        if (atom != null) {
+            return constantValue * atom.getValue();
+        } else {
+            return constantValue;
+        }
     }
 
-    public void setValue(float value) {
-        this.value = value;
+    public void setConstantValue(float value) {
+        this.constantValue = value;
+    }
+
+    public float getConstantValue() {
+        return constantValue;
+    }
+
+    public void setAtom(GroundAtom atom) {
+        this.atom = atom;
+    }
+
+    public GroundAtom getAtom() {
+        return atom;
     }
 
     /**
      * Returns whether the term is constant.
      */
     public boolean isConstant() {
-        return true;
+        return atom == null;
     }
 
     public String toString() {
-        return Float.toString(value);
+        if (atom != null) {
+            return constantValue + " * " + atom;
+        } else {
+            return Float.toString(constantValue);
+        }
     }
 }

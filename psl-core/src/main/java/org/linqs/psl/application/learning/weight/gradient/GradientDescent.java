@@ -71,7 +71,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float[] deepGradient;
     protected float[] MAPRVEnergyGradient;
     protected float[] MAPDeepEnergyGradient;
-    protected Weight[] epochStartWeights;
+    protected float[] epochStartWeights;
     protected float epochDeepAtomValueMovement;
 
     protected int trainingEvaluationComputePeriod;
@@ -249,7 +249,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initializeEpochStats() {
-        epochStartWeights = new Weight[mutableRules.size()];
+        epochStartWeights = new float[mutableRules.size()];
         epochDeepAtomValueMovement = 0.0f;
     }
 
@@ -460,7 +460,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         epochDeepAtomValueMovement = 0.0f;
 
         for (int i = 0; i < mutableRules.size(); i++) {
-            epochStartWeights[i] = mutableRules.get(i).getWeight();
+            epochStartWeights[i] = mutableRules.get(i).getWeight().getValue();
         }
     }
 
@@ -476,7 +476,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float weightMovement = 0.0f;
 
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightMovement += (float)Math.pow(epochStartWeights[i].getValue() - mutableRules.get(i).getWeight().getValue(), 2.0f);
+            weightMovement += (float)Math.pow(epochStartWeights[i] - mutableRules.get(i).getWeight().getValue(), 2.0f);
         }
         float avgWeightMovement = weightMovement / mutableRules.size();
         log.trace("Average Epoch Weight Movement: {}", avgWeightMovement);
@@ -689,18 +689,18 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 }
 
                 for (int j = 0; j < mutableRules.size(); j++) {
-                    mutableRules.get(j).setWeight(new Weight(
-                            (float)((mutableRules.get(j).getWeight().getValue()
-                                    * Math.exp(-1.0f * stepSize * weightGradient[j]))
-                                    / exponentiatedGradientSum))
+                    Weight weight = mutableRules.get(j).getWeight();
+                    weight.setConstantValue(
+                            (float)((weight.getValue() * Math.exp(-1.0f * stepSize * weightGradient[j])) / exponentiatedGradientSum)
                     );
                 }
 
                 break;
             case PROJECTED_GRADIENT:
                 for (int j = 0; j < mutableRules.size(); j++) {
-                    mutableRules.get(j).setWeight(
-                            new Weight(mutableRules.get(j).getWeight().getValue() - weightGradient[j] * stepSize)
+                    Weight weight = mutableRules.get(j).getWeight();
+                    weight.setConstantValue(
+                            weight.getValue() - stepSize * weightGradient[j]
                     );
                 }
 
@@ -711,8 +711,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             default:
                 for (int j = 0; j < mutableRules.size(); j++) {
                     // Clip negative weights.
-                    mutableRules.get(j).setWeight(new Weight(mutableRules.get(j).getWeight().getValue() - weightGradient[j] * stepSize)
-                    );
+                    Weight weight = mutableRules.get(j).getWeight();
+                    weight.setConstantValue(weight.getValue() - stepSize * weightGradient[j]);
                 }
 
                 break;
@@ -878,7 +878,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         for (WeightedRule mutableRule: mutableRules) {
-            mutableRule.setWeight(new Weight(Math.max(0, mutableRule.getWeight().getValue() - tau)));
+            Weight weight = mutableRule.getWeight();
+            weight.setConstantValue(Math.max(0, weight.getValue() - tau));
         }
     }
 
@@ -892,7 +893,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         for (WeightedRule mutableRule : mutableRules) {
-            mutableRule.setWeight(new Weight(mutableRule.getWeight().getValue() / totalWeight));
+            Weight weight = mutableRule.getWeight();
+            weight.setConstantValue(weight.getValue() / totalWeight);
         }
     }
 

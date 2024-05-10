@@ -236,7 +236,8 @@ public abstract class WeightLearningApplication implements ModelApplication {
     private void initRandomWeights() {
         log.trace("Randomly Weighted Rules:");
         for (WeightedRule rule : mutableRules) {
-            rule.setWeight(new Weight(RandUtils.nextFloat()));
+            Weight weight = rule.getWeight();
+            weight.setConstantValue(RandUtils.nextFloat());
             log.trace("    " + rule.toString());
         }
     }
