@@ -21,6 +21,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.GeneralFunction;
@@ -46,12 +47,12 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
     }
 
     @Override
-    public float getWeight() {
+    public Weight getWeight() {
         return ((WeightedRule)rule).getWeight();
     }
 
     @Override
-    public void setWeight(float weight) {
+    public void setWeight(Weight weight) {
         ((WeightedRule)rule).setWeight(weight);
     }
 
@@ -80,6 +81,6 @@ public class WeightedGroundLogicalRule extends AbstractGroundLogicalRule impleme
 
     @Override
     public String toString() {
-        return "" + getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
+        return getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
     }
 }

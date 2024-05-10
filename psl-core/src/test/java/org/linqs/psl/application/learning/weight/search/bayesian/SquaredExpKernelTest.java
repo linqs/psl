@@ -18,6 +18,7 @@
  package org.linqs.psl.application.learning.weight.search.bayesian;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.test.PSLBaseTest;
 
 import org.junit.Assert;
@@ -30,8 +31,8 @@ public class SquaredExpKernelTest extends PSLBaseTest {
     public void testSquaredExpKernel() {
         Options.WLA_GPP_KERNEL_REL_DEP.set(1.0f);
 
-        float[] x = {1.0f, 2.0f, 3.0f, 4.0f};
-        float[] y = {3.0f, 4.0f, 5.0f, 6.0f};
+        Weight[] x = {new Weight(1.0f), new Weight(2.0f), new Weight(3.0f), new Weight(4.0f)};
+        Weight[] y = {new Weight(3.0f), new Weight(4.0f), new Weight(5.0f), new Weight(6.0f)};
 
         GaussianProcessKernel kernel = null;
 

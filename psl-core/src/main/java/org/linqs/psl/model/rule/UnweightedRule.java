@@ -29,5 +29,5 @@ public interface UnweightedRule extends Rule {
      * potentials which act as penalty terms in the inference objective.
      * This method must unregister the unweighted rule before constructing the new weighted rule.
      */
-    public WeightedRule relax(float weight, boolean squared);
+    public WeightedRule relax(Weight weight, boolean squared);
 }

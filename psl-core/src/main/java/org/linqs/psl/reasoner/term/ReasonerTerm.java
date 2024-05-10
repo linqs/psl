@@ -156,7 +156,7 @@ public abstract class ReasonerTerm {
      */
     public float getWeight() {
         if (rule != null && rule.isWeighted()) {
-            return ((WeightedRule)rule).getWeight();
+            return ((WeightedRule)rule).getWeight().getValue();
         }
 
         return Float.POSITIVE_INFINITY;

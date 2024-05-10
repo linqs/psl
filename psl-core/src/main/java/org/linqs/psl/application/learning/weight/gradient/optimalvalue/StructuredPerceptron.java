@@ -62,7 +62,7 @@ public class StructuredPerceptron extends OptimalValue {
     protected float computeLearningLoss() {
         float energyDifference = 0.0f;
         for (int i = 0; i < mutableRules.size(); i++) {
-            energyDifference += mutableRules.get(i).getWeight() * (latentInferenceIncompatibility[i] - MAPIncompatibility[i]);
+            energyDifference += mutableRules.get(i).getWeight().getValue() * (latentInferenceIncompatibility[i] - MAPIncompatibility[i]);
         }
 
         return energyDifference;

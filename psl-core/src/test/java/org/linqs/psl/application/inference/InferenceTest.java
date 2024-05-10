@@ -37,6 +37,7 @@ import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -152,7 +153,7 @@ public abstract class InferenceTest extends PSLBaseTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         ));
 
@@ -190,7 +191,7 @@ public abstract class InferenceTest extends PSLBaseTest {
         // Nice(A) + Nice(B) >= 1.0
         info.model.addRule(new WeightedArithmeticRule(
                 new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
-                1.0f,
+                new Weight(1.0f),
                 true
         ));
 
@@ -220,7 +221,7 @@ public abstract class InferenceTest extends PSLBaseTest {
                 new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")),
                 new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         ));
 
@@ -469,7 +470,7 @@ public abstract class InferenceTest extends PSLBaseTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         ));
 

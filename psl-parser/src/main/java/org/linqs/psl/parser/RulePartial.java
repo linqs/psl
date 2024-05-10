@@ -19,6 +19,7 @@ package org.linqs.psl.parser;
 
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -108,7 +109,7 @@ public class RulePartial {
     }
 
     private Rule toWeightedLogicalRule(float weight, boolean squared) {
-        return new WeightedLogicalRule(formula, weight, squared);
+        return new WeightedLogicalRule(formula, new Weight(weight), squared);
     }
 
     private Rule toUnweightedArithmeticRule() {
@@ -121,9 +122,9 @@ public class RulePartial {
 
     private Rule toWeightedArithmeticRule(float weight, boolean squared) {
         if (filters == null) {
-            return new WeightedArithmeticRule(arithmeticExpression, weight, squared);
+            return new WeightedArithmeticRule(arithmeticExpression, new Weight(weight), squared);
         }
 
-        return new WeightedArithmeticRule(arithmeticExpression, filters, weight, squared);
+        return new WeightedArithmeticRule(arithmeticExpression, filters, new Weight(weight), squared);
     }
 }

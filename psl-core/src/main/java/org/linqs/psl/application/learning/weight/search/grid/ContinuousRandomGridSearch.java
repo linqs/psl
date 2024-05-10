@@ -22,6 +22,7 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 
 import java.util.List;
 
@@ -41,7 +42,7 @@ public class ContinuousRandomGridSearch extends BaseGridSearch {
     }
 
     @Override
-    protected void getWeights(float[] weights) {
+    protected void getWeights(Weight[] weights) {
         // Random choice.
         weightSampler.getRandomWeights(weights);
     }

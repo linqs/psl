@@ -24,10 +24,9 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.predicate.DeepPredicate;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedRule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.Reasoner;
@@ -60,7 +59,6 @@ public abstract class InferenceApplication implements ModelApplication {
     protected InitialValue initialValue;
 
     protected boolean skipInference;
-    protected boolean normalizeWeights;
     protected boolean relaxHardConstraints;
     protected float relaxationMultiplier;
     protected boolean relaxationSquared;
@@ -80,7 +78,6 @@ public abstract class InferenceApplication implements ModelApplication {
 
         this.initialValue = InitialValue.valueOf(Options.INFERENCE_INITIAL_VARIABLE_VALUE.getString());
         this.skipInference = Options.INFERENCE_SKIP_INFERENCE.getBoolean();
-        this.normalizeWeights = Options.INFERENCE_NORMALIZE_WEIGHTS.getBoolean();
         this.relaxHardConstraints = relaxHardConstraints;
         this.relaxationMultiplier = Options.INFERENCE_RELAX_MULTIPLIER.getFloat();
         this.relaxationSquared = Options.INFERENCE_RELAX_SQUARED.getBoolean();
@@ -94,10 +91,6 @@ public abstract class InferenceApplication implements ModelApplication {
      */
     protected void initialize() {
         initializeAtoms();
-
-        if (normalizeWeights) {
-            normalizeWeights();
-        }
 
         if (relaxHardConstraints) {
             relaxHardConstraints();
@@ -262,38 +255,6 @@ public abstract class InferenceApplication implements ModelApplication {
     }
 
     /**
-     * Normalize all weights to be in [0, 1].
-     */
-    protected void normalizeWeights() {
-        float max = 0.0f;
-        boolean hasWeightedRule = false;
-
-        for (WeightedRule rule : IteratorUtils.filterClass(rules, WeightedRule.class)) {
-            float weight = rule.getWeight();
-            if (!hasWeightedRule || weight > max) {
-                max = weight;
-                hasWeightedRule = true;
-            }
-        }
-
-        if (!hasWeightedRule) {
-            return;
-        }
-
-        for (WeightedRule rule : IteratorUtils.filterClass(rules, WeightedRule.class)) {
-            float oldWeight = rule.getWeight();
-
-            float newWeight = 1.0f;
-            if (!MathUtils.isZero(max)) {
-                newWeight = oldWeight / max;
-            }
-
-            log.debug("Normalizing rule weight (old weight: {}, new weight: {}): {}", oldWeight, newWeight, rule);
-            rule.setWeight(newWeight);
-        }
-    }
-
-    /**
      * Relax hard constraints into weighted rules.
      */
     protected void relaxHardConstraints() {
@@ -302,9 +263,9 @@ public abstract class InferenceApplication implements ModelApplication {
 
         for (Rule rule : rules) {
             if (rule instanceof WeightedRule) {
-                float weight = ((WeightedRule)rule).getWeight();
-                if (weight > largestWeight) {
-                    largestWeight = weight;
+                Weight weight = ((WeightedRule)rule).getWeight();
+                if (weight.getValue() > largestWeight) {
+                    largestWeight = weight.getValue();
                 }
             } else {
                 hasUnweightedRule = true;
@@ -315,7 +276,7 @@ public abstract class InferenceApplication implements ModelApplication {
             return;
         }
 
-        float weight = Math.max(1.0f, largestWeight * relaxationMultiplier);
+        Weight weight = new Weight(Math.max(1.0f, largestWeight * relaxationMultiplier));
 
         for (int i = 0; i < rules.size(); i++) {
             if (rules.get(i) instanceof UnweightedRule) {

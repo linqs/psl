@@ -27,6 +27,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.InitialValue;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
@@ -70,7 +71,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected float[] deepGradient;
     protected float[] MAPRVEnergyGradient;
     protected float[] MAPDeepEnergyGradient;
-    protected float[] epochStartWeights;
+    protected Weight[] epochStartWeights;
     protected float epochDeepAtomValueMovement;
 
     protected int trainingEvaluationComputePeriod;
@@ -100,7 +101,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected TermState[] validationMAPTermState;
     protected float[] validationMAPAtomValueState;
     protected boolean saveBestValidationWeights;
-    protected float[] bestValidationWeights;
+    protected Weight[] bestValidationWeights;
     double currentValidationEvaluationMetric;
     double bestValidationEvaluationMetric;
 
@@ -248,7 +249,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     }
 
     protected void initializeEpochStats() {
-        epochStartWeights = new float[mutableRules.size()];
+        epochStartWeights = new Weight[mutableRules.size()];
         epochDeepAtomValueMovement = 0.0f;
     }
 
@@ -305,7 +306,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         bestTrainingEvaluationMetric = Double.NEGATIVE_INFINITY;
         lastTrainingImprovementEpoch = 0;
 
-        bestValidationWeights = new float[mutableRules.size()];
+        bestValidationWeights = new Weight[mutableRules.size()];
         for (int i = 0; i < mutableRules.size(); i++) {
             bestValidationWeights[i] = mutableRules.get(i).getWeight();
         }
@@ -475,7 +476,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         float weightMovement = 0.0f;
 
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightMovement += Math.pow(epochStartWeights[i] - mutableRules.get(i).getWeight(), 2.0f);
+            weightMovement += (float)Math.pow(epochStartWeights[i].getValue() - mutableRules.get(i).getWeight().getValue(), 2.0f);
         }
         float avgWeightMovement = weightMovement / mutableRules.size();
         log.trace("Average Epoch Weight Movement: {}", avgWeightMovement);
@@ -547,7 +548,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         int batchId = batchGenerator.epochStart();
         while (!batchGenerator.isEpochComplete()) {
-            if (batchGenerator.getBatchTrainingMap(batchId).getLabelMap().size() <= 0) {
+            if (batchGenerator.getBatchTrainingMap(batchId).getLabelMap().isEmpty()) {
                 batchId = batchGenerator.nextBatch();
                 continue;
             }
@@ -561,7 +562,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
             computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
 
             evaluation.compute(trainingMap);
-            totalTrainingEvaluation += evaluation.getNormalizedRepMetric();
+            totalTrainingEvaluation += (float)evaluation.getNormalizedRepMetric();
 
             batchId = batchGenerator.nextBatch();
 
@@ -684,20 +685,23 @@ public abstract class GradientDescent extends WeightLearningApplication {
             case MIRROR_DESCENT:
                 float exponentiatedGradientSum = 0.0f;
                 for (int j = 0; j < mutableRules.size(); j++) {
-                    exponentiatedGradientSum += mutableRules.get(j).getWeight() * Math.exp(-1.0f * stepSize * weightGradient[j]);
+                    exponentiatedGradientSum += (float)(mutableRules.get(j).getWeight().getValue() * Math.exp(-1.0f * stepSize * weightGradient[j]));
                 }
 
                 for (int j = 0; j < mutableRules.size(); j++) {
-                    mutableRules.get(j).setWeight(
-                            (float)((mutableRules.get(j).getWeight()
+                    mutableRules.get(j).setWeight(new Weight(
+                            (float)((mutableRules.get(j).getWeight().getValue()
                                     * Math.exp(-1.0f * stepSize * weightGradient[j]))
-                                    / exponentiatedGradientSum));
+                                    / exponentiatedGradientSum))
+                    );
                 }
 
                 break;
             case PROJECTED_GRADIENT:
                 for (int j = 0; j < mutableRules.size(); j++) {
-                    mutableRules.get(j).setWeight(mutableRules.get(j).getWeight() - weightGradient[j] * stepSize);
+                    mutableRules.get(j).setWeight(
+                            new Weight(mutableRules.get(j).getWeight().getValue() - weightGradient[j] * stepSize)
+                    );
                 }
 
                 // Project weights back onto the unit simplex.
@@ -707,7 +711,8 @@ public abstract class GradientDescent extends WeightLearningApplication {
             default:
                 for (int j = 0; j < mutableRules.size(); j++) {
                     // Clip negative weights.
-                    mutableRules.get(j).setWeight(mutableRules.get(j).getWeight() - weightGradient[j] * stepSize);
+                    mutableRules.get(j).setWeight(new Weight(mutableRules.get(j).getWeight().getValue() - weightGradient[j] * stepSize)
+                    );
                 }
 
                 break;
@@ -765,7 +770,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         float exponentiatedGradientSum = 0.0f;
         for (int i = 0; i < mutableRules.size(); i ++) {
-            exponentiatedGradientSum += Math.exp(weightGradient[i]);
+            exponentiatedGradientSum += (float)Math.exp(weightGradient[i]);
         }
 
         for (int i = 0; i < mutableRules.size(); i ++) {
@@ -786,12 +791,16 @@ public abstract class GradientDescent extends WeightLearningApplication {
         int numNonZeroGradients = 0;
         float[] simplexClippedGradients = weightGradient.clone();
         for (int i = 0; i < simplexClippedGradients.length; i++) {
-            if ((logRegularization == 0.0f) && MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
+            if ((logRegularization == 0.0f)
+                    && MathUtils.equalsStrict(mutableRules.get(i).getWeight().getValue(), 0.0f)
+                    && (weightGradient[i] > 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
 
-            if ((logRegularization == 0.0f) && MathUtils.equalsStrict(mutableRules.get(i).getWeight(), 1.0f) && (weightGradient[i] < 0.0f)) {
+            if ((logRegularization == 0.0f)
+                    && MathUtils.equalsStrict(mutableRules.get(i).getWeight().getValue(), 1.0f)
+                    && (weightGradient[i] < 0.0f)) {
                 simplexClippedGradients[i] = 0.0f;
                 continue;
             }
@@ -811,7 +820,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
                 continue;
             }
 
-            exponentiatedGradientSum += Math.exp(weightGradient[i]);
+            exponentiatedGradientSum += (float)Math.exp(weightGradient[i]);
         }
 
         for (int i = 0; i < mutableRules.size(); i ++) {
@@ -832,7 +841,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     private float computeGradientDescentNorm() {
         float[] boundaryClippedGradients = weightGradient.clone();
         for (int i = 0; i < boundaryClippedGradients.length; i++) {
-            if (MathUtils.equals(mutableRules.get(i).getWeight(), 0.0f) && (weightGradient[i] > 0.0f)) {
+            if (MathUtils.equals(mutableRules.get(i).getWeight().getValue(), 0.0f) && (weightGradient[i] > 0.0f)) {
                 boundaryClippedGradients[i] = 0.0f;
                 continue;
             }
@@ -851,7 +860,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         int numWeights = mutableRules.size();
         float[] weights = new float[numWeights];
         for (int i = 0; i < numWeights; i++) {
-            weights[i] = mutableRules.get(i).getWeight();
+            weights[i] = mutableRules.get(i).getWeight().getValue();
         }
 
         Arrays.sort(weights);
@@ -869,7 +878,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         for (WeightedRule mutableRule: mutableRules) {
-            mutableRule.setWeight(Math.max(0, mutableRule.getWeight() - tau));
+            mutableRule.setWeight(new Weight(Math.max(0, mutableRule.getWeight().getValue() - tau)));
         }
     }
 
@@ -879,11 +888,11 @@ public abstract class GradientDescent extends WeightLearningApplication {
     private void simplexScaleWeights() {
         float totalWeight = 0.0f;
         for (WeightedRule mutableRule : mutableRules) {
-            totalWeight += mutableRule.getWeight();
+            totalWeight += mutableRule.getWeight().getValue();
         }
 
         for (WeightedRule mutableRule : mutableRules) {
-            mutableRule.setWeight(mutableRule.getWeight() / totalWeight);
+            mutableRule.setWeight(new Weight(mutableRule.getWeight().getValue() / totalWeight));
         }
     }
 
@@ -973,10 +982,10 @@ public abstract class GradientDescent extends WeightLearningApplication {
         }
 
         for (WeightedRule mutableRule : mutableRules) {
-            float logWeight = (float) Math.max(Math.log(mutableRule.getWeight()), Math.log(MathUtils.STRICT_EPSILON));
-            regularization += l2Regularization * (float) Math.pow(mutableRule.getWeight(), 2.0f)
+            float logWeight = (float)Math.max(Math.log(mutableRule.getWeight().getValue()), Math.log(MathUtils.STRICT_EPSILON));
+            regularization += l2Regularization * (float)Math.pow(mutableRule.getWeight().getValue(), 2.0f)
                     - logRegularization * logWeight
-                    + entropyRegularization * mutableRule.getWeight() * logWeight;
+                    + entropyRegularization * mutableRule.getWeight().getValue() * logWeight;
         }
 
         return regularization;
@@ -1004,9 +1013,9 @@ public abstract class GradientDescent extends WeightLearningApplication {
      */
     protected void addRegularizationWeightGradient() {
         for (int i = 0; i < mutableRules.size(); i++) {
-            float logWeight = (float)Math.log(Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON));
-            weightGradient[i] += (float) (2.0f * l2Regularization * mutableRules.get(i).getWeight()
-                    - logRegularization / Math.max(mutableRules.get(i).getWeight(), MathUtils.STRICT_EPSILON)
+            float logWeight = (float)Math.log(Math.max(mutableRules.get(i).getWeight().getValue(), MathUtils.STRICT_EPSILON));
+            weightGradient[i] += (float)(2.0f * l2Regularization * mutableRules.get(i).getWeight().getValue()
+                    - logRegularization / Math.max(mutableRules.get(i).getWeight().getValue(), MathUtils.STRICT_EPSILON)
                     + entropyRegularization * (logWeight + 1));
         }
     }

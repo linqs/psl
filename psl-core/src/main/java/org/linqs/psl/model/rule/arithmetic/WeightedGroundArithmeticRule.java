@@ -19,6 +19,7 @@ package org.linqs.psl.model.rule.arithmetic;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
@@ -60,12 +61,12 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
     }
 
     @Override
-    public float getWeight() {
+    public Weight getWeight() {
         return ((WeightedRule)rule).getWeight();
     }
 
     @Override
-    public void setWeight(float weight) {
+    public void setWeight(Weight weight) {
         ((WeightedRule)rule).setWeight(weight);
     }
 
@@ -118,6 +119,6 @@ public class WeightedGroundArithmeticRule extends AbstractGroundArithmeticRule i
 
     @Override
     public String toString() {
-        return "" + getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
+        return getWeight() + ": " + baseToString() + ((isSquared()) ? " ^2" : "");
     }
 }

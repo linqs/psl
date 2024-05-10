@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -38,30 +39,33 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         float[] lagrange = {0.0f, 0.0f};
         float[] coeffs = {1.0f, 1.0f};
         float constant = 1.0f;
+        Weight weight = new Weight(0.0f);
         FunctionComparator comparator = FunctionComparator.LTE;
         float stepSize = 1.0f;
         float[] expected = {0.2f, 0.5f};
-        testProblem(false, false, comparator, consensus, lagrange, coeffs, constant, 0.0f, stepSize, expected);
+        testProblem(false, false, comparator, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
 
         // Problem 2: Constraint active at solution
         consensus = new float[] {0.7f, 0.5f};
         lagrange = new float[] {0.0f, 0.0f};
         coeffs = new float[] {1.0f, 1.0f};
         constant = 1.0f;
+        weight = new Weight(0.0f);
         comparator = FunctionComparator.LTE;
         stepSize = 1.0f;
         expected = new float[] {0.6f, 0.4f};
-        testProblem(false, false, comparator, consensus, lagrange, coeffs, constant, 0.0f, stepSize, expected);
+        testProblem(false, false, comparator, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
 
         // Problem 3: Equality constraint
         consensus = new float[] {0.7f, 0.5f};
         lagrange = new float[] {0.0f, 0.0f};
         coeffs = new float[] {1.0f, -1.0f};
         constant = 0.0f;
+        weight = new Weight(0.0f);
         comparator = FunctionComparator.EQ;
         stepSize = 1.0f;
         expected = new float[] {0.6f, 0.6f};
-        testProblem(false, false, comparator, consensus, lagrange, coeffs, constant, 0.0f, stepSize, expected);
+        testProblem(false, false, comparator, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
     }
 
     @Test
@@ -70,7 +74,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         float[] consensus = {0.4f, 0.5f};
         float[] lagrange = {0.0f, 0.0f};
         float[] coeffs = {0.3f, -1.0f};
-        float weight = 1.0f;
+        Weight weight = new Weight(1.0f);
         float stepSize = 1.0f;
         float[] expected = {0.1f, 1.5f};
         testProblem(false, false, null, consensus, lagrange, coeffs, 0.0f, weight, stepSize, expected);
@@ -83,7 +87,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         float[] lagrange = {0.0f, 0.0f};
         float[] coeffs = {1.0f, -1.0f};
         float constant = -0.95f;
-        float weight = 1.0f;
+        Weight weight = new Weight(1.0f);
         float stepSize = 1.0f;
         float[] expected = {-0.125f, 0.825f};
         testProblem(false, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -93,7 +97,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.1f, 0.0f, -0.05f};
         coeffs = new float[] {1.0f, -0.5f, 0.4f};
         constant = -0.15f;
-        weight = 1.0f;
+        weight = new Weight(1.0f);
         stepSize = 0.5f;
         expected = new float[] {0.043257f, 0.528361f, 0.177309f};
         testProblem(false, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -103,7 +107,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.1f, 0.0f, -0.05f};
         coeffs = new float[] {1.0f, -0.5f, 0.4f};
         constant = 0.0f;
-        weight = 2.0f;
+        weight = new Weight(2.0f);
         stepSize = 0.5f;
         expected = new float[] {0.1f, 0.5f, 0.2f};
         testProblem(false, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -113,7 +117,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.15f};
         coeffs = new float[] {1.0f};
         constant = 0.0f;
-        weight = 2.0f;
+        weight = new Weight(2.0f);
         stepSize = 1.0f;
         expected = new float[] {-0.05f};
         testProblem(false, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -123,7 +127,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.0f, 0.0f};
         coeffs = new float[] {1.0f, -1.0f};
         constant = 0.0f;
-        weight = 1.0f;
+        weight = new Weight(1.0f);
         stepSize = 1.0f;
         expected = new float[] {0.6f, 0.6f};
         testProblem(false, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -133,7 +137,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.05f, 1.0f};
         coeffs = new float[] {1.0f, -1.0f};
         constant = -0.5f;
-        weight = 2.0f;
+        weight = new Weight(2.0f);
         stepSize = 2.0f;
         expected = new float[] {0.0875f, 0.5875f};
         testProblem(false, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -146,7 +150,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         float[] lagrange = {0.0f, 0.0f, -0.05f};
         float[] coeffs = {0.3f, -1.0f, 0.4f};
         float constant = -20.0f;
-        float weight = 0.5f;
+        Weight weight = new Weight(0.5f);
         float stepSize = 2.0f;
         float[] expected = {-1.41569f, 6.55231f, -2.29593f};
         testProblem(true, false, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -159,7 +163,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         float[] lagrange = {0.0f, 0.0f};
         float[] coeffs = {1.0f, -1.0f};
         float constant = -0.95f;
-        float weight = 1.0f;
+        Weight weight = new Weight(1.0f);
         float stepSize = 1.0f;
         float[] expected = {-0.06f, 0.76f};
         testProblem(true, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -169,7 +173,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.1f, 0.0f, -0.05f};
         coeffs = new float[] {1.0f, -0.5f, 0.4f};
         constant = -0.15f;
-        weight = 1.0f;
+        weight = new Weight(1.0f);
         stepSize = 0.5f;
         expected = new float[] {0.051798f, 0.524096f, 0.180720f};
         testProblem(true, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -179,7 +183,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.1f, 0.0f, -0.05f};
         coeffs = new float[] {1.0f, -0.5f, 0.4f};
         constant = 0.0f;
-        weight = 2.0f;
+        weight = new Weight(2.0f);
         stepSize = 0.5f;
         expected = new float[] {0.1f, 0.5f, 0.2f};
         testProblem(true, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -189,7 +193,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {-0.15f};
         coeffs = new float[] {1.0f};
         constant = 0.0f;
-        weight = 2.0f;
+        weight = new Weight(2.0f);
         stepSize = 1.0f;
         expected = new float[] {0.05f};
         testProblem(true, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -199,7 +203,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.0f, 0.0f};
         coeffs = new float[] {1.0f, -1.0f};
         constant = 0.0f;
-        weight = 1.0f;
+        weight = new Weight(1.0f);
         stepSize = 1.0f;
         expected = new float[] {0.62f, 0.58f};
         testProblem(true, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -210,7 +214,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
         lagrange = new float[] {0.0f, 0.0f, 0.0f};
         coeffs = new float[] {1.0f, -1.0f, 0.5f};
         constant = -0.5f;
-        weight = 2.0f;
+        weight = new Weight(2.0f);
         stepSize = 2.0f;
         expected = new float[] {1.9f, 1.3f, -0.4f};
         testProblem(true, true, null, consensus, lagrange, coeffs, constant, weight, stepSize, expected);
@@ -222,7 +226,7 @@ public class ADMMObjectiveTermTest extends PSLBaseTest {
             boolean squared, boolean hinge, FunctionComparator comparator,
             float[] consensus, float[] lagrange,
             float[] coeffs, float constant,
-            float weight, float stepSize, float[] expected) {
+            Weight weight, float stepSize, float[] expected) {
         StandardPredicate dummyPredicate = StandardPredicate.get("Dummy", ConstantType.UniqueIntID);
 
         GroundAtom[] variables = new GroundAtom[consensus.length];

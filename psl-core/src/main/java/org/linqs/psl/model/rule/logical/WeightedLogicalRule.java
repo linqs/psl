@@ -19,19 +19,20 @@ package org.linqs.psl.model.rule.logical;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 
 import java.util.List;
 
 public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
-    protected float weight;
+    protected Weight weight;
     protected boolean squared;
 
-    public WeightedLogicalRule(Formula formula, float weight, boolean squared) {
+    public WeightedLogicalRule(Formula formula, Weight weight, boolean squared) {
         this(formula, weight, squared, formula.toString());
     }
 
-    public WeightedLogicalRule(Formula formula, float weight, boolean squared, String name) {
+    public WeightedLogicalRule(Formula formula, Weight weight, boolean squared, String name) {
         super(formula, name);
 
         this.weight = weight;
@@ -49,19 +50,19 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
     }
 
     @Override
-    public float getWeight() {
+    public Weight getWeight() {
         return weight;
     }
 
     @Override
-    public void setWeight(float weight) {
+    public void setWeight(Weight weight) {
         this.weight = weight;
     }
 
     @Override
     public String toString() {
         String squaredSuffix = (squared) ? " ^2" : "";
-        return "" + weight + ": " + formula + squaredSuffix;
+        return weight + ": " + formula + squaredSuffix;
     }
 
     @Override

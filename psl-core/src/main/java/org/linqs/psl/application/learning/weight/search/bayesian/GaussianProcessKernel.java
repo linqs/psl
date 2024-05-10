@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.search.bayesian;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.util.FloatMatrix;
 
 /**
@@ -70,14 +71,14 @@ public abstract class GaussianProcessKernel {
       * the same as the points).
       * The matrices will be modified.
       */
-    public float kernel(float[] point1, float[] point2, float[] buffer1, float[] buffer2, FloatMatrix matrixShell1, FloatMatrix matrixShell2) {
+    public float kernel(Weight[] point1, Weight[] point2, float[] buffer1, float[] buffer2, FloatMatrix matrixShell1, FloatMatrix matrixShell2) {
         assert(point1.length == point2.length);
         assert(buffer1.length == buffer2.length);
         assert(point1.length == buffer1.length);
 
         for (int i = 0; i < point1.length; i++) {
-            buffer1[i] = (float)point1[i];
-            buffer2[i] = (float)point2[i];
+            buffer1[i] = point1[i].getValue();
+            buffer2[i] = point2[i].getValue();
         }
 
         matrixShell1.assume(buffer1, buffer1.length, 1);
@@ -89,7 +90,7 @@ public abstract class GaussianProcessKernel {
     /**
       * Compute the kernels, but allocate new buffer for the computation.
       */
-    public float kernel(float[] point1, float[] point2) {
+    public float kernel(Weight[] point1, Weight[] point2) {
         return kernel(point1, point2, new float[point1.length], new float[point2.length], new FloatMatrix(), new FloatMatrix());
     }
 }

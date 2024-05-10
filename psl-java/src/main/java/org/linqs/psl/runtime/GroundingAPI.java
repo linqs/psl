@@ -30,6 +30,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.arithmetic.AbstractGroundArithmeticRule;
 import org.linqs.psl.model.rule.logical.AbstractGroundLogicalRule;
@@ -163,7 +164,7 @@ public final class GroundingAPI extends Runtime {
     }
 
     private GroundRuleInfo mapGroundRule(int ruleIndex, AtomStore store, GroundRule groundRule, Map<Integer, AtomInfo> usedAtoms) {
-        float weight = -1.0f;
+        Weight weight = null;
         if (groundRule.getRule().isWeighted()) {
             weight = ((WeightedRule)groundRule.getRule()).getWeight();
         }
@@ -177,7 +178,7 @@ public final class GroundingAPI extends Runtime {
         throw new IllegalStateException("Unknown rule type: " + groundRule.getClass());
     }
 
-    private GroundRuleInfo mapGroundRule(int ruleIndex, AtomStore store, AbstractGroundLogicalRule groundRule, float weight,
+    private GroundRuleInfo mapGroundRule(int ruleIndex, AtomStore store, AbstractGroundLogicalRule groundRule, Weight weight,
             Map<Integer, AtomInfo> usedAtoms) {
         int currentAtom = 0;
         float[] coefficients = new float[groundRule.size()];
@@ -218,7 +219,7 @@ public final class GroundingAPI extends Runtime {
         return new GroundRuleInfo(ruleIndex, "|", weight, 0.0f, coefficients, atoms);
     }
 
-    private GroundRuleInfo mapGroundRule(int ruleIndex, AtomStore store, AbstractGroundArithmeticRule groundRule, float weight,
+    private GroundRuleInfo mapGroundRule(int ruleIndex, AtomStore store, AbstractGroundArithmeticRule groundRule, Weight weight,
             Map<Integer, AtomInfo> usedAtoms) {
         GroundAtom[] rawAtoms = groundRule.getOrderedAtoms();
         int[] atoms = new int[rawAtoms.length];
@@ -291,12 +292,12 @@ public final class GroundingAPI extends Runtime {
     public static final class GroundRuleInfo {
         public int ruleIndex;
         public String operator;
-        public float weight;
+        public Weight weight;
         public float constant;
         public float[] coefficients;
         public int[] atoms;
 
-        public GroundRuleInfo(int ruleIndex, String operator, float weight, float constant, float[] coefficients, int[] atoms) {
+        public GroundRuleInfo(int ruleIndex, String operator, Weight weight, float constant, float[] coefficients, int[] atoms) {
             this.ruleIndex = ruleIndex;
             this.operator = operator;
             this.weight = weight;
@@ -307,7 +308,7 @@ public final class GroundingAPI extends Runtime {
 
         public String toString() {
             return String.format(
-                    "Rule Type: %s, Weight: %f, Constant: %f, coefficients: [%s], atoms: [%s].",
+                    "Rule Type: %s, Weight: %s, Constant: %f, coefficients: [%s], atoms: [%s].",
                     operator, weight, constant,
                     StringUtils.join(", ", coefficients), StringUtils.join(", ", atoms));
         }

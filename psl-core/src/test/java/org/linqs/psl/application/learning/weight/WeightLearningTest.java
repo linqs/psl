@@ -28,6 +28,7 @@ import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
@@ -155,17 +156,17 @@ public abstract class WeightLearningTest extends PSLBaseTest {
         for (Rule rawRule : info.model.getRules()) {
             WeightedRule rule = (WeightedRule)rawRule;
 
-            if (MathUtils.equals(rule.getWeight(), 1.0)) {
+            if (MathUtils.equals(rule.getWeight().getValue(), 1.0)) {
                 ruleMap.put(RULE_PRIOR, rule);
-            } else if (MathUtils.equals(rule.getWeight(), 5.0)) {
+            } else if (MathUtils.equals(rule.getWeight().getValue(), 5.0)) {
                 ruleMap.put(RULE_NICE, rule);
-            } else if (MathUtils.equals(rule.getWeight(), 10.0)) {
+            } else if (MathUtils.equals(rule.getWeight().getValue(), 10.0)) {
                 ruleMap.put(RULE_SYMMETRY, rule);
             } else {
                 throw new IllegalArgumentException("Unknown rule: " + rule);
             }
 
-            rule.setWeight(1.0f);
+            rule.setWeight(new Weight(1.0f));
         }
 
         Set<StandardPredicate> allTrainPredicates = new HashSet<StandardPredicate>(info.predicates.values());
@@ -213,7 +214,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
         info.model.addRule(rule);
@@ -230,7 +231,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Bob"), new Variable("B"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
         info.model.addRule(rule);
@@ -247,7 +248,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Eugene"), new Variable("B"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
         info.model.addRule(rule);
@@ -264,7 +265,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
                 ),
                 new Negation(new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("Alice"), new Variable("B")))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
         info.model.addRule(rule);
@@ -293,7 +294,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
                 ),
                 new QueryAtom(info.predicates.get("Friends"), new UniqueStringID("ZzZ__FAKE_PERSON_A__ZzZ"), new Variable("B"))
             ),
-            5.0f,
+            new Weight(5.0f),
             true
         );
         info.model.addRule(newRule);
@@ -313,7 +314,7 @@ public abstract class WeightLearningTest extends PSLBaseTest {
         Collections.sort(rules, new Comparator<Rule>() {
             @Override
             public int compare(Rule a, Rule b) {
-                return MathUtils.compare(((WeightedRule)a).getWeight(), ((WeightedRule)b).getWeight());
+                return MathUtils.compare(((WeightedRule)a).getWeight().getValue(), ((WeightedRule)b).getWeight().getValue());
             }
         });
 
@@ -333,18 +334,18 @@ public abstract class WeightLearningTest extends PSLBaseTest {
         Collections.sort(rules, new Comparator<Rule>() {
             @Override
             public int compare(Rule a, Rule b) {
-                return MathUtils.compare(((WeightedRule)a).getWeight(), ((WeightedRule)b).getWeight());
+                return MathUtils.compare(((WeightedRule)a).getWeight().getValue(), ((WeightedRule)b).getWeight().getValue());
             }
         });
         assertEquals(rules.size(), rank.length);
 
         List<Set<Rule>> ruleSets = new ArrayList<Set<Rule>>();
-        double lastWeight = -1;
+        Weight lastWeight = null;
         for (int i = 0; i < rules.size(); i++) {
             WeightedRule rule = (WeightedRule)rules.get(i);
-            double weight = rule.getWeight();
+            Weight weight = rule.getWeight();
 
-            if (i != 0 && MathUtils.equals(weight, lastWeight)) {
+            if ((lastWeight != null) && MathUtils.equals(weight.getValue(), lastWeight.getValue())) {
                 ruleSets.get(ruleSets.size() - 1).add(rule);
             } else {
                 Set<Rule> newSet = new HashSet<Rule>();

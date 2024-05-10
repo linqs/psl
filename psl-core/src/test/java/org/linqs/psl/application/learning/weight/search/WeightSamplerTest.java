@@ -18,6 +18,7 @@
 package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.util.RandUtils;
 
@@ -35,7 +36,7 @@ public class WeightSamplerTest extends PSLBaseTest {
         int numSamples = 1000;
         double sampleMagnitude = 0.0;
         int[] numWeights = new int[]{ 1, 2, 100 };
-        float[][] weightSamples = null;
+        Weight[][] weightSamples = null;
 
         WeightSampler weightSampler = null;
 
@@ -48,7 +49,7 @@ public class WeightSamplerTest extends PSLBaseTest {
         // Iterate over possible number of weights.
         for (int dimension : numWeights) {
             weightSampler = new WeightSampler(dimension);
-            weightSamples = new float[numSamples][dimension];
+            weightSamples = new Weight[numSamples][dimension];
 
             // Draw numSamples random samples from dirichlet distribution.
             for (int i = 0; i < numSamples; i++) {
@@ -61,7 +62,7 @@ public class WeightSamplerTest extends PSLBaseTest {
             for (int i = 0; i < numSamples; i++) {
                 sampleMagnitude = 0.0;
                 for (int j = 0; j < dimension; j++) {
-                    sampleMagnitude += Math.pow(weightSamples[i][j], 2);
+                    sampleMagnitude += Math.pow(weightSamples[i][j].getValue(), 2);
                 }
                 sampleMagnitude = Math.sqrt(sampleMagnitude);
 
@@ -81,7 +82,7 @@ public class WeightSamplerTest extends PSLBaseTest {
         double sampleMean = 0.0;
         double sampleVariance = 0.0;
         int[] numWeights = new int[]{ 1, 2, 100 };
-        float[][] weightSamples = null;
+        Weight[][] weightSamples = null;
 
         WeightSampler weightSampler = null;
 
@@ -94,7 +95,7 @@ public class WeightSamplerTest extends PSLBaseTest {
         // Iterate over possible number of weights.
         for (int dimension: numWeights) {
             weightSampler = new WeightSampler(dimension);
-            weightSamples = new float[numSamples][dimension];
+            weightSamples = new Weight[numSamples][dimension];
 
             // Draw numSamples random samples from dirichlet distribution.
             for (int i = 0; i < numSamples; i++) {
@@ -106,11 +107,11 @@ public class WeightSamplerTest extends PSLBaseTest {
                 sampleMean = 0.0;
                 sampleVariance = 0.0;
                 for (int j = 0; j < numSamples; j++) {
-                    sampleMean += weightSamples[j][i] / numSamples;
+                    sampleMean += weightSamples[j][i].getValue() / numSamples;
                 }
 
                 for (int j = 0; j < numSamples; j++) {
-                    sampleVariance += Math.pow(weightSamples[j][i] - 0.5, 2.0) / (numSamples);
+                    sampleVariance += Math.pow(weightSamples[j][i].getValue() - 0.5, 2.0) / (numSamples);
                 }
 
                 // Assert that various statistics of the distribution are as expected.
@@ -123,12 +124,12 @@ public class WeightSamplerTest extends PSLBaseTest {
                 sampleMax = Float.NEGATIVE_INFINITY;
                 sampleMin = Float.POSITIVE_INFINITY;
                 for (int j = 0; j < dimension; j++) {
-                    if (weightSamples[i][j] > sampleMax) {
-                        sampleMax = weightSamples[i][j];
+                    if (weightSamples[i][j].getValue() > sampleMax) {
+                        sampleMax = weightSamples[i][j].getValue();
                     }
 
-                    if (weightSamples[i][j] > sampleMin) {
-                        sampleMin = weightSamples[i][j];
+                    if (weightSamples[i][j].getValue() > sampleMin) {
+                        sampleMin = weightSamples[i][j].getValue();
                     }
                 }
 

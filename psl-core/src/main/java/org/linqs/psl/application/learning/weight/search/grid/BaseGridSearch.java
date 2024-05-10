@@ -20,6 +20,7 @@ package org.linqs.psl.application.learning.weight.search.grid;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
 
@@ -85,11 +86,9 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
         }
 
         double bestObjective = -1.0;
-        float[] bestWeights = new float[mutableRules.size()];
-        float[] weights = new float[mutableRules.size()];
-        float[] unitWeightVector = new float[mutableRules.size()];
+        Weight[] bestWeights = new Weight[mutableRules.size()];
+        Weight[] weights = new Weight[mutableRules.size()];
 
-        boolean nonZero = false;
         long totalTime = 0;
         for (int iteration = 0; iteration < numLocations; iteration++) {
             if (totalTime > timeout) {
@@ -107,27 +106,12 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
             log.debug("Iteration {} / {} ({}) -- Inspecting location {}", iteration, numLocations, maxNumLocations, currentLocation);
 
             // Set the weights for the current round.
-            nonZero = false;
             getWeights(weights);
-            System.arraycopy(weights, 0, unitWeightVector, 0, weights.length);
-
-            // Check that there is at least one non-zero weight.
-            for (int i = 0; i < weights.length; i++) {
-                if (weights[i] > 0.0) {
-                    nonZero = true;
-                    break;
-                }
-            }
-
-            if (nonZero) {
-                MathUtils.toUnit(unitWeightVector);
-            }
-
             for (int i = 0; i < mutableRules.size(); i++) {
                 mutableRules.get(i).setWeight(weights[i]);
             }
 
-            log.trace("Weights: {}", weights);
+            log.trace("Weights: {}", (Object[])weights);
 
             // The weights have changed, so we are no longer in an MPE state.
             inTrainingMAPState = false;
@@ -167,7 +151,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * This is a prime method for child classes to override.
      * @param weights
      */
-    protected double inspectLocation(float[] weights) {
+    protected double inspectLocation(Weight[] weights) {
         computeTrainingMAPState();
 
         evaluation.compute(trainingMap);
@@ -179,7 +163,7 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
      * Get the weight configuration at the current location.
      * @param weights
      */
-    protected abstract void getWeights(float[] weights);
+    protected abstract void getWeights(Weight[] weights);
 
     /**
      * Choose the next location we will search.

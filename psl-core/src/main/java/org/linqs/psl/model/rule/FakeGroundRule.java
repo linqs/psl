@@ -46,12 +46,12 @@ public class FakeGroundRule implements WeightedGroundRule {
     }
 
     @Override
-    public float getWeight() {
+    public Weight getWeight() {
         return rule.getWeight();
     }
 
     @Override
-    public void setWeight(float weight) {
+    public void setWeight(Weight weight) {
         this.rule.setWeight(weight);
     }
 

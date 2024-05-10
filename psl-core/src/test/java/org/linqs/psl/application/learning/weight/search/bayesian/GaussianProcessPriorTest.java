@@ -24,6 +24,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.EvaluationInstance;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.FloatMatrix;
 
@@ -90,7 +91,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
         for (int i = 0; i < configs.size(); i++) {
             for (int j = 0; j < configs.get(i).config.length; j++) {
-                Assert.assertEquals(expected.get(i)[j], configs.get(i).config[j], 1e-5);
+                Assert.assertEquals(expected.get(i)[j], configs.get(i).config[j].getValue(), 1e-5);
             }
         }
     }
@@ -117,11 +118,11 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         inverseMat = inverseMat.inverse();
         wl.setKnownDataStdInvForTest(inverseMat);
 
-        float[] x = new float[]{0.4f, 0.2f, 0.1f};
+        Weight[] x = new Weight[]{new Weight(0.4f), new Weight(0.2f), new Weight(0.1f)};
         List<GaussianProcessPrior.WeightConfig> xKnown = new ArrayList<GaussianProcessPrior.WeightConfig>();
-        xKnown.add(wl.new WeightConfig(new float[]{0.1f, 0.2f, 0.3f}));
-        xKnown.add(wl.new WeightConfig(new float[]{0.2f, 0.2f, 0.1f}));
-        xKnown.add(wl.new WeightConfig(new float[]{0.4f, 0.3f, 0.2f}));
+        xKnown.add(wl.new WeightConfig(new Weight[]{new Weight(0.1f), new Weight(0.2f), new Weight(0.3f)}));
+        xKnown.add(wl.new WeightConfig(new Weight[]{new Weight(0.2f), new Weight(0.2f), new Weight(0.1f)}));
+        xKnown.add(wl.new WeightConfig(new Weight[]{new Weight(0.4f), new Weight(0.3f), new Weight(0.2f)}));
         float[] yKnown = new float[]{0.5f, 0.6f, 0.7f};
         FloatMatrix blasYKnown = FloatMatrix.columnVector(yKnown);
 
@@ -145,7 +146,7 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
         wl.doLearn();
 
         for (int i = 0; i < 3; i++) {
-            Assert.assertEquals(1.0f, ((WeightedRule)this.info.model.getRules().get(i)).getWeight(), 1e-30);
+            Assert.assertEquals(1.0f, ((WeightedRule)this.info.model.getRules().get(i)).getWeight().getValue(), 1e-30);
         }
     }
 
@@ -156,11 +157,11 @@ public class GaussianProcessPriorTest extends WeightLearningTest {
 
         @Override
         public double getFunctionValue(WeightConfig config) {
-            if (config.config[0] == 1.0 && config.config[1] == 1.0 && config.config[2] == 1.0) {
+            if (config.config[0].getValue() == 1.0f && config.config[1].getValue() == 1.0f && config.config[2].getValue() == 1.0f) {
                 return 0.5;
             }
 
-            if (config.config[0] == 0.0 && config.config[1] == 1.0 && config.config[2] == 1.0) {
+            if (config.config[0].getValue() == 0.0f && config.config[1].getValue() == 1.0f && config.config[2].getValue() == 1.0f) {
                 return 0.6;
             }
 

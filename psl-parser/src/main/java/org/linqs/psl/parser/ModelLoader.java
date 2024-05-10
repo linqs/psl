@@ -28,6 +28,7 @@ import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -309,7 +310,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
             sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
         }
 
-        return new WeightedLogicalRule(f, w, sq);
+        return new WeightedLogicalRule(f, new Weight(w), sq);
     }
 
     @Override
@@ -416,7 +417,7 @@ public class ModelLoader extends PSLBaseVisitor<Object> {
         if (ctx.EXPONENT_EXPRESSION() != null) {
             sq = ctx.EXPONENT_EXPRESSION().getText().equals("^2");
         }
-        return new WeightedArithmeticRule(expression, filterClauses, w, sq);
+        return new WeightedArithmeticRule(expression, filterClauses, new Weight(w), sq);
     }
 
     @Override

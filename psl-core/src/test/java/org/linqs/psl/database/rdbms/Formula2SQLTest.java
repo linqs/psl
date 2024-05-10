@@ -30,6 +30,7 @@ import org.linqs.psl.model.predicate.ExternalFunctionalPredicate;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.ConstantType;
@@ -68,7 +69,7 @@ public class Formula2SQLTest extends PSLBaseTest {
             new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
         );
 
-        Rule rule = new WeightedLogicalRule(ruleFormula, 10.0f, true);
+        Rule rule = new WeightedLogicalRule(ruleFormula, new Weight(10.0f), true);
         info.model.addRule(rule);
 
         Set<StandardPredicate> toClose = new HashSet<StandardPredicate>();
@@ -112,7 +113,7 @@ public class Formula2SQLTest extends PSLBaseTest {
                     ),
                     new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                10.0f,
+                new Weight(10.0f),
                 true);
         info.model.addRule(rule);
 

@@ -19,6 +19,7 @@
 package org.linqs.psl.application.learning.weight.search;
 
 import org.linqs.psl.config.Options;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.RandUtils;
 
@@ -50,7 +51,7 @@ public class WeightSampler {
         }
     }
 
-    public void getRandomWeights(float[] weights) {
+    public void getRandomWeights(Weight[] weights) {
         if (searchDirichlet) {
             getDirichletRandomWeights(weights);
         } else {
@@ -58,19 +59,19 @@ public class WeightSampler {
         }
     }
 
-    private void getDirichletRandomWeights(float[] weights) {
+    private void getDirichletRandomWeights(Weight[] weights) {
         double[] dirichletSample = RandUtils.sampleDirichlet(dirichletAlphas);
 
         MathUtils.toUnit(dirichletSample);
 
         for (int i = 0; i < numWeights; i++) {
-            weights[i] = (float)dirichletSample[i];
+            weights[i] = new Weight((float)dirichletSample[i]);
         }
     }
 
-    private void getHypercubeRandomWeights(float[] weights) {
+    private void getHypercubeRandomWeights(Weight[] weights) {
         for (int i = 0; i < numWeights; i++) {
-            weights[i] = RandUtils.nextFloat();
+            weights[i] = new Weight(RandUtils.nextFloat());
         }
     }
 }

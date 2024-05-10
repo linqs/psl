@@ -40,7 +40,7 @@ public class Energy extends OptimalValue {
     protected float computeLearningLoss() {
         float energy = 0.0f;
         for (int i = 0; i < mutableRules.size(); i++) {
-            energy += mutableRules.get(i).getWeight() * latentInferenceIncompatibility[i];
+            energy += mutableRules.get(i).getWeight().getValue() * latentInferenceIncompatibility[i];
         }
 
         return energy;

@@ -561,12 +561,6 @@ public class Options {
         "The starting value for atoms and any local variables during inference."
     );
 
-    public static final Option INFERENCE_NORMALIZE_WEIGHTS = new Option(
-        "inference.normalize",
-        true,
-        "Normalize weights to be in [0, 1]. Normalization will be done by dividing all weights by the largest weight."
-    );
-
     public static final Option INFERENCE_RELAX = new Option(
         "inference.relax",
         false,

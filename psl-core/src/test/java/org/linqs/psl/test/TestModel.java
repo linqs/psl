@@ -32,6 +32,7 @@ import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
@@ -126,7 +127,7 @@ public class TestModel {
                     ),
                     new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                5.0f,
+                new Weight(5.0f),
                 true));
 
         rules.add(new WeightedLogicalRule(
@@ -139,14 +140,14 @@ public class TestModel {
                     ),
                     new QueryAtom(predicates.get("Friends"), new Variable("Y"), new Variable("X"))
                 ),
-                10.0f,
+                new Weight(10.0f),
                 true));
 
         rules.add(new WeightedLogicalRule(
                 new Negation(
                     new QueryAtom(predicates.get("Friends"), new Variable("I"), new Variable("J"))
                 ),
-                1.0f,
+                new Weight(1.0f),
                 true));
 
         // Data
@@ -327,7 +328,7 @@ public class TestModel {
                         ),
                         new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                5.0f,
+                new Weight(5.0f),
                 true));
 
         // Data
@@ -422,7 +423,7 @@ public class TestModel {
                         ),
                         new QueryAtom(predicates.get("Friends"), new Variable("B"), new Variable("A"))
                 ),
-                10.0f,
+                new Weight(10.0f),
                 false));
 
         // Data
@@ -515,7 +516,7 @@ public class TestModel {
                                 new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B")))
                         ), FunctionComparator.LTE, new ConstantNumber(0.5f)
                 ),
-                1.0f,
+                new Weight(1.0f),
                 false));
 
         rules.add(new WeightedArithmeticRule(
@@ -525,7 +526,7 @@ public class TestModel {
                                 new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B")))
                         ), FunctionComparator.GTE, new ConstantNumber(0.5f)
                 ),
-                1.0f,
+                new Weight(1.0f),
                 false));
 
         // Data
@@ -604,7 +605,7 @@ public class TestModel {
                 new Negation(
                         new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B"))
                 ),
-                1.0f,
+                new Weight(1.0f),
                 false));
 
         // Data

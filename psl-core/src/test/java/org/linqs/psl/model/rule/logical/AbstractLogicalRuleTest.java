@@ -25,6 +25,7 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.test.PSLBaseTest;
@@ -81,7 +82,7 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
                 ),
                 new QueryAtom(singleOpened, new Variable("B"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
 
@@ -101,7 +102,7 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
                     ),
                     new QueryAtom(singleOpened, new Variable("B"))
                 ),
-                1.0f,
+                new Weight(1.0f),
                 true
             );
 
@@ -121,7 +122,7 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
                     ),
                     new QueryAtom(singleOpened, new Variable("B"))
                 ),
-                1.0f,
+                new Weight(1.0f),
                 true
             );
 
@@ -143,7 +144,7 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
                 new QueryAtom(singleClosed, new Variable("A")),
                 new QueryAtom(singleOpened, new Variable("A"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
 
@@ -153,7 +154,7 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
                 new QueryAtom(singleOpened, new Variable("A")),
                 new QueryAtom(singleClosed, new Variable("A"))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
 
@@ -163,7 +164,7 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
                 new Negation(new QueryAtom(singleOpened, new Variable("A"))),
                 new Negation(new QueryAtom(singleClosed, new Variable("A")))
             ),
-            1.0f,
+            new Weight(1.0f),
             true
         );
 

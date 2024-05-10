@@ -29,6 +29,7 @@ import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.WeightedGroundArithmeticRule;
@@ -274,7 +275,7 @@ public abstract class OnlineMinimizer extends GradientDescent {
             proxRules[proxRuleIndex] = new WeightedArithmeticRule(new ArithmeticRuleExpression(
                     Arrays.asList(new ConstantNumber(1.0f), (new ConstantNumber(-1.0f))),
                     Arrays.asList(atom, proxRuleObservedAtoms[proxRuleIndex]),
-                    FunctionComparator.EQ, new ConstantNumber(0.0f)), proxRuleWeight, true);
+                    FunctionComparator.EQ, new ConstantNumber(0.0f)), new Weight(proxRuleWeight), true);
 
             proxRules[proxRuleIndex].setActive(false);
 

@@ -57,7 +57,7 @@ public class SGDStreamingInferenceTest extends InferenceTest {
         Options.SGD_EXTENSION.set(SGDReasoner.SGDExtension.NONE);
 
         // SGD Non-coordinate step.
-        Options.SGD_LEARNING_RATE.set(1.0);
+        Options.SGD_LEARNING_RATE.set(0.1);
         Options.SGD_INVERSE_TIME_EXP.set(0.5);
         Options.SGD_COORDINATE_STEP.set(false);
         super.initialValueTest();

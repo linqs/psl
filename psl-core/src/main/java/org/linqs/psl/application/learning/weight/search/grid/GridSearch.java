@@ -19,8 +19,8 @@ package org.linqs.psl.application.learning.weight.search.grid;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.StringUtils;
 
@@ -34,15 +34,21 @@ public class GridSearch extends BaseGridSearch {
     private static final Logger log = Logger.getLogger(GridSearch.class);
 
 
-    protected final float[] possibleWeights;
+    protected final Weight[] possibleWeights;
 
     public GridSearch(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                       Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        possibleWeights = StringUtils.splitFloat(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
-        if (possibleWeights.length == 0) {
+        float[] possibleWeightValues = StringUtils.splitFloat(Options.WLA_GS_POSSIBLE_WEIGHTS.getString(), DELIM);
+
+        if (possibleWeightValues.length == 0) {
             throw new IllegalArgumentException("No weights provided for grid search.");
+        }
+
+        possibleWeights = new Weight[possibleWeightValues.length];
+        for (int i = 0; i < possibleWeightValues.length; i++) {
+            possibleWeights[i] = new Weight(possibleWeightValues[i]);
         }
 
         maxNumLocations = (int)Math.pow(possibleWeights.length, mutableRules.size());
@@ -50,7 +56,7 @@ public class GridSearch extends BaseGridSearch {
     }
 
     @Override
-    protected void getWeights(float[] weights) {
+    protected void getWeights(Weight[] weights) {
         int[] indexes = StringUtils.splitInt(currentLocation, DELIM);
         assert(indexes.length == mutableRules.size());
 

@@ -35,10 +35,10 @@ import java.util.Set;
  * Two fake rules are equal if they have the same squared variable value.
  */
 public class FakeRule extends AbstractRule implements WeightedRule {
-    protected float weight;
+    protected Weight weight;
     protected boolean squared;
 
-    public FakeRule(float weight, boolean squared) {
+    public FakeRule(Weight weight, boolean squared) {
         super("fake", 0);
 
         this.weight = weight;
@@ -51,12 +51,12 @@ public class FakeRule extends AbstractRule implements WeightedRule {
     }
 
     @Override
-    public float getWeight() {
+    public Weight getWeight() {
         return weight;
     }
 
     @Override
-    public void setWeight(float weight) {
+    public void setWeight(Weight weight) {
         this.weight = weight;
     }
 

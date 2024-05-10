@@ -20,6 +20,7 @@ package org.linqs.psl.runtime;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Term;
@@ -106,7 +107,7 @@ public class RuntimeResult {
 
     private static class JSONRule {
         public String text;
-        public Float weight;
+        public Weight weight;
         public boolean squared;
         public int ruleIndex;
 

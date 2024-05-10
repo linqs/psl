@@ -17,10 +17,35 @@
  */
 package org.linqs.psl.model.rule;
 
-public interface WeightedRule extends Rule {
-    public boolean isSquared();
+/**
+ * A weight for a rule.
+ */
+public class Weight {
+    private float value;
 
-    public Weight getWeight();
+    public Weight(float value) {
+        this.value = value;
+    }
 
-    public void setWeight(Weight weight);
+    /**
+     * Returns the weight's value
+     */
+    public float getValue() {
+        return value;
+    }
+
+    public void setValue(float value) {
+        this.value = value;
+    }
+
+    /**
+     * Returns whether the term is constant.
+     */
+    public boolean isConstant() {
+        return true;
+    }
+
+    public String toString() {
+        return Float.toString(value);
+    }
 }
