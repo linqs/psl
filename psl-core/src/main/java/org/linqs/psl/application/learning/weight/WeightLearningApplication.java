@@ -66,6 +66,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
     protected List<Rule> allRules;
     protected List<WeightedRule> mutableRules;
+    protected List<WeightedRule> deepRules;
 
     protected TrainingMap trainingMap;
     protected TrainingMap validationMap;
@@ -106,12 +107,17 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();
+        deepRules = new ArrayList<WeightedRule>();
 
         for (Rule rule : rules) {
             allRules.add(rule);
 
             if (rule instanceof WeightedRule) {
-                mutableRules.add((WeightedRule)rule);
+                if (((WeightedRule) rule).getWeight().isDeep()) {
+                    mutableRules.add((WeightedRule) rule);
+                } else {
+                    deepRules.add((WeightedRule) rule);
+                }
             }
         }
 

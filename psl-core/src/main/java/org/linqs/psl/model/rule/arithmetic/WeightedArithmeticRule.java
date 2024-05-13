@@ -24,8 +24,10 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.Parallel;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +55,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
             ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses,
             Weight weight, boolean squared, String name
     ) {
-        super(expression, filterClauses, name);
+        super(expression, filterClauses, name, HashCode.build(expression.hashCode(), weight));
 
         this.weight = weight;
         this.squared = squared;
@@ -66,9 +68,17 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
         if (groundedWeight == null) {
             return new WeightedGroundArithmeticRule(this, coeffs, atoms, comparator, constant);
         } else {
-            WeightedArithmeticRule groundedDeepWeightedRule = new WeightedArithmeticRule(
-                expression, groundedWeight, squared, groundedWeight.getAtom().toString() + ": " + name
+            // Create grounded expression.
+            ArithmeticRuleExpression newExpression = new ArithmeticRuleExpression(
+                    expression.getAtomCoefficients(), Arrays.asList(atoms), comparator, expression.getFinalCoefficient()
             );
+
+            WeightedArithmeticRule groundedDeepWeightedRule = new WeightedArithmeticRule(
+                newExpression, groundedWeight, squared, groundedWeight.getAtom().toString() + ": " + name
+            );
+
+            groundedDeepWeightedRule.setParentHashCode(hashCode());
+            addChildHashCode(groundedDeepWeightedRule.hashCode());
 
             return new WeightedGroundArithmeticRule(groundedDeepWeightedRule, coeffs, atoms, comparator, constant);
         }

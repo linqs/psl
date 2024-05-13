@@ -19,7 +19,6 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
-import org.linqs.psl.model.predicate.DeepPredicate;
 
 /**
  * A weight for a rule.
@@ -78,7 +77,7 @@ public class Weight {
     /**
      * Returns whether the term is constant or if it is a function of an atom.
      */
-    public boolean isConstant() {
+    public boolean isDeep() {
         return atom == null;
     }
 
@@ -87,6 +86,15 @@ public class Weight {
             return constantValue + " * " + atom;
         } else {
             return Float.toString(constantValue);
+        }
+    }
+
+    public int hashCode() {
+        // Use the hash of the atom if it exists. Else, use the object's hash.
+        if (atom != null) {
+            return atom.hashCode();
+        } else {
+            return super.hashCode();
         }
     }
 }

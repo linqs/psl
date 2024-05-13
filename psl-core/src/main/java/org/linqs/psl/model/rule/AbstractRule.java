@@ -18,8 +18,10 @@
 package org.linqs.psl.model.rule;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Base class for all (first order, i.e., not ground) rules.
@@ -30,6 +32,9 @@ public abstract class AbstractRule implements Rule {
     protected String name;
     protected Boolean active;
     protected int hashcode;
+
+    protected int parentHashCode;
+    protected Set<Integer> childHashCodes;
 
     public static Rule getRule(int hashcode) {
         return rules.get(hashcode);
@@ -44,6 +49,9 @@ public abstract class AbstractRule implements Rule {
         this.name = null;
         this.hashcode = 0;
         this.active = true;
+
+        this.parentHashCode = hashcode;
+        this.childHashCodes = new HashSet<Integer>();
     }
 
     protected AbstractRule(String name, int hashcode) {
@@ -52,6 +60,9 @@ public abstract class AbstractRule implements Rule {
         this.active = true;
 
         ensureRegistration();
+
+        this.parentHashCode = hashcode;
+        this.childHashCodes = new HashSet<Integer>();
     }
 
     public boolean isActive() {
@@ -64,6 +75,22 @@ public abstract class AbstractRule implements Rule {
 
     public String getName() {
         return this.name;
+    }
+
+    public int getParentHashCode() {
+        return parentHashCode;
+    }
+
+    public void setParentHashCode(int parentHashCode) {
+        this.parentHashCode = parentHashCode;
+    }
+
+    public Set<Integer> getChildHashCodes() {
+        return childHashCodes;
+    }
+
+    public void addChildHashCode(int childHashCode) {
+        this.childHashCodes.add(childHashCode);
     }
 
     private static void registerRule(Rule rule) {

@@ -48,7 +48,7 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule implements 
     }
 
     public UnweightedArithmeticRule(ArithmeticRuleExpression expression, Map<SummationVariable, Formula> filterClauses, String name) {
-        super(expression, filterClauses, name);
+        super(expression, filterClauses, name, expression.hashCode());
     }
 
     @Override

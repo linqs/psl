@@ -26,8 +26,11 @@ import org.linqs.psl.grounding.collective.Containment;
 import org.linqs.psl.grounding.collective.Coverage;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.Predicate;
+import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
+import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -60,11 +63,41 @@ public class Grounding {
 
     public static long groundAll(List<Rule> rules, TermStore termStore, Database database) {
         boolean collective = Options.GROUNDING_COLLECTIVE.getBoolean();
+
+        long termCount = 0;
         if (collective) {
-            return groundCollective(rules, termStore, database);
+            termCount = groundCollective(rules, termStore, database);
+        } else {
+            termCount = groundIndependent(rules, termStore, database);
         }
 
-        return groundIndependent(rules, termStore, database);
+        // Substitute the rules with deepWeights for their grounded versions.
+        List<Rule> childrenDeepWeightRules = new ArrayList<Rule>();
+        List<Rule> parentDeepWeightRules = new ArrayList<Rule>();
+        for (Rule rule : rules) {
+            if (rule instanceof AbstractRule) {
+                AbstractRule abstractRule = (AbstractRule) rule;
+
+                if (abstractRule.getChildHashCodes().isEmpty()) {
+                    // This is a base rule.
+                    continue;
+                }
+
+                parentDeepWeightRules.add(rule);
+
+                for (int childHashCode : abstractRule.getChildHashCodes()) {
+                    Rule childRule = AbstractRule.getRule(childHashCode);
+
+                    childrenDeepWeightRules.add(childRule);
+                }
+            }
+        }
+
+        // Remove the parent rules from the list of rules and add the child rules.
+        rules.removeAll(parentDeepWeightRules);
+        rules.addAll(childrenDeepWeightRules);
+
+        return termCount;
     }
 
     /**

@@ -30,9 +30,16 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
+import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
+import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.test.PSLBaseTest;
 import org.linqs.psl.test.TestModel;
 import org.linqs.psl.util.MathUtils;
@@ -42,6 +49,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -296,6 +304,34 @@ public abstract class WeightLearningTest extends PSLBaseTest {
             ),
             new Weight(5.0f),
             true
+        );
+        info.model.addRule(newRule);
+
+        WeightLearningApplication weightLearner = getWLA();
+        weightLearner.learn();
+        weightLearner.close();
+    }
+
+    @Test
+    public void ruleWithObservedAtomWeight() {
+        Rule newRule;
+        List<String> expected;
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+
+        // Nice(A): Friends(A, B) >= 1.0 ^2
+        coefficients = Arrays.asList(
+                (Coefficient)(new ConstantNumber(1))
+        );
+
+        atoms = Arrays.asList(
+                (SummationAtomOrAtom)(new QueryAtom(info.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+        );
+
+        newRule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
+                new Weight(1.0f, new QueryAtom(info.predicates.get("Nice"), new Variable("A"))),
+                true
         );
         info.model.addRule(newRule);
 

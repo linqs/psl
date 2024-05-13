@@ -113,6 +113,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         }
 
         this.hashcode = hash;
+        this.parentHashCode = hash;
 
         ensureRegistration();
     }
