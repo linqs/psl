@@ -21,8 +21,6 @@ import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 
-import java.util.Map;
-
 /**
  * List of substitutions for {@link Variable Variables} in a {@link Formula}.
  */

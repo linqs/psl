@@ -19,6 +19,7 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.model.predicate.DeepPredicate;
 
 /**
  * A weight for a rule.
@@ -45,7 +46,11 @@ public class Weight {
     public float getValue() {
         if (atom != null) {
             if (!(atom instanceof GroundAtom)) {
-                throw new IllegalStateException("Called getValue() on " + atom + " before grounding. Atom must be a GroundAtom before it can be used in a Weight.");
+                throw new IllegalStateException("Called getValue() on weight with atom: " + atom + " before grounding. Atom must be a GroundAtom before it can be used in a Weight.");
+            }
+
+            if (!((GroundAtom) atom).isFixed()) {
+                throw new IllegalStateException("Called getValue() on weight with non-fixed atom: " + atom + ". Atoms must be fixed (deep or observed) if they are used as weights.");
             }
 
             return constantValue * ((GroundAtom)atom).getValue();
@@ -71,7 +76,7 @@ public class Weight {
     }
 
     /**
-     * Returns whether the term is constant.
+     * Returns whether the term is constant or if it is a function of an atom.
      */
     public boolean isConstant() {
         return atom == null;

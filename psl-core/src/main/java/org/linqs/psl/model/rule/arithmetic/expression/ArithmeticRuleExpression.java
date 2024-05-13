@@ -41,7 +41,7 @@ import java.util.Set;
 /**
  * Container for components of an arithmetic rule formula.
  *
- * Full equality checks (when two expressions are the equal, but not the same refernce) are epensive.
+ * Full equality checks (when two expressions are the equal, but not the same reference) are expensive.
  */
 public class ArithmeticRuleExpression implements Serializable {
     protected final List<Coefficient> coefficients;

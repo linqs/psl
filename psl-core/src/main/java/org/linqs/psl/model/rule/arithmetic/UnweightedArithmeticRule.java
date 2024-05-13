@@ -25,6 +25,7 @@ import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
+import org.linqs.psl.util.Parallel;
 
 import java.util.HashMap;
 import java.util.List;
@@ -51,15 +52,42 @@ public class UnweightedArithmeticRule extends AbstractArithmeticRule implements 
     }
 
     @Override
-    protected UnweightedGroundArithmeticRule makeGroundRule(float[] coefficients, GroundAtom[] atoms,
-            FunctionComparator comparator, float constant) {
+    protected UnweightedGroundArithmeticRule makeGroundRule(
+            float[] coefficients, GroundAtom[] atoms, FunctionComparator comparator, float constant, Weight weight
+    ) {
+        assert weight == null;
         return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
     }
 
     @Override
-    protected UnweightedGroundArithmeticRule makeGroundRule(List<Float> coefficients, List<GroundAtom> atoms,
-            FunctionComparator comparator, float constant) {
+    protected UnweightedGroundArithmeticRule makeGroundRule(
+            List<Float> coefficients, List<GroundAtom> atoms, FunctionComparator comparator, float constant, Weight weight
+    ) {
+        assert weight == null;
         return new UnweightedGroundArithmeticRule(this, coefficients, atoms, comparator, constant);
+    }
+
+    @Override
+    protected GroundingResources getGroundingResources(ArithmeticRuleExpression expression) {
+        GroundingResources resources = null;
+        if (!Parallel.hasThreadObject(groundingResourcesKey)) {
+            resources = new GroundingResources();
+
+            if (expression != null) {
+                resources.parseExpression(expression, !hasSummation());
+            }
+
+            Parallel.putThreadObject(groundingResourcesKey, resources);
+        } else {
+            resources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
+        }
+
+        return resources;
+    }
+
+    @Override
+    protected void internalPrepSummationGroundingResources(ArithmeticRuleExpression flatExpression, GroundingResources resources) {
+        resources.parseExpression(flatExpression, false);
     }
 
     @Override

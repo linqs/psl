@@ -25,6 +25,7 @@ import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
@@ -731,5 +732,27 @@ public class AbstractArithmeticRuleTest extends PSLBaseTest {
         }
 
         assertRules(splitRules.toArray(new Rule[0]), expected, true);
+    }
+
+    @Test
+    public void testAtomWeightedRule() {
+        // SingleClosed(A): SingleClosed(A) + SingleClosed(B) = 1
+        List<Coefficient> coefficients = Arrays.asList(
+                (Coefficient)(new ConstantNumber(1)),
+                (Coefficient)(new ConstantNumber(1))
+        );
+
+        List<SummationAtomOrAtom> atoms = Arrays.asList(
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))),
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("B")))
+        );
+
+        AbstractArithmeticRule rule = new WeightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)),
+                new Weight(1.0f, new QueryAtom(singleClosed, new Variable("A"))),
+                false
+        );
+
+        assertEquals("1.0 * SINGLECLOSED(A): 1.0 * SINGLECLOSED(A) + 1.0 * SINGLECLOSED(B) = 1.0", rule.toString());
     }
 }

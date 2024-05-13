@@ -1496,6 +1496,58 @@ public class GroundRuleTest extends PSLBaseTest {
     }
 
     @Test
+    public void testArithmeticObservedAtomWeights() {
+        initModel(false);
+
+        TermStore store = new DummyTermStore(database.getAtomStore());
+
+        Rule rule;
+        List<String> expected;
+        List<Coefficient> coefficients;
+        List<SummationAtomOrAtom> atoms;
+
+        // Nice(A): Friends(A, B) >= 1.0 ^2
+        coefficients = Arrays.asList(
+                (Coefficient)(new ConstantNumber(1))
+        );
+
+        atoms = Arrays.asList(
+                (SummationAtomOrAtom)(new QueryAtom(model.predicates.get("Friends"), new Variable("A"), new Variable("B")))
+        );
+
+        rule = new WeightedArithmeticRule(
+                new ArithmeticRuleExpression(coefficients, atoms, FunctionComparator.GTE, new ConstantNumber(1)),
+                new Weight(1.0f, new QueryAtom(model.predicates.get("Nice"), new Variable("A"))),
+                true
+        );
+
+        expected = Arrays.asList(
+                "1.0 * NICE('Alice'): 1.0 * FRIENDS('Alice', 'Bob') >= 1.0 ^2",
+                "1.0 * NICE('Alice'): 1.0 * FRIENDS('Alice', 'Charlie') >= 1.0 ^2",
+                "1.0 * NICE('Alice'): 1.0 * FRIENDS('Alice', 'Derek') >= 1.0 ^2",
+                "1.0 * NICE('Alice'): 1.0 * FRIENDS('Alice', 'Eugene') >= 1.0 ^2",
+                "1.0 * NICE('Bob'): 1.0 * FRIENDS('Bob', 'Alice') >= 1.0 ^2",
+                "1.0 * NICE('Bob'): 1.0 * FRIENDS('Bob', 'Charlie') >= 1.0 ^2",
+                "1.0 * NICE('Bob'): 1.0 * FRIENDS('Bob', 'Derek') >= 1.0 ^2",
+                "1.0 * NICE('Bob'): 1.0 * FRIENDS('Bob', 'Eugene') >= 1.0 ^2",
+                "1.0 * NICE('Charlie'): 1.0 * FRIENDS('Charlie', 'Alice') >= 1.0 ^2",
+                "1.0 * NICE('Charlie'): 1.0 * FRIENDS('Charlie', 'Bob') >= 1.0 ^2",
+                "1.0 * NICE('Charlie'): 1.0 * FRIENDS('Charlie', 'Derek') >= 1.0 ^2",
+                "1.0 * NICE('Charlie'): 1.0 * FRIENDS('Charlie', 'Eugene') >= 1.0 ^2",
+                "1.0 * NICE('Derek'): 1.0 * FRIENDS('Derek', 'Alice') >= 1.0 ^2",
+                "1.0 * NICE('Derek'): 1.0 * FRIENDS('Derek', 'Bob') >= 1.0 ^2",
+                "1.0 * NICE('Derek'): 1.0 * FRIENDS('Derek', 'Charlie') >= 1.0 ^2",
+                "1.0 * NICE('Derek'): 1.0 * FRIENDS('Derek', 'Eugene') >= 1.0 ^2",
+                "1.0 * NICE('Eugene'): 1.0 * FRIENDS('Eugene', 'Alice') >= 1.0 ^2",
+                "1.0 * NICE('Eugene'): 1.0 * FRIENDS('Eugene', 'Bob') >= 1.0 ^2",
+                "1.0 * NICE('Eugene'): 1.0 * FRIENDS('Eugene', 'Charlie') >= 1.0 ^2",
+                "1.0 * NICE('Eugene'): 1.0 * FRIENDS('Eugene', 'Derek') >= 1.0 ^2"
+        );
+
+        groundAndCompare(expected, rule, store, database);
+    }
+
+    @Test
     /**
      * Make sure that variables that appear in the head but not the body are fine.
      * There was some concern about this before, but once we convert to the DNF,
