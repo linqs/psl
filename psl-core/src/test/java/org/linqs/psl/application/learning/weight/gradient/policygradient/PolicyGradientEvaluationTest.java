@@ -52,4 +52,9 @@ public class PolicyGradientEvaluationTest extends WeightLearningTest {
 
         super.friendshipRankTest();
     }
+
+    @Override
+    public void ruleWithObservedAtomWeight() {
+        // Not supported.
+    }
 }
