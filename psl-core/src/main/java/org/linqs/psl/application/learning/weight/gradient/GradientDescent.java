@@ -24,6 +24,8 @@ import org.linqs.psl.application.learning.weight.gradient.batchgenerator.BatchGe
 import org.linqs.psl.config.Options;
 import org.linqs.psl.database.AtomStore;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.model.atom.Atom;
+import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.deep.DeepModelPredicate;
 import org.linqs.psl.model.predicate.DeepPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
@@ -40,6 +42,7 @@ import org.linqs.psl.util.MathUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -268,7 +271,19 @@ public abstract class GradientDescent extends WeightLearningApplication {
         for (WeightedRule rule : deepRules) {
             Set<Integer> childHashCodes = ((AbstractRule) rule).getChildHashCodes();
 
+            Set<Atom> coreAtomsSet = new HashSet<Atom>();
             for (Integer childHashCode : childHashCodes) {
+                WeightedRule groundedWeightedRule = (WeightedRule) AbstractRule.getRule(childHashCode);
+
+                // Verify that the atom in the deep weight is not in the term expression.
+                // This pattern is not supported in the current implementation.
+                GroundAtom deepWeightAtom = (GroundAtom) groundedWeightedRule.getWeight().getAtom();
+                groundedWeightedRule.getCoreAtoms(coreAtomsSet);
+                if (coreAtomsSet.contains(deepWeightAtom)) {
+                    throw new IllegalArgumentException("Grounded Deep weight atoms: " + deepWeightAtom + " cannot be in the expression of the rule: " + rule);
+                }
+                coreAtomsSet.clear();
+
                 groundedDeepWeightedRules.add((WeightedRule) AbstractRule.getRule(childHashCode));
                 groundedDeepWeightedRuleIndexMap.put((WeightedRule) AbstractRule.getRule(childHashCode), groundedDeepWeightRuleCount);
                 groundedDeepWeightRuleCount++;
