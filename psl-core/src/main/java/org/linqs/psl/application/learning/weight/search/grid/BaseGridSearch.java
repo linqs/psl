@@ -22,7 +22,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.util.Logger;
-import org.linqs.psl.util.MathUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +73,10 @@ public abstract class BaseGridSearch extends WeightLearningApplication {
 
         if (this.runValidation) {
             throw new IllegalArgumentException("Validation is not supported by GridSearch weight learning applications.");
+        }
+
+        if (!deepRules.isEmpty()) {
+            log.warn("GridSearch learners do not support learning for deep weights. They will be ignored.");
         }
     }
 

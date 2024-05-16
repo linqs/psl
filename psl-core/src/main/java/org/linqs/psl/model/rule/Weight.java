@@ -78,7 +78,7 @@ public class Weight {
      * Returns whether the term is constant or if it is a function of an atom.
      */
     public boolean isDeep() {
-        return atom == null;
+        return atom != null;
     }
 
     public String toString() {

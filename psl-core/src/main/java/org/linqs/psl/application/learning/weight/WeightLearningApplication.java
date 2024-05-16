@@ -114,9 +114,9 @@ public abstract class WeightLearningApplication implements ModelApplication {
 
             if (rule instanceof WeightedRule) {
                 if (((WeightedRule) rule).getWeight().isDeep()) {
-                    mutableRules.add((WeightedRule) rule);
-                } else {
                     deepRules.add((WeightedRule) rule);
+                } else {
+                    mutableRules.add((WeightedRule) rule);
                 }
             }
         }

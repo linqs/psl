@@ -19,6 +19,8 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.database.AtomStore;
+import org.linqs.psl.model.rule.Weight;
+import org.linqs.psl.model.rule.WeightedRule;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,27 +74,45 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
 
         // Unify the components of the atoms in this term.
         for (int i = 1; i < newTerm.size; i++) {
-            int nextAtomRootIndex = atomStore.findAtomRoot(atomStore.getAtom(newTerm.atomIndexes[i]));
-            GroundAtom nextRootAtom = atomStore.getAtom(nextAtomRootIndex);
+            mergeAtomComponents(rootAtom, atomStore.getAtom(newTerm.atomIndexes[i]));
+        }
 
-            if (nextAtomRootIndex == termRootIndex) {
-                // Already in the same component.
-                continue;
+        // If the term comes from a deep weighted rule, unify the components of the deep atoms.
+        if (newTerm.getRule().isWeighted()) {
+            Weight weight = ((WeightedRule) newTerm.getRule()).getWeight();
+            if (weight.isDeep()) {
+                if (!(weight.getAtom() instanceof GroundAtom)) {
+                    throw new IllegalArgumentException("WeightedRule's weight must be grounded before creating and adding their terms.");
+                }
+                mergeAtomComponents(rootAtom, (GroundAtom) weight.getAtom());
             }
-
-            atomStore.union(rootAtom, nextRootAtom);
-
-            // Merge the components.
-            if (!connectedComponents.containsKey(nextAtomRootIndex)) {
-                // No component for the next atom.
-                continue;
-            }
-
-            connectedComponents.get(termRootIndex).addAll(connectedComponents.get(nextAtomRootIndex));
-            connectedComponents.remove(nextAtomRootIndex);
         }
 
         return 1;
+    }
+
+    private void mergeAtomComponents(GroundAtom atom1, GroundAtom atom2) {
+        int atom1RootIndex = atomStore.findAtomRoot(atom1);
+        int atom2RootIndex = atomStore.findAtomRoot(atom2);
+
+        if (atom1RootIndex == atom2RootIndex) {
+            // Already in the same component.
+            return;
+        }
+
+        GroundAtom atom1Root = atomStore.getAtom(atom1RootIndex);
+        GroundAtom atom2Root = atomStore.getAtom(atom2RootIndex);
+
+        atomStore.union(atom1Root, atom2Root);
+
+        // Merge the components.
+        if (!connectedComponents.containsKey(atom2RootIndex)) {
+            // No component for the next atom.
+            return;
+        }
+
+        connectedComponents.get(atom1RootIndex).addAll(connectedComponents.get(atom2RootIndex));
+        connectedComponents.remove(atom2RootIndex);
     }
 
     /**

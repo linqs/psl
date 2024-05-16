@@ -131,6 +131,7 @@ public abstract class BatchGenerator {
             SimpleTermStore<? extends ReasonerTerm> batchTermStore = batchTermStores.get(i);
             batchDeepModelPredicates.add(new ArrayList<DeepModelPredicate>());
 
+            // Copy all deep model predicates.
             for (DeepPredicate deepPredicate : deepPredicates) {
                 DeepModelPredicate batchDeepModelPredicate = deepPredicate.getDeepModel().copy();
                 batchDeepModelPredicate.setAtomStore(batchTermStore.getAtomStore(), true);

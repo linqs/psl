@@ -45,7 +45,8 @@ import java.util.Map;
 public abstract class OptimalValue extends GradientDescent {
     private static final Logger log = Logger.getLogger(OptimalValue.class);
 
-    protected float[] latentInferenceIncompatibility;
+    protected float[] latentSymbolicWeightRuleIncompatibility;
+    protected float[] latentDeepWeightRuleIncompatibility;
 
     protected TermState[] latentInferenceTermState;
     protected float[] latentInferenceAtomValueState;
@@ -59,7 +60,8 @@ public abstract class OptimalValue extends GradientDescent {
                         Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        latentInferenceIncompatibility = new float[mutableRules.size()];
+        latentSymbolicWeightRuleIncompatibility = new float[mutableRules.size()];
+        latentDeepWeightRuleIncompatibility = null;
 
         latentInferenceTermState = null;
         latentInferenceAtomValueState = null;
@@ -68,6 +70,13 @@ public abstract class OptimalValue extends GradientDescent {
 
         rvLatentAtomGradient = null;
         deepLatentAtomGradient = null;
+    }
+
+    @Override
+    protected void postInitGroundModel() {
+        super.postInitGroundModel();
+
+        latentDeepWeightRuleIncompatibility = new float[groundedDeepWeightedRules.size()];
     }
 
     @Override
@@ -108,7 +117,7 @@ public abstract class OptimalValue extends GradientDescent {
         computeMAPStateWithWarmStart(trainInferenceApplication, latentInferenceTermState, latentInferenceAtomValueState);
         inTrainingMAPState = true;
 
-        computeCurrentIncompatibility(latentInferenceIncompatibility);
+        computeCurrentIncompatibility(latentSymbolicWeightRuleIncompatibility, latentDeepWeightRuleIncompatibility);
         trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentAtomGradient, deepLatentAtomGradient);
 
         unfixLabeledRandomVariables();

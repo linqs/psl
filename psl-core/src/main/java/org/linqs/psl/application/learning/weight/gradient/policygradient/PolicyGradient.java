@@ -69,21 +69,21 @@ public abstract class PolicyGradient extends GradientDescent {
     protected float[] initialDeepAtomValues;
 
     protected float latentInferenceEnergy;
-    protected float[] latentInferenceIncompatibility;
+    protected float[] symbolicWeightRuleLatentInferenceIncompatibility;
     protected TermState[] latentInferenceTermState;
     protected float[] latentInferenceAtomValueState;
     protected List<TermState[]> batchLatentInferenceTermStates;
     protected List<float[]> batchLatentInferenceAtomValueStates;
     protected float[] rvLatentEnergyGradient;
-    protected float[] deepLatentEnergyGradient;
-    protected float[] deepPolicyGradient;
+    protected float[] deepAtomLatentEnergyGradient;
+    protected float[] deepAtomPolicyGradient;
 
     protected float energyLossCoefficient;
 
     protected float MAPStateEvaluation;
 
     protected float mapEnergy;
-    protected float[] mapIncompatibility;
+    protected float[] symbolicWeightRuleMAPIncompatibility;
 
     public PolicyGradient(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                         Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
@@ -98,21 +98,31 @@ public abstract class PolicyGradient extends GradientDescent {
         initialDeepAtomValues = null;
 
         latentInferenceEnergy = Float.POSITIVE_INFINITY;
-        latentInferenceIncompatibility = new float[mutableRules.size()];
+        symbolicWeightRuleLatentInferenceIncompatibility = new float[mutableRules.size()];
         latentInferenceTermState = null;
         latentInferenceAtomValueState = null;
         batchLatentInferenceTermStates = new ArrayList<TermState[]>();
         batchLatentInferenceAtomValueStates = new ArrayList<float[]>();
         rvLatentEnergyGradient = null;
-        deepLatentEnergyGradient = null;
-        deepPolicyGradient = null;
+        deepAtomLatentEnergyGradient = null;
+        deepAtomPolicyGradient = null;
 
         energyLossCoefficient = Options.POLICY_GRADIENT_ENERGY_LOSS_COEFFICIENT.getFloat();
 
         MAPStateEvaluation = Float.NEGATIVE_INFINITY;
 
         mapEnergy = Float.POSITIVE_INFINITY;
-        mapIncompatibility = new float[mutableRules.size()];
+        symbolicWeightRuleMAPIncompatibility = new float[mutableRules.size()];
+    }
+
+    @Override
+    protected void postInitGroundModel() {
+        super.postInitGroundModel();
+
+        // Policy gradient learning does not support deep rule weights.
+        if (!groundedDeepWeightedRules.isEmpty()) {
+            throw new IllegalArgumentException("Policy Gradient does not currently support deep rule weights.");
+        }
     }
 
     @Override
@@ -149,8 +159,8 @@ public abstract class PolicyGradient extends GradientDescent {
         super.initializeGradients();
 
         rvLatentEnergyGradient = new float[trainFullMAPAtomValueState.length];
-        deepLatentEnergyGradient = new float[trainFullMAPAtomValueState.length];
-        deepPolicyGradient = new float[trainFullMAPAtomValueState.length];
+        deepAtomLatentEnergyGradient = new float[trainFullMAPAtomValueState.length];
+        deepAtomPolicyGradient = new float[trainFullMAPAtomValueState.length];
         actionValueFunction = new float[trainFullMAPAtomValueState.length];
         actionSampleCounts = new int[trainFullMAPAtomValueState.length];
     }
@@ -160,8 +170,8 @@ public abstract class PolicyGradient extends GradientDescent {
         super.resetGradients();
 
         Arrays.fill(rvLatentEnergyGradient, 0.0f);
-        Arrays.fill(deepLatentEnergyGradient, 0.0f);
-        Arrays.fill(deepPolicyGradient, 0.0f);
+        Arrays.fill(deepAtomLatentEnergyGradient, 0.0f);
+        Arrays.fill(deepAtomPolicyGradient, 0.0f);
         Arrays.fill(actionValueFunction, 0.0f);
         Arrays.fill(actionSampleCounts, 0);
     }
@@ -206,7 +216,7 @@ public abstract class PolicyGradient extends GradientDescent {
 
             switch (policyUpdate) {
                 case INDEPENDENT_CATEGORICAL_REINFORCE:
-                    deepPolicyGradient[atomIndex] = -1.0f * actionValueFunction[atomIndex];
+                    deepAtomPolicyGradient[atomIndex] = -1.0f * actionValueFunction[atomIndex];
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown policy update: " + policyUpdate);
@@ -222,11 +232,11 @@ public abstract class PolicyGradient extends GradientDescent {
     private void clipPolicyGradient() {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
-        float gradientMagnitude = MathUtils.pNorm(deepPolicyGradient, maxGradientNorm);
+        float gradientMagnitude = MathUtils.pNorm(deepAtomPolicyGradient, maxGradientNorm);
 
         if (gradientMagnitude > maxGradientMagnitude) {
             for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
-                deepPolicyGradient[atomIndex] = maxGradientMagnitude * deepPolicyGradient[atomIndex] / gradientMagnitude;
+                deepAtomPolicyGradient[atomIndex] = maxGradientMagnitude * deepAtomPolicyGradient[atomIndex] / gradientMagnitude;
             }
         }
     }
@@ -409,8 +419,8 @@ public abstract class PolicyGradient extends GradientDescent {
         inTrainingMAPState = true;
 
         mapEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
-        computeCurrentIncompatibility(mapIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVEnergyGradient, MAPDeepEnergyGradient);
+        computeCurrentIncompatibility(symbolicWeightRuleMAPIncompatibility, new float[0]);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), expressionRVAtomMAPEnergyGradient, expressionDeepAtomMAPEnergyGradient);
     }
 
     /**
@@ -425,24 +435,29 @@ public abstract class PolicyGradient extends GradientDescent {
         inTrainingMAPState = true;
 
         latentInferenceEnergy = trainInferenceApplication.getReasoner().parallelComputeObjective(trainInferenceApplication.getTermStore()).objective;
-        computeCurrentIncompatibility(latentInferenceIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentEnergyGradient, deepLatentEnergyGradient);
+        computeCurrentIncompatibility(symbolicWeightRuleLatentInferenceIncompatibility, new float[0]);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), rvLatentEnergyGradient, deepAtomLatentEnergyGradient);
 
         unfixLabeledRandomVariables();
     }
 
     @Override
-    protected void addLearningLossWeightGradient() {
+    protected void addLearningLossSymbolicWeightGradient() {
         throw new UnsupportedOperationException("Policy Gradient does not support learning symbolic weights.");
     }
 
     @Override
-    protected void addTotalAtomGradient() {
+    protected void addTotalDeepRuleWeightGradient() {
+        // Deep rule weights are not supported in policy gradient learning.
+    }
+
+    @Override
+    protected void addTotalExpressionAtomGradient() {
         AtomStore atomStore = trainInferenceApplication.getTermStore().getAtomStore();
 
         for (int atomIndex = 0; atomIndex < atomStore.size(); atomIndex++) {
-            rvGradient[atomIndex] = energyLossCoefficient * rvLatentEnergyGradient[atomIndex];
-            deepGradient[atomIndex] = energyLossCoefficient * deepLatentEnergyGradient[atomIndex] + deepPolicyGradient[atomIndex];
+            expressionRVAtomGradient[atomIndex] += energyLossCoefficient * rvLatentEnergyGradient[atomIndex];
+            expressionDeepAtomGradient[atomIndex] += energyLossCoefficient * deepAtomLatentEnergyGradient[atomIndex] + deepAtomPolicyGradient[atomIndex];
         }
     }
 

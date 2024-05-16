@@ -52,10 +52,8 @@ import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.model.term.VariableTypeMap;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.util.HashCode;
 import org.linqs.psl.util.Logger;
 import org.linqs.psl.util.MathUtils;
-import org.linqs.psl.util.Parallel;
 
 import com.healthmarketscience.sqlbuilder.SelectQuery;
 

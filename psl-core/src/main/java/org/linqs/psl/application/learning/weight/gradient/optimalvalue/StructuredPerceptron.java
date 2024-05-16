@@ -21,7 +21,6 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.util.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,13 +30,20 @@ import java.util.List;
 public class StructuredPerceptron extends OptimalValue {
     private static final Logger log = Logger.getLogger(StructuredPerceptron.class);
 
-    protected float[] MAPIncompatibility;
+    protected float[] symbolicWeightRuleMAPIncompatibility;
+    protected float[] deepWeightRuleMAPIncompatibility;
 
     public StructuredPerceptron(List<Rule> rules, Database trainTargetDatabase, Database trainTruthDatabase,
                                 Database validationTargetDatabase, Database validationTruthDatabase, boolean runValidation) {
         super(rules, trainTargetDatabase, trainTruthDatabase, validationTargetDatabase, validationTruthDatabase, runValidation);
 
-        MAPIncompatibility = new float[mutableRules.size()];
+        symbolicWeightRuleMAPIncompatibility = new float[mutableRules.size()];
+        deepWeightRuleMAPIncompatibility = null;
+    }
+
+    @Override
+    protected void postInitGroundModel() {
+        deepWeightRuleMAPIncompatibility = new float[groundedDeepWeightedRules.size()];
     }
 
     @Override
@@ -54,32 +60,39 @@ public class StructuredPerceptron extends OptimalValue {
         computeMAPStateWithWarmStart(trainInferenceApplication, trainMAPTermState, trainMAPAtomValueState);
         inTrainingMAPState = true;
 
-        computeCurrentIncompatibility(MAPIncompatibility);
-        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), MAPRVEnergyGradient, MAPDeepEnergyGradient);
+        computeCurrentIncompatibility(symbolicWeightRuleMAPIncompatibility, deepWeightRuleMAPIncompatibility);
+        trainInferenceApplication.getReasoner().computeOptimalValueGradient(trainInferenceApplication.getTermStore(), expressionRVAtomMAPEnergyGradient, expressionDeepAtomMAPEnergyGradient);
     }
 
     @Override
     protected float computeLearningLoss() {
         float energyDifference = 0.0f;
         for (int i = 0; i < mutableRules.size(); i++) {
-            energyDifference += mutableRules.get(i).getWeight().getValue() * (latentInferenceIncompatibility[i] - MAPIncompatibility[i]);
+            energyDifference += mutableRules.get(i).getWeight().getValue() * (latentSymbolicWeightRuleIncompatibility[i] - symbolicWeightRuleMAPIncompatibility[i]);
         }
 
         return energyDifference;
     }
 
     @Override
-    protected void addLearningLossWeightGradient() {
+    protected void addLearningLossSymbolicWeightGradient() {
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightGradient[i] += latentInferenceIncompatibility[i] - MAPIncompatibility[i];
+            symbolicWeightGradient[i] += latentSymbolicWeightRuleIncompatibility[i] - symbolicWeightRuleMAPIncompatibility[i];
         }
     }
 
     @Override
-    protected void addTotalAtomGradient() {
-        for (int i = 0; i < rvGradient.length; i++) {
-            rvGradient[i] = rvLatentAtomGradient[i] - MAPRVEnergyGradient[i];
-            deepGradient[i] = deepLatentAtomGradient[i] - MAPDeepEnergyGradient[i];
+    protected void addTotalDeepRuleWeightGradient() {
+        for (int i = 0; i < deepWeightGradient.length; i++) {
+            deepWeightGradient[i] += latentDeepWeightRuleIncompatibility[i] - deepWeightRuleMAPIncompatibility[i];
+        }
+    }
+
+    @Override
+    protected void addTotalExpressionAtomGradient() {
+        for (int i = 0; i < expressionRVAtomGradient.length; i++) {
+            expressionRVAtomGradient[i] += rvLatentAtomGradient[i] - expressionRVAtomMAPEnergyGradient[i];
+            expressionDeepAtomGradient[i] += deepLatentAtomGradient[i] - expressionDeepAtomMAPEnergyGradient[i];
         }
     }
 }

@@ -100,7 +100,7 @@ public class GroundingResources {
             argumentBuffer[i] = new Constant[queryAtoms.get(i).getArity()];
         }
 
-        if ((weight != null) && !(weight.isDeep())) {
+        if ((weight != null) && (weight.isDeep())) {
             assert (weight.getAtom() instanceof QueryAtom);
 
             weightQueryAtom = (QueryAtom)weight.getAtom();

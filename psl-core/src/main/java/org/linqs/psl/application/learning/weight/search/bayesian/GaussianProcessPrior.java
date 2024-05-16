@@ -84,6 +84,10 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         if (this.runValidation) {
             throw new IllegalArgumentException("Validation is not supported by GaussianProcessPrior weight learning applications.");
         }
+
+        if (!deepRules.isEmpty()) {
+            log.warn("GaussianProcessPrior learners do not support learning for deep weights. They will be ignored.");
+        }
     }
 
     private void reset() {

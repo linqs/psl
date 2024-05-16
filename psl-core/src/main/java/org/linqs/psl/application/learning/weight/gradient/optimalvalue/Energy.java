@@ -40,7 +40,7 @@ public class Energy extends OptimalValue {
     protected float computeLearningLoss() {
         float energy = 0.0f;
         for (int i = 0; i < mutableRules.size(); i++) {
-            energy += mutableRules.get(i).getWeight().getValue() * latentInferenceIncompatibility[i];
+            energy += mutableRules.get(i).getWeight().getValue() * latentSymbolicWeightRuleIncompatibility[i];
         }
 
         return energy;
@@ -52,14 +52,23 @@ public class Energy extends OptimalValue {
     }
 
     @Override
-    protected void addLearningLossWeightGradient() {
+    protected void addLearningLossSymbolicWeightGradient() {
         for (int i = 0; i < mutableRules.size(); i++) {
-            weightGradient[i] += latentInferenceIncompatibility[i];
+            symbolicWeightGradient[i] += latentSymbolicWeightRuleIncompatibility[i];
         }
     }
 
     @Override
-    protected void addTotalAtomGradient() {
-        System.arraycopy(deepLatentAtomGradient, 0, deepGradient, 0, deepLatentAtomGradient.length);
+    protected void addTotalExpressionAtomGradient() {
+        for (int i = 0; i < deepLatentAtomGradient.length; i++) {
+            expressionDeepAtomGradient[i] += deepLatentAtomGradient[i];
+        }
+    }
+
+    @Override
+    protected void addTotalDeepRuleWeightGradient() {
+        for (int i = 0; i < groundedDeepWeightedRules.size(); i++) {
+            deepWeightGradient[i] += latentDeepWeightRuleIncompatibility[i];
+        }
     }
 }
