@@ -43,6 +43,8 @@ public class StructuredPerceptron extends OptimalValue {
 
     @Override
     protected void postInitGroundModel() {
+        super.postInitGroundModel();
+
         deepWeightRuleMAPIncompatibility = new float[groundedDeepWeightedRules.size()];
     }
 
