@@ -35,6 +35,7 @@ import org.linqs.psl.model.formula.FormulaAnalysis.DNFClause;
 import org.linqs.psl.model.predicate.GroundingOnlyPredicate;
 import org.linqs.psl.model.rule.AbstractRule;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -60,13 +61,15 @@ public abstract class AbstractLogicalRule extends AbstractRule {
     /**
      * A key to store per-rule threading grounding resource under.
      */
-    private final String groundingResourcesKey;
+    protected final String groundingResourcesKey;
 
     protected Formula formula;
     protected final DNFClause negatedDNF;
 
-    protected AbstractLogicalRule(Formula formula, String name) {
+    protected AbstractLogicalRule(Formula formula, String name, int hashcode) {
         this.name = name;
+        this.active = true;
+        this.hashcode = hashcode;
 
         this.formula = formula;
         groundingResourcesKey = AbstractLogicalRule.class.getName() + ";" + formula + ";GroundingResources";
@@ -101,21 +104,10 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             throw new IllegalArgumentException("Formula is not a valid rule for unknown reason.");
         }
 
-        // Build up the hash code from positive and negative literals.
-        int hash = HashCode.DEFAULT_INITIAL_NUMBER;
-
-        for (Atom atom : negatedDNF.getPosLiterals()) {
-            hash = HashCode.build(hash, atom);
-        }
-
-        for (Atom atom : negatedDNF.getNegLiterals()) {
-            hash = HashCode.build(hash, atom);
-        }
-
-        this.hashcode = hash;
-        this.parentHashCode = hash;
-
         ensureRegistration();
+
+        this.parentHashCode = hashcode;
+        this.childHashCodes = new HashSet<Integer>();
     }
 
     public Formula getFormula() {
@@ -163,15 +155,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         results.add(ground(constants, variableMap, database));
     }
 
-    private GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, Database database) {
-        // Get the grounding resources for this thread,
-        if (!Parallel.hasThreadObject(groundingResourcesKey)) {
-            Parallel.putThreadObject(groundingResourcesKey, new GroundingResources(negatedDNF));
-        }
-        GroundingResources resources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
-
-        return groundInternal(constants, variableMap, database, resources);
-    }
+    protected abstract GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, Database database);
 
     public long groundAll(QueryResultIterable groundVariables, TermStore termStore, Database database, Grounding.GroundRuleCallback groundRuleCallback) {
         long initialCount = termStore.size();
@@ -238,9 +222,9 @@ public abstract class AbstractLogicalRule extends AbstractRule {
                 (new HashSet<Atom>(thisNegLiterals)).equals(new HashSet<Atom>(otherNegLiterals));
     }
 
-    protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms);
+    protected abstract AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> positiveAtoms, List<GroundAtom> negativeAtoms, Weight groundedWeight);
 
-    private GroundRule groundInternal(Constant[] row, Map<Variable, Integer> variableMap,
+    protected GroundRule groundInternal(Constant[] row, Map<Variable, Integer> variableMap,
             Database database, GroundingResources resources) {
         resources.positiveAtoms.clear();
         resources.negativeAtoms.clear();
@@ -318,7 +302,26 @@ public abstract class AbstractLogicalRule extends AbstractRule {
             return null;
         }
 
-        return groundFormulaInstance(resources.positiveAtoms, resources.negativeAtoms);
+        // Ground the deep weight if it exists.
+        if (resources.weightQueryAtom != null) {
+            GroundAtom weightGroundAtom = resources.weightQueryAtom.ground(database, row, variableMap, resources.weightArgumentsBuffer, -1.0f);
+            if (weightGroundAtom == null) {
+                return null;
+            }
+
+            resources.weightGroundAtom = weightGroundAtom;
+
+            if (weightGroundAtom instanceof UnmanagedRandomVariableAtom) {
+                resources.accessExceptionAtoms.add(weightGroundAtom);
+            }
+        }
+
+        Weight groundedWeight = null;
+        if (resources.weightGroundAtom != null) {
+            groundedWeight = new Weight(1.0f, resources.weightGroundAtom);
+        }
+
+        return groundFormulaInstance(resources.positiveAtoms, resources.negativeAtoms, groundedWeight);
     }
 
     private short createAtoms(Database database, Map<Variable, Integer> variableMap,
@@ -358,38 +361,5 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         }
 
         return rvaCount;
-    }
-
-    /**
-     * Allocated resources needed for grounding.
-     * This will be stashed in the thread objects so each thread will have one.
-     */
-    private static class GroundingResources {
-        // Remember that these are positive/negative in the CNF.
-        public List<GroundAtom> positiveAtoms;
-        public List<GroundAtom> negativeAtoms;
-
-        // Atoms that cause trouble for the atom manager.
-        public Set<GroundAtom> accessExceptionAtoms;
-
-        // Allocate up-front some buffers for grounding QueryAtoms into.
-        public Constant[][] positiveAtomArgs;
-        public Constant[][] negativeAtomArgs;
-
-        public GroundingResources(DNFClause negatedDNF) {
-            positiveAtoms = new ArrayList<GroundAtom>(4);
-            negativeAtoms = new ArrayList<GroundAtom>(4);
-            accessExceptionAtoms = new HashSet<GroundAtom>(4);
-
-            positiveAtomArgs = new Constant[negatedDNF.getPosLiterals().size()][];
-            for (int i = 0; i < negatedDNF.getPosLiterals().size(); i++) {
-                positiveAtomArgs[i] = new Constant[negatedDNF.getPosLiterals().get(i).getArity()];
-            }
-
-            negativeAtomArgs = new Constant[negatedDNF.getNegLiterals().size()][];
-            for (int i = 0; i < negatedDNF.getNegLiterals().size(); i++) {
-                negativeAtomArgs[i] = new Constant[negatedDNF.getNegLiterals().get(i).getArity()];
-            }
-        }
     }
 }

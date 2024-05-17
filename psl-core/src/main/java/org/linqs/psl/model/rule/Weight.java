@@ -19,6 +19,7 @@ package org.linqs.psl.model.rule;
 
 import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
+import org.linqs.psl.util.HashCode;
 
 /**
  * A weight for a rule.
@@ -89,12 +90,25 @@ public class Weight {
         }
     }
 
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || this.getClass() != o.getClass()) {
+            return false;
+        }
+
+        Weight other = (Weight)o;
+        return constantValue == other.constantValue && atom == other.atom;
+    }
+
     public int hashCode() {
-        // Use the hash of the atom if it exists. Else, use the object's hash.
+        // Use the hash of the atom if it exists. Else, use a default hash shared by all constant weights.
         if (atom != null) {
             return atom.hashCode();
         } else {
-            return super.hashCode();
+            return HashCode.DEFAULT_INITIAL_NUMBER;
         }
     }
 }

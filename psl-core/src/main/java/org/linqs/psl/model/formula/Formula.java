@@ -49,7 +49,7 @@ public interface Formula extends Serializable {
     /**
      * Collapses nested formulas of the same type and remove duplicates at the top level.
      * Does not change the context object.
-     * Order is not guarenteed.
+     * Order is not guaranteed.
      * Ex: (A ^ B) ^ !!C ^ (D v E) becomes A ^ B ^ C ^ (D v E).
      *
      * Note that most formulas will return an object of the same type (eg a Conjunction will

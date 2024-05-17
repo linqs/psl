@@ -17,12 +17,19 @@
  */
 package org.linqs.psl.model.rule.logical;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.HashCode;
+import org.linqs.psl.util.Parallel;
 
 import java.util.List;
+import java.util.Map;
 
 public class WeightedLogicalRule extends AbstractLogicalRule implements WeightedRule {
     protected Weight weight;
@@ -33,15 +40,39 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
     }
 
     public WeightedLogicalRule(Formula formula, Weight weight, boolean squared, String name) {
-        super(formula, name);
+        // Warning: The hashCode of a rule is dependent on the weight.
+        // If the weight changes, as it does during learning, then the hashCode of the rule will change.
+        // Rules are registered using the initial hashCode.
+        super(formula, name, HashCode.build(formula.getDNF().hashCode(), weight));
 
         this.weight = weight;
         this.squared = squared;
     }
 
     @Override
-    protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
-        return new WeightedGroundLogicalRule(this, posLiterals, negLiterals);
+    protected GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, Database database) {
+        // Get the grounding resources for this thread,
+        if (!Parallel.hasThreadObject(groundingResourcesKey)) {
+            GroundingResources groundingResources = new GroundingResources();
+            groundingResources.parseNegatedDNF(negatedDNF, weight);
+            Parallel.putThreadObject(groundingResourcesKey, groundingResources);
+        }
+        GroundingResources groundingResources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
+
+        return groundInternal(constants, variableMap, database, groundingResources);
+    }
+
+    @Override
+    protected WeightedGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, Weight groundedWeight) {
+        if (groundedWeight == null) {
+            return new WeightedGroundLogicalRule(this, posLiterals, negLiterals);
+        } else {
+            WeightedLogicalRule groundedDeepWeightedRule = new WeightedLogicalRule(formula, groundedWeight, squared, groundedWeight.getAtom().toString() + ": " + name);
+            groundedDeepWeightedRule.setParentHashCode(hashCode());
+            addChildHashCode(groundedDeepWeightedRule.hashCode());
+
+            return new WeightedGroundLogicalRule(groundedDeepWeightedRule, posLiterals, negLiterals);
+        }
     }
 
     @Override
@@ -82,6 +113,10 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
 
         WeightedLogicalRule otherRule = (WeightedLogicalRule)other;
         if (this.squared != otherRule.squared) {
+            return false;
+        }
+
+        if (!this.weight.equals(otherRule.weight)) {
             return false;
         }
 

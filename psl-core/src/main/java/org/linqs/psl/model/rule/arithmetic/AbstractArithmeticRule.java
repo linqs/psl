@@ -377,7 +377,6 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
 
             resources.weightGroundAtom = weightGroundAtom;
 
-
             if (weightGroundAtom instanceof UnmanagedRandomVariableAtom) {
                 resources.accessExceptionAtoms.add(weightGroundAtom);
             }

@@ -18,12 +18,18 @@
 package org.linqs.psl.model.rule.logical;
 
 import java.util.List;
+import java.util.Map;
 
+import org.linqs.psl.database.Database;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.formula.Formula;
+import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedRule;
 import org.linqs.psl.model.rule.Weight;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.model.term.Variable;
+import org.linqs.psl.util.Parallel;
 
 public class UnweightedLogicalRule extends AbstractLogicalRule implements UnweightedRule {
     public UnweightedLogicalRule(Formula formula) {
@@ -31,7 +37,20 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
     }
 
     public UnweightedLogicalRule(Formula formula, String name) {
-        super(formula, name);
+        super(formula, name, formula.getDNF().hashCode());
+    }
+
+    @Override
+    protected GroundRule ground(Constant[] constants, Map<Variable, Integer> variableMap, Database database) {
+        // Get the grounding resources for this thread,
+        if (!Parallel.hasThreadObject(groundingResourcesKey)) {
+            GroundingResources groundingResources = new GroundingResources();
+            groundingResources.parseNegatedDNF(negatedDNF, null);
+            Parallel.putThreadObject(groundingResourcesKey, groundingResources);
+        }
+        GroundingResources groundingResources = (GroundingResources)Parallel.getThreadObject(groundingResourcesKey);
+
+        return groundInternal(constants, variableMap, database, groundingResources);
     }
 
     @Override
@@ -41,7 +60,8 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
     }
 
     @Override
-    protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals) {
+    protected AbstractGroundLogicalRule groundFormulaInstance(List<GroundAtom> posLiterals, List<GroundAtom> negLiterals, Weight groundedWeight) {
+        assert groundedWeight == null;
         return new UnweightedGroundLogicalRule(this, posLiterals, negLiterals);
     }
 

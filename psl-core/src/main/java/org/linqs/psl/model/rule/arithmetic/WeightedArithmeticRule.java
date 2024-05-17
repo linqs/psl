@@ -167,6 +167,10 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
             return false;
         }
 
+        if (!this.weight.equals(otherRule.weight)) {
+            return false;
+        }
+
         return super.equals(other);
     }
 }
