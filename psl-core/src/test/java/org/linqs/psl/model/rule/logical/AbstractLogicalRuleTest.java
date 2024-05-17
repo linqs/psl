@@ -34,7 +34,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -171,5 +170,23 @@ public class AbstractLogicalRuleTest extends PSLBaseTest {
         assertNotEquals(rule1.hashCode(), rule2.hashCode());
         assertEquals(rule1.hashCode(), rule3.hashCode());
         assertNotEquals(rule2.hashCode(), rule3.hashCode());
+    }
+
+    @Test
+    public void testAtomWeightedRule() {
+        // DoubleClosed(A, B): SingleOpen(A) & SingleClosed(B) -> SingleOpen(B)
+        AbstractLogicalRule rule = new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                            new QueryAtom(singleOpened, new Variable("A")),
+                            new QueryAtom(singleClosed, new Variable("B"))
+                        ),
+                        new QueryAtom(singleOpened, new Variable("B"))
+                ),
+                new Weight(1.0f, new QueryAtom(doubleClosed, new Variable("A"), new Variable("B"))),
+                true
+        );
+
+        assertEquals("1.0 * DOUBLECLOSED(A, B): ( SINGLEOPENED(A) & SINGLECLOSED(B) ) >> SINGLEOPENED(B) ^2", rule.toString());
     }
 }
