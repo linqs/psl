@@ -258,16 +258,18 @@ public abstract class InferenceApplication implements ModelApplication {
      * Relax hard constraints into weighted rules.
      */
     protected void relaxHardConstraints() {
-        float largestWeight = 0.0f;
+        float largestWeight = 1.0f;
         boolean hasUnweightedRule = false;
 
         for (Rule rule : rules) {
             if (rule instanceof WeightedRule) {
                 Weight weight = ((WeightedRule)rule).getWeight();
 
-                if ((!weight.isDeep()) && (1.0f > largestWeight)) {
+                if (weight.isDeep() && (1.0f > largestWeight)) {
                     // 1.0f is the largest possible value of a deep weight.
                     largestWeight = 1.0f;
+                } else if ((!weight.isDeep()) && (weight.getValue() > largestWeight)) {
+                    largestWeight = weight.getValue();
                 }
             } else {
                 hasUnweightedRule = true;
