@@ -100,6 +100,10 @@ public abstract class SimpleTermStore<T extends ReasonerTerm> extends TermStore<
             return;
         }
 
+        if (atom1RootIndex == -1 || atom2RootIndex == -1) {
+            throw new IllegalArgumentException("Atoms must be in the atom store before they can be merged.");
+        }
+
         GroundAtom atom1Root = atomStore.getAtom(atom1RootIndex);
         GroundAtom atom2Root = atomStore.getAtom(atom2RootIndex);
 

@@ -396,6 +396,127 @@ public class TestModel {
     }
 
     /**
+     * A model with only a single exogenous rule with a observed atom weight.
+     *     Weight(A, B): Nice(A) & Nice(B) & (A != B) -> Friends(A, B) ^2
+     * Such that the weight is 1.0 for all instance of the rule.
+     */
+    public static ModelInformation getExogenousModelWithObservedAtomWeight() {
+        // Define Predicates
+        Map<String, ConstantType[]> predicatesInfo = new HashMap<String, ConstantType[]>();
+        predicatesInfo.put("Nice", new ConstantType[]{ConstantType.UniqueStringID});
+        predicatesInfo.put("Friends", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
+        predicatesInfo.put("Weight", new ConstantType[]{ConstantType.UniqueStringID, ConstantType.UniqueStringID});
+
+        Map<String, StandardPredicate> predicates = new HashMap<String, StandardPredicate>();
+        for (Map.Entry<String, ConstantType[]> predicateEntry : predicatesInfo.entrySet()) {
+            StandardPredicate predicate = StandardPredicate.get(predicateEntry.getKey(), predicateEntry.getValue());
+            predicates.put(predicateEntry.getKey(), predicate);
+        }
+
+        // Define Rules
+        List<Rule> rules = new ArrayList<Rule>();
+        rules.add(new WeightedLogicalRule(
+                new Implication(
+                        new Conjunction(
+                                new QueryAtom(predicates.get("Nice"), new Variable("A")),
+                                new QueryAtom(predicates.get("Nice"), new Variable("B")),
+                                new QueryAtom(GroundingOnlyPredicate.NotEqual, new Variable("A"), new Variable("B"))
+                        ),
+                        new QueryAtom(predicates.get("Friends"), new Variable("A"), new Variable("B"))
+                ),
+                new Weight(1.0f, new QueryAtom(predicates.get("Weight"), new Variable("A"), new Variable("B"))),
+                true));
+
+        // Data
+        Map<StandardPredicate, List<PredicateData>> observations = new HashMap<StandardPredicate, List<PredicateData>>();
+        Map<StandardPredicate, List<PredicateData>> targets = new HashMap<StandardPredicate, List<PredicateData>>();
+        Map<StandardPredicate, List<PredicateData>> truths = new HashMap<StandardPredicate, List<PredicateData>>();
+
+        // Nice
+        observations.put(predicates.get("Nice"), new ArrayList<PredicateData>(Arrays.asList(
+                new PredicateData(1.0, new Object[]{"Alice"}),
+                new PredicateData(1.0, new Object[]{"Bob"}),
+                new PredicateData(1.0, new Object[]{"Charlie"}),
+                new PredicateData(1.0, new Object[]{"Derek"}),
+                new PredicateData(1.0, new Object[]{"Eugene"})
+        )));
+
+        // Weight
+        observations.put(predicates.get("Weight"), new ArrayList<PredicateData>(Arrays.asList(
+                new PredicateData(1.0, new Object[]{"Alice", "Bob"}),
+                new PredicateData(1.0, new Object[]{"Bob", "Alice"}),
+                new PredicateData(1.0, new Object[]{"Alice", "Charlie"}),
+                new PredicateData(1.0, new Object[]{"Charlie", "Alice"}),
+                new PredicateData(1.0, new Object[]{"Alice", "Derek"}),
+                new PredicateData(1.0, new Object[]{"Derek", "Alice"}),
+                new PredicateData(1.0, new Object[]{"Alice", "Eugene"}),
+                new PredicateData(1.0, new Object[]{"Eugene", "Alice"}),
+                new PredicateData(1.0, new Object[]{"Bob", "Charlie"}),
+                new PredicateData(1.0, new Object[]{"Charlie", "Bob"}),
+                new PredicateData(1.0, new Object[]{"Bob", "Derek"}),
+                new PredicateData(1.0, new Object[]{"Derek", "Bob"}),
+                new PredicateData(1.0, new Object[]{"Bob", "Eugene"}),
+                new PredicateData(1.0, new Object[]{"Eugene", "Bob"}),
+                new PredicateData(1.0, new Object[]{"Charlie", "Derek"}),
+                new PredicateData(1.0, new Object[]{"Derek", "Charlie"}),
+                new PredicateData(1.0, new Object[]{"Charlie", "Eugene"}),
+                new PredicateData(1.0, new Object[]{"Eugene", "Charlie"}),
+                new PredicateData(1.0, new Object[]{"Derek", "Eugene"}),
+                new PredicateData(1.0, new Object[]{"Eugene", "Derek"})
+        )));
+
+        // Friends
+        targets.put(predicates.get("Friends"), new ArrayList<PredicateData>(Arrays.asList(
+                new PredicateData(new Object[]{"Alice", "Bob"}),
+                new PredicateData(new Object[]{"Bob", "Alice"}),
+                new PredicateData(new Object[]{"Alice", "Charlie"}),
+                new PredicateData(new Object[]{"Charlie", "Alice"}),
+                new PredicateData(new Object[]{"Alice", "Derek"}),
+                new PredicateData(new Object[]{"Derek", "Alice"}),
+                new PredicateData(new Object[]{"Alice", "Eugene"}),
+                new PredicateData(new Object[]{"Eugene", "Alice"}),
+                new PredicateData(new Object[]{"Bob", "Charlie"}),
+                new PredicateData(new Object[]{"Charlie", "Bob"}),
+                new PredicateData(new Object[]{"Bob", "Derek"}),
+                new PredicateData(new Object[]{"Derek", "Bob"}),
+                new PredicateData(new Object[]{"Bob", "Eugene"}),
+                new PredicateData(new Object[]{"Eugene", "Bob"}),
+                new PredicateData(new Object[]{"Charlie", "Derek"}),
+                new PredicateData(new Object[]{"Derek", "Charlie"}),
+                new PredicateData(new Object[]{"Charlie", "Eugene"}),
+                new PredicateData(new Object[]{"Eugene", "Charlie"}),
+                new PredicateData(new Object[]{"Derek", "Eugene"}),
+                new PredicateData(new Object[]{"Eugene", "Derek"})
+        )));
+
+        truths.put(predicates.get("Friends"), new ArrayList<PredicateData>(Arrays.asList(
+                new PredicateData(1, new Object[]{"Alice", "Bob"}),
+                new PredicateData(1, new Object[]{"Bob", "Alice"}),
+                new PredicateData(1, new Object[]{"Alice", "Charlie"}),
+                new PredicateData(1, new Object[]{"Charlie", "Alice"}),
+                new PredicateData(1, new Object[]{"Alice", "Derek"}),
+                new PredicateData(1, new Object[]{"Derek", "Alice"}),
+                new PredicateData(1, new Object[]{"Alice", "Eugene"}),
+                new PredicateData(1, new Object[]{"Eugene", "Alice"}),
+                new PredicateData(1, new Object[]{"Bob", "Charlie"}),
+                new PredicateData(1, new Object[]{"Charlie", "Bob"}),
+                new PredicateData(1, new Object[]{"Bob", "Derek"}),
+                new PredicateData(1, new Object[]{"Derek", "Bob"}),
+                new PredicateData(0, new Object[]{"Bob", "Eugene"}),
+                new PredicateData(0, new Object[]{"Eugene", "Bob"}),
+                new PredicateData(1, new Object[]{"Charlie", "Derek"}),
+                new PredicateData(1, new Object[]{"Derek", "Charlie"}),
+                new PredicateData(0, new Object[]{"Charlie", "Eugene"}),
+                new PredicateData(0, new Object[]{"Eugene", "Charlie"}),
+                new PredicateData(0, new Object[]{"Derek", "Eugene"}),
+                new PredicateData(0, new Object[]{"Eugene", "Derek"})
+        )));
+
+        return getModel(DatabaseTestUtil.getH2Driver(), predicates, rules, observations, targets, truths);
+    }
+
+
+    /**
      * A model with only a single symmetry rule.
      *     10: Person(A) & Person(B) & Friends(A, B) & (A != B) -> Friends(B, A) ^2
      */

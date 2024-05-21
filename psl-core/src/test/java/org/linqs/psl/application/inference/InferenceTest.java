@@ -435,6 +435,17 @@ public abstract class InferenceTest extends PSLBaseTest {
 
         inference.close();
         inferDB.close();
+
+        // Exogenous model with observed atom weight.
+        info = TestModel.getExogenousModelWithObservedAtomWeight();
+        inferDB = info.dataStore.getDatabase(info.targetPartition, new HashSet<StandardPredicate>(), info.observationPartition);
+        inference = getInference(info.model.getRules(), inferDB);
+
+        // Test the inference application is able to find the MAP state.
+        assertEquals(0.0, inference.inference(), 0.1f);
+
+        inference.close();
+        inferDB.close();
     }
 
     /**
@@ -459,7 +470,7 @@ public abstract class InferenceTest extends PSLBaseTest {
 
     @Test
     public void testAtomWithConstant() {
-        // Nice(A) & Nice(B) & Friends('Alice', B) && (A != B) -> Friends(A, B)
+        // 1.0: Nice(A) & Nice(B) & Friends('Alice', B) && (A != B) -> Friends(A, B)
         info.model.addRule(new WeightedLogicalRule(
             new Implication(
                 new Conjunction(

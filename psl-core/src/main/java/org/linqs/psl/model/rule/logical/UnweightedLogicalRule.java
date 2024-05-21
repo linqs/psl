@@ -56,7 +56,7 @@ public class UnweightedLogicalRule extends AbstractLogicalRule implements Unweig
     @Override
     public WeightedRule relax(Weight weight, boolean squared) {
         unregister();
-        return new WeightedLogicalRule(formula, weight, squared, name);
+        return new WeightedLogicalRule(formula, weight, squared);
     }
 
     @Override

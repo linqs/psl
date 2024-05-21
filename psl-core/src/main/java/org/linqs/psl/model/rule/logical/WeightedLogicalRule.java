@@ -36,7 +36,7 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
     protected boolean squared;
 
     public WeightedLogicalRule(Formula formula, Weight weight, boolean squared) {
-        this(formula, weight, squared, formula.toString());
+        this(formula, weight, squared, weight.toString() + ": " +  formula.toString());
     }
 
     public WeightedLogicalRule(Formula formula, Weight weight, boolean squared, String name) {
@@ -67,7 +67,7 @@ public class WeightedLogicalRule extends AbstractLogicalRule implements Weighted
         if (groundedWeight == null) {
             return new WeightedGroundLogicalRule(this, posLiterals, negLiterals);
         } else {
-            WeightedLogicalRule groundedDeepWeightedRule = new WeightedLogicalRule(formula, groundedWeight, squared, groundedWeight.getAtom().toString() + ": " + name);
+            WeightedLogicalRule groundedDeepWeightedRule = new WeightedLogicalRule(formula, groundedWeight, squared);
             groundedDeepWeightedRule.setParentHashCode(hashCode());
             addChildHashCode(groundedDeepWeightedRule.hashCode());
 

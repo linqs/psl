@@ -72,7 +72,7 @@ public abstract class AbstractLogicalRule extends AbstractRule {
         this.hashcode = hashcode;
 
         this.formula = formula;
-        groundingResourcesKey = AbstractLogicalRule.class.getName() + ";" + formula + ";GroundingResources";
+        groundingResourcesKey = AbstractLogicalRule.class.getName() + ";" + name + ";GroundingResources";
 
         // Do the formula analysis so we know what atoms to query for grounding.
         // We will query for all positive atoms in the negated DNF.

@@ -264,8 +264,10 @@ public abstract class InferenceApplication implements ModelApplication {
         for (Rule rule : rules) {
             if (rule instanceof WeightedRule) {
                 Weight weight = ((WeightedRule)rule).getWeight();
-                if (weight.getValue() > largestWeight) {
-                    largestWeight = weight.getValue();
+
+                if ((!weight.isDeep()) && (1.0f > largestWeight)) {
+                    // 1.0f is the largest possible value of a deep weight.
+                    largestWeight = 1.0f;
                 }
             } else {
                 hasUnweightedRule = true;

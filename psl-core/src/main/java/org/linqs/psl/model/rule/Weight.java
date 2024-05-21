@@ -21,12 +21,14 @@ import org.linqs.psl.model.atom.Atom;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.util.HashCode;
 
+import java.io.Serializable;
+
 /**
  * A weight for a rule.
  * A weight is a constant value and can be associated with a GroundAtom.
  * The value of the weight is the constant value multiplied by the value of the GroundAtom.
  */
-public class Weight {
+public class Weight implements Serializable {
     private float constantValue;
     private Atom atom;
 

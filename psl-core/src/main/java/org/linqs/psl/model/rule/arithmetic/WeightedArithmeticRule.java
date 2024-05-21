@@ -37,7 +37,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
     protected boolean squared;
 
     public WeightedArithmeticRule(ArithmeticRuleExpression expression, Weight weight, boolean squared) {
-        this(expression, weight, squared, expression.toString());
+        this(expression, weight, squared, weight.toString() + ": " + expression.toString());
     }
 
     public WeightedArithmeticRule(ArithmeticRuleExpression expression, Weight weight, boolean squared, String name) {
@@ -74,7 +74,7 @@ public class WeightedArithmeticRule extends AbstractArithmeticRule implements We
             );
 
             WeightedArithmeticRule groundedDeepWeightedRule = new WeightedArithmeticRule(
-                newExpression, groundedWeight, squared, groundedWeight.getAtom().toString() + ": " + name
+                newExpression, groundedWeight, squared
             );
 
             groundedDeepWeightedRule.setParentHashCode(hashCode());
