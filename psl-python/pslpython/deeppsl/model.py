@@ -151,7 +151,7 @@ class DeepModel(abc.ABC):
                 parts = row.split("\t")
 
                 data = parts[entity_argument_length:]
-                self._data.append([float(value) for value in data])
+                self._data.append([value for value in data])
 
         self._data = numpy.array(self._data)
 
