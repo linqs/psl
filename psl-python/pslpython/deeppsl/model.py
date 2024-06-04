@@ -130,23 +130,7 @@ class DeepModel(abc.ABC):
     """
     Low-level methods that take care of moving around data.
     """
-
-    def init_weight(self, shared_memory_path, application, options):
-        raise NotImplementedError("init_weight")
-
-    def fit_weight(self, options):
-        raise NotImplementedError("fit_weight")
-
-    def predict_weight(self, options):
-        raise NotImplementedError("predict_weight")
-
-    def predict_weight_learn(self, options):
-        raise NotImplementedError("predict_weight")
-
-    def eval_weight(self, options):
-        raise NotImplementedError("eval_weight")
-
-    def init_predicate(self, shared_memory_path, application, options):
+    def init(self, shared_memory_path, application, options):
         """
         Initialize the model.
         :param shared_memory_path: The path to the shared memory file.
@@ -173,7 +157,7 @@ class DeepModel(abc.ABC):
 
         return self.internal_init(application, options)
 
-    def fit_predicate(self, options):
+    def fit(self, options):
         self._shared_buffer.seek(0)
 
         count = self._read_int()
@@ -202,10 +186,7 @@ class DeepModel(abc.ABC):
     def is_epoch_complete(self, options):
         return self.internal_is_epoch_complete(options)
 
-    def predict_predicate(self, options):
-        self._predict_predicate(options)
-
-    def _predict_predicate(self, options):
+    def predict(self, options):
         self._shared_buffer.seek(0)
 
         count = self._read_int()
@@ -223,7 +204,7 @@ class DeepModel(abc.ABC):
 
         return response
 
-    def eval_predicate(self, options):
+    def eval(self, options):
         self._shared_buffer.seek(0)
 
         count = self._read_int()
