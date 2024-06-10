@@ -222,6 +222,26 @@ public final class MathUtils {
     }
 
     /**
+     * Compute the sum of the provided vector.
+     */
+    public static float sum(float[] vector) {
+        float sum = 0.0f;
+        for (float v : vector) {
+            sum += v;
+        }
+        return sum;
+    }
+
+
+    public static double sum(double[] vector) {
+        double sum = 0.0;
+        for (double v : vector) {
+            sum += v;
+        }
+        return sum;
+    }
+
+    /**
      * Compute the p-norm of the provided vector.
      */
     public static float pNorm(float[] vector, float p) {
