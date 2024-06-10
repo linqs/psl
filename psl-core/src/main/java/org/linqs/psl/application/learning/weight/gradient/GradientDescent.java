@@ -74,6 +74,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected Map<WeightedRule, Integer> groundedDeepWeightedRuleIndexMap;
 
     protected float[] symbolicWeightGradient;
+    protected float[] accumulatedDeepWeightGradient;
     protected float[] deepWeightGradient;
     protected float[] expressionRVAtomGradient;
     protected float[] expressionDeepAtomGradient;
@@ -148,6 +149,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
         deepAtomGradient = null;
 
+        accumulatedDeepWeightGradient = null;
         deepWeightGradient = null;
 
         expressionRVAtomGradient = null;
@@ -327,6 +329,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
     protected void initializeGradients() {
         deepAtomGradient = new float[trainFullMAPAtomValueState.length];
 
+        accumulatedDeepWeightGradient = new float[trainFullMAPAtomValueState.length];
         deepWeightGradient = new float[groundedDeepWeightedRules.size()];
 
         expressionRVAtomGradient = new float[trainFullMAPAtomValueState.length];
@@ -556,6 +559,7 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     protected void resetGradients() {
         Arrays.fill(deepAtomGradient, 0.0f);
+        Arrays.fill(accumulatedDeepWeightGradient, 0.0f);
         Arrays.fill(deepWeightGradient, 0.0f);
         Arrays.fill(expressionRVAtomGradient, 0.0f);
         Arrays.fill(expressionDeepAtomGradient, 0.0f);
@@ -772,9 +776,25 @@ public abstract class GradientDescent extends WeightLearningApplication {
         inValidationMAPState = false;
     }
 
+    /**
+     * Take a step in the direction of the negative gradient of the deep atoms.
+     */
     protected void atomGradientStep() {
+        for (WeightedRule weightedRule : groundedDeepWeightedRules) {
+            int groundedRuleIndex = groundedDeepWeightedRuleIndexMap.get(weightedRule);
+
+            GroundAtom deepWeightAtom = (GroundAtom) weightedRule.getWeight().getAtom();
+
+            accumulatedDeepWeightGradient[deepWeightAtom.getIndex()] += deepWeightGradient[groundedRuleIndex];
+        }
+
+        for (int i = 0; i < deepAtomGradient.length; i++) {
+            deepAtomGradient[i] += accumulatedDeepWeightGradient[i];
+            deepAtomGradient[i] += expressionDeepAtomGradient[i];
+        }
+
         for (DeepPredicate deepPredicate : deepPredicates) {
-            deepPredicate.fitDeepPredicate(expressionDeepAtomGradient);
+            deepPredicate.fitDeepPredicate(deepAtomGradient);
         }
     }
 
