@@ -726,7 +726,6 @@ public abstract class GradientDescent extends WeightLearningApplication {
 
     /**
      * Take a step in the direction of the negative gradient of the weights.
-     * Return the total change in the weights.
      */
     protected void symbolicWeightGradientStep(int epoch) {
         if (!symbolicWeightLearning) {
